@@ -35,6 +35,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -98,7 +99,7 @@ function stateBody(
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
@@ -115,7 +116,7 @@ function stateBody(
 | gamma | - | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -152,7 +153,7 @@ function makeSeed(options: {
     seededStateFile(seed),
     stateBody(options.scope, options.skeletonComplete, options.rhythm, options.stance),
   );
-  const depDir = join(seededRecordDir(seed), "inception", "units-generation");
+  const depDir = join(seededRecordDir(seed), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(join(depDir, "unit-of-work-dependency.md"), dependencyBody());
   writeFileSync(
@@ -252,7 +253,7 @@ function nextDirective(
 function writeFunctionalArtifacts(projectDir: string, unit: string): void {
   const functionalDir = join(
     seededRecordDir(projectDir),
-    "construction",
+    phaseFor("functional-design"),
     unit,
     "functional-design",
   );
@@ -642,7 +643,7 @@ describe("t325 atomic team Unit claims", () => {
     appendFileSync(
       join(
         seededRecordDir(checkout),
-        "construction",
+        phaseFor("functional-design"),
         "alpha",
         "functional-design",
         artifactFilename("functional-spec"),
@@ -1127,7 +1128,7 @@ describe("t325 atomic team Unit claims", () => {
     const { seed, remote } = makeSeed();
     const dependencyPath = join(
       seededRecordDir(seed),
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
     );
@@ -1253,7 +1254,7 @@ describe("t325 atomic team Unit claims", () => {
     );
     const dependencyPath = join(
       seededRecordDir(headerName.seed),
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
     );
@@ -1473,7 +1474,7 @@ describe("t325 atomic team Unit claims", () => {
     expect(workerEvent.status, workerEvent.out).toBe(0);
     // The Unit's receipt for an artifact the worker wrote in the claimed
     // worktree, as the write hook records it there.
-    const artifact = join(seededRecordDir(wt), "construction", "alpha", "functional-design", "business-logic-model.md");
+    const artifact = join(seededRecordDir(wt), phaseFor("functional-design"), "alpha", "functional-design", "business-logic-model.md");
     mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(artifact, "# Business Logic Model\n\nclaimed worktree receipt\n");
     const hooked = spawnSync(process.execPath, [join(AIDLC_SRC, "hooks", "aidlc-write-audit-log.ts")], {
@@ -1596,7 +1597,7 @@ describe("t325 atomic team Unit claims", () => {
     ).toBe(0);
     // The Unit's receipt for an artifact the worker wrote in the worktree, as
     // the write hook records it there.
-    const artifact = join(seededRecordDir(wt), "construction", "alpha", "functional-design", "business-logic-model.md");
+    const artifact = join(seededRecordDir(wt), phaseFor("functional-design"), "alpha", "functional-design", "business-logic-model.md");
     mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(artifact, "# Business Logic Model\n\ndirect audit receipt\n");
     const hooked = spawnSync(process.execPath, [join(AIDLC_SRC, "hooks", "aidlc-write-audit-log.ts")], {
@@ -1797,7 +1798,7 @@ describe("t325 a claim typed with no work selected", () => {
     const registry = JSON.parse(readFileSync(join(intents, "intents.json"), "utf-8")) as unknown[];
     for (const { slug, uuid, rename = ["gamma", "gamma"] } of others) {
       const dirName = `${slug}-${uuid.replace(/-/g, "").slice(-16)}`;
-      const units = join(intents, dirName, "inception", "units-generation");
+      const units = join(intents, dirName, phaseFor("units-generation"), "units-generation");
       mkdirSync(units, { recursive: true });
       writeFileSync(join(intents, dirName, "aidlc-state.md"), stateBody().replaceAll(`| ${rename[0]} |`, `| ${rename[1]} |`));
       writeFileSync(join(units, "unit-of-work-dependency.md"), dependencyBody().replace(new RegExp(`\\b${rename[0]}\\b`, "g"), rename[1]));

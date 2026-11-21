@@ -12,6 +12,7 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { deriveTeamUnitProgressModel } from "../../dist/claude/.claude/tools/aidlc-orchestrate.ts";
 import { seededAuditDir, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   STATE,
@@ -628,7 +629,7 @@ describe("t326 pinned team Unit merge", () => {
     )!;
     const reviewerArtifact = join(
       seededRecordDir(reviewed.checkout),
-      "construction",
+      phaseFor(reviewerStage.slug),
       "alpha",
       reviewerStage.slug,
       artifactFilename(reviewerStage.produces![0]),
@@ -650,7 +651,7 @@ describe("t326 pinned team Unit merge", () => {
           "alpha",
           reviewed.generation,
           reviewerStage.slug,
-          `**File**: construction/alpha/${reviewerStage.slug}/${
+          `**File**: ${phaseFor(reviewerStage.slug)}/alpha/${reviewerStage.slug}/${
             artifactFilename(reviewerStage.produces![0])
           }\n`,
         )
