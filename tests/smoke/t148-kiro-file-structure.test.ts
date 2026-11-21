@@ -141,7 +141,7 @@ describe("t148 dist/kiro file structure", () => {
     for (const f of ["org.md", "team.md", "project.md"]) {
       expect(existsSync(mem(f))).toBe(true);
     }
-    for (const p of ["ideation", "inception", "construction", "operation"]) {
+    for (const p of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
       expect(existsSync(mem("phases", `${p}.md`))).toBe(true);
     }
     // Steering carries onboarding, not copies of the workspace method.
@@ -182,10 +182,13 @@ describe("t148 dist/kiro file structure", () => {
       "org.md",
       "team.md",
       "project.md",
-      "phases/ideation.md",
-      "phases/inception.md",
-      "phases/construction.md",
-      "phases/operation.md",
+      "phases/discover.md",
+      "phases/design.md",
+      "phases/build.md",
+      "phases/test.md",
+      "phases/secure.md",
+      "phases/deploy.md",
+      "phases/operate.md",
     ]) {
       // Kiro IDE does not expand file references in steering, so the file
       // carries each memory file's text.
