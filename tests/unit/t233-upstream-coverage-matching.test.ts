@@ -8,7 +8,7 @@
 // against the one fired file. Two structural mismatches with the
 // framework's authoring conventions made its failures mostly false:
 //   1. Artifacts cite upstream by producing-stage DIRECTORY path in their
-//      provenance header (`construction/<unit>/nfr-requirements/`), never
+//      provenance header (`design/<unit>/nfr-requirements/`), never
 //      re-naming each slug - so `\bperformance-requirements\b` missed a
 //      legitimately-cited upstream.
 //   2. A multi-artifact stage splits its citations across sibling
@@ -129,7 +129,7 @@ describe("t233 producer-directory citation (fix A)", () => {
 			"performance-design.md": [
 				"# Performance Design",
 				"",
-				"basis/trace: `construction/api-service/nfr-requirements/`,",
+				"basis/trace: `design/api-service/nfr-requirements/`,",
 				"`decisions.md`",
 				"",
 				"## Design",
@@ -376,13 +376,13 @@ describe("t233 the dispatcher checks the inputs a stage requires", () => {
 			writeFileSync(path, body, "utf-8");
 			return path;
 		};
-		put("ideation/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n");
+		put("discover/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n");
 		// Feasibility consumes competitive-analysis with `required: false`.
-		put("ideation/market-research/competitive-analysis.md", "# Competitors\n\n## A\n\nx\n");
+		put("discover/market-research/competitive-analysis.md", "# Competitors\n\n## A\n\nx\n");
 		let output = "";
 		for (const name of ["feasibility-assessment", "constraint-register", "raid-log"]) {
 			const source = citesIntent ? "Source: `intent-statement.md`" : "Source: the workshop notes";
-			const path = put(`ideation/feasibility/${name}.md`, `# ${name}\n\n${source}\n\n## One\n\nx\n`);
+			const path = put(`discover/feasibility/${name}.md`, `# ${name}\n\n${source}\n\n## One\n\nx\n`);
 			if (output === "") output = path;
 		}
 		return { proj, output };
@@ -452,11 +452,11 @@ describe("t233 a stage's cited optional inputs checked where they exist", () => 
 			return path;
 		};
 		if (inputs) {
-			put("ideation/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n");
-			put("ideation/scope-definition/scope-document.md", "# Scope\n\n## In\n\nx\n");
+			put("discover/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n");
+			put("discover/scope-definition/scope-document.md", "# Scope\n\n## In\n\nx\n");
 		}
 		const source = cites ? "Sources: `intent-statement.md`, `scope-document.md`" : "Source: the person's request";
-		return { proj, output: put("inception/requirements-analysis/requirements.md", `# Requirements\n\n${source}\n\n## Functional\n\n- FR1 Login\n`) };
+		return { proj, output: put("design/requirements-analysis/requirements.md", `# Requirements\n\n${source}\n\n## Functional\n\n- FR1 Login\n`) };
 	}
 
 	function fire(proj: string, output: string): string {

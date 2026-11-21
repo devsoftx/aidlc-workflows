@@ -1112,7 +1112,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/requirements-analysis/requirements.md, RE artifacts (if brownfield)",
+      "inputs": "<record>/design/requirements-analysis/requirements.md, RE artifacts (if brownfield)",
       "outputs": "stories.md, personas.md, user-stories-assessment.md, traceability.json (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -1321,7 +1321,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced), RE artifacts (if brownfield)",
+      "inputs": "<record>/design/requirements-analysis/requirements.md, <record>/design/user-stories/stories.md (if produced), RE artifacts (if brownfield)",
       "outputs": "components.md (fenced ```yaml component catalogue plus a human-readable mermaid diagram and summary table), decisions.md (Architecture Decision Records), and traceability.json — all under this stage's record dir, engine-resolved",
       "rules_in_context": [
         {
@@ -1424,7 +1424,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/domain-design/components.md, <record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced)",
+      "inputs": "<record>/design/domain-design/components.md, <record>/design/requirements-analysis/requirements.md, <record>/design/user-stories/stories.md (if produced)",
       "outputs": "unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md, traceability.json (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -1523,7 +1523,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/units-generation/unit-of-work.md, <record>/inception/units-generation/unit-of-work-dependency.md, <record>/inception/domain-design/components.md (if produced), <record>/inception/requirements-analysis/requirements.md",
+      "inputs": "<record>/design/units-generation/unit-of-work.md, <record>/design/units-generation/unit-of-work-dependency.md, <record>/design/domain-design/components.md (if produced), <record>/design/requirements-analysis/requirements.md",
       "outputs": "contract-summary.md (under this stage's record dir, engine-resolved) — a human-readable overview of every contract (inter-unit boundaries and public/external APIs), each with a fenced spec block (OpenAPI / AsyncAPI / shared schema) inline",
       "rules_in_context": [
         {

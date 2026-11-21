@@ -443,7 +443,7 @@ describe("the note's words", () => {
     kind: "run-stage",
     stage: "code-generation",
     phase: "construction",
-    stage_file: ".claude/aidlc-common/stages/construction/code-generation.md",
+    stage_file: ".claude/aidlc-common/stages/build/code-generation.md",
     ceremony: { summary_confirmation: "off" },
     ...fields,
   });

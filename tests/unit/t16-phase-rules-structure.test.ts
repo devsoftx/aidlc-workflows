@@ -1,4 +1,4 @@
-// covers: file:memory/phases/ideation.md, file:memory/phases/inception.md, file:memory/phases/construction.md, file:memory/phases/operation.md, stage:ideation/feasibility, stage:inception/requirements-analysis, stage:construction/build-and-test, stage:operation/deployment-execution
+// covers: file:memory/phases/ideation.md, file:memory/phases/inception.md, file:memory/phases/construction.md, file:memory/phases/operation.md, stage:discover/feasibility, stage:design/requirements-analysis, stage:test/build-and-test, stage:deploy/deployment-execution
 //
 // t16 — shipped phase-rules file STRUCTURE contract. Migrated from
 // tests/unit/t16-phase-rules-structure.sh (TAP plan 12 — 3 distinct

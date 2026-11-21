@@ -212,7 +212,7 @@ function mkproj(name: string): string {
   writeFileSync(
     join(recordRoot(pd), "runtime-graph.json"),
     `{ "workflow_id": "w1", "scope": "feature", "started_at": "2026-05-28T13:00:00Z",
-  "stages": [ { "stage_slug": "user-stories", "memory_path": "aidlc/spaces/default/intents/inception/user-stories/memory.md" } ] }
+  "stages": [ { "stage_slug": "user-stories", "memory_path": "aidlc/spaces/default/intents/design/user-stories/memory.md" } ] }
 `,
     "utf-8",
   );
@@ -518,7 +518,7 @@ describe("t97 persist (cli, idempotency-sensitive)", () => {
       pd,
       `{ "stage_slug": "user-stories", "space": "default", "intent": null, "selections": [
   { "candidate_id": "c5", "type": "sensor", "origin_stage": "user-stories",
-    "manifest_fields": { "id": "acceptance-format", "kind": "deterministic", "command": "bun .claude/tools/aidlc-sensor.ts fire acceptance-format", "default_severity": "advisory", "description": "Checks AC format", "matches": "**/aidlc-docs/inception/user-stories/**", "timeout_seconds": 30 } } ] }
+    "manifest_fields": { "id": "acceptance-format", "kind": "deterministic", "command": "bun .claude/tools/aidlc-sensor.ts fire acceptance-format", "default_severity": "advisory", "description": "Checks AC format", "matches": "**/aidlc-docs/design/user-stories/**", "timeout_seconds": 30 } } ] }
 `,
     );
     runCli(

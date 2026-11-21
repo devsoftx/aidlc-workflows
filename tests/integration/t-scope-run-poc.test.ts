@@ -1,4 +1,4 @@
-// covers: scope:poc, stage:initialization/workspace-scaffold, stage:initialization/workspace-detection, stage:initialization/state-init, stage:ideation/intent-capture, stage:inception/requirements-analysis, stage:construction/code-generation, stage:construction/build-and-test
+// covers: scope:poc, stage:initialization/workspace-scaffold, stage:initialization/workspace-detection, stage:initialization/state-init, stage:discover/intent-capture, stage:design/requirements-analysis, stage:build/code-generation, stage:test/build-and-test
 //
 // The poc scope from the person's first request to done, with no model: a
 // scripted stand-in plays the agent and the person through the real engine and

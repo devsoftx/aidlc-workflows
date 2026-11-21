@@ -1,7 +1,7 @@
 // covers: function:selectShippedInlineKnowledge
 // covers: function:inlineContextRoster
 // covers: function:buildRunStageDirective
-// covers: file:aidlc-common/stages/inception/reverse-engineering.md
+// covers: file:aidlc-common/stages/discover/reverse-engineering.md
 //
 // Deterministic regression for the minimal-scope performance contract. The
 // optimized path keeps the same agents, receipts, artifacts, and gates; it
@@ -144,7 +144,7 @@ describe("t314 minimal-scope dispatch and handoff budget", () => {
 
   test("Reverse Engineering preserves two-link authority with a file-backed handoff", () => {
     const stage = authored(
-      "core/aidlc-common/stages/inception/reverse-engineering.md",
+      "core/aidlc-common/stages/discover/reverse-engineering.md",
     );
     const template = authored(
       "core/knowledge/aidlc-developer-agent/re-artifacts.md",

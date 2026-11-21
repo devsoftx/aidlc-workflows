@@ -787,7 +787,7 @@ export class AgentStandIn {
    */
   repairUnitsBlockIfNamed(said: string, where: string): boolean {
     if (!/unit-of-work-dependency\.md cannot be read/.test(said)) return false;
-    const rel = `${activeRecord(this.host.proj).dir.slice(this.host.proj.length + 1)}/inception/units-generation/unit-of-work-dependency.md`;
+    const rel = `${activeRecord(this.host.proj).dir.slice(this.host.proj.length + 1)}/design/units-generation/unit-of-work-dependency.md`;
     this.host.write(rel, unitArtifactText(rel, this.units) ?? "");
     this.unitsBlockRepairs.push({ where, asked: this.asked.length });
     return true;
@@ -1354,7 +1354,7 @@ export class AgentStandIn {
     this.host.engine("workspace", "codekb-scope-diff", "--repo", repo);
     const snap = parseJson(this.tool("aidlc-utility.ts codekb-snapshot", "workspace codekb-snapshot", `--repo ${repo} --paths ./ --json`).stdout);
     if (!snap?.source_fingerprint) this.fail("codekb snapshot printed no source fingerprint", d);
-    const scan = `${record}/inception/reverse-engineering/developer-scan.md`;
+    const scan = `${record}/discover/reverse-engineering/developer-scan.md`;
     const synthesise = () => {
       const minted = this.host.engine("workspace", "codekb-scope-diff", "--repo", repo, "--mint", "--paths", "./").stdout.trim();
       const staged = `${record}/.aidlc-engine/codekb-stage-${repo}`;
@@ -1645,7 +1645,7 @@ export class AgentStandIn {
       const { intent, space } = activeRecord(this.host.proj);
       const writes = [source, test, ...extra].map((path) => ({ path }));
       this.host.write(
-        `aidlc/spaces/${space}/intents/${intent}/construction/${unit}/code-generation/source-manifest.json`,
+        `aidlc/spaces/${space}/intents/${intent}/build/${unit}/code-generation/source-manifest.json`,
         `${JSON.stringify({ stage: "code-generation", unit, version: 1, writes }, null, 2)}\n`,
       );
     }

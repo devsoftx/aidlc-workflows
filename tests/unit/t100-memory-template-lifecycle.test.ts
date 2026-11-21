@@ -270,7 +270,7 @@ describe("t100 advance/approve memory_path key (Bun spawn — CLI env seam)", ()
     const r = runState(proj, ["advance", "feasibility", "scope-definition"]);
     expect(r.status).toBe(0);
     expect(memoryPath(r.out)).toBe(
-      `${RP}/ideation/scope-definition/memory.md`,
+      `${RP}/discover/scope-definition/memory.md`,
     );
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -295,7 +295,7 @@ describe("t100 advance/approve memory_path key (Bun spawn — CLI env seam)", ()
     const ap = runState(proj, ["approve", "feasibility"]);
     expect(ap.status).toBe(0);
     expect(memoryPath(ap.out)).toBe(
-      `${RP}/ideation/scope-definition/memory.md`,
+      `${RP}/discover/scope-definition/memory.md`,
     );
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 });

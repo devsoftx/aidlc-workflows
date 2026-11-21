@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/construction/code-generation.md
+// covers: file:aidlc-common/stages/build/code-generation.md
 //
 // A Unit's source manifest is measured from its attempt's source baseline: a
 // rejection keeps that baseline, so a reopened Unit keeps its earlier claims,

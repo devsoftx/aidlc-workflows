@@ -172,7 +172,7 @@ describe("t96 aidlc-runtime compile — instances[] populator (migrated from t96
     expect(row.agent).toBeNull();
     expect(row.memory_path).not.toBeNull();
     expect(row.memory_path).toBe(
-      `${RP}/construction/code-generation/memory.md`,
+      `${RP}/build/code-generation/memory.md`,
     );
     expect(row.sensor_firings).toEqual([]);
     expect(row.completed_at).toBeNull();

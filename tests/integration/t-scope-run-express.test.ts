@@ -1,4 +1,4 @@
-// covers: scope:express, stage:initialization/workspace-scaffold, stage:initialization/workspace-detection, stage:initialization/state-init, stage:inception/requirements-analysis, stage:construction/code-generation, stage:construction/build-and-test, stage:operation/deployment-pipeline, stage:operation/deployment-execution, stage:operation/observability-setup
+// covers: scope:express, stage:initialization/workspace-scaffold, stage:initialization/workspace-detection, stage:initialization/state-init, stage:design/requirements-analysis, stage:build/code-generation, stage:test/build-and-test, stage:deploy/deployment-pipeline, stage:deploy/deployment-execution, stage:operate/observability-setup
 //
 // The express scope from the person's first request to done, with no model: a
 // scripted stand-in plays the agent and the person through the real engine and

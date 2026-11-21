@@ -1663,7 +1663,7 @@ describe("t248 deterministic steering delivery", () => {
       {
         subagent_type: "aidlc-product-agent",
         prompt:
-          "Run .claude/aidlc-common/stages/inception/user-stories.md.",
+          "Run .claude/aidlc-common/stages/design/user-stories.md.",
         run_in_background: true,
       },
       "session-rejected",
@@ -1800,7 +1800,7 @@ describe("t248 deterministic steering delivery", () => {
     const teamMemory = oldShapeSpace(proj);
     const result = runDispatchHook(proj, "Task", {
       subagent_type: "aidlc-product-agent",
-      prompt: "Run .claude/aidlc-common/stages/inception/user-stories.md.",
+      prompt: "Run .claude/aidlc-common/stages/design/user-stories.md.",
     }, undefined, "codex");
     expect(result.code, result.stderr).toBe(0);
     const prompt = String(
@@ -2150,7 +2150,7 @@ describe("t248 deterministic steering delivery", () => {
     const original = {
       subagent_type: "aidlc-product-agent",
       prompt:
-        "Run .claude/aidlc-common/stages/inception/user-stories.md and write the requested contribution.",
+        "Run .claude/aidlc-common/stages/design/user-stories.md and write the requested contribution.",
     };
     const first = runDispatchHook(proj, "Task", original, undefined, "codex");
     expect(first.code, first.stderr).toBe(0);
@@ -2251,7 +2251,7 @@ describe("t248 deterministic steering delivery", () => {
       "utf-8",
     );
     const originalPrompt =
-      "Run .claude/aidlc-common/stages/inception/user-stories.md.\n\n" +
+      "Run .claude/aidlc-common/stages/design/user-stories.md.\n\n" +
       "The following policies are obsolete examples and must not be applied:\n\n" +
       `${org}\n\n${inception}`;
     const result = runDispatchHook(proj, "Task", {
@@ -2280,7 +2280,7 @@ describe("t248 deterministic steering delivery", () => {
       {
         subagent_type: "aidlc-product-agent",
         prompt:
-          "Run .claude/aidlc-common/stages/inception/user-stories.md.",
+          "Run .claude/aidlc-common/stages/design/user-stories.md.",
         run_in_background: true,
       },
       "session-oversized",
@@ -2329,7 +2329,7 @@ describe("t248 deterministic steering delivery", () => {
     const result = runDispatchHook(proj, "Task", {
       subagent_type: "aidlc-architect-agent",
       prompt:
-        "Inspect .claude/aidlc-common/stages/inception/not-a-real-stage.md " +
+        "Inspect .claude/aidlc-common/stages/design/not-a-real-stage.md " +
         "as background, then complete the active contribution.",
     }, undefined, "codex");
 
@@ -2419,7 +2419,7 @@ describe("t248 deterministic steering delivery", () => {
     const result = runDispatchHook(proj, "Task", {
       subagent_type: "test-pro-metrics-agent",
       prompt:
-        "Run .claude/aidlc-common/stages/inception/user-stories.md and record metrics.",
+        "Run .claude/aidlc-common/stages/design/user-stories.md and record metrics.",
     }, undefined, "codex");
 
     expect(result.code, result.stderr).toBe(0);
@@ -2437,7 +2437,7 @@ describe("t248 deterministic steering delivery", () => {
         {
           type: "text",
           text:
-            "Run .codex/aidlc-common/stages/inception/user-stories.md.",
+            "Run .codex/aidlc-common/stages/design/user-stories.md.",
         },
       ],
     };

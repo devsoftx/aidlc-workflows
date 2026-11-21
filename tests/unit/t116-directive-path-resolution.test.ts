@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-orchestrate:next, stage:inception/domain-design
+// covers: subcommand:aidlc-orchestrate:next, stage:design/domain-design
 //
 // CLI-contract port of tests/unit/t116-directive-path-resolution.sh (TAP plan
 // 13), mechanism = cli. The .sh exercises the engine's run-stage directive
@@ -276,9 +276,9 @@ describe("t116 brownfield domain-design (migrated from t116-directive-path-resol
     // no-recorded-repos default).
     BF = emitFor("state-brownfield-feature.md", "domain-design", (proj) => {
       const rels = [
-        `${RP}/inception/requirements-analysis/requirements.md`,
-        `${RP}/inception/user-stories/stories.md`,
-        `${RP}/inception/practices-discovery/team-practices.md`,
+        `${RP}/design/requirements-analysis/requirements.md`,
+        `${RP}/design/user-stories/stories.md`,
+        `${RP}/design/practices-discovery/team-practices.md`,
         `aidlc/spaces/${DEFAULT_SPACE}/codekb/${basename(proj)}/architecture.md`,
         `aidlc/spaces/${DEFAULT_SPACE}/codekb/${basename(proj)}/component-inventory.md`,
       ];
@@ -292,26 +292,26 @@ describe("t116 brownfield domain-design (migrated from t116-directive-path-resol
 
   // .sh test 1: a bare produces name resolves to the canonical non-per-unit path.
   // STRONGER: assert the exact path is a member, not a substring of stdout.
-  test("1: brownfield produces 'components' → inception/domain-design/components.md", () => {
+  test("1: brownfield produces 'components' → design/domain-design/components.md", () => {
     expect(BF.produces).toContain(
-      `${RP}/inception/domain-design/components.md`,
+      `${RP}/design/domain-design/components.md`,
     );
   });
 
   // domain-design's produces (components + decisions) all resolve under its own dir.
-  test("2: brownfield produces resolve under the stage's own inception/domain-design/ dir", () => {
-    expect(BF.produces.every((p) => p.startsWith(`${RP}/inception/domain-design/`))).toBe(true);
+  test("2: brownfield produces resolve under the stage's own design/domain-design/ dir", () => {
+    expect(BF.produces.every((p) => p.startsWith(`${RP}/design/domain-design/`))).toBe(true);
   });
 
   // domain-design produces three artifacts: the consolidated component catalogue
-  // `components` → inception/domain-design/components.md, the retained ADR log
-  // `decisions` → inception/domain-design/decisions.md, and the traceability
-  // coverage table `traceability` → inception/domain-design/traceability.json.
+  // `components` → design/domain-design/components.md, the retained ADR log
+  // `decisions` → design/domain-design/decisions.md, and the traceability
+  // coverage table `traceability` → design/domain-design/traceability.json.
   test("3: brownfield resolves domain-design produces to components.md + decisions.md + traceability.json", () => {
     expect(BF.produces).toEqual([
-      `${RP}/inception/domain-design/components.md`,
-      `${RP}/inception/domain-design/decisions.md`,
-      `${RP}/inception/domain-design/traceability.json`,
+      `${RP}/design/domain-design/components.md`,
+      `${RP}/design/domain-design/decisions.md`,
+      `${RP}/design/domain-design/traceability.json`,
     ]);
     expect(BF.produces.length).toBe(3);
   });
@@ -329,7 +329,7 @@ describe("t116 brownfield domain-design (migrated from t116-directive-path-resol
     );
     expect(hit, `no codekb-resolved architecture.md in ${JSON.stringify(paths)}`).toBeDefined();
     // It must NOT carry the old record-dir RE tail.
-    expect(paths).not.toContain(`${RP}/inception/reverse-engineering/architecture.md`);
+    expect(paths).not.toContain(`${RP}/discover/reverse-engineering/architecture.md`);
   });
 
   // .sh test 5: the second conditional_on:brownfield consume 'component-inventory'
@@ -340,7 +340,7 @@ describe("t116 brownfield domain-design (migrated from t116-directive-path-resol
       (p) => p.startsWith(CODEKB_PREFIX) && p.endsWith("/component-inventory.md"),
     );
     expect(hit, `no codekb-resolved component-inventory.md in ${JSON.stringify(paths)}`).toBeDefined();
-    expect(paths).not.toContain(`${RP}/inception/reverse-engineering/component-inventory.md`);
+    expect(paths).not.toContain(`${RP}/discover/reverse-engineering/component-inventory.md`);
   });
 
   // .sh test 12: the NON-conditional required consume 'requirements' also resolves
@@ -348,7 +348,7 @@ describe("t116 brownfield domain-design (migrated from t116-directive-path-resol
   // every consume, not just the conditional ones.
   test("12: consume 'requirements' → requirements-analysis/requirements.md (producer-keyed, not conditional)", () => {
     expect(allConsumePaths(BF)).toContain(
-      `${RP}/inception/requirements-analysis/requirements.md`,
+      `${RP}/design/requirements-analysis/requirements.md`,
     );
   });
 
@@ -359,7 +359,7 @@ describe("t116 brownfield domain-design (migrated from t116-directive-path-resol
   // consume entry, not the raw joined string.
   test("13: no domain-design consume resolves under its own dir — each lives under its producer", () => {
     const selfKeyed = allConsumePaths(BF).filter((p) =>
-      p.startsWith(`${RP}/inception/domain-design/`),
+      p.startsWith(`${RP}/design/domain-design/`),
     );
     expect(selfKeyed).toEqual([]);
   });
@@ -392,7 +392,7 @@ describe("t116 greenfield domain-design — conditional_on drop", () => {
   // the filter only touches conditional_on consumes-entries, not produces.
   test("8: greenfield produces 'components' still resolves (filter is consumes-only)", () => {
     expect(GF.produces).toContain(
-      `${RP}/inception/domain-design/components.md`,
+      `${RP}/design/domain-design/components.md`,
     );
   });
 });
@@ -430,21 +430,21 @@ describe("t116 per-unit {unit-name} injection", () => {
   });
 
   // .sh test 9: functional-design (per-unit) resolves a produces name to the
-  // per-unit shape construction/{unit-name}/functional-design/<name>.md.
-  test("9: per-unit functional-design injects {unit-name}: construction/{unit-name}/functional-design/functional-spec.md", () => {
+  // per-unit shape design/{unit-name}/functional-design/<name>.md.
+  test("9: per-unit functional-design injects {unit-name}: design/{unit-name}/functional-design/functional-spec.md", () => {
     expect(FD.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
   });
 
   // .sh test 10: code-generation (per-unit) also resolves under
-  // construction/{unit-name}/code-generation/. STRONGER: assert at least one
+  // build/{unit-name}/code-generation/. STRONGER: assert at least one
   // produces path begins with the per-unit code-generation prefix (the .sh
   // grepped the joined string for the prefix).
-  test("10: per-unit code-generation resolves under construction/{unit-name}/code-generation/", () => {
+  test("10: per-unit code-generation resolves under build/{unit-name}/code-generation/", () => {
     expect(
       CG.produces.some((p) =>
-        p.startsWith(`${RP}/construction/{unit-name}/code-generation/`),
+        p.startsWith(`${RP}/build/{unit-name}/code-generation/`),
       ),
     ).toBe(true);
   });
@@ -462,11 +462,11 @@ describe("t116 per-unit {unit-name} injection", () => {
   // PR #711 finding (leandro #2 / apackeer #2): code-generation now DECLARES
   // `contract-summary` as an optional consume, so once the workflow-level
   // contract exists on disk the resolved directive must carry it — keyed under
-  // the PRODUCER's dir (inception/contract-design/), NOT a per-unit
+  // the PRODUCER's dir (design/contract-design/), NOT a per-unit
   // construction path. Seed the artifact so it lands in the PRESENT `consumes`
   // split (an absent optional whose producer is off this fixture's scope grid
   // is dropped by design — see test 14 — which is why presence is seeded here).
-  test("12: per-unit code-generation resolves contract-summary under inception/contract-design/", () => {
+  test("12: per-unit code-generation resolves contract-summary under design/contract-design/", () => {
     const { directive } = emitForWithProject(
       "state-construction.md",
       "code-generation",
@@ -483,7 +483,7 @@ describe("t116 per-unit {unit-name} injection", () => {
       },
     );
     expect(directive.consumes).toContain(
-      `${RP}/inception/contract-design/contract-summary.md`,
+      `${RP}/design/contract-design/contract-summary.md`,
     );
   });
 });
@@ -503,8 +503,8 @@ describe("t116 consumes presence split (consumes_absent)", () => {
   // present-optional → consumes, absent-required → consumes_absent, and
   // absent-optional → dropped from the directive entirely.
   test("14: present optional stays in consumes; absent required lands in consumes_absent; absent optional is dropped", () => {
-    const teamPracticesRel = `${RP}/inception/practices-discovery/team-practices.md`;
-    const reqRel = `${RP}/inception/requirements-analysis/requirements.md`;
+    const teamPracticesRel = `${RP}/design/practices-discovery/team-practices.md`;
+    const reqRel = `${RP}/design/requirements-analysis/requirements.md`;
     const dir = emitFor(
       "state-brownfield-feature.md",
       "domain-design",
@@ -536,7 +536,7 @@ describe("t116 consumes presence split (consumes_absent)", () => {
     expect(dir.consumes).toEqual([]);
     expect(dir.consumes_absent).toEqual([
       {
-        path: `${RP}/inception/requirements-analysis/requirements.md`,
+        path: `${RP}/design/requirements-analysis/requirements.md`,
         expected: false,
       },
     ]);
@@ -558,7 +558,7 @@ describe("t116 consumes presence split (consumes_absent)", () => {
     );
     expect(absentPlaceholder).toEqual([]);
     expect((dir.consumes_absent ?? []).map((e) => e.path)).toContain(
-      `${RP}/inception/requirements-analysis/requirements.md`,
+      `${RP}/design/requirements-analysis/requirements.md`,
     );
   });
 
@@ -570,9 +570,9 @@ describe("t116 consumes presence split (consumes_absent)", () => {
       (proj) => {
         rewriteIntentRepos(proj, repos);
         const regular = [
-          `${RP}/inception/requirements-analysis/requirements.md`,
-          `${RP}/inception/user-stories/stories.md`,
-          `${RP}/inception/practices-discovery/team-practices.md`,
+          `${RP}/design/requirements-analysis/requirements.md`,
+          `${RP}/design/user-stories/stories.md`,
+          `${RP}/design/practices-discovery/team-practices.md`,
         ];
         for (const rel of regular) {
           const abs = join(proj, ...rel.split("/"));

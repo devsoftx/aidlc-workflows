@@ -3,6 +3,7 @@
 // named chat, the person's turns through the human-turn hook, and the projects
 // each kind of ask is asked in. Each project builder pushes its folder on the
 // caller's list, which cleans it up.
+import { phaseFor } from "./stage-phase.ts";
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "./test-budget.ts";
 import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -103,7 +104,7 @@ export function inception(projects: string[]): string {
 
 // The stage's outputs and one READY review, as a real run records them.
 export function reviewedStage(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", `${STAGE}-questions.md`]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), `# ${name}\n`);
@@ -159,7 +160,7 @@ ${CONSTRUCTION.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] 
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "feature" }, p);
   for (const slug of CONSTRUCTION) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", "alpha", slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), "alpha", slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
     if (stage.workspace_requires) {
@@ -239,7 +240,7 @@ export function codeGeneration(projects: string[]): string {
   writeFileSync(seededStateFile(proj), state, "utf-8");
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "base.ts"), "export const base = true;\n", "utf-8");
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), "build", "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify for titles\n- Touches: src/slugify.ts\n" +

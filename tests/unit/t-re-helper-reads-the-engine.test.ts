@@ -1,4 +1,4 @@
-// covers: file:core/aidlc-common/stages/inception/reverse-engineering.md, file:core/knowledge/aidlc-developer-agent/re-artifacts.md
+// covers: file:core/aidlc-common/stages/discover/reverse-engineering.md, file:core/knowledge/aidlc-developer-agent/re-artifacts.md
 //
 // In live golden-bugfix runs on Claude Code the Reverse Engineering helper read AI-DLC's record by shell for three
 // facts the engine knows: which record and intent it works in (`cat aidlc/spaces/.../intents.json`, `active-intent`),

@@ -1,4 +1,4 @@
-// covers: stage:inception/reverse-engineering
+// covers: stage:discover/reverse-engineering
 //
 // t72-stage-reverse-engineering.test.ts — SDK-harness port of
 // tests/integration/t72-stage-reverse-engineering.sh (plan 15). Drives the real

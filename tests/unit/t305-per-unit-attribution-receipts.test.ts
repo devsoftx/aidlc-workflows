@@ -3859,12 +3859,12 @@ describe("t305 stage and protocol source-attribution requirements", () => {
     expect(stage).toContain("never dispatch the reviewer before the Step 5 files exist");
     // The manifest is a Unit-only Step 5 file (readUnitSourceManifest needs a
     // Unit); zero-Unit Step 5 files are the stage-level summary and traceability.
-    expect(stage).not.toContain("Create `<record>/construction/{unit-name}/code-generation/source-manifest.json`");
+    expect(stage).not.toContain("Create `<record>/build/{unit-name}/code-generation/source-manifest.json`");
     expect(stage).toContain("For a Unit (`directive.unit` present), write `source-manifest.json` in Step 5, before the review");
-    expect(stage).toContain("For a Unit (`directive.unit` present), create\n`<record>/construction/<directive.unit>/code-generation/source-manifest.json`");
+    expect(stage).toContain("For a Unit (`directive.unit` present), create\n`<record>/build/<directive.unit>/code-generation/source-manifest.json`");
     expect(stage).toContain("Zero-Unit work writes no `source-manifest.json`");
     expect(stage).toContain("A zero-Unit directive (`directive.unit` absent) writes no\n`source-manifest.json`");
-    expect(stage).toContain("Its Step 5 files are\n`<record>/construction/code-generation/code-summary.md` and\n`<record>/construction/code-generation/traceability.json`.");
+    expect(stage).toContain("Its Step 5 files are\n`<record>/build/code-generation/code-summary.md` and\n`<record>/build/code-generation/traceability.json`.");
     const step3=stage.indexOf("### Step 3: Plan Approval"); const step5=stage.indexOf("### Step 5:"); const step6=stage.indexOf("### Step 6:"); const step7=stage.indexOf("### Step 7:");
     const review=stage.indexOf("When `directive.protocol_modules` lists `reviewer`, run the review now");
     expect(step3).toBeGreaterThan(0); expect(step5).toBeGreaterThan(step3); expect(step6).toBeGreaterThan(step5);

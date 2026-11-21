@@ -26,7 +26,7 @@ const INCEPTION_BLOCK = "### INCEPTION PHASE\n" +
   "- [x] delivery-planning — EXECUTE\n\n";
 
 export function unitsGenerationDir(checkout: string): string {
-  return join(seededRecordDir(checkout), "inception", "units-generation");
+  return join(seededRecordDir(checkout), "design", "units-generation");
 }
 
 export function dagBody(units: PlannedUnit[]): string {
@@ -145,7 +145,7 @@ export function approveUnitsGeneration(main: string): Record<string, unknown> {
 
 /** Delivery Planning (no reviewer) written and approved. */
 export function approveDeliveryPlanning(main: string): Record<string, unknown> {
-  const dir = join(seededRecordDir(main), "inception", "delivery-planning");
+  const dir = join(seededRecordDir(main), "design", "delivery-planning");
   mkdirSync(dir, { recursive: true });
   for (const name of [
     "bolt-plan.md",

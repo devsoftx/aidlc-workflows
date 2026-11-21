@@ -23,7 +23,7 @@
 **Fire id**: fire0001
 **Sensor ID**: required-sections
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 
 ---
 
@@ -33,7 +33,7 @@
 **Fire id**: fire0002
 **Sensor ID**: upstream-coverage
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 
 ---
 
@@ -43,7 +43,7 @@
 **Fire id**: fire0003
 **Sensor ID**: linter
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 
 ---
 
@@ -53,7 +53,7 @@
 **Fire id**: fire0004
 **Sensor ID**: type-check
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 
 ---
 
@@ -63,7 +63,7 @@
 **Fire id**: fire0003
 **Sensor ID**: linter
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 **Duration ms**: 200
 
 ---
@@ -74,7 +74,7 @@
 **Fire id**: fire0001
 **Sensor ID**: required-sections
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 **Duration ms**: 1500
 
 ---
@@ -85,7 +85,7 @@
 **Fire id**: fire0002
 **Sensor ID**: upstream-coverage
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 **Detail path**: aidlc-docs/.aidlc-sensors/code-generation/upstream-coverage-fire0002.md
 **Findings count**: 1
 
@@ -97,7 +97,7 @@
 **Fire id**: fire0004
 **Sensor ID**: type-check
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/construction/code-generation/output.md
+**Output path**: aidlc-docs/build/code-generation/output.md
 **Duration ms**: 4000
 
 ---

@@ -1346,7 +1346,7 @@ describe("t342 Construction checkpoint routing", () => {
     const root = join(import.meta.dir, "..", "..");
     const files = [
       "core/aidlc-common/protocols/stage-protocol-construction.md",
-      "core/aidlc-common/stages/inception/delivery-planning.md",
+      "core/aidlc-common/stages/design/delivery-planning.md",
       "docs/guide/12-cli-commands.md",
       "docs/guide/facilitator-guide.md",
       "docs/guide/07-interaction-modes.md",
@@ -3578,7 +3578,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     buildReviewed(p, "alpha", undefined, true);
     approve(p, "alpha");
     const redo = tool(p, "state", [
-      "reuse-artifact", "nfr-requirements", "--decision", "redo", "--artifacts", "construction/beta/nfr-requirements/x.md",
+      "reuse-artifact", "nfr-requirements", "--decision", "redo", "--artifacts", "design/beta/nfr-requirements/x.md",
     ]);
     expect(redo.status, redo.out).toBe(0);
     const checkpoint = redoAlphaDocument(p, false);

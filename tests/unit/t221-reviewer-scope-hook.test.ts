@@ -64,8 +64,8 @@ const CURRENT_UNIT_CONTEXT: ScopeContext = {
 const DISPATCH: Pick<ReviewerDispatch, "unit" | "exempt"> = {
   unit: "U03-scoring",
   exempt: [
-    "aidlc/spaces/default/intents/x/inception/domain-design/components.md",
-    "aidlc/spaces/default/intents/x/construction/U01-infra/functional-design/design.md",
+    "aidlc/spaces/default/intents/x/design/domain-design/components.md",
+    "aidlc/spaces/default/intents/x/design/U01-infra/functional-design/design.md",
   ],
 };
 
@@ -82,37 +82,37 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "sibling unit Read blocked",
       tool: "Read",
-      input: { file_path: "construction/U01-infra/functional-design/design2.md" },
+      input: { file_path: "design/U01-infra/functional-design/design2.md" },
       block: true,
     },
     {
       name: "current-unit Read allowed",
       tool: "Read",
-      input: { file_path: "construction/U03-scoring/nfr-requirements/nfr.md" },
+      input: { file_path: "design/U03-scoring/nfr-requirements/nfr.md" },
       block: false,
     },
     {
       name: "exempt contract path allowed (named integration point, exact file)",
       tool: "Read",
-      input: { file_path: "aidlc/spaces/default/intents/x/construction/U01-infra/functional-design/design.md" },
+      input: { file_path: "aidlc/spaces/default/intents/x/design/U01-infra/functional-design/design.md" },
       block: false,
     },
     {
       name: "shared inception contract allowed (no construction/ component)",
       tool: "Read",
-      input: { file_path: "aidlc/spaces/default/intents/x/inception/domain-design/components.md" },
+      input: { file_path: "aidlc/spaces/default/intents/x/design/domain-design/components.md" },
       block: false,
     },
     {
       name: "sibling Edit blocked (reviewer only appends to the current unit's artifact)",
       tool: "Edit",
-      input: { file_path: "construction/U05-api/functional-design/design.md" },
+      input: { file_path: "design/U05-api/functional-design/design.md" },
       block: true,
     },
     {
       name: "current-unit Write allowed",
       tool: "Write",
-      input: { file_path: "construction/U03-scoring/nfr-requirements/nfr.md" },
+      input: { file_path: "design/U03-scoring/nfr-requirements/nfr.md" },
       block: false,
     },
     {
@@ -124,7 +124,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "sibling MultiEdit blocked",
       tool: "MultiEdit",
-      input: { file_path: "construction/U05-api/functional-design/design.md" },
+      input: { file_path: "design/U05-api/functional-design/design.md" },
       block: true,
     },
     {
@@ -149,7 +149,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "named-sibling grep in Bash blocked",
       tool: "Bash",
-      input: { command: "grep -rn 'ml\\.' construction/U01-infra/nfr-requirements/nfr.md" },
+      input: { command: "grep -rn 'ml\\.' design/U01-infra/nfr-requirements/nfr.md" },
       block: true,
     },
     {
@@ -167,13 +167,13 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "exempt file via Bash cat allowed",
       tool: "Bash",
-      input: { command: "cat aidlc/spaces/default/intents/x/construction/U01-infra/functional-design/design.md" },
+      input: { command: "cat aidlc/spaces/default/intents/x/design/U01-infra/functional-design/design.md" },
       block: false,
     },
     {
       name: "listing the exempt file's parent dir still blocked (exact-file exemption)",
       tool: "Bash",
-      input: { command: "ls construction/U01-infra/functional-design/" },
+      input: { command: "ls design/U01-infra/functional-design/" },
       block: true,
     },
     {
@@ -268,7 +268,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "Glob pattern spanning siblings blocked",
       tool: "Glob",
-      input: { pattern: "construction/*/functional-design/*.md" },
+      input: { pattern: "design/*/functional-design/*.md" },
       block: true,
     },
     {

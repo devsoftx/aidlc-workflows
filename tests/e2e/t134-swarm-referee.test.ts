@@ -901,7 +901,7 @@ describe("t134 swarm referee — prepare/check/finalize (migrated from t134-swar
     writeFileSync(entities, "old entities\n");
     writeFileSync(rules, "old rules\n");
     const failPath =
-      `construction/${unit}/functional-design/${artifactFilename("rules")}`;
+      `design/${unit}/functional-design/${artifactFilename("rules")}`;
     const refused = runRef(
       proj,
       [

@@ -1,4 +1,4 @@
-// covers: stage:inception/requirements-analysis
+// covers: stage:design/requirements-analysis
 //
 // t-tui-t74-requirements-analysis.serial.test.ts - drive the
 // requirements-analysis Inception stage through a REAL claude TUI and prove the

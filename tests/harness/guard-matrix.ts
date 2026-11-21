@@ -258,7 +258,7 @@ export function updateEngine(proj: string): void {
   const bumped = text.replace(/AIDLC_VERSION = "(\d+)\.(\d+)\.(\d+)"/, (_, a, b) => `AIDLC_VERSION = "${a}.${Number(b) + 1}.0"`);
   if (bumped === text) throw new Error(`no version to bump in ${version}`);
   writeFileSync(version, bumped);
-  for (const stage of ["construction/code-generation.md", "construction/build-and-test.md"]) {
+  for (const stage of ["build/code-generation.md", "test/build-and-test.md"]) {
     appendFileSync(join(proj, ".claude", "aidlc-common", "stages", stage), "\n<!-- updated wording -->\n");
   }
 }
@@ -336,10 +336,10 @@ the work into Units, builds each Unit and runs Build and Test. Nothing else runs
 }
 
 const PLUGIN_STAGES: Record<string, string> = {
-  "requirements-analysis": "inception",
-  "units-generation": "inception",
-  "code-generation": "construction",
-  "build-and-test": "construction",
+  "requirements-analysis": "design",
+  "units-generation": "design",
+  "code-generation": "build",
+  "build-and-test": "test",
 };
 
 /**

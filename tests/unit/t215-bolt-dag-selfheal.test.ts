@@ -427,7 +427,7 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.stage).toBe("functional-design");
     expect(r.directive.unit).toBe("alpha");
     expect(r.directive.produces).toContain(
-      `${RP}/construction/alpha/functional-design/functional-spec.md`,
+      `${RP}/design/alpha/functional-design/functional-spec.md`,
     );
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -449,7 +449,7 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.stage).toBe("functional-design");
     expect(r.directive.unit).toBeUndefined();
     expect(r.directive.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -610,7 +610,7 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.kind).toBe("run-stage");
     expect(r.directive.unit).toBeUndefined();
     expect(r.directive.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);

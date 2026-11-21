@@ -1,4 +1,4 @@
-// covers: stage:inception/user-stories, subcommand:aidlc-orchestrate:report
+// covers: stage:design/user-stories, subcommand:aidlc-orchestrate:report
 //
 // t238 - live Claude SDK coverage for the user-stories mob topology.
 //

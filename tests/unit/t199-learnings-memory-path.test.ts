@@ -159,7 +159,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     expect(row).toBeDefined();
     // The row's memory_path carries the active intent's record dir, not the bare
     // space prefix - so join(projectDir, memory_path) points at the real diary.
-    expect(row.memory_path).toBe(`${RP}/inception/user-stories/memory.md`);
+    expect(row.memory_path).toBe(`${RP}/design/user-stories/memory.md`);
   }, TIMEOUT);
 
   // ===========================================================================
@@ -227,7 +227,7 @@ describe("t199 per-intent memory path (write + read)", () => {
         stages: [{
           stage_slug: "user-stories",
           memory_path:
-            `aidlc/spaces/${DEFAULT_SPACE}/intents/${other.dirName}/inception/user-stories/memory.md`,
+            `aidlc/spaces/${DEFAULT_SPACE}/intents/${other.dirName}/design/user-stories/memory.md`,
         }],
       }),
     );
@@ -278,7 +278,7 @@ describe("t199 per-intent memory path (write + read)", () => {
         stages: [
           {
             stage_slug: "user-stories",
-            memory_path: "aidlc-docs/inception/user-stories/memory.md",
+            memory_path: "aidlc-docs/design/user-stories/memory.md",
           },
         ],
       }),
@@ -336,7 +336,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     const pd = mkWorkspaceProject();
     // A diary only at the path compile records: the recompute finds it, so the
     // two paths are the same string.
-    const recomputed = `${RP}/inception/user-stories/memory.md`;
+    const recomputed = `${RP}/design/user-stories/memory.md`;
     mkdirSync(dirname(join(pd, recomputed)), { recursive: true });
     writeFileSync(join(pd, recomputed), memoryDiary());
     const s = spawnSync(

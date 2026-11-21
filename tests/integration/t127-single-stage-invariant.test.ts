@@ -1138,8 +1138,8 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
   }
 
   const MARKET = {
-    "ideation/market-research/competitive-analysis.md": "# Competitive Analysis\n\nAPPROVED\n",
-    "ideation/market-research/market-research-questions.md": "# Questions\n\nQ1 answered: A\n",
+    "discover/market-research/competitive-analysis.md": "# Competitive Analysis\n\nAPPROVED\n",
+    "discover/market-research/market-research-questions.md": "# Questions\n\nQ1 answered: A\n",
   };
 
   test("an approved stage's files are copied at the start, and one line names the copy", () => {
@@ -1182,13 +1182,13 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
     writeFiles(proj, MARKET);
     single(proj, "market-research");
     // The set-aside attempt had already written over the stage's files.
-    writeFiles(proj, { "ideation/market-research/competitive-analysis.md": "# Competitive Analysis\n\nHALF REDONE\n" });
+    writeFiles(proj, { "discover/market-research/competitive-analysis.md": "# Competitive Analysis\n\nHALF REDONE\n" });
     const over = single(proj, "market-research", ["--depth", "minimal"]).step;
     expect(over.depth).toBe("Minimal");
     expect(over.change_notices?.join("\n")).toContain("starts over with the settings you gave");
     const kept = copies(proj, "market-research");
     expect(kept).toHaveLength(1);
-    expect(readFileSync(join(kept[0], "competitive-analysis.md"), "utf-8")).toBe(MARKET["ideation/market-research/competitive-analysis.md"]);
+    expect(readFileSync(join(kept[0], "competitive-analysis.md"), "utf-8")).toBe(MARKET["discover/market-research/competitive-analysis.md"]);
     expect(over.change_notices).toContain(`${keepsLine("Market Research")}${projectPath(proj, kept[0])}/.`);
     expect(latestStart(proj, "market-research")).toContain("**Depth**: Minimal");
     expect(latestStart(proj, "market-research")).toContain(`**Kept Copy**: ${projectPath(proj, kept[0])}`);
@@ -1198,8 +1198,8 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
     // functional-design is [x] for widget-cart and [-] for widget-checkout.
     const proj = workProject("state-construction.md");
     writeFiles(proj, {
-      "construction/widget-cart/functional-design/entities.md": "# Entities\n\nCART APPROVED\n",
-      "construction/widget-checkout/functional-design/entities.md": "# Entities\n\nCHECKOUT IN PROGRESS\n",
+      "design/widget-cart/functional-design/entities.md": "# Entities\n\nCART APPROVED\n",
+      "design/widget-checkout/functional-design/entities.md": "# Entities\n\nCHECKOUT IN PROGRESS\n",
     });
     const { step } = single(proj, "functional-design");
     expect(step.kind, JSON.stringify(step)).toBe("run-stage");
@@ -1240,7 +1240,7 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
     const proj = workProject();
     writeFiles(proj, MARKET);
     single(proj, "market-research");
-    writeFiles(proj, { "ideation/market-research/competitive-analysis.md": "# Competitive Analysis\n\nREDONE\n" });
+    writeFiles(proj, { "discover/market-research/competitive-analysis.md": "# Competitive Analysis\n\nREDONE\n" });
     appendAuditEntry("STAGE_COMPLETED", {
       Stage: "market-research",
       Details: "Single-stage run of market-research completed",
@@ -1250,7 +1250,7 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
     const kept = copies(proj, "market-research").sort();
     expect(kept).toHaveLength(2);
     const bodies = kept.map((dir) => readFileSync(join(dir, "competitive-analysis.md"), "utf-8"));
-    expect(bodies).toContain(MARKET["ideation/market-research/competitive-analysis.md"]);
+    expect(bodies).toContain(MARKET["discover/market-research/competitive-analysis.md"]);
     expect(bodies).toContain("# Competitive Analysis\n\nREDONE\n");
     const named = kept.find((dir) => readFileSync(join(dir, "competitive-analysis.md"), "utf-8").includes("REDONE"))!;
     expect(second.change_notices).toContain(`${keepsLine("Market Research")}${projectPath(proj, named)}/.`);
@@ -1272,7 +1272,7 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
     expect(resumed.kind, JSON.stringify(resumed)).toBe("run-stage");
     const kept = copies(proj, "market-research");
     expect(kept).toHaveLength(1);
-    expect(readFileSync(join(kept[0], "competitive-analysis.md"), "utf-8")).toBe(MARKET["ideation/market-research/competitive-analysis.md"]);
+    expect(readFileSync(join(kept[0], "competitive-analysis.md"), "utf-8")).toBe(MARKET["discover/market-research/competitive-analysis.md"]);
     expect(resumed.change_notices).toContain(`${keepsLine("Market Research")}${projectPath(proj, kept[0])}/.`);
     // The same attempt goes on: no new start, so its receipts still count.
     expect(latestStart(proj, "market-research")).toBe(started);
@@ -1286,7 +1286,7 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
     single(proj, "market-research");
     expect(latestStart(proj, "market-research")).toContain("**Kept Copy**: none");
     // The run's own first files are not the work's earlier ones.
-    writeFiles(proj, { "ideation/market-research/competitive-analysis.md": "# Competitive Analysis\n\nDRAFT\n" });
+    writeFiles(proj, { "discover/market-research/competitive-analysis.md": "# Competitive Analysis\n\nDRAFT\n" });
     const again = single(proj, "market-research").step;
     expect(existsSync(join(seededRecordDir(proj), "archive"))).toBe(false);
     expect((again.change_notices ?? []).join("\n")).not.toContain("This run writes its documents");

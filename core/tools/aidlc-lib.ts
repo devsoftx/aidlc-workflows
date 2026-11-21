@@ -1,3 +1,4 @@
+import { isUnitLoopStage, PHASE_LABELS, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
 import { lockFolderHeldGiveUpMs, lockFolderHeldLine } from "./aidlc-lock-line.ts";
 import { committedTextBytes, committedTextParts, reviewManifestForms } from "./aidlc-review-manifest.ts";
@@ -712,47 +713,8 @@ export const PHASES = [
 
 export type Phase = (typeof PHASES)[number];
 
-// Display label for a phase in the state file and on screen. One source, so
-// no caller keeps its own copy of the names.
-export const PHASE_LABELS: Record<Phase, string> = {
-  initialization: "INITIALIZATION",
-  discover: "DISCOVER",
-  design: "DESIGN",
-  build: "BUILD",
-  test: "TEST",
-  secure: "SECURE",
-  deploy: "DEPLOY",
-  operate: "OPERATE",
-};
+export { isUnitLoopStage, PHASE_LABELS, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 
-// The unit loop (per-unit stages, unit checkpoints, autonomy gating) belongs to
-// stages that run once per unit of work, not to one phase. Those stages sit in
-// the design and build phases. Code asks this predicate, never the phase name.
-export function isUnitLoopStage(node: { for_each?: string | null } | null | undefined): boolean {
-  return node?.for_each === "unit-of-work";
-}
-
-// Record folders holding per-unit work: <record>/<phase>/<unit>/<stage>.
-export const UNIT_RECORD_PHASES: readonly Phase[] = ["design", "build"];
-
-// The Unit folders of a record: each per-unit phase's directories, less the stage
-// folders that sit beside them, so a stage folder is never read as a Unit.
-function recordUnitNames(record: string): string[] {
-  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
-  const names = new Set<string>();
-  for (const phase of UNIT_RECORD_PHASES) {
-    let entries: Dirent[];
-    try {
-      entries = readdirSync(join(record, phase), { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory() && !stageSlugs.has(entry.name)) names.add(entry.name);
-    }
-  }
-  return [...names].sort();
-}
 
 export const PHASE_NUMBERS: Record<string, Phase> = {
   "0": "initialization",
@@ -13786,7 +13748,7 @@ function summaryQuestionFiles(
 
   const files: SummaryQuestionFile[] = [];
   try {
-    for (const unit of recordUnitNames(rec)) {
+    for (const unit of (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(rec)) {
       files.push(
         ...questionFilesInDir(
           join(rec, stage.phase, unit, stage.slug),
@@ -16452,7 +16414,7 @@ export function reviewArtifactEntries(
       join(record, stage.phase, stage.slug, artifactFilename(artifact.name)),
     )
   );
-  const discoveredUnits = recordUnitNames(record).filter((name) => {
+  const discoveredUnits = (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record).filter((name) => {
     try {
       return (
         statSync(join(record, stage.phase, name)).isDirectory() &&
@@ -18772,7 +18734,7 @@ function hasDurableSourceBindingEvidence(
     };
     if (hasSnapshot(snapshots)) return true;
     if (
-      recordUnitNames(record).some((unit) =>
+      (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record).some((unit) =>
         existsSync(
           join(
             record,
@@ -26662,7 +26624,7 @@ export function otherOpenWorkClaims(
       const repos = { recordedRepos: Array.isArray(row?.repos) ? row.repos : [] };
       const claims: SourceClaimModel = { claims: new Set(), prefixes: [] };
       const paths = new Set<string>();
-      for (const unit of recordUnitNames(record)) {
+      for (const unit of (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record)) {
         if (validateUnitName(unit) !== null) continue;
         let raw: Buffer;
         try {
@@ -27693,7 +27655,7 @@ function withRepoBaselineAdditions(
     const claimed: SourceClaimModel[] = [];
     if (left !== null) {
       const record = recordDir(projectDir);
-      const units = record === null ? [] : recordUnitNames(record);
+      const units = record === null ? [] : (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record);
       for (const unit of units) {
         const manifest = readUnitSourceManifest(projectDir, "code-generation", unit);
         if (manifest.ok) claimed.push(manifest);
@@ -31310,7 +31272,7 @@ export function isAutonomousSwarmStage(
   const scope = stateContent ? getField(stateContent, "Scope") : null;
   if (!scope) return false;
   if (usesStageLevelPerUnitArtifacts(scope, stateContent)) return false;
-  const first = firstPlannedUnitLoopStage(scope, stateContent);
+  const first = (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).firstPlannedUnitLoopStage(scope, stateContent);
   const checkpoints = getField(stateContent!, "Construction Checkpoints") === "enabled";
   if (first !== null && first.slug === stage.slug && !checkpoints) return false;
   if (checkpoints && constructionSkeletonOn(stateContent!)) {
@@ -38409,7 +38371,7 @@ const STARTED_STATES: ReadonlySet<string> = new Set(["in-progress", "awaiting-ap
 export function constructionHasStarted(content: string, workRecordDir?: string | null): boolean {
   // Per-Unit output in the record means this work has built: a jump back
   // resets its stages, but the code in the folder is still its own.
-  const holdsUnitWork = (record: string): boolean => recordUnitNames(record).some((unit) =>
+  const holdsUnitWork = (record: string): boolean => (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record).some((unit) =>
     UNIT_RECORD_PHASES.some((phase) => holdsAnyFile(join(record, phase, unit))));
   if (workRecordDir && holdsUnitWork(workRecordDir)) return true;
   const states = new Map(parseCheckboxes(content).map((c) => [c.slug, c.state]));
@@ -38753,43 +38715,13 @@ export function approvesTogetherFields(stages: readonly string[]): Record<string
   return stages.length >= 2 ? { [APPROVES_TOGETHER_FIELD]: stages.join(", ") } : {};
 }
 
-// The first stage that `matches`. With no state, or a state whose plan is not
-// composed for one piece of work, that is the first match on the scope's path.
-// A plan composed for one piece of work (its state carries a Plan line) is
-// defined by its state file's EXECUTE/SKIP suffixes, so it anchors on its own
-// first stage. Recompose refuses to move the unit-loop anchor, so the scope
-// grid stays the answer for every other workflow.
-function firstStageWhere(
-  scope: string,
-  stateContent: string | null | undefined,
-  matches: (stage: StageEntry) => boolean,
-): StageEntry | null {
-  const mapping = loadScopeMapping()[scope];
-  if (!mapping) return null;
-  if (!stateContent || getField(stateContent, PLAN_FIELD) === null) {
-    // Lazy require to avoid circular import (aidlc-graph imports from us).
-    // Type-only import at top of file pins the signature.
-    const { subgraphForScope } = require("./aidlc-graph.ts") as {
-      subgraphForScope: typeof SubgraphForScope;
-    };
-    for (const stage of subgraphForScope(scope)) {
-      if (matches(stage)) return stage;
-    }
-    return null;
-  }
-  const suffixes = parseStateStageSuffixes(stateContent);
-  return loadStageGraph().find((stage) =>
-    matches(stage) &&
-    (suffixes.get(stage.slug) ?? mapping.stages[stage.slug]) === "EXECUTE"
-  ) ?? null;
-}
 
 export function firstInScopeStageOfPhase(
   phase: string,
   scope: string
 ): StageEntry | null {
   const phaseLower = phase.toLowerCase();
-  return firstStageWhere(scope, null, (stage) => stage.phase === phaseLower);
+  return (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).firstStageWhere(scope, null, (stage) => stage.phase === phaseLower);
 }
 
 export function firstPlannedStageOfPhase(
@@ -38798,17 +38730,9 @@ export function firstPlannedStageOfPhase(
   stateContent?: string | null,
 ): StageEntry | null {
   const phaseLower = phase.toLowerCase();
-  return firstStageWhere(scope, stateContent, (stage) => stage.phase === phaseLower);
+  return (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).firstStageWhere(scope, stateContent, (stage) => stage.phase === phaseLower);
 }
 
-// The first unit-loop stage the workflow's approved plan runs, in whichever phase
-// it sits.
-export function firstPlannedUnitLoopStage(
-  scope: string,
-  stateContent?: string | null,
-): StageEntry | null {
-  return firstStageWhere(scope, stateContent, (stage) => isUnitLoopStage(stage));
-}
 
 export function stagesInScope(
   scope: string

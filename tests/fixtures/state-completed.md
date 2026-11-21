@@ -12,8 +12,8 @@
 - **Practices Affirmed Timestamp**:
 
 ## Scope Configuration
-- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
-- **Stages to Skip**: none
+- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 3.1, 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3
+- **Stages to Skip**: 5.3
 - **Depth**: Standard
 - **Test Strategy**: Standard
 - **Change Control**: strict (from scope feature)
@@ -25,21 +25,25 @@
 - **Build System**: npm, poetry
 
 ## Execution Plan Summary
-- **Total Stages**: 32
-- **Completed**: 32
+- **Total Stages**: 35
+- **Completed**: 33
 - **In Progress**: none
 
 ## Runtime State
 - **Revision Count**: 0
 
 ## Phase Progress
+
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
 - **Initialization**: Verified
-- **Ideation**: Verified
-- **Inception**: Verified
-- **Construction**: Verified
-- **Operation**: Verified
+- **Discover**: Verified
+- **Design**: Verified
+- **Build**: Verified
+- **Test**: Verified
+- **Secure**: Pending
+- **Deploy**: Verified
+- **Operate**: Verified
 
 ## Stage Progress
 
@@ -48,17 +52,17 @@
 - [x] workspace-detection — EXECUTE
 - [x] state-init — EXECUTE
 
-### IDEATION PHASE
+### DISCOVER PHASE
 - [x] intent-capture — EXECUTE
 - [x] market-research — EXECUTE
 - [x] feasibility — EXECUTE
+- [x] reverse-engineering — EXECUTE
 - [x] scope-definition — EXECUTE
 - [x] team-formation — EXECUTE
 - [x] rough-mockups — EXECUTE
 - [x] approval-handoff — EXECUTE
 
-### INCEPTION PHASE
-- [x] reverse-engineering — EXECUTE
+### DESIGN PHASE
 - [x] practices-discovery — EXECUTE
 - [x] requirements-analysis — EXECUTE
 - [x] user-stories — EXECUTE
@@ -67,28 +71,38 @@
 - [x] units-generation — EXECUTE
 - [x] contract-design — EXECUTE
 - [x] delivery-planning — EXECUTE
-
-### CONSTRUCTION PHASE
 Per unit: [unit-name]
+
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
-- [x] code-generation — EXECUTE
-- [x] build-and-test — EXECUTE
-- [x] ci-pipeline — EXECUTE
 
-### OPERATION PHASE
+### BUILD PHASE
+- [x] code-generation — EXECUTE
+
+### TEST PHASE
+- [x] build-and-test — EXECUTE
+- [x] performance-validation — EXECUTE
+
+### SECURE PHASE
+- [ ] code-review — EXECUTE
+- [ ] security-review — EXECUTE
+- [S] conformance-review — SKIP (feature scope)
+
+### DEPLOY PHASE
+- [x] ci-pipeline — EXECUTE
 - [x] deployment-pipeline — EXECUTE
 - [x] environment-provisioning — EXECUTE
 - [x] deployment-execution — EXECUTE
+
+### OPERATE PHASE
 - [x] observability-setup — EXECUTE
 - [x] incident-response — EXECUTE
-- [x] performance-validation — EXECUTE
 - [x] feedback-optimization — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: OPERATION
+- **Lifecycle Phase**: OPERATE
 - **Current Stage**: feedback-optimization
 - **Next Stage**: none
 - **Status**: Completed

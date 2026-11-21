@@ -91,7 +91,7 @@ function seedProject(root: string): void {
       stages: [
         {
           stage_slug: "user-stories",
-          memory_path: "aidlc-docs/inception/user-stories/memory.md",
+          memory_path: "aidlc-docs/design/user-stories/memory.md",
         },
       ],
     }),

@@ -200,25 +200,28 @@ function normalizedCompsFolded(p: string): string[] {
   return normalizedComps(p).map(fold);
 }
 
-function globComponentMatchesConstruction(component: string): boolean {
-  const c = fold(component);
-  if (c === "construction") return true;
-  if (!WILDCARD_RE.test(c)) return false;
-  if (c.replace(/[*?[\]{}!,]/g, "").length === 0) return false;
+function globComponentMatchesPhase(component: string, phase: string): boolean {
+  if (!WILDCARD_RE.test(component)) return false;
+  if (component.replace(/[*?[\]{}!,]/g, "").length === 0) return false;
   let re = "^";
-  for (let i = 0; i < c.length; i++) {
-    const ch = c[i];
+  for (let i = 0; i < component.length; i++) {
+    const ch = component[i];
     if (ch === "*") re += ".*";
     else if (ch === "?") re += ".";
     else re += ch.replace(/[\\^$+?.()|[\]{}]/g, "\\$&");
   }
   re += "$";
-  return new RegExp(re).test("construction");
+  return new RegExp(re).test(phase);
 }
 
-function constructionIndex(comps: string[], allowGlob = false): number {
-  return comps.findIndex((c) =>
-    fold(c) === "construction" || (allowGlob && globComponentMatchesConstruction(c))
+// Whether comps[i] is a unit-phase folder (design/ or build/) directly under a
+// record's intents/<record>/ folder. The phase names alone are too common in
+// project paths to mark a unit area; the intents anchor is what makes one.
+function unitPhaseAt(comps: string[], i: number, allowGlob: boolean): boolean {
+  if (i < 2 || fold(comps[i - 2]) !== "intents") return false;
+  const c = fold(comps[i]);
+  return UNIT_RECORD_PHASES.some(
+    (phase) => c === phase || (allowGlob && globComponentMatchesPhase(c, phase)),
   );
 }
 
@@ -226,12 +229,13 @@ function canonicalSuffix(comps: string[]): string {
   return comps.map(fold).join("/");
 }
 
-// The construction/-suffix of an exempt entry, component-normalized, or null
-// when the entry never enters construction/ (those entries are irrelevant to
-// the matcher - non-construction paths are always allowed).
+// The unit-phase suffix (design/<unit>/... or build/<unit>/...) of an exempt
+// entry, component-normalized, or null when the entry never enters a unit
+// phase folder (those entries are irrelevant to the matcher - other paths are
+// always allowed).
 function exemptSuffixOf(entry: string): string | null {
   const comps = normalizedComps(entry);
-  const i = constructionIndex(comps);
+  const i = comps.findIndex((_, k) => unitPhaseAt(comps, k, false));
   if (i === -1) return null;
   return canonicalSuffix(comps.slice(i));
 }
@@ -244,8 +248,8 @@ function isStageFolder(name: string | undefined): boolean {
   return loadStageGraphAll().some((stage) => stage.slug === folded);
 }
 
-// Judge one per-unit occurrence (a construction/ component, or a resolved
-// design/ or build/ folder): the first path segment after it decides.
+// Judge one per-unit occurrence (a design/ or build/ folder under intents/<record>/,
+// or a resolved unit-phase folder): the first path segment after it decides.
 // Current unit -> allow; wildcard or missing (a sweep root) -> block; a
 // concrete sibling -> allow only on an exact exempt-suffix match (the single
 // owning file of a named integration point), else block. Exactness is
@@ -347,7 +351,7 @@ function markDefaulted(v: ScopeVerdict | null): ScopeVerdict | null {
 function judgeLexicalPath(text: string, scope: PreparedScope): ScopeVerdict | null {
   const comps = normalizedComps(text);
   for (let i = 0; i < comps.length; i++) {
-    if (constructionIndex([comps[i]], true) !== 0) continue;
+    if (!unitPhaseAt(comps, i, true)) continue;
     if (judgeOccurrence(comps.slice(i), scope.unitFolded, scope.exemptSuffixes)) {
       return verdict(text);
     }
@@ -395,10 +399,10 @@ function judgePathAccess(
 
 function patternLimitsToCurrentUnit(text: string, scope: PreparedScope): boolean {
   const comps = normalizedComps(text);
-  let sawConstruction = false;
+  let sawUnitPhase = false;
   for (let i = 0; i < comps.length; i++) {
-    if (constructionIndex([comps[i]], true) !== 0) continue;
-    sawConstruction = true;
+    if (!unitPhaseAt(comps, i, true)) continue;
+    sawUnitPhase = true;
     const suffix = comps.slice(i);
     const seg = suffix[1];
     if (seg === undefined || WILDCARD_RE.test(seg)) return false;
@@ -406,7 +410,7 @@ function patternLimitsToCurrentUnit(text: string, scope: PreparedScope): boolean
       return false;
     }
   }
-  return sawConstruction;
+  return sawUnitPhase;
 }
 
 interface ShellWord {
@@ -673,9 +677,7 @@ function isPathish(word: string): boolean {
     word === "." ||
     word === ".." ||
     word.includes("/") ||
-    WILDCARD_RE.test(word) ||
-    fold(word) === "construction" ||
-    globComponentMatchesConstruction(word)
+    WILDCARD_RE.test(word)
   );
 }
 

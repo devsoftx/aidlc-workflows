@@ -685,7 +685,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     );
     expect(refusedReinstall.status).toBe(1);
     expect(refusedReinstall.stderr).toContain(
-      ".cursor/aidlc-common/stages/inception/requirements-analysis.md",
+      ".cursor/aidlc-common/stages/design/requirements-analysis.md",
     );
     expect(readFileSync(pureCoreStage, "utf-8")).toContain("stale core marker");
     writeFileSync(pureCoreStage, pureCoreBefore);
@@ -703,7 +703,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     cpSync(CURSOR_DIST, upgradedDist, { recursive: true });
     cpSync(CURSOR_INSTALLER_SOURCE, join(upgradedDist, "install.ts"));
     const pluginStageRel =
-      ".cursor/aidlc-common/stages/construction/build-and-test.md";
+      ".cursor/aidlc-common/stages/test/build-and-test.md";
     const upgradedCoreStage = join(upgradedDist, pluginStageRel);
     writeFileSync(
       upgradedCoreStage,
@@ -1674,7 +1674,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ]));
     const { drops, proj } = composeSynthetic("syn-kinds", {
       "scopes/syn-kinds.md": scope,
-      ...Object.fromEntries(targets.map((slug) => [`contributions/construction/${slug}.md`, contrib(slug)])),
+      ...Object.fromEntries(targets.map((slug) => [`contributions/build/${slug}.md`, contrib(slug)])),
     });
     expect(drops).toBe("");
     expect(stage(proj, "functional-design")?.produces_kinds?.["syn-kinds-notes"])
@@ -1725,9 +1725,9 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-kinds-old",
       {
-        "contributions/construction/functional-design.md":
+        "contributions/design/functional-design.md":
           contrib("functional-design", ["syn-kinds-old-notes", "frontend-components"]),
-        "contributions/construction/nfr-design.md": contrib("nfr-design", ["syn-kinds-old-notes"]),
+        "contributions/design/nfr-design.md": contrib("nfr-design", ["syn-kinds-old-notes"]),
       },
       ".claude",
       (_proj, harnessDir) => {
@@ -1767,8 +1767,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-kinds-worded",
       {
-        "contributions/construction/functional-design.md": contrib("functional-design", ["syn-kinds-worded-notes"]),
-        "contributions/construction/nfr-design.md": contrib("nfr-design", ["syn-kinds-worded-notes"]),
+        "contributions/design/functional-design.md": contrib("functional-design", ["syn-kinds-worded-notes"]),
+        "contributions/design/nfr-design.md": contrib("nfr-design", ["syn-kinds-worded-notes"]),
       },
       ".claude",
       (_proj, harnessDir) => {
@@ -1812,8 +1812,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       const { drops, proj } = composeSynthetic(
         "syn-kinds-refused",
         {
-          "contributions/construction/functional-design.md": contrib("functional-design", outputs),
-          "contributions/construction/nfr-design.md": contrib("nfr-design", ["syn-kinds-refused-notes"]),
+          "contributions/design/functional-design.md": contrib("functional-design", outputs),
+          "contributions/design/nfr-design.md": contrib("nfr-design", ["syn-kinds-refused-notes"]),
         },
         ".claude",
         (_proj, harnessDir) => {
@@ -1872,7 +1872,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-edge-ok", {
       "scopes/syn-edge-ok.md": scope,
-      "contributions/construction/build-and-test.md": contrib,
+      "contributions/test/build-and-test.md": contrib,
     });
     expect(drops).not.toContain("adds.requires_stage");
     const stagePath = stageSourcePath(proj, "construction", "build-and-test");
@@ -1917,7 +1917,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-edge-nograph", {
       "scopes/syn-edge-nograph.md": scope,
-      "contributions/construction/build-and-test.md": contrib,
+      "contributions/test/build-and-test.md": contrib,
     }, ".claude", (_proj, harnessDir) => {
       rmSync(join(harnessDir, "tools", "data", "stage-graph.json"));
     });
@@ -1952,8 +1952,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-edge", {
-      "stages/inception/syn-edge-discovery.md": newStage,
-      "contributions/inception/requirements-analysis.md": contrib,
+      "stages/design/syn-edge-discovery.md": newStage,
+      "contributions/design/requirements-analysis.md": contrib,
     });
     expect(drops).not.toContain("compile failed");
     expect(drops).not.toContain("adds.requires_stage is not yet an implemented merge surface");
@@ -1996,8 +1996,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-edge-gone", {
-      "stages/inception/syn-edge-gone-discovery.md": newStage,
-      "contributions/construction/build-and-test.md": contrib,
+      "stages/design/syn-edge-gone-discovery.md": newStage,
+      "contributions/test/build-and-test.md": contrib,
     });
     expect(drops).not.toContain("compile failed");
     const stagePath = stageSourcePath(proj, "construction", "build-and-test");
@@ -2046,8 +2046,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---", "",
     ].join("\n");
     const { proj } = composeSynthetic("syn-edge-dropped", {
-      "stages/inception/syn-edge-dropped-discovery.md": newStage,
-      "contributions/construction/build-and-test.md": contrib,
+      "stages/design/syn-edge-dropped-discovery.md": newStage,
+      "contributions/test/build-and-test.md": contrib,
     });
     const stagePath = stageSourcePath(proj, "construction", "build-and-test");
     expect(readFileSync(stagePath, "utf-8")).toContain("- syn-edge-dropped-discovery\n");
@@ -2086,10 +2086,10 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-flow", {
-      "stages/inception/syn-flow-base.md": newStage("syn-flow-base", "[]"),
-      "stages/inception/syn-flow-extra.md": newStage("syn-flow-extra", "[]"),
-      "stages/inception/syn-flow-target.md": newStage("syn-flow-target", "[syn-flow-base]"),
-      "contributions/inception/syn-flow-target.md": contrib,
+      "stages/design/syn-flow-base.md": newStage("syn-flow-base", "[]"),
+      "stages/design/syn-flow-extra.md": newStage("syn-flow-extra", "[]"),
+      "stages/design/syn-flow-target.md": newStage("syn-flow-target", "[syn-flow-base]"),
+      "contributions/design/syn-flow-target.md": contrib,
     });
     expect(drops).not.toContain("compile failed");
     expect(drops).not.toContain("no 'requires_stage:' field to append to");
@@ -2137,10 +2137,10 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-cycle", {
-      "stages/inception/syn-cycle-a.md": newStage("syn-cycle-a", ["syn-cycle-b"]),
-      "stages/inception/syn-cycle-b.md": newStage("syn-cycle-b", []),
-      "stages/inception/syn-cycle-c.md": newStage("syn-cycle-c", []),
-      "contributions/inception/syn-cycle-b.md": contrib,
+      "stages/design/syn-cycle-a.md": newStage("syn-cycle-a", ["syn-cycle-b"]),
+      "stages/design/syn-cycle-b.md": newStage("syn-cycle-b", []),
+      "stages/design/syn-cycle-c.md": newStage("syn-cycle-c", []),
+      "contributions/design/syn-cycle-b.md": contrib,
     });
     expect(drops).not.toContain("compile failed");
     expect(drops).toContain('adds.requires_stage "syn-cycle-a" already requires syn-cycle-b');
@@ -2170,7 +2170,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-edge-moved", {
       "scopes/syn-edge-moved.md": scope,
-      "contributions/construction/build-and-test.md": contrib,
+      "contributions/test/build-and-test.md": contrib,
     }, ".claude", (_proj, harnessDir) => {
       const stages = join(harnessDir, "aidlc-common", "stages");
       const moved = join(stages, "inception", "feedback-optimization.md");
@@ -2215,7 +2215,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic("syn-scope", {
       "scopes/syn-scope.md": mkScope("syn-scope"),
       "scopes/syn-scope-extra.md": mkScope("syn-scope-extra"),
-      "contributions/construction/build-and-test.md": contrib,
+      "contributions/test/build-and-test.md": contrib,
     });
     const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
@@ -2265,7 +2265,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-quoted", {
       "scopes/syn-quoted.md": scope,
-      "contributions/construction/build-and-test.md": contribution,
+      "contributions/test/build-and-test.md": contribution,
     });
     expect(drops).not.toContain('adds.scopes "syn-quoted"');
     expect(stageBody(proj, "construction", "build-and-test")).toContain("- syn-quoted");
@@ -2291,9 +2291,9 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "inputs: x", "outputs: y", "---", "", `# ${slug}`, "", "## Steps", "body", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-order", {
-      "stages/ideation/syn-order-assemble.md": mk("syn-order-assemble", ["syn-order-middle", "syn-order-middle"], "syn-order-doc", ["syn-order-mid"]),
-      "stages/ideation/syn-order-middle.md": mk("syn-order-middle", ["syn-order-zstart"], "syn-order-mid", ["syn-order-first"]),
-      "stages/ideation/syn-order-zstart.md": mk("syn-order-zstart", [], "syn-order-first", []),
+      "stages/discover/syn-order-assemble.md": mk("syn-order-assemble", ["syn-order-middle", "syn-order-middle"], "syn-order-doc", ["syn-order-mid"]),
+      "stages/discover/syn-order-middle.md": mk("syn-order-middle", ["syn-order-zstart"], "syn-order-mid", ["syn-order-first"]),
+      "stages/discover/syn-order-zstart.md": mk("syn-order-zstart", [], "syn-order-first", []),
     });
     expect(drops).not.toContain("compile failed");
     const g = JSON.parse(readFileSync(join(proj, ".claude", "tools", "data", "stage-graph.json"), "utf-8")) as Array<{ slug: string; number: string; requires_stage?: string[] }>;
@@ -2319,8 +2319,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "inputs: x", "outputs: y", "---", "", `# ${slug}`, "", "## Steps", "body", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-cycle", {
-      "stages/ideation/syn-cycle-a.md": mk("syn-cycle-a", "syn-cycle-b", "syn-cycle-doc-a"),
-      "stages/ideation/syn-cycle-b.md": mk("syn-cycle-b", "syn-cycle-a", "syn-cycle-doc-b"),
+      "stages/discover/syn-cycle-a.md": mk("syn-cycle-a", "syn-cycle-b", "syn-cycle-doc-a"),
+      "stages/discover/syn-cycle-b.md": mk("syn-cycle-b", "syn-cycle-a", "syn-cycle-doc-b"),
     });
     // Compose is fail-open (rc 0); the compile failure surfaces as a drop
     // naming the cycle, and neither stage reaches the compiled graph.
@@ -2373,7 +2373,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic("attacker", {
       "scopes/victim-scope.md": victimScope,
-      "contributions/construction/build-and-test.md": contribution,
+      "contributions/test/build-and-test.md": contribution,
     });
     expect(drops).toContain('plugin "attacker" scopes file');
     expect(drops).toContain('declares plugin "victim"');
@@ -2609,7 +2609,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { proj } = composeSynthetic(name, {
       [`scopes/${name}.md`]: scope,
-      "contributions/construction/build-and-test.md": contribution,
+      "contributions/test/build-and-test.md": contribution,
     }, ".claude", (_proj, harnessDir) => {
       const path = join(
         harnessDir,
@@ -2680,7 +2680,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // The victim's scope file is pre-installed (mutateInstall), as if plugin
     // syn-prefix-foreign composed first; then plugin syn-prefix contributes.
     const { drops, proj } = composeSynthetic("syn-prefix", {
-      "contributions/construction/build-and-test.md": contrib,
+      "contributions/test/build-and-test.md": contrib,
     }, ".claude", (_proj, harnessDir) => {
       writeFileSync(join(harnessDir, "scopes", "syn-prefix-foreign.md"), foreignScope);
     });
@@ -2698,7 +2698,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "adds:", "  scopes:", "    - enterprise", "    - syn-scope-guard-phantom", "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-scope-guard", {
-      "contributions/construction/build-and-test.md": contrib,
+      "contributions/test/build-and-test.md": contrib,
     });
     const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
@@ -2723,7 +2723,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         `description: ${name} scope`, "skeleton: off", "---", "",
         `# ${name} scope`, "",
       ].join("\n"),
-      "contributions/construction/build-and-test.md": [
+      "contributions/test/build-and-test.md": [
         "---", "target: build-and-test", `plugin: ${name}`,
         "adds:", "  scopes:", `    - ${name}`, "---", "",
       ].join("\n"),
@@ -2767,7 +2767,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         "description: slow compose scope", "skeleton: off", "---", "",
         `# ${name} scope`, "",
       ].join("\n"),
-      "contributions/construction/build-and-test.md": [
+      "contributions/test/build-and-test.md": [
         "---", "target: build-and-test", `plugin: ${name}`,
         "adds:", "  scopes:", `    - ${name}`, "---", "",
       ].join("\n"),
@@ -2904,7 +2904,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         "description: relative project scope", "skeleton: off", "---", "",
         `# ${name} scope`, "",
       ].join("\n"),
-      "contributions/construction/build-and-test.md": [
+      "contributions/test/build-and-test.md": [
         "---", "target: build-and-test", `plugin: ${name}`,
         "adds:", "  scopes:", `    - ${name}`, "---", "",
       ].join("\n"),
@@ -2954,7 +2954,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         "description: selection race scope", "skeleton: off", "---", "",
         `# ${name} scope`, "",
       ].join("\n"),
-      "contributions/construction/build-and-test.md": [
+      "contributions/test/build-and-test.md": [
         "---", "target: build-and-test", `plugin: ${name}`,
         "adds:", "  scopes:", `    - ${name}`, "---", "",
       ].join("\n"),
@@ -3417,7 +3417,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-nested", {
       "contributions/agents/nested/aidlc-architect-agent.md": contribution("aidlc-architect-agent", "end-of-body"),
-      "contributions/construction/nested/functional-design.md": contribution("functional-design", "end-of-steps"),
+      "contributions/design/nested/functional-design.md": contribution("functional-design", "end-of-steps"),
       "contributions/stray.md": contribution("aidlc-architect-agent", "end-of-body"),
       // A directory named like a Markdown file is a directory too, and must
       // not abort the rest of the compose.
@@ -3428,7 +3428,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     expect(drops).toContain('contribution directory "contributions/agents/weird.md/" is nested too deep');
     expect(readFileSync(join(proj, ".claude", "agents", "aidlc-developer-agent.md"), "utf-8")).toContain("lands");
     expect(drops).toContain('contribution directory "contributions/agents/nested/" is nested too deep');
-    expect(drops).toContain('contribution directory "contributions/construction/nested/" is nested too deep');
+    expect(drops).toContain('contribution directory "contributions/build/nested/" is nested too deep');
     expect(drops).toContain('contribution file "contributions/stray.md" sits outside a phase or agents directory');
     expect(readFileSync(join(proj, ".claude", "agents", "aidlc-architect-agent.md"), "utf-8")).not.toContain("must never land");
     expect(stageBody(proj, "construction", "functional-design")).not.toContain("must never land");
@@ -3444,7 +3444,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "# syn-traversal", "",
     ].join("\n");
     const escapee = [
-      "---", "target: ../aidlc-common/stages/construction/build-and-test", "plugin: syn-traversal",
+      "---", "target: ../aidlc-common/stages/test/build-and-test", "plugin: syn-traversal",
       "fragments:", "  - anchor: end-of-body", "    order: 100",
       "---", "",
       "## fragment: end-of-body", "", "must never land", "",
@@ -3458,9 +3458,9 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic("syn-traversal", {
       "scopes/syn-traversal.md": scope,
       "contributions/agents/escapee.md": escapee,
-      "contributions/construction/stage-escapee.md": stageEscapee,
+      "contributions/build/stage-escapee.md": stageEscapee,
     });
-    expect(drops).toContain('has an invalid target "../aidlc-common/stages/construction/build-and-test"');
+    expect(drops).toContain('has an invalid target "../aidlc-common/stages/test/build-and-test"');
     expect(drops).toContain('has an invalid target "../../agents/aidlc-architect-agent"');
     expect(readFileSync(stageSourcePath(proj, "construction", "build-and-test"), "utf-8")).not.toContain("must never land");
     expect(readFileSync(join(proj, ".claude", "agents", "aidlc-architect-agent.md"), "utf-8")).not.toContain("must never land");
@@ -3531,7 +3531,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   const upgradeFiles = (name: string, version: string, anchor: string): Record<string, string> => ({
     "sensors/aidlc-syn-upgrade-check.md": UPGRADE_SENSOR,
     "tools/aidlc-sensor-syn-upgrade-check.ts": upgradeTool(version),
-    "contributions/construction/build-and-test.md": upgradeContribution(name, anchor),
+    "contributions/test/build-and-test.md": upgradeContribution(name, anchor),
   });
   // Rewrite the synthetic plugin's files in place and run compose.ts again
   // against the SAME project; returns the drops of that second run.
@@ -4150,7 +4150,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       {
         severity: "degraded",
         reason:
-          'plugin "syn-stale" stage file "construction/syn-stale-stage.md" not composed',
+          'plugin "syn-stale" stage file "build/syn-stale-stage.md" not composed',
       },
     ]);
   });
@@ -4268,7 +4268,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-kiro",
       {
-        "stages/inception/syn-kiro-ensemble.md": stage,
+        "stages/design/syn-kiro-ensemble.md": stage,
         "agents/syn-kiro-collaborator-agent.md": agent,
       },
       ".kiro",
@@ -4486,7 +4486,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic(
       "syn-kiro-untrusted",
-      { "stages/inception/syn-kiro-untrusted.md": stage },
+      { "stages/design/syn-kiro-untrusted.md": stage },
       ".kiro",
       (_proj, harnessDir) => {
         const conductorPath = join(harnessDir, "agents", "aidlc.json");
@@ -4643,7 +4643,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ].join("\n");
       const composed = composeSynthetic(
         plugin,
-        { [`stages/inception/${plugin}-stage.md`]: stage },
+        { [`stages/design/${plugin}-stage.md`]: stage },
         surface,
         (_proj, harnessDir) => {
           writeFileSync(
@@ -4731,7 +4731,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       const { drops, proj } = composeSynthetic(
         plugin,
         {
-          [`stages/inception/${plugin}-stage.md`]: subagentStage(plugin, agent),
+          [`stages/design/${plugin}-stage.md`]: subagentStage(plugin, agent),
           [`agents/${agent}.md`]: pluginAgent(plugin, agent),
         },
         surface,
@@ -4901,7 +4901,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const refused = composeSynthetic(
       unsupported,
       {
-        [`stages/inception/${unsupported}-stage.md`]: subagentStage(unsupported, unsupportedAgent),
+        [`stages/design/${unsupported}-stage.md`]: subagentStage(unsupported, unsupportedAgent),
         [`agents/${unsupportedAgent}.md`]: pluginAgent(unsupported, unsupportedAgent).replace("disallowedTools: Task", "disallowedTools: WebSearch"),
       },
       "kiro-ide",
@@ -4914,7 +4914,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const collided = composeSynthetic(
       colliding,
       {
-        [`stages/inception/${colliding}-stage.md`]: subagentStage(colliding, collidingAgent),
+        [`stages/design/${colliding}-stage.md`]: subagentStage(colliding, collidingAgent),
         [`agents/${collidingAgent}.md`]: pluginAgent(colliding, collidingAgent),
       },
       "kiro-ide",
@@ -4949,7 +4949,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       const files: Record<string, string> = {};
       for (const [short, reviewer] of Object.entries(reviewers)) {
         const slug = `${plugin}-${short}`;
-        files[`stages/inception/${slug}.md`] = [
+        files[`stages/design/${slug}.md`] = [
           "---",
           `slug: ${slug}`,
           `plugin: ${plugin}`,
@@ -5020,7 +5020,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const { drops, proj } = composeSynthetic(
       "syn-oc",
-      { "stages/inception/syn-oc-missing.md": stage },
+      { "stages/design/syn-oc-missing.md": stage },
       ".aidlc",
     );
     expect(existsSync(join(
@@ -5076,7 +5076,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-oc",
       {
-        "stages/inception/syn-oc-colliding.md": stage,
+        "stages/design/syn-oc-colliding.md": stage,
         "agents/syn-oc-taken-agent.md": agent,
       },
       ".aidlc",
@@ -5172,7 +5172,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-oc",
       {
-        "stages/inception/syn-oc-shipped.md": stage,
+        "stages/design/syn-oc-shipped.md": stage,
         "agents/syn-oc-collab-agent.md": agent,
       },
       ".aidlc",
@@ -5219,7 +5219,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     for (const harnessLeaf of [".claude", ".kiro", ".codex"] as const) {
       const { drops, proj } = composeSynthetic(
         "syn-kiro-agent-team",
-        { "stages/inception/syn-kiro-agent-team.md": stage },
+        { "stages/design/syn-kiro-agent-team.md": stage },
         harnessLeaf,
       );
 
@@ -5271,7 +5271,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops } = composeSynthetic(
       "syn-kiro-agent-team-installed",
       {
-        "stages/inception/syn-kiro-agent-team-installed-stage.md": stage,
+        "stages/design/syn-kiro-agent-team-installed-stage.md": stage,
         "agents/syn-kiro-agent-team-agent.md": agent,
       },
       ".kiro",
@@ -5328,7 +5328,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-kiro-existing-unsafe",
       {
-        "stages/inception/syn-kiro-existing-unsafe.md": stage,
+        "stages/design/syn-kiro-existing-unsafe.md": stage,
         "agents/syn-kiro-existing-agent.md": agent,
       },
       ".kiro",
@@ -5392,7 +5392,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-kiro-subagent",
       {
-        "stages/inception/syn-kiro-subagent-stage.md": stage,
+        "stages/design/syn-kiro-subagent-stage.md": stage,
         "agents/syn-kiro-subagent-agent.md": agent,
       },
       ".kiro",
@@ -5478,8 +5478,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { proj } = composeSynthetic(
       "syn-kiro-shared",
       {
-        "stages/inception/syn-kiro-shared-mob.md": mobStage,
-        "stages/inception/syn-kiro-shared-inline.md": inlineStage,
+        "stages/design/syn-kiro-shared-mob.md": mobStage,
+        "stages/design/syn-kiro-shared-inline.md": inlineStage,
         "agents/syn-kiro-shared-agent.md": agent,
       },
       ".kiro",
@@ -5549,7 +5549,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-kiro-rev",
       {
-        "stages/inception/syn-kiro-reviewed.md": stage,
+        "stages/design/syn-kiro-reviewed.md": stage,
         "agents/syn-kiro-reviewer-agent.md": agent,
       },
       ".kiro",
@@ -5606,7 +5606,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic(
       "syn-codex",
       {
-        "stages/inception/syn-codex-ensemble.md": stage,
+        "stages/design/syn-codex-ensemble.md": stage,
         "agents/syn-codex-collaborator-agent.md": agent,
       },
       ".codex",
@@ -5718,8 +5718,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const mf = join(root, ".claude-plugin", "plugin.json");
     const m = JSON.parse(readFileSync(mf, "utf-8")); m.name = "syn-noparse"; writeFileSync(mf, JSON.stringify(m));
     for (const [rel, body] of Object.entries({
-      "stages/inception/syn-noparse-inline.md": inlineStage,
-      "stages/inception/syn-noparse-mob.md": mobStage,
+      "stages/design/syn-noparse-inline.md": inlineStage,
+      "stages/design/syn-noparse-mob.md": mobStage,
       "agents/syn-noparse-agent.md": agent,
     })) {
       const p = join(root, rel);
@@ -5750,7 +5750,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("unresolvable fragment anchor is dropped-with-log, not silent (R4-2)", () => {
     const { drops } = composeSynthetic("syn-anchor", {
-      "contributions/construction/build-and-test.md":
+      "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: syn-anchor\nadds:\n  produces: []\nfragments:\n  - anchor: after-step:999\n    order: 100\n---\n\n## fragment: after-step:999\n\n### Step 999x (syn): orphaned\n\nprose\n`,
     });
     expect(drops).toContain("after-step:999");
@@ -5761,7 +5761,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // build-and-test ships `### Step 4-8:`. A fragment at after-step:6 must splice
     // (land in the body), NOT drop as 'not found'.
     const { drops, proj } = composeSynthetic("syn-range", {
-      "contributions/construction/build-and-test.md":
+      "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: syn-range\nadds:\n  produces: []\nfragments:\n  - anchor: after-step:6\n    order: 100\n---\n\n## fragment: after-step:6\n\n### Step 6-SYN: lands in range\n\nsyn-range prose\n`,
     });
     const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
@@ -5771,7 +5771,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("stage-slug collision is dropped-with-log, not a silent no-op (R4-4)", () => {
     const { drops, proj } = composeSynthetic("syn-collide", {
-      "stages/construction/build-and-test.md":
+      "stages/test/build-and-test.md":
         `---\nslug: build-and-test\nplugin: syn-collide\nphase: construction\nexecution: ALWAYS\ncondition: always\nlead_agent: aidlc-quality-agent\nsupport_agents: []\nmode: inline\nproduces: []\nconsumes: []\nrequires_stage: []\ninputs: x\noutputs: y\n---\n# SYN-COLLIDE OVERRIDE\n`,
     });
     // the core stage must be untouched, AND the collision must be logged
@@ -5924,7 +5924,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "Authors write fragments like this:", "", "```", "## fragment: after-step:6", "```", "",
       "TAIL-MUST-SURVIVE past the fence.", "",
     ].join("\n");
-    const { drops, proj } = composeSynthetic("syn-fence", { "contributions/construction/build-and-test.md": fenced });
+    const { drops, proj } = composeSynthetic("syn-fence", { "contributions/test/build-and-test.md": fenced });
     const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
     expect(body).toContain("TAIL-MUST-SURVIVE"); // prose after the fenced marker survived
     expect(drops).not.toContain("after-step:6"); // no phantom block spawned
@@ -5940,7 +5940,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "## fragment: after-step:9", "", "### Step 9-A (syn): kept", "", "first", "",
       "## fragment: after-step:9", "", "### Step 9-B (syn): leftover", "", "second", "",
     ].join("\n");
-    const { drops } = composeSynthetic("syn-extra", { "contributions/construction/build-and-test.md": extra });
+    const { drops } = composeSynthetic("syn-extra", { "contributions/test/build-and-test.md": extra });
     expect(drops).toContain("no matching frontmatter fragments entry");
   });
 
@@ -5951,7 +5951,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---", "target: build-and-test", "plugin: syn-bom",
       "adds:", "  produces:", "    - syn-bom-artifact", "---", "",
     ].join("\n")}`;
-    const { proj } = composeSynthetic("syn-bom", { "contributions/construction/build-and-test.md": bom });
+    const { proj } = composeSynthetic("syn-bom", { "contributions/test/build-and-test.md": bom });
     const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
     expect(body).toContain("syn-bom-artifact"); // merged despite the BOM
   });
@@ -6033,7 +6033,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   test("compose self-clears its drops file on a clean run", () => {
     // A clean compose (no drops) leaves no drops file for this plugin.
     const { proj } = composeSynthetic("syn-clean", {
-      "contributions/construction/build-and-test.md":
+      "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: syn-clean\nadds:\n  produces:\n    - syn-clean-artifact\n---\n`,
     });
     const dropFile = join(proj, "aidlc", "spaces", "default", "intents", ".aidlc-engine/hooks-health", "plugin-compose-syn-clean.drops");
@@ -6046,7 +6046,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   // visibly instead of composing under wrong or ambiguous ownership.
   test("renamed bundle: key alone is skipped with the fix named", () => {
     const { drops, proj } = composeSynthetic("syn-alias", {
-      "contributions/construction/build-and-test.md":
+      "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nbundle: syn-alias\nadds:\n  produces:\n    - syn-alias-artifact\n---\n`,
     });
     const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
@@ -6057,7 +6057,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("renamed bundle: key beside plugin: is still skipped", () => {
     const { drops, proj } = composeSynthetic("syn-conflict", {
-      "contributions/construction/build-and-test.md":
+      "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: syn-conflict\nbundle: other-conflict\nadds:\n  produces:\n    - syn-conflict-artifact\n---\n`,
     });
     const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
@@ -6077,7 +6077,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "inputs: x", "outputs: y", "bundle: syn-stale", "---", "", "# Stale stage body", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-stale", {
-      "stages/construction/syn-stale-stage.md": staleStage,
+      "stages/build/syn-stale-stage.md": staleStage,
     });
     // The bad stage never landed, the drop names the file + the schema error,
     // and the install's graph still compiles (self-heal probe unaffected).
@@ -6086,7 +6086,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       {
         severity: "degraded",
         reason:
-          'plugin "syn-stale" stage file "construction/syn-stale-stage.md" not composed: bundle: was renamed; write plugin: for ownership - fix the plugin\'s stage file and re-run compose',
+          'plugin "syn-stale" stage file "build/syn-stale-stage.md" not composed: bundle: was renamed; write plugin: for ownership - fix the plugin\'s stage file and re-run compose',
       },
     ]);
     const compile = spawnSync(BUN, [join(proj, ".claude", "tools", "aidlc-graph.ts"), "compile"], {
@@ -6122,7 +6122,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
     const stalePlugin = "syn-review-migration-old";
     const stale = composeSynthetic(stalePlugin, {
-      [`stages/inception/${stalePlugin}-stage.md`]:
+      [`stages/design/${stalePlugin}-stage.md`]:
         stage(stalePlugin, false),
     });
     expect(existsSync(join(
@@ -6137,7 +6137,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
     const migratedPlugin = "syn-review-migration-new";
     const migrated = composeSynthetic(migratedPlugin, {
-      [`stages/inception/${migratedPlugin}-stage.md`]:
+      [`stages/design/${migratedPlugin}-stage.md`]:
         stage(migratedPlugin, true),
     });
     expect(existsSync(join(
@@ -6159,7 +6159,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "inputs: x", "outputs: y", "plugin: aidlc-pro", "---", "", "# Colliding stage", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("aidlc-pro", {
-      "stages/construction/aidlc-pro-check.md": collidingStage,
+      "stages/build/aidlc-pro-check.md": collidingStage,
     });
     expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "aidlc-pro-check.md"))).toBe(false);
     expect(drops).toContain('"aidlc-" prefix is reserved for core');
@@ -6184,7 +6184,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "inputs: x", "outputs: y", "plugin: syn-dead", "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-dead", {
-      "stages/construction/syn-dead-stage.md": deadStage,
+      "stages/build/syn-dead-stage.md": deadStage,
     });
     expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "syn-dead-stage.md"))).toBe(false);
     expect(drops).toContain("stage body is empty");
@@ -6225,7 +6225,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "Real intro.", "", "````markdown", "Example:", "```", "## fragment: PHANTOM", "```", "````", "",
       "NEST-TAIL-SURVIVES.", "",
     ].join("\n");
-    const { drops, proj } = composeSynthetic("syn-nest", { "contributions/construction/build-and-test.md": nested });
+    const { drops, proj } = composeSynthetic("syn-nest", { "contributions/test/build-and-test.md": nested });
     const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
     expect(body).toContain("NEST-TAIL-SURVIVES");
     expect(drops).not.toContain("PHANTOM");
@@ -6233,7 +6233,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("a plugin containing ':' is refused with a log (R6-L4)", () => {
     const { drops } = composeSynthetic("syn-colon", {
-      "contributions/construction/build-and-test.md":
+      "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: bad:plugin\nadds:\n  produces:\n    - syn-colon-artifact\n---\n`,
     });
     expect(drops).toContain("invalid plugin");

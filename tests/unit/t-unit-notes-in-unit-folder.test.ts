@@ -117,7 +117,7 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     const p = project("unit-major", true);
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "alpha" });
-    expect(directive.memory_path).toBe(`${RP}/construction/alpha/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${RP}/design/alpha/functional-design/memory.md`);
     expect(existsSync(diary(p, "alpha", "functional-design"))).toBe(true);
     expect(existsSync(join(seededRecordDir(p), "construction", "functional-design"))).toBe(false);
     // The diary's one line for the person says what is true: the step after the
@@ -132,7 +132,7 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
-    expect(directive.memory_path).toBe(`${RP}/construction/alpha/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${RP}/design/alpha/functional-design/memory.md`);
     expect(existsSync(join(seededRecordDir(p), "construction", "functional-design"))).toBe(false);
   });
 
@@ -174,7 +174,7 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     expect(compiled.status, compiled.stderr).toBe(0);
     const graph = JSON.parse(readFileSync(join(seededRecordDir(p), "runtime-graph.json"), "utf-8"));
     const row = graph.stages.find((s: { stage_slug: string }) => s.stage_slug === "functional-design");
-    expect(row.memory_path).toBe(`${RP}/construction/functional-design/memory.md`);
+    expect(row.memory_path).toBe(`${RP}/design/functional-design/memory.md`);
     expect(row.memory_entries).toBe(3);
     expect(row.memory_breakdown).toMatchObject({ interpretations: 2, tradeoffs: 1 });
   });

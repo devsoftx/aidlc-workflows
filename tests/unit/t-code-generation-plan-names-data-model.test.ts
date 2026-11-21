@@ -1,4 +1,4 @@
-// covers: stage:code-generation, file:aidlc-common/stages/construction/code-generation.md, file:agents/aidlc-developer-agent.md, file:knowledge/aidlc-developer-agent/code-generation-guide.md
+// covers: stage:code-generation, file:aidlc-common/stages/build/code-generation.md, file:agents/aidlc-developer-agent.md, file:knowledge/aidlc-developer-agent/code-generation-guide.md
 //
 // A Code Generation plan names every data-model element it creates or changes
 // (#3455). A plan could say "schema changes" as one step, the Summary the

@@ -393,7 +393,7 @@ describe("t327 Code Generation authority publication", () => {
       directiveEpoch: `revision:${offer?.markerRevision ?? 0}`,
       runFloor: "test-run",
       fingerprint: "a".repeat(64),
-      questionsFile: "construction/code-generation/code-generation-questions.md",
+      questionsFile: "build/code-generation/code-generation-questions.md",
       promptSha256: "b".repeat(64),
       sourceFloor: "c".repeat(64),
       markerRevision: offer?.markerRevision ?? 0,

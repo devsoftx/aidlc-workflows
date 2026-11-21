@@ -1,4 +1,4 @@
-// covers: stage:ideation/approval-handoff
+// covers: stage:discover/approval-handoff
 //
 // t-tui-t101-memory-lifecycle.serial.test.ts — drive the per-stage memory.md
 // START→APPROVAL lifecycle through a REAL Claude TUI. The shared answer-gate
@@ -9,7 +9,7 @@
 // WHAT IT PROVES (the memory.md lifecycle bootstrapDirectiveMemory drives):
 //   - init-from-template fires at stage START - the engine copies
 //     knowledge/aidlc-shared/memory-template.md into the stage's
-//     <record>/ideation/approval-handoff/memory.md (file exists, non-empty).
+//     <record>/discover/approval-handoff/memory.md (file exists, non-empty).
 //   - the created file carries all FOUR canonical `## ` H2 headings
 //     (## Interpretations / ## Deviations / ## Tradeoffs / ## Open questions).
 //   - the ownership header is the VERBATIM template blockquote, asserted

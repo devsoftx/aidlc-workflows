@@ -44,7 +44,7 @@ function isCarvedOut(relPath: string, line: string): boolean {
   // harness-enumerating, not a path.
   if (
     (relPath === "aidlc-common/stages/initialization/workspace-detection.md" ||
-      relPath === "aidlc-common/stages/inception/reverse-engineering.md") &&
+      relPath === "aidlc-common/stages/discover/reverse-engineering.md") &&
     line.includes(".kiro/") &&
     line.includes(".codex/")
   ) {

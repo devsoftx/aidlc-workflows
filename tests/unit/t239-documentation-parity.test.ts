@@ -717,7 +717,7 @@ describe("documentation parity derives current behavior from authored implementa
   });
 
   test("the bugfix walkthrough's end state has Code Generation where a run with no Units writes it", () => {
-    // Without Units Generation there is no Unit folder: Code Generation writes <record>/construction/code-generation/.
+    // Without Units Generation there is no Unit folder: Code Generation writes <record>/build/code-generation/.
     expect(scopeGrid.bugfix.stages["units-generation"]).not.toBe("EXECUTE");
     const walkthrough = sliceBetween(
       read("docs", "guide", "16-worked-examples.md"),

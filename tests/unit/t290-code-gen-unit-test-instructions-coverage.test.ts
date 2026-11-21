@@ -183,7 +183,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
       expect(directive.stage).toBe("code-generation");
       expect(directive.unit).toBe("alpha");
       expect(directive.produces).toContain(
-        `${RP}/construction/alpha/code-generation/unit-test-instructions.md`,
+        `${RP}/build/alpha/code-generation/unit-test-instructions.md`,
       );
     }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -370,10 +370,10 @@ ${quotedExecutable} -e 'await Bun.write("${marker}", "passed")'
       "utf-8",
     );
     expect(buildAndTest).toContain(
-      "<record>/construction/code-generation/unit-test-instructions.md",
+      "<record>/build/code-generation/unit-test-instructions.md",
     );
     expect(buildAndTest).toContain(
-      "<record>/construction/*/code-generation/unit-test-instructions.md",
+      "<record>/build/*/code-generation/unit-test-instructions.md",
     );
     expect(buildAndTest).toContain(
       "{{INVOKE}} engine sensor-traceability --stage build-and-test",

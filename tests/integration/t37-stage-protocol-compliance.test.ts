@@ -178,7 +178,7 @@ describe("SKILL.md routing mandates the static and conditional protocol files", 
   // the routing section names the one no step names. The phase-boundary check
   // is run by the phase-ending stages themselves, so no routing line loads the
   // governance module for it.
-  const note = protocolNote(".claude/aidlc-common/stages/construction/code-generation.md", [
+  const note = protocolNote(".claude/aidlc-common/stages/build/code-generation.md", [
     "reviewer",
     "swarm",
     "ensemble",

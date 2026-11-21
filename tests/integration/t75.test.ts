@@ -24,7 +24,7 @@
 // (which toPortablePath-converts on Windows so the audit.md the tool writes
 // through toPosix path helpers round-trips when read back). make_fixture's
 // .claude/rules/{aidlc-team.md,aidlc-project.md} live targets + the two
-// active-record inception/practices-discovery/ drafts are reproduced byte-for-byte
+// active-record design/practices-discovery/ drafts are reproduced byte-for-byte
 // from the .sh heredocs. NOTHING is written under tests/fixtures/**. All temp
 // dirs cleaned in afterAll.
 //

@@ -1,9 +1,9 @@
 ---
 slug: test-pro-full-suite
-number: 4.45
+number: 7.45
 name: Full Test Suite Execution
 plugin: test-pro
-phase: operation
+phase: operate
 execution: CONDITIONAL
 condition: Execute under the enterprise scope when the regression suite is on this scope's resolved plan, after deployment.
 lead_agent: aidlc-quality-agent

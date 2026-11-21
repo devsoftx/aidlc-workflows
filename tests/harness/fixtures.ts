@@ -17,6 +17,7 @@
 //   AIDLC_SRC    = <REPO_ROOT>/dist/claude/.claude
 //   FIXTURES_DIR = <REPO_ROOT>/tests/fixtures
 
+import { phaseFor } from "./stage-phase.ts";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   remainingCleanupTimeoutMs,
@@ -411,7 +412,7 @@ export function seedBoltDag(
 // guard is off (the runner's fixture profile).
 export function seedAnsweredUnitQuestions(proj: string, stage: string, units: readonly string[]): void {
   for (const unit of units) {
-    const dir = join(seededRecordDir(proj), "construction", unit, stage);
+    const dir = join(seededRecordDir(proj), phaseFor(stage), unit, stage);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, `${stage}-questions.md`), "# Questions\n\n## Q1. Who can see a saved item?\n\n[Answer]: Its owner\n", "utf-8");
   }
@@ -801,9 +802,9 @@ export function setupIntegrationProject(
   }
 
   if (opts.withInceptionArtifacts) {
-    const ra = join(seededRecordDir(proj), "inception", "requirements-analysis");
-    const ad = join(seededRecordDir(proj), "inception", "domain-design");
-    const ug = join(seededRecordDir(proj), "inception", "units-generation");
+    const ra = join(seededRecordDir(proj), "design", "requirements-analysis");
+    const ad = join(seededRecordDir(proj), "design", "domain-design");
+    const ug = join(seededRecordDir(proj), "design", "units-generation");
     mkdirSync(ra, { recursive: true });
     mkdirSync(ad, { recursive: true });
     mkdirSync(ug, { recursive: true });
@@ -819,7 +820,7 @@ export function setupIntegrationProject(
   if (opts.withConstructionArtifacts) {
     const dest = join(
       seededRecordDir(proj),
-      "construction",
+      "design",
       "todo-core",
       "functional-design",
     );

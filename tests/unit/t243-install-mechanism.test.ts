@@ -3749,7 +3749,7 @@ describe("t243 project initialization", () => {
 
     test("a project-owned stage the staged merge rewrites is never recorded either", () => {
       const project = installedProject();
-      const stageRel = ".claude/aidlc-common/stages/construction/team-review.md";
+      const stageRel = ".claude/aidlc-common/stages/build/team-review.md";
       const shipped = readFileSync(
         join(CLAUDE_RELEASE, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"),
         "utf-8",

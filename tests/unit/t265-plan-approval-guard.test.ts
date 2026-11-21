@@ -935,7 +935,7 @@ describe("t265b hook lifecycle", () => {
       seedActiveDirective(proj, "code-generation", "todo-core");
       for (const prefix of ["aidlc", "bun .claude/tools/aidlc.ts"]) {
         for (const verb of ["decision", "answer"]) {
-          const command = `${prefix} engine log ${verb} --stage code-generation --checkpoint summary-confirmation --questions-file ${RECORD_REL}/construction/todo-core/code-generation/questions.md --unit todo-core --details 'Looks correct'`;
+          const command = `${prefix} engine log ${verb} --stage code-generation --checkpoint summary-confirmation --questions-file ${RECORD_REL}/build/todo-core/code-generation/questions.md --unit todo-core --details 'Looks correct'`;
           const result = runHook(proj, BASH(command));
           expect(result.code, `${command}\n${result.stderr}`).toBe(0);
           // Another stage's or checkpoint's record is the log tool's to judge.
@@ -3643,7 +3643,7 @@ describe("t265b hook lifecycle", () => {
       state_sha256: stateDigest(readFileSync(join(record, "aidlc-state.md"), "utf-8")),
     });
     mkdirSync(join(record, "construction", "code-generation"), { recursive: true });
-    return `aidlc/spaces/default/intents/${intent}/construction/code-generation/code-generation-plan.md`;
+    return `aidlc/spaces/default/intents/${intent}/build/code-generation/code-generation-plan.md`;
   };
 
   // An agent with no file-edit tool (Codex on a model its catalog does not
@@ -5173,7 +5173,7 @@ describe("t265b hook lifecycle", () => {
 // scratch file (only validate-grid reads it) passes whatever the Plan Approval
 // state, and writing it never starts generation. Everything else is judged as
 // before, including the OS temp file the composer used to write.
-// The stage's learnings diary (`<record>/construction/code-generation/memory.md`)
+// The stage's learnings diary (`<record>/build/code-generation/memory.md`)
 // is appended to while the agent plans, for every Unit; it lives in the stage's
 // folder, not the Unit's, so a per-Unit plan wait used to refuse it and the
 // diary was skipped in silence. A file-tool write of exactly that file passes in

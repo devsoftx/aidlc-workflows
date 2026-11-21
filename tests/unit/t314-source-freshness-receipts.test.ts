@@ -415,7 +415,7 @@ function stripFingerprintFields(proj: string): void {
           "",
         );
         return `${stripped.trimEnd()}\n` +
-          "**Review Appendix Artifact**: construction/code-generation/code-generation-plan.md\n" +
+          "**Review Appendix Artifact**: build/code-generation/code-generation-plan.md\n" +
           "**Review Appendix Offset**: 0\n";
       });
       writeFileSync(p, blocks.join("\n---\n"), "utf-8");

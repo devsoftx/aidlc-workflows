@@ -1539,7 +1539,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
         { recursive: true },
       );
       const basePrompt =
-        "Run .kiro/aidlc-common/stages/inception/user-stories.md.";
+        "Run .kiro/aidlc-common/stages/design/user-stories.md.";
       const payload = (promptTemplate: string) => ({
         cwd: dir,
         tool_name: "subagent",
@@ -1658,7 +1658,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           stages: [{
             role: "aidlc-product-agent",
             prompt_template:
-              "Run .kiro/aidlc-common/stages/inception/user-stories.md.",
+              "Run .kiro/aidlc-common/stages/design/user-stories.md.",
           }, {
             role: "aidlc-quality-agent",
             prompt_template: "Review the user stories.",
@@ -1705,7 +1705,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           stages: [{
             role: "aidlc-product-agent",
             prompt_template:
-              "Run .kiro/aidlc-common/stages/inception/user-stories.md.",
+              "Run .kiro/aidlc-common/stages/design/user-stories.md.",
           }],
         },
       });
@@ -2000,7 +2000,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
       const conductor = JSON.parse(readFileSync(conductorFile, "utf-8"));
       conductor.toolsSettings.subagent.trustedAgents.push(agent);
       writeFileSync(conductorFile, JSON.stringify(conductor));
-      const prompt = "Run .kiro/aidlc-common/stages/inception/user-stories.md.";
+      const prompt = "Run .kiro/aidlc-common/stages/design/user-stories.md.";
       const shared = runDispatchCore(dir, {
         cwd: dir, tool_name: "Task", tool_input: { subagent_type: agent, prompt },
       });

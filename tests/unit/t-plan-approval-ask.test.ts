@@ -721,7 +721,7 @@ describe("the engine asks for Plan Approval", () => {
     expect(ask.plan_approval.editing).toBe(false);
     const [target] = ask.plan_approval.targets ?? [];
     expect(target.unit).toBeNull();
-    expect(target.plan_path).toEndWith("construction/code-generation/code-generation-plan.md");
+    expect(target.plan_path).toEndWith("build/code-generation/code-generation-plan.md");
     expect(target.summary).toEqual(["Builds: slugify for titles", "Touches: src/slugify.ts", "Tests: 3 unit tests"]);
     expect(questions(proj)).toContain("## Plan Approval");
     expect(questions(proj)).toMatch(/^\[Approval Fingerprint\]: sha256:v3:[0-9a-f]{64}$/m);
@@ -2246,8 +2246,8 @@ describe("when the stage rules arrive in parts", () => {
       const said = answer(proj, "Review the plan").message;
       expect(said, JSON.stringify(step)).toContain("show them the plan now");
       expect(said).toContain("y" in step
-        ? "construction/unit-a/code-generation/code-generation-plan.md"
-        : "construction/code-generation/code-generation-plan.md");
+        ? "build/unit-a/code-generation/code-generation-plan.md"
+        : "build/code-generation/code-generation-plan.md");
       expect(said).not.toContain("shown for approval before anything else is built");
       expect(said).not.toContain("When it arrives");
       expect(planApprovalReviewRequested(proj, "stage:code-generation", intent)).toBe(false);
@@ -2294,7 +2294,7 @@ describe("when the stage rules arrive in parts", () => {
     reply(proj, "review the plan first");
     const after = answer(proj, "Review the plan").message;
     expect(after).toContain("show them the plan now");
-    expect(after).toContain("construction/unit-b/code-generation/code-generation-plan.md");
+    expect(after).toContain("build/unit-b/code-generation/code-generation-plan.md");
     expect(after).not.toContain("unit-a");
     expect(planApprovalReviewRequested(proj, "unit:unit-a", intent)).toBe(false);
   });
@@ -2860,7 +2860,7 @@ describe("'review the plan' next to other questions and for groups", () => {
     reply(proj, "review the plan");
     const atGate = answer(proj, "Review the plan").message;
     expect(atGate).toContain("show them the plan now");
-    expect(atGate).toContain("construction/code-generation/code-generation-plan.md");
+    expect(atGate).toContain("build/code-generation/code-generation-plan.md");
     expect(atGate).toContain("carry on with this gate");
     expect(atGate).not.toContain("before anything else is built");
     // Sent back at the gate: the plan is asked about before it is rebuilt.

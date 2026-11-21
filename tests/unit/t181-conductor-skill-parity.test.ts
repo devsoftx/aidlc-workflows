@@ -202,7 +202,7 @@ describe("an approved code plan is built as it is", () => {
   });
 
   test("the stage file and its reference skip the plan steps once the plan is approved", () => {
-    const stage = flat("core/aidlc-common/stages/construction/code-generation.md");
+    const stage = flat("core/aidlc-common/stages/build/code-generation.md");
     const reference = flat("docs/reference/04-stages/construction.md");
     for (const [rel, body] of [["code-generation.md", stage], ["construction.md", reference]] as const) {
       expect(body, rel).toContain(
@@ -226,7 +226,7 @@ describe("an approved code plan is built as it is", () => {
   // there whatever words they use. No unit test can drive the conductor's
   // reading, so the sentence itself is pinned (and a live run exercises it).
   test("the stage file sends the conductor to the questions file in the person's own words", () => {
-    expect(flat("core/aidlc-common/stages/construction/code-generation.md")).toContain(
+    expect(flat("core/aidlc-common/stages/build/code-generation.md")).toContain(
       "When the person says they answered in the file, in whatever words they use " +
         "(\"done\", \"I put my answer in the file\", \"my answer is in the questions file\"), " +
         "their answer is on the `[Answer]:` line of `questions_path`: read it and record the choice they made, " +
@@ -1727,7 +1727,7 @@ describe("t181 per-harness conductor-SKILL freshness gate (P11 RESOLVE-2)", () =
       "harness/cursor/skills/aidlc/SKILL.md",
       "core/aidlc-common/protocols/stage-protocol.md",
       "core/aidlc-common/protocols/stage-protocol-reviewer.md",
-      "core/aidlc-common/stages/inception/requirements-analysis.md",
+      "core/aidlc-common/stages/design/requirements-analysis.md",
       "core/hooks/aidlc-review-freeze.ts",
       "core/tools/aidlc-lib.ts",
       "core/tools/aidlc-record-core.ts",

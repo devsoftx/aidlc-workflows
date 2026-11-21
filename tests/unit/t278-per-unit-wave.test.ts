@@ -677,25 +677,25 @@ describe("t278 engine-emitted wave contract", () => {
     expect(api.required_produces).toHaveLength(4);
     expect(
       api.required_produces.every((path) =>
-        path.includes("/construction/api/infrastructure-design/")
+        path.includes("/design/api/infrastructure-design/")
       ),
     ).toBe(true);
     expect(web.unit_kind).toBe("ui");
     expect(web.required_produces).toEqual([
-      `${RP}/construction/web/infrastructure-design/infrastructure-specification.md`,
-      `${RP}/construction/web/infrastructure-design/monitoring-design.md`,
-      `${RP}/construction/web/infrastructure-design/cicd-pipeline.md`,
-      `${RP}/construction/web/infrastructure-design/traceability.json`,
+      `${RP}/design/web/infrastructure-design/infrastructure-specification.md`,
+      `${RP}/design/web/infrastructure-design/monitoring-design.md`,
+      `${RP}/design/web/infrastructure-design/cicd-pipeline.md`,
+      `${RP}/design/web/infrastructure-design/traceability.json`,
     ]);
     expect(api.consumes_absent).toBeArray();
     expect(web.consumes_absent).toBeArray();
     expect(directive.unit).toBe("api");
     expect(directive.memory_path).toBe(api.unit_memory_path);
     expect(api.unit_memory_path).toBe(
-      `${RP}/construction/api/infrastructure-design/memory.md`,
+      `${RP}/design/api/infrastructure-design/memory.md`,
     );
     expect(web.unit_memory_path).toBe(
-      `${RP}/construction/web/infrastructure-design/memory.md`,
+      `${RP}/design/web/infrastructure-design/memory.md`,
     );
 
     // The rules ride inline on the run-stage when they fit (the shipped case)
@@ -740,17 +740,17 @@ describe("t278 engine-emitted wave contract", () => {
       );
     }
     expect(consumePaths).toContain(
-      `${RP}/construction/contract/nfr-requirements/security-requirements.md`,
+      `${RP}/design/contract/nfr-requirements/security-requirements.md`,
     );
     expect(consumePaths).toContain(
-      `${RP}/construction/contract/nfr-requirements/tech-stack-decisions.md`,
+      `${RP}/design/contract/nfr-requirements/tech-stack-decisions.md`,
     );
     expect(consumePaths).toContain(
-      `${RP}/construction/contract/functional-design/functional-spec.md`,
+      `${RP}/design/contract/functional-design/functional-spec.md`,
     );
     expect(entry.required_produces).toEqual([
-      `${RP}/construction/contract/nfr-design/security-design.md`,
-      `${RP}/construction/contract/nfr-design/traceability.json`,
+      `${RP}/design/contract/nfr-design/security-design.md`,
+      `${RP}/design/contract/nfr-design/traceability.json`,
     ]);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 

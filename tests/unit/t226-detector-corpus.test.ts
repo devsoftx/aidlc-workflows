@@ -116,7 +116,7 @@ const corpus: CorpusCase[] = [
     d1: true,
     d2: "fire",
     kind: "old",
-    note: "core/aidlc-common/stages/inception/practices-discovery.md line 120, normalized from HARNESS_DIR.",
+    note: "core/aidlc-common/stages/design/practices-discovery.md line 120, normalized from HARNESS_DIR.",
   },
   {
     id: "new-orchestrate-report-approved",

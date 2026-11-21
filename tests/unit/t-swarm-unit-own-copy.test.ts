@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/units-generation.md, file:aidlc-common/stages/construction/code-generation.md
+// covers: file:aidlc-common/stages/design/units-generation.md, file:aidlc-common/stages/build/code-generation.md
 //
 // t-swarm-unit-own-copy: Units built side by side are each built in their own
 // copy of the project, with none of their batch peers' work in it, so the

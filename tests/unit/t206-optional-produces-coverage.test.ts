@@ -245,7 +245,7 @@ describe("t206 optional_produces exempt from per-unit coverage", () => {
       review_state: "outstanding",
       required_produces: FD_REQUIRED.map(
         (name) =>
-          `${RP}/construction/alpha/functional-design/${artifactFilename(name)}`,
+          `${RP}/design/alpha/functional-design/${artifactFilename(name)}`,
       ),
     });
     expect(
@@ -361,10 +361,10 @@ describe("t206 optional_produces exempt from per-unit coverage", () => {
     const d = runNext(proj);
     expect(d.unit).toBe("alpha");
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/functional-design/${FD_OPTIONAL}.md`,
+      `${RP}/design/alpha/functional-design/${FD_OPTIONAL}.md`,
     );
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/functional-design/functional-spec.md`,
+      `${RP}/design/alpha/functional-design/functional-spec.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 });

@@ -671,7 +671,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expect(missing.kind).toBe("error");
     expect(missing.message).toContain('aidlc-design-agent for unit "beta"');
     expect(missing.message).toContain(
-      "construction/<unit>/user-stories/contributions/<agent-slug>.md",
+      "design/<unit>/user-stories/contributions/<agent-slug>.md",
     );
 
     const completeProj = seedProject();
@@ -716,7 +716,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expect(missing.kind).toBe("error");
     expect(missing.message).toContain("aidlc-design-agent (no contribution file)");
     expect(missing.message).toContain(
-      "construction/user-stories/contributions/<agent-slug>.md",
+      "design/user-stories/contributions/<agent-slug>.md",
     );
 
     const completeProj = seedProject();
@@ -760,7 +760,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
       expect(d.message).toContain(`${agent} (no contribution file)`);
     }
     expect(d.message).toContain(
-      "inception/practices-discovery/contributions/<agent-slug>.md",
+      "design/practices-discovery/contributions/<agent-slug>.md",
     );
   });
 
@@ -1081,8 +1081,8 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expect(named, held.message).not.toBeNull();
     const [, teamPractices, discoveredRules] = named as RegExpExecArray;
     const record = relative(proj, seededRecordDir(proj)).split(sep).join("/");
-    expect(teamPractices).toBe(`${record}/inception/practices-discovery/team-practices.md`);
-    expect(discoveredRules).toBe(`${record}/inception/practices-discovery/discovered-rules.md`);
+    expect(teamPractices).toBe(`${record}/design/practices-discovery/team-practices.md`);
+    expect(discoveredRules).toBe(`${record}/design/practices-discovery/discovered-rules.md`);
     expect(held.message).toContain("report --stage practices-discovery --result approved");
 
     const promote = spawnSync(

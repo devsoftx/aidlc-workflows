@@ -3276,7 +3276,7 @@ describe("t271 review iteration ceiling", () => {
       "unit-alpha",
     );
     expect(kindSnapshot?.reviewArtifact).toBe(
-      "construction/unit-alpha/functional-design/functional-spec.md",
+      "design/unit-alpha/functional-design/functional-spec.md",
     );
   });
 
@@ -3453,7 +3453,7 @@ describe("t271 review iteration ceiling", () => {
       Iteration: "1",
       "Artifact Fingerprint": fingerprint,
       "Review Appendix Artifact":
-        "inception/requirements-analysis/requirements.md",
+        "design/requirements-analysis/requirements.md",
       "Review Appendix Offset": "0",
     };
     appendAuditEntry("REVIEW_REQUESTED", identity, proj);
@@ -3675,7 +3675,7 @@ describe("t271 review iteration ceiling", () => {
           ...(malformed === "partial appendix"
             ? {
                 "Review Appendix Artifact":
-                  "inception/requirements-analysis/requirements.md",
+                  "design/requirements-analysis/requirements.md",
                 // Offset intentionally absent, so the row has no valid binding.
               }
             : { "Source Fingerprint": "sha256:not-valid" }),
@@ -4146,7 +4146,7 @@ describe("t271 review iteration ceiling", () => {
       mergeReviewRecordsFromDelta(request() + recordlessCompletion, worktreeRoot, mainRoot),
     ).toThrow(/record-era REVIEW_COMPLETED row without a verifiable review record/);
     const legacyRequest = request({
-      "Review Appendix Artifact": "construction/alpha/code-generation/code-generation-plan.md",
+      "Review Appendix Artifact": "build/alpha/code-generation/code-generation-plan.md",
       "Review Appendix Offset": "0",
     }).replace(`**Request Id**: ${requestId}\n`, "");
     const legacyCompletion = recordlessCompletion
@@ -4154,7 +4154,7 @@ describe("t271 review iteration ceiling", () => {
       .replace(
         `**Artifact Fingerprint**: ${artifactFingerprint}\n`,
         `**Artifact Fingerprint**: ${artifactFingerprint}\n` +
-          "**Review Appendix Artifact**: construction/alpha/code-generation/code-generation-plan.md\n" +
+          "**Review Appendix Artifact**: build/alpha/code-generation/code-generation-plan.md\n" +
           "**Review Appendix Offset**: 0\n",
       );
     expect(

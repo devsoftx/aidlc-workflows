@@ -182,7 +182,7 @@ describe("t316 standalone plugin compose test", () => {
     expect(json.graph.presentStages).toContain("test-pro-full-suite");
     expect(json.graph.presentScopes).toContain("test-pro-validation");
     expect(json.composedFiles).toContain(
-      ".claude/aidlc-common/stages/construction/test-pro-integration.md",
+      ".claude/aidlc-common/stages/build/test-pro-integration.md",
     );
     expect(json.idempotent).toBe(true);
     expect(treeDigest(installRoot)).toBe(before);
@@ -617,15 +617,15 @@ describe("t316 standalone plugin compose test", () => {
     };
     expect(json.warnings.map((finding) => finding.rule)).not.toContain("base-reference");
     expect(json.graph.presentStages).toEqual(["alpha-example-stage"]);
-    expect(json.composedFiles).toContain(".claude/aidlc-common/stages/construction/alpha-example-stage.md");
-    expect(json.composedFiles).not.toContain(".claude/aidlc-common/stages/construction/zeta-example-stage.md");
+    expect(json.composedFiles).toContain(".claude/aidlc-common/stages/build/alpha-example-stage.md");
+    expect(json.composedFiles).not.toContain(".claude/aidlc-common/stages/build/zeta-example-stage.md");
 
     // Without the base the reference is unchecked, and the bare install has no
     // zeta agent, so the candidate's graph compile fails.
     const without = run([pluginRoot, "--install", installRoot]);
     expect(without.status).toBe(1);
     expect(without.stderr).toContain("[test-compose-drop]: [degraded] aidlc-graph compile failed");
-    expect(without.stderr).toContain('WARNING stages/construction/alpha-example-stage.md [base-reference]');
+    expect(without.stderr).toContain('WARNING stages/build/alpha-example-stage.md [base-reference]');
     expect(treeDigest(installRoot)).toBe(before);
 
     const bare = run([pluginRoot, "--install", installRoot, "--with"]);

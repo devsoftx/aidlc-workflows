@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/construction/code-generation.md, hook:aidlc-record-human-turn,
+// covers: file:aidlc-common/stages/build/code-generation.md, hook:aidlc-record-human-turn,
 // hook:aidlc-plan-approval-guard, audit:PLAN_APPROVAL_RECORDED, audit:WORKFLOW_PARKED
 //
 // t-journey-code-plan-approval.sdk.test.ts - Code Generation's plan question,

@@ -2125,7 +2125,7 @@ describe("AttemptView projections and refusal streaks", () => {
         Iteration: "1",
         "Artifact Fingerprint": `sha256:${"a".repeat(64)}`,
         "Review Appendix Artifact":
-          "construction/alpha/functional-design/entities.md",
+          "design/alpha/functional-design/entities.md",
         "Review Appendix Offset": "0",
       },
       "a.md",
@@ -2143,7 +2143,7 @@ describe("AttemptView projections and refusal streaks", () => {
         Verdict: "READY",
         "Artifact Fingerprint": `sha256:${"a".repeat(64)}`,
         "Review Appendix Artifact":
-          "construction/alpha/functional-design/entities.md",
+          "design/alpha/functional-design/entities.md",
         "Review Appendix Offset": "0",
       },
       "a.md",
@@ -2156,7 +2156,7 @@ describe("AttemptView projections and refusal streaks", () => {
         generation: 1,
         stage: "functional-design",
         reviewer: "reviewer",
-        artifactPrefix: "construction/alpha/functional-design/",
+        artifactPrefix: "design/alpha/functional-design/",
         expectedFingerprint: `sha256:${"a".repeat(64)}`,
       }),
     ).toEqual({ coverage: "ready", approval: null });
@@ -2170,7 +2170,7 @@ describe("AttemptView projections and refusal streaks", () => {
             "2026-08-28T00:00:02Z",
             {
               File:
-                "aidlc/construction/alpha/functional-design/functional-design.md",
+                "aidlc/design/alpha/functional-design/functional-design.md",
             },
             "b.md",
             1,
@@ -2181,7 +2181,7 @@ describe("AttemptView projections and refusal streaks", () => {
           generation: 1,
           stage: "functional-design",
           reviewer: "reviewer",
-          artifactPrefix: "construction/alpha/functional-design/",
+          artifactPrefix: "design/alpha/functional-design/",
           expectedFingerprint: `sha256:${"a".repeat(64)}`,
         },
       ),
@@ -2207,7 +2207,7 @@ describe("AttemptView projections and refusal streaks", () => {
     }, "a.md", 0, 2);
     const written = (file: string): AuditShardEvent =>
       event("ARTIFACT_UPDATED", "2026-08-28T00:00:01Z", {
-        File: `aidlc/construction/alpha/functional-design/${file}`,
+        File: `aidlc/design/alpha/functional-design/${file}`,
       }, "a.md", 0, 3);
     const project = (rows: AuditShardEvent[]) =>
       candidateReviewCoverageProjection(rows, {
@@ -2215,7 +2215,7 @@ describe("AttemptView projections and refusal streaks", () => {
         generation: 1,
         stage: "functional-design",
         reviewer: "reviewer",
-        artifactPrefix: "construction/alpha/functional-design/",
+        artifactPrefix: "design/alpha/functional-design/",
         expectedFingerprint: fingerprint,
       });
     const coverage = (rows: AuditShardEvent[]) => project(rows)?.coverage ?? null;
@@ -2256,7 +2256,7 @@ describe("AttemptView projections and refusal streaks", () => {
         generation: 1,
         stage: "nfr-design",
         reviewer: "reviewer",
-        artifactPrefix: "construction/alpha/nfr-design/",
+        artifactPrefix: "design/alpha/nfr-design/",
         expectedFingerprint: fingerprint,
       });
     const coverage = (rows: AuditShardEvent[]) => project(rows)?.coverage ?? null;
@@ -2285,7 +2285,7 @@ describe("AttemptView projections and refusal streaks", () => {
       ...review("NOT-READY", 1, 0),
       approval(2),
       event("ARTIFACT_UPDATED", "2026-08-28T00:00:01Z", {
-        File: "aidlc/construction/alpha/nfr-design/nfr-design-patterns.md",
+        File: "aidlc/design/alpha/nfr-design/nfr-design-patterns.md",
       }, "a.md", 0, 3),
     ])).toBe(null);
     // An approval decides the concern only when it accepted every open finding
@@ -2296,14 +2296,14 @@ describe("AttemptView projections and refusal streaks", () => {
         [REVIEW_FINDING_DISPOSITIONS_FIELD]: serializeReviewFindingDispositions([
           // The engine names each reviewed document by its path in the project.
           {
-            artifact: "aidlc/construction/alpha/nfr-design/security-design.md",
+            artifact: "aidlc/design/alpha/nfr-design/security-design.md",
             id: "R-01", fingerprint: `sha256:${"b".repeat(64)}`, status,
           },
           // One unit-end approval records every stage's findings; another
           // stage's are not this stage's.
           ...(other
             ? [{
-              artifact: "aidlc/construction/alpha/nfr-requirements/nfr-requirements.md",
+              artifact: "aidlc/design/alpha/nfr-requirements/nfr-requirements.md",
               id: "R-01", fingerprint: `sha256:${"c".repeat(64)}`, status: other,
             }]
             : []),
@@ -2313,9 +2313,9 @@ describe("AttemptView projections and refusal streaks", () => {
         generation: 1,
         stage: "nfr-design",
         reviewer: "reviewer",
-        artifactPrefix: "construction/alpha/nfr-design/",
+        artifactPrefix: "design/alpha/nfr-design/",
         expectedFingerprint: fingerprint,
-        approvalAccepts: (block) => approvalDecidesOpenFindings(block, "construction/alpha/nfr-design/"),
+        approvalAccepts: (block) => approvalDecidesOpenFindings(block, "design/alpha/nfr-design/"),
       })?.coverage ?? null;
     expect(decided("Accepted risk")).toBe("approved");
     expect(decided("Fix requested")).toBe(null);
@@ -2327,15 +2327,15 @@ describe("AttemptView projections and refusal streaks", () => {
     expect(approvalOpenFindings(approval(2, {
       [REVIEW_FINDING_DISPOSITIONS_FIELD]: serializeReviewFindingDispositions([
         {
-          artifact: "aidlc/construction/alpha/nfr-design/security-design.md",
+          artifact: "aidlc/design/alpha/nfr-design/security-design.md",
           id: "R-01", fingerprint: `sha256:${"b".repeat(64)}`, status: "Accepted risk", decided_at_severity: "Major",
         },
         {
-          artifact: "aidlc/construction/alpha/nfr-requirements/nfr-requirements.md",
+          artifact: "aidlc/design/alpha/nfr-requirements/nfr-requirements.md",
           id: "R-02", fingerprint: `sha256:${"c".repeat(64)}`, status: "Fix requested",
         },
       ])!,
-    }).block, "construction/alpha/nfr-design/")).toEqual([{ id: "R-01", severity: "Major", status: "Accepted risk" }]);
+    }).block, "design/alpha/nfr-design/")).toEqual([{ id: "R-01", severity: "Major", status: "Accepted risk" }]);
     // A rejection after the approval opens the stage again.
     expect(coverage([
       ...review("NOT-READY", 1, 0),
@@ -2685,7 +2685,7 @@ describe("AttemptView projections and refusal streaks", () => {
       attempt: { recovery: "available", summaryCoverage: "missing", reviewCoverage: "missing", sourceCoverage: "current" },
       humanAuthority: { freshTurn: false, unattended: false },
     }).remedies.find((remedy) => remedy.op === "ask-stage-questions")?.action ?? "";
-    expect(ask("alpha")).toContain("/construction/alpha/functional-design/functional-design-questions.md");
+    expect(ask("alpha")).toContain("/design/alpha/functional-design/functional-design-questions.md");
     // With Units planned the checks read each Unit's file, so a stage-level
     // file named here would be one nothing reads.
     expect(ask(undefined)).not.toContain("functional-design-questions.md`");

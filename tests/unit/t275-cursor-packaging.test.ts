@@ -896,7 +896,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
       // routing data disagree with the refreshed distribution. The receipt hash
       // identifies the old stage bytes as framework-owned, so upgrade may replace
       // them; the compiled outputs must then be rebuilt from the new source.
-      const stageRel = ".cursor/aidlc-common/stages/construction/functional-design.md";
+      const stageRel = ".cursor/aidlc-common/stages/design/functional-design.md";
       const stagePath = join(project, stageRel);
       const staleStage = readFileSync(stagePath, "utf-8").replace(
         /^name:\s*.+$/m,
@@ -1171,7 +1171,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
       ).toBe(0);
 
       const stageRel =
-        ".cursor/aidlc-common/stages/construction/functional-design.md";
+        ".cursor/aidlc-common/stages/design/functional-design.md";
       const stagePath = join(project, stageRel);
       const artifact = "plugin-artifact-x";
       const addArtifact = (content: string) =>
@@ -1389,7 +1389,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
       // As compose writes it on a stage that maps every required output to
       // Unit kinds: the output, and an entry for the kinds the stage covers.
       const stageRel =
-        ".cursor/aidlc-common/stages/construction/functional-design.md";
+        ".cursor/aidlc-common/stages/design/functional-design.md";
       const stagePath = join(project, stageRel);
       const artifact = "plugin-artifact-k";
       const compose = (content: string, kinds: string) =>

@@ -402,7 +402,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     const shown = brief(proj, "code-generation");
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown).toContain("**Review outcome:** Concerns remain for your decision.");
-    expect(shown).toContain("construction/alpha/nfr-design/");
+    expect(shown).toContain("design/alpha/nfr-design/");
     expect(shown).toContain("> R-01 Finding: operability-design.md and testability-design.md do not exist");
     expect(shown).toContain("> R-02 Finding: The traceability file uses ids the requirements do not define");
     expect(shown).not.toContain("Approve accepts");
@@ -416,7 +416,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     expect(record.map(folderOf)).toEqual(shownOpen(shown));
     expect(record).toHaveLength(2);
     for (const entry of record) {
-      expect(entry).toContain("/construction/alpha/nfr-design/");
+      expect(entry).toContain("/design/alpha/nfr-design/");
       expect(entry).toEndWith(" Accepted risk");
     }
   });
@@ -554,7 +554,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown.split("> R-01 Finding: The review did not finish").length - 1).toBe(2);
     expect(shown.split(reason).length - 1).toBe(1);
-    expect(shown.indexOf(reason)).toBeGreaterThan(shown.indexOf("construction/alpha/code-generation/"));
+    expect(shown.indexOf(reason)).toBeGreaterThan(shown.indexOf("build/alpha/code-generation/"));
     const approved = gateReport(proj, "approved", ["--user-input", "Approve"]);
     expect(JSON.stringify(approved)).toContain(
       "Approved. The NFR Design and Code Generation reviews for alpha did not finish.",
@@ -691,7 +691,7 @@ describe("t-team-unit-end-gate-findings: a Unit worked alone shows at its checkp
     const shown = soloCheckpointBrief(proj, { "nfr-design": NFR_DESIGN_FINDINGS });
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown).toContain("**Review outcome:** Concerns remain for your decision.");
-    expect(shown).toContain("construction/alpha/nfr-design/");
+    expect(shown).toContain("design/alpha/nfr-design/");
     expect(shown).toContain("> R-01 Finding: operability-design.md and testability-design.md do not exist");
     expect(shown).toContain("> R-02 Finding: The traceability file uses ids the requirements do not define");
     expect(shown).toContain("- **Approve** - continue with the open findings accepted.");
@@ -706,7 +706,7 @@ describe("t-team-unit-end-gate-findings: a Unit worked alone shows at its checkp
     expect(record.map(folderOf)).toEqual(shownOpen(shown));
     expect(record).toHaveLength(2);
     for (const entry of record) {
-      expect(entry).toContain("/construction/alpha/nfr-design/");
+      expect(entry).toContain("/design/alpha/nfr-design/");
       expect(entry).toEndWith(" Accepted risk");
     }
   });

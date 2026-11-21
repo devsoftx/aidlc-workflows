@@ -121,8 +121,8 @@ describe("t349 audit trail guard: file-write tools", () => {
   test("writes beside the audit directory and a project's own audit folders are allowed", () => {
     for (const path of [
       `${RECORD}/aidlc-state.md`,
-      `${RECORD}/inception/requirements-analysis/requirements.md`,
-      `${RECORD}/inception/requirements-analysis/requirements-analysis-questions.md`,
+      `${RECORD}/design/requirements-analysis/requirements.md`,
+      `${RECORD}/design/requirements-analysis/requirements-analysis-questions.md`,
       `${RECORD}/audit-notes.md`,
       `${RECORD}/construction/audit/log.md`,
       `${RECORD}/.aidlc-engine/reviews/functional-design/review.md`,
@@ -238,7 +238,7 @@ describe("t349 audit trail guard: shell commands", () => {
     ]) {
       expect(bash(command), command).toBe("audit");
     }
-    for (const path of [`${RECORD}/construction/code-generation/code-generation-plan.md`, `${RECORD}/inception/requirements-analysis/requirements.md`, "src/app.ts"]) {
+    for (const path of [`${RECORD}/build/code-generation/code-generation-plan.md`, `${RECORD}/design/requirements-analysis/requirements.md`, "src/app.ts"]) {
       expect(bash(`apply_patch <<'PATCH'\n${patch(path)}\nPATCH`), path).toBeNull();
     }
   });

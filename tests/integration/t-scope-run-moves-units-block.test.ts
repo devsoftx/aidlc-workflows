@@ -53,7 +53,7 @@ function run(label: string, flags: string[], options: {
     afterApproval: (stage) => {
       if (stage === "units-generation" && options.afterApproval !== undefined) {
         // A hand edit after the approval breaks the block.
-        const rel = `${activeRecord(proj).dir.slice(proj.length + 1)}/inception/units-generation/unit-of-work-dependency.md`;
+        const rel = `${activeRecord(proj).dir.slice(proj.length + 1)}/design/units-generation/unit-of-work-dependency.md`;
         host.write(rel, options.afterApproval);
       }
       return undefined;

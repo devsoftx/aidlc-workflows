@@ -181,7 +181,7 @@ function receipts(proj: string): string[] {
     .map((name) => (JSON.parse(readFileSync(join(dir, name), "utf-8")) as { status: string }).status);
 }
 
-const QUESTIONS = "aidlc/spaces/default/intents/fixture-8000000000000001/construction/code-generation/code-generation-questions.md";
+const QUESTIONS = "aidlc/spaces/default/intents/fixture-8000000000000001/build/code-generation/code-generation-questions.md";
 
 describe("a code plan approved on one checkout holds on a clone of it", () => {
   for (const [policy, locked] of [["strict", false], ["relaxed", false], ["off", false], ["strict", true]] as const) {

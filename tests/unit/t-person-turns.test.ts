@@ -711,7 +711,7 @@ describe("person-turn check", () => {
       " ☐ Answer mode",
       "",
       "│ I've created 5 questions about how your team wants to work on this project, at",
-      "│ inception/practices-discovery/practices-discovery-questions.md. How would you like to answer them?",
+      "│ design/practices-discovery/practices-discovery-questions.md. How would you like to answer them?",
       "",
       "❯ 1. Guide me",
       "     I'll walk you through each question here, one batch at a time.",

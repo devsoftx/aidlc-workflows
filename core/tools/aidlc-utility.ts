@@ -4930,10 +4930,13 @@ export async function collectDoctorReport(
       ["hooks.json", "hook wiring"],
       ["cli.json", "AI-DLC command permission pre-approval"],
       ["rules/aidlc.mdc", "standing method rule (alwaysApply read instruction)"],
-      ["rules/aidlc-phase-ideation.mdc", "Ideation phase rule (agent-decided read instruction)"],
-      ["rules/aidlc-phase-inception.mdc", "Inception phase rule (agent-decided read instruction)"],
-      ["rules/aidlc-phase-construction.mdc", "Construction phase rule (agent-decided read instruction)"],
-      ["rules/aidlc-phase-operation.mdc", "Operation phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-discover.mdc", "Discover phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-design.mdc", "Design phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-build.mdc", "Build phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-test.mdc", "Test phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-secure.mdc", "Secure phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-deploy.mdc", "Deploy phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-operate.mdc", "Operate phase rule (agent-decided read instruction)"],
     ] as const) {
       results.push({
         pass: existsSync(join(projectDir, harness, file)),
@@ -13325,7 +13328,7 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
     if (anchorBefore !== anchorAfter) {
       const skippingAnchor = anchorBefore !== undefined && skipList.includes(anchorBefore);
       const mover =
-        skippingAnchor ? anchorBefore : (anchorAfter ?? anchorBefore ?? "construction");
+        skippingAnchor ? anchorBefore : (anchorAfter ?? anchorBefore ?? "build");
       // The scopes whose own plan already makes the change, without moving it.
       const scopesThat = Object.entries(loadScopeMapping())
         .filter(([name, def]) => name !== scope && (def.stages[mover] === "EXECUTE") !== skippingAnchor)

@@ -294,7 +294,7 @@ describe("t326 pinned team Unit merge", () => {
     const refusedPin = runMergeTool(UNIT, ["pin", "alpha"], pinFixture.seed);
     expect(refusedPin.status).not.toBe(0);
     expect(refusedPin.out).toContain(
-      "construction/beta/functional-design/forged.md",
+      "design/beta/functional-design/forged.md",
     );
     expect(refusedPin.out).toContain(trackedMixedCasePath!);
     expect(refusedPin.out).toContain("outside claimed Unit record tree");
@@ -382,7 +382,7 @@ describe("t326 pinned team Unit merge", () => {
     );
     expect(refusedLand.status).not.toBe(0);
     expect(refusedLand.out).toContain(
-      "construction/beta/nfr-design/forged.md",
+      "design/beta/nfr-design/forged.md",
     );
     expect(refusedLand.out).toContain("violates claimed Unit ownership");
     expect(refusedLand.out).toContain(outsideTreeStep("land-boundary-team"));

@@ -50,7 +50,7 @@
     "tool_name": "write",
     "tool_input": {
       "command": "create",
-      "path": "/tmp/example-project/aidlc-docs/ideation/intent-capture/intent-statement.md",
+      "path": "/tmp/example-project/aidlc-docs/discover/intent-capture/intent-statement.md",
       "content": "PROBE"
     },
     "tool_response": { "items": [{ "Text": "created" }] }

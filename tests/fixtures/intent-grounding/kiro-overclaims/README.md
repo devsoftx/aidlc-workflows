@@ -21,7 +21,7 @@ Selecting Q2's personal-use option would supply different evidence from merely
 leaving it among the options. Q5's decision-making answer alone remains
 insufficient for an identity claim.
 
-The [intent-capture stage](../../../../core/aidlc-common/stages/ideation/intent-capture.md)
+The [intent-capture stage](../../../../core/aidlc-common/stages/discover/intent-capture.md)
 allows confirmed answers as sources, forbids turning unselected options into
 exclusions or requirements, and specifies how to handle unsupported content.
 The [claim-sources sensor contract](../../../../core/sensors/aidlc-claim-sources.md)

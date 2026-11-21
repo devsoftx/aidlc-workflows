@@ -216,7 +216,7 @@ describe("going back to Units Generation after the switch", () => {
     });
     expect(run.agent.refusalsMet).toEqual([]);
     const design = [...after].reverse().find((d) => d.kind === "run-stage" && d.stage === "functional-design");
-    expect(JSON.stringify(design)).toContain("/construction/core/functional-design/");
+    expect(JSON.stringify(design)).toContain("/design/core/functional-design/");
     expect(after.some((d) => d.kind === "run-stage" && d.stage === "units-generation")).toBe(true);
   }, SCOPE_RUN_TIMEOUT_MS);
 });

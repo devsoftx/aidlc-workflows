@@ -50,7 +50,7 @@ const TABLES: Record<Harness, string> = {
   "kiro-ide": ".kiro/skills/aidlc/tables.md",
   opencode: ".aidlc/skills/aidlc/tables.md",
 };
-const STAGE = "aidlc-common/stages/construction/build-and-test.md";
+const STAGE = "aidlc-common/stages/test/build-and-test.md";
 const PERSONA = "agents/aidlc-quality-agent.md";
 const STAGE_LINE = ["Document the coverage run command.", "Document the coverage run command and its output."] as const;
 const PERSONA_LINE = [

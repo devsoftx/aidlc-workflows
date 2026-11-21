@@ -1,4 +1,4 @@
-// covers: stage:inception/refined-mockups, subcommand:aidlc-orchestrate:next
+// covers: stage:design/refined-mockups, subcommand:aidlc-orchestrate:next
 //
 // Refined Mockups is on the classic and workshop plans, which run no Ideation
 // stage, so its condition cannot ask for rough mockups from Ideation: read as
@@ -76,7 +76,7 @@ describe("t-refined-mockups-runs-without-ideation", () => {
       ...((step.consumes_absent ?? []) as Array<{ path: string }>).map((entry) => entry.path),
     ];
     for (const name of ["wireframes.md", "user-flow.md"]) {
-      expect(read.some((path) => path.endsWith(`/ideation/rough-mockups/${name}`)), JSON.stringify(read)).toBe(true);
+      expect(read.some((path) => path.endsWith(`/discover/rough-mockups/${name}`)), JSON.stringify(read)).toBe(true);
     }
   });
 });

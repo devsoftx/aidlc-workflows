@@ -162,7 +162,7 @@ describe("a side-by-side Unit's worker writes its records where AI-DLC reads the
     const finalized = swarm(pd, ["finalize", "--batch", "1", "--units", "alpha", "--claimed", "alpha"]);
     expect(finalized.code, `${finalized.out}\n${finalized.err}`).toBe(2);
     const { detail } = (JSON.parse(finalized.out) as { units: { detail: string }[] }).units[0];
-    expect(detail).toContain("outside unit \"alpha\"'s source manifest (construction/alpha/code-generation/source-manifest.json)");
+    expect(detail).toContain("outside unit \"alpha\"'s source manifest (build/alpha/code-generation/source-manifest.json)");
     expect(detail).toContain(`update ${toPosix(join(codeGenerationRecordDir(child, "alpha"), "source-manifest.json"))},`);
   });
 });

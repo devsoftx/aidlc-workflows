@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-state:gate-start, audit:SENSOR_FIRED, stage:inception/reverse-engineering
+// covers: subcommand:aidlc-state:gate-start, audit:SENSOR_FIRED, stage:discover/reverse-engineering
 //
 // t350 - reverse-engineering's declared sensors fire on its own output (#771).
 //

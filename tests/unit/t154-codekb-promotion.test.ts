@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/reverse-engineering.md, file:aidlc-common/stages/inception/requirements-analysis.md, file:aidlc-common/stages/inception/practices-discovery.md, file:aidlc-common/stages/inception/user-stories.md, file:aidlc-common/stages/construction/nfr-requirements.md
+// covers: file:aidlc-common/stages/discover/reverse-engineering.md, file:aidlc-common/stages/design/requirements-analysis.md, file:aidlc-common/stages/design/practices-discovery.md, file:aidlc-common/stages/design/user-stories.md, file:aidlc-common/stages/design/nfr-requirements.md
 //
 // t154 — codekb promotion. Deterministic, no-LLM, zero-token structural
 // contract over the SHIPPED stage files.
@@ -29,7 +29,7 @@
 //   5. The TWO prose consumers (user-stories, nfr-requirements) point their
 //      RE-read prose at the space-level codekb path.
 //   6. NO stage file retains the old RE output directory literal
-//      `aidlc-docs/inception/reverse-engineering/` NOR the bare
+//      `aidlc-docs/discover/reverse-engineering/` NOR the bare
 //      `aidlc/codekb/<repo>/` form anywhere.
 
 import { describe, expect, test } from "bun:test";
@@ -54,7 +54,7 @@ const KNOWLEDGE_DIR = join(AIDLC_SRC, "knowledge");
 // `codekb-path` tool. The bare form must not appear, asserted by
 // NO_BARE_CODEKB_PATH below.
 const NEW_CODEKB_PATH = "aidlc/spaces/<active-space>/codekb/<repo>/";
-const OLD_RE_OUTPUT_PATH = "aidlc-docs/inception/reverse-engineering/";
+const OLD_RE_OUTPUT_PATH = "aidlc-docs/discover/reverse-engineering/";
 // The bare workspace-root form must NOT survive in any stage prose because
 // codekb is space-scoped.
 const NO_BARE_CODEKB_PATH = "aidlc/codekb/<repo>/";
@@ -184,7 +184,7 @@ describe("t154 codekb promotion — RE outputs land at aidlc/spaces/<active-spac
   // -- 6: no stage file retains the OLD RE output dir NOR the bare codekb form --
   // Sweep every shipped stage .md for BOTH retired literals: the record-dir path
   // AND the bare workspace-root `aidlc/codekb/<repo>/`.
-  test("no shipped stage .md retains the old aidlc-docs/inception/reverse-engineering/ NOR the bare aidlc/codekb/<repo>/ path", () => {
+  test("no shipped stage .md retains the old aidlc-docs/discover/reverse-engineering/ NOR the bare aidlc/codekb/<repo>/ path", () => {
     const oldOffenders: string[] = [];
     const bareOffenders: string[] = [];
     for (const phase of readdirSync(STAGES_DIR).sort()) {

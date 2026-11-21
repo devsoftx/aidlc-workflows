@@ -383,7 +383,7 @@ describe("t157 seeded workspace shell + re-rooted .gitignore (SEED)", () => {
       "aidlc/spaces/default/intents/intents.json",
       `${record}/aidlc-state.md`,
       `${record}/audit/host-clone.md`,
-      `${record}/inception/requirements-analysis/requirements.md`,
+      `${record}/design/requirements-analysis/requirements.md`,
     ];
     for (const h of HARNESSES) {
       const repo = mkdtempSync(join(tmpdir(), `aidlc-t157-committed-${h}-`));

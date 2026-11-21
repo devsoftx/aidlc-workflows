@@ -404,14 +404,14 @@ describe("v2 stage-graph compatibility", () => {
     expect(
       producesArtifactFile(
         stage,
-        "aidlc/construction/build-and-test/test-results.md",
+        "aidlc/test/build-and-test/test-results.md",
         new Set(),
       ),
     ).toBe(true);
     expect(
       producesArtifactFile(
         stage,
-        "aidlc/construction/build-and-test/build-test-results.md",
+        "aidlc/test/build-and-test/build-test-results.md",
         new Set(),
       ),
     ).toBe(false);
@@ -465,7 +465,7 @@ describe("v2 stage-graph compatibility", () => {
       unitKind: null,
     });
     expect(instances[0].relativePath.endsWith(
-      "/construction/code-generation/code-summary.md",
+      "/build/code-generation/code-summary.md",
     )).toBe(true);
 
     const captured = captureStageValidationBasis(

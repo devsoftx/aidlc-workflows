@@ -332,7 +332,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.stage).toBe("functional-design");
     expect(d.unit).toBe("alpha");
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/functional-design/functional-spec.md`,
+      `${RP}/design/alpha/functional-design/functional-spec.md`,
     );
     expect(d.produces?.some((p) => p.includes("{unit-name}"))).toBe(false);
     expect(d.wave?.entries.map((entry) => entry.unit)).toEqual([
@@ -401,7 +401,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.stage).toBe("functional-design");
     expect(d.unit).toBeUndefined();
     expect(d.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -421,7 +421,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.stage).toBe("functional-design");
     expect(d.unit).toBeUndefined();
     expect(d.produces).toContain(
-      `${RP}/construction/functional-design/functional-spec.md`,
+      `${RP}/design/functional-design/functional-spec.md`,
     );
     expect(d.produces?.some((path) => path.includes("{unit-name}"))).toBe(false);
 
@@ -545,7 +545,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(
       executable.some((action) =>
         action.startsWith("Ask the person the stage's questions through its question flow") &&
-        action.includes("/construction/alpha/functional-design/functional-design-questions.md")
+        action.includes("/design/alpha/functional-design/functional-design-questions.md")
       ),
     ).toBe(true);
     expect(
@@ -579,7 +579,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.unit).toBe("alpha");
     expect((d.remedies ?? []).map((remedy) => remedy.op)).toEqual(["ask-stage-questions"]);
     expect(d.remedies?.[0].action).toContain(
-      "/construction/alpha/functional-design/functional-design-questions.md",
+      "/design/alpha/functional-design/functional-design-questions.md",
     );
     expect(JSON.stringify(d)).not.toContain("Confirm the summary again");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -663,7 +663,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.gate).toBe("unresolved");
     expect(d.unit).toBeUndefined();
     expect(d.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -681,7 +681,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/code-generation/code-generation-plan.md`,
+      `${RP}/build/alpha/code-generation/code-generation-plan.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 

@@ -365,7 +365,7 @@ describe("t314 standalone plugin validator", () => {
     expect(unchecked.errors).toEqual([]);
     expect(unchecked.warnings.filter((finding) => finding.rule === "base-reference")).toEqual([
       {
-        file: "stages/construction/fixture-plugin-stage.md",
+        file: "stages/build/fixture-plugin-stage.md",
         rule: "base-reference",
         message: 'agent "zeta-reviewer-agent" is not checked: it would come from zeta, the base this plugin builds on',
         fix: "Run validate again with --with <path to your zeta checkout> to check it.",
@@ -409,7 +409,7 @@ describe("t314 standalone plugin validator", () => {
     // --with checks a base's agents, not its stages, so the stage line does not offer it.
     const stageFix =
       'If another plugin ships it, add that plugin to dependencies next to "core", as "<base>@^1.2.0"; otherwise correct the name.';
-    const file = "stages/construction/fixture-plugin-stage.md";
+    const file = "stages/build/fixture-plugin-stage.md";
     const withStage = (edit: (stage: string) => string): string => {
       const root = fixture();
       const stage = join(root, file);
@@ -905,7 +905,7 @@ never read
     );
     expect(result.valid).toBe(false);
     expect(linked.map((finding) => finding.file)).toEqual([
-      "stages/construction/fixture-plugin-linked-stage.md",
+      "stages/build/fixture-plugin-linked-stage.md",
       "tools/linked-dir",
     ]);
     expect(

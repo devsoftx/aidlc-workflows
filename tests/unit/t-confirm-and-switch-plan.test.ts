@@ -109,7 +109,7 @@ describe("t-confirm-and-switch-plan: a confirmed summary's documents are written
     const message = await switchStep(proj, "express");
     const folder = "aidlc/spaces/default/intents/";
     expect(message).toContain("The person confirmed Intent Capture & Framing's summary, and express does not run Intent Capture & Framing");
-    expect(message).toMatch(new RegExp(`${folder}[^\`]+/ideation/intent-capture/intent-statement\\.md`));
+    expect(message).toMatch(new RegExp(`${folder}[^\`]+/discover/intent-capture/intent-statement\\.md`));
     expect(message).toContain("stakeholder-map.md");
     expect(message).not.toContain("intent-capture-questions.md");
     expect(message).toContain("do nothing else of Intent Capture & Framing");

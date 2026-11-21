@@ -114,7 +114,7 @@ function mkproj(): string {
       stages: [
         {
           stage_slug: "user-stories",
-          memory_path: `${RP}/inception/user-stories/memory.md`,
+          memory_path: `${RP}/design/user-stories/memory.md`,
         },
       ],
     }),
@@ -313,7 +313,7 @@ describe("t99 §13 learning-gate end-to-end (migrated from t99-learnings-gate-fl
             command: "bun .claude/tools/aidlc-sensor.ts fire acceptance-format",
             default_severity: "advisory",
             description: "Checks AC uses Given/When/Then",
-            matches: "**/aidlc-docs/inception/user-stories/**",
+            matches: "**/aidlc-docs/design/user-stories/**",
             timeout_seconds: 30,
           },
         },
@@ -333,7 +333,7 @@ describe("t99 §13 learning-gate end-to-end (migrated from t99-learnings-gate-fl
     expect(existsSync(manifest)).toBe(true);
     const m = parseSensorManifest(readFileSync(manifest, "utf-8"));
     expect(m.id).toBe("acceptance-format");
-    expect(m.matches).toBe("**/aidlc-docs/inception/user-stories/**");
+    expect(m.matches).toBe("**/aidlc-docs/design/user-stories/**");
   }, TIMEOUT);
 
   test("Case 3: next compile binds the id into user-stories sensors_applicable [.sh 8]", () => {

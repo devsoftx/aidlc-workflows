@@ -59,7 +59,7 @@ afterEach(() => {
 
 /**
  * Build a minimal active-stage project rooted at <root>: an active user-stories
- * stage with a seeded stage .md under .claude/aidlc-common/stages/inception/, a
+ * stage with a seeded stage .md under .claude/aidlc-common/stages/design/, a
  * runtime-graph, and a sensor-binding selections.json. Parameterised on the
  * absolute project root so callers can place the tail at .../dist/claude
  * (framework-tree shape) vs a plain project - the only difference that drives
@@ -89,7 +89,7 @@ function seedProject(root: string): void {
       stages: [
         {
           stage_slug: "user-stories",
-          memory_path: "aidlc-docs/inception/user-stories/memory.md",
+          memory_path: "aidlc-docs/design/user-stories/memory.md",
         },
       ],
     }),

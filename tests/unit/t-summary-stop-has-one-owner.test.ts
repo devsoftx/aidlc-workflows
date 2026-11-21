@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/protocols/stage-protocol-summary.md, file:aidlc-common/stages/inception/requirements-analysis.md
+// covers: file:aidlc-common/protocols/stage-protocol-summary.md, file:aidlc-common/stages/design/requirements-analysis.md
 //
 // The summary confirmation before a stage writes its documents has one owner:
 // stage-protocol-summary.md, which the engine names when the confirmation is on

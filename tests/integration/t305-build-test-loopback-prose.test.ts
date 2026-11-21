@@ -1,4 +1,4 @@
-// covers: doc:aidlc-common/protocols/stage-protocol.md, doc:aidlc-common/protocols/stage-protocol-construction.md, doc:aidlc-common/protocols/stage-protocol-loopback.md, doc:aidlc-common/protocols/stage-protocol-recovery.md, file:aidlc-common/stages/construction/build-and-test.md, file:aidlc-common/stages/construction/code-generation.md
+// covers: doc:aidlc-common/protocols/stage-protocol.md, doc:aidlc-common/protocols/stage-protocol-construction.md, doc:aidlc-common/protocols/stage-protocol-loopback.md, doc:aidlc-common/protocols/stage-protocol-recovery.md, file:aidlc-common/stages/test/build-and-test.md, file:aidlc-common/stages/build/code-generation.md
 //
 // t305 — Build-and-Test failure loop-back PROSE-PIN (issue #611). t34-style:
 // mechanism = none. Every assertion is readFileSync + a string / regex check
@@ -8,7 +8,7 @@
 // SUBJECT: the bounded Build & Test → Code Generation failure loop-back in the
 // conditional Construction protocol module.
 // Four surfaces carry the contract:
-//   1. dist/claude/.claude/aidlc-common/stages/construction/build-and-test.md
+//   1. dist/claude/.claude/aidlc-common/stages/test/build-and-test.md
 //      — Step 9's 4-rung failure-escalation ladder, the `## Loop-Back Log`
 //      artifact shape, and the single-stage (--single) carve-out.
 //   2. dist/claude/.claude/aidlc-common/protocols/

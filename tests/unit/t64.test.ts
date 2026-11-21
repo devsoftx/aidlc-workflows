@@ -78,7 +78,7 @@ consumes:
 requires_stage:
   - intent-capture
 inputs: Intent statement
-outputs: aidlc-docs/ideation/scope-definition/scope-document.md
+outputs: aidlc-docs/discover/scope-definition/scope-document.md
 ---
 
 # body

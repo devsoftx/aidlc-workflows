@@ -1,4 +1,4 @@
-// covers: file:skills/aidlc/SKILL.md, file:tools/aidlc-audit.ts, file:knowledge/aidlc-shared/audit-format.md, file:knowledge/aidlc-shared/state-template.md, file:aidlc-common/protocols/stage-protocol.md, file:aidlc-common/protocols/stage-protocol-construction.md, file:aidlc-common/stages/construction/code-generation.md
+// covers: file:skills/aidlc/SKILL.md, file:tools/aidlc-audit.ts, file:knowledge/aidlc-shared/audit-format.md, file:knowledge/aidlc-shared/state-template.md, file:aidlc-common/protocols/stage-protocol.md, file:aidlc-common/protocols/stage-protocol-construction.md, file:aidlc-common/stages/build/code-generation.md
 //
 // A Construction Bolt-by-Bolt vocabulary check: it reads the SHIPPED
 // implementation files for the durable anchors of the Bolt vocabulary - the
@@ -40,7 +40,7 @@
 //     3.6 & 3.7 once after all Bolts
 //   dist/claude/.claude/aidlc-common/protocols/stage-protocol-construction.md
 //     (CONSTRUCTION_PROTOCOL; must carry no planned Bolt-major ceremony)
-//   dist/claude/.claude/aidlc-common/stages/construction/code-generation.md  (CODE_GEN)
+//   dist/claude/.claude/aidlc-common/stages/build/code-generation.md  (CODE_GEN)
 //     "orchestrator-managed completion gating" note
 
 import { describe, expect, test } from "bun:test";

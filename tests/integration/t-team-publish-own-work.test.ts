@@ -88,7 +88,7 @@ describe("a team's publish commits its own work", () => {
     expect(result).toMatchObject({ published: true, unit: "alpha", left_out: 54 });
     const files = committed(checkout);
     expect(files).toContain("src/alpha-extra.ts");
-    expect(files.some((path) => path.endsWith("/construction/alpha/code-generation/source-manifest.json"))).toBe(true);
+    expect(files.some((path) => path.endsWith("/build/alpha/code-generation/source-manifest.json"))).toBe(true);
     expect(files.filter((path) => /^(\.codex|\.agents|node_modules|coverage)\//.test(path))).toEqual([]);
     expect(stillNew(checkout)).toHaveLength(54);
     expect(existsSync(join(checkout, "node_modules", "pkg-0", "index.js"))).toBe(true);

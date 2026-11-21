@@ -30,8 +30,8 @@ for (const name of HARNESS_NAMES) {
 // Where the agent reads that a question's options are lettered, in each tree.
 const LETTER_SITES: Array<{ file: string; line: RegExp }> = [
   { file: "aidlc-common/protocols/stage-protocol.md", line: /^- Include options (A-[A-Z]) as appropriate for each question$/m },
-  { file: "aidlc-common/stages/inception/requirements-analysis.md", line: /Include context-appropriate questions with (A-[A-Z]) options\./ },
-  { file: "aidlc-common/stages/ideation/intent-capture.md", line: /Include (A-[A-Z]) options with X \(Other\) as final option\./ },
+  { file: "aidlc-common/stages/design/requirements-analysis.md", line: /Include context-appropriate questions with (A-[A-Z]) options\./ },
+  { file: "aidlc-common/stages/discover/intent-capture.md", line: /Include (A-[A-Z]) options with X \(Other\) as final option\./ },
 ];
 
 function engineRoot(name: string): string {

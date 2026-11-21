@@ -359,7 +359,7 @@ describe("t208 engine unit-kind pruning", () => {
     expect(d.stage).toBe("nfr-requirements");
     expect(d.unit).toBe("api");
     for (const keep of NFR_REQ_SPEC) {
-      expect(d.produces).toContain(`${RP}/construction/api/nfr-requirements/${artifactFilename(keep)}`);
+      expect(d.produces).toContain(`${RP}/design/api/nfr-requirements/${artifactFilename(keep)}`);
     }
     for (const gone of [
       "performance-requirements",
@@ -393,7 +393,7 @@ describe("t208 engine unit-kind pruning", () => {
     const d = runNext(proj);
     expect(d.unit).toBe("svc");
     for (const name of NFR_REQ_ALL) {
-      expect(d.produces).toContain(`${RP}/construction/svc/nfr-requirements/${artifactFilename(name)}`);
+      expect(d.produces).toContain(`${RP}/design/svc/nfr-requirements/${artifactFilename(name)}`);
     }
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -600,8 +600,8 @@ describe("t208 engine unit-kind pruning", () => {
     const d = runNext(proj);
     expect(d.stage).toBe("code-generation");
     expect(d.unit).toBe("api");
-    expect(d.produces).toContain(`${RP}/construction/api/code-generation/code-generation-plan.md`);
-    expect(d.produces).toContain(`${RP}/construction/api/code-generation/code-summary.md`);
+    expect(d.produces).toContain(`${RP}/build/api/code-generation/code-generation-plan.md`);
+    expect(d.produces).toContain(`${RP}/build/api/code-generation/code-summary.md`);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
   // 7: a kindless dag is byte-identical behaviour to t186 - the
@@ -613,7 +613,7 @@ describe("t208 engine unit-kind pruning", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     for (const name of FD_PRODUCES) {
-      expect(d.produces).toContain(`${RP}/construction/alpha/functional-design/${artifactFilename(name)}`);
+      expect(d.produces).toContain(`${RP}/design/alpha/functional-design/${artifactFilename(name)}`);
     }
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -626,10 +626,10 @@ describe("t208 engine unit-kind pruning", () => {
     seedBoltDag(proj, [{ name: "web", kind: "ui" }]);
     const d = runNext(proj);
     expect(d.unit).toBe("web");
-    expect(d.produces).toContain(`${RP}/construction/web/functional-design/frontend-components.md`);
+    expect(d.produces).toContain(`${RP}/design/web/functional-design/frontend-components.md`);
     // ui's REQUIRED set is functional-spec and traceability (rules and
     // entities are mapped [service, spec, library]).
-    expect(d.produces).toContain(`${RP}/construction/web/functional-design/functional-spec.md`);
+    expect(d.produces).toContain(`${RP}/design/web/functional-design/functional-spec.md`);
     expect(d.produces?.some((p) => p.includes("/rules.md"))).toBe(false);
 
     const proj2 = seedProject("functional-design");
@@ -638,7 +638,7 @@ describe("t208 engine unit-kind pruning", () => {
     expect(d2.unit).toBe("api");
     expect(d2.produces?.some((p) => p.includes("/frontend-components.md"))).toBe(false);
     for (const name of ["functional-spec", "rules", "entities"]) {
-      expect(d2.produces).toContain(`${RP}/construction/api/functional-design/${name}.md`);
+      expect(d2.produces).toContain(`${RP}/design/api/functional-design/${name}.md`);
     }
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 

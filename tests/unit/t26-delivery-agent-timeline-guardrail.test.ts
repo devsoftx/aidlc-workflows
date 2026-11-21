@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/delivery-planning.md, file:agents/aidlc-delivery-agent.md, file:knowledge/aidlc-delivery-agent/workflow-planning-guide.md
+// covers: file:aidlc-common/stages/design/delivery-planning.md, file:agents/aidlc-delivery-agent.md, file:knowledge/aidlc-delivery-agent/workflow-planning-guide.md
 //
 // t26 — Content guardrail: the shipped delivery-planning SURFACE must not use
 // human-timeline framing. Migrated from
@@ -20,7 +20,7 @@
 // fixtures.ts) and read each .md in-process.
 //
 // Subject under test (dist/claude/.claude/...):
-//   - aidlc-common/stages/inception/delivery-planning.md  (the stage spec)
+//   - aidlc-common/stages/design/delivery-planning.md  (the stage spec)
 //   - agents/aidlc-delivery-agent.md                       (the persona)
 //   - knowledge/aidlc-delivery-agent/workflow-planning-guide.md (the guide)
 //
@@ -54,7 +54,7 @@ import { AIDLC_SRC } from "../harness/fixtures.ts";
 
 // Each entry: [human-readable basename for the test name, path relative to AIDLC_SRC].
 const FILES: ReadonlyArray<readonly [string, string]> = [
-  ["delivery-planning.md", "aidlc-common/stages/inception/delivery-planning.md"],
+  ["delivery-planning.md", "aidlc-common/stages/design/delivery-planning.md"],
   ["aidlc-delivery-agent.md", "agents/aidlc-delivery-agent.md"],
   [
     "workflow-planning-guide.md",

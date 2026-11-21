@@ -496,15 +496,15 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 
   test("a Feasibility gate whose deliverables cite no required input says the finding once", () => {
     seedStateFile(proj, "state-mid-ideation.md");
-    put("ideation/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n\n## Why\n\nSales.\n");
+    put("discover/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n\n## Why\n\nSales.\n");
     for (const name of ["feasibility-assessment", "constraint-register", "raid-log"]) {
-      put(`ideation/feasibility/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
+      put(`discover/feasibility/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
     }
     expect(run(STATE, ["checkbox", `${STAGE}=in-progress`]).rc).toBe(0);
     const opened = reply(ORCHESTRATE, ["report", "--stage", STAGE, "--result", "awaiting-approval"], SENSORS_ON);
     const fired = coverageRows("SENSOR_FIRED");
     expect(fired, JSON.stringify(opened)).toHaveLength(1);
-    expect(fired[0]).toEndWith("ideation/feasibility/feasibility-assessment.md");
+    expect(fired[0]).toEndWith("discover/feasibility/feasibility-assessment.md");
     expect(coverageRows("SENSOR_FAILED")).toHaveLength(1);
     const narration = String(opened.narration ?? "");
     expect(narration.match(/The upstream-coverage check reports/g) ?? []).toHaveLength(1);
@@ -544,10 +544,10 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 - **Last Updated**: 2026-08-20T00:00:00Z
 `);
     seedBoltDag(proj, ["alpha", "beta"]);
-    put("inception/requirements-analysis/requirements.md", "# Requirements\n\n## Functional\n\n- FR1 Login\n\n## Other\n\nx\n");
+    put("design/requirements-analysis/requirements.md", "# Requirements\n\n## Functional\n\n- FR1 Login\n\n## Other\n\nx\n");
     for (const unit of ["alpha", "beta"]) {
       for (const name of ["entities", "rules", "functional-spec"]) {
-        put(`construction/${unit}/functional-design/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
+        put(`design/${unit}/functional-design/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
       }
     }
     const gate = run(STATE, ["gate-start", "functional-design"], { ...SENSORS_ON, AIDLC_DISABLE_ENSEMBLE_EVIDENCE: "1", AIDLC_SKIP_REVIEWER_GATE_GUARD: "1" });

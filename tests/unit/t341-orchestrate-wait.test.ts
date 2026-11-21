@@ -159,8 +159,8 @@ describe("t341 orchestrate wait", () => {
     expect(waiting.status, waiting.stderr).toBe(0);
     expect(waiting.json?.status).toBe("waiting");
     expect(waiting.json?.missing).toEqual([
-      "inception/requirements-analysis/requirements.md (absent or empty)",
-      "inception/requirements-analysis/requirements-analysis-questions.md (absent or empty)",
+      "design/requirements-analysis/requirements.md (absent or empty)",
+      "design/requirements-analysis/requirements-analysis-questions.md (absent or empty)",
     ]);
 
     const dir = join(seededRecordDir(project), "inception", "requirements-analysis");
@@ -172,7 +172,7 @@ describe("t341 orchestrate wait", () => {
     ]);
     expect(emptyFile.json?.status).toBe("waiting");
     expect(emptyFile.json?.missing).toEqual([
-      "inception/requirements-analysis/requirements-analysis-questions.md (absent or empty)",
+      "design/requirements-analysis/requirements-analysis-questions.md (absent or empty)",
     ]);
 
     writeFileSync(join(dir, "requirements-analysis-questions.md"), "# Questions\n");
@@ -208,10 +208,10 @@ describe("t341 orchestrate wait", () => {
     expect(perUnit.status, perUnit.stderr).toBe(0);
     expect(perUnit.json?.status).toBe("waiting");
     expect(perUnit.json?.missing).toEqual([
-      "construction/*/functional-design/entities.md (location unresolved)",
-      "construction/*/functional-design/rules.md (location unresolved)",
-      "construction/*/functional-design/functional-spec.md (location unresolved)",
-      "construction/*/functional-design/traceability.json (location unresolved)",
+      "design/*/functional-design/entities.md (location unresolved)",
+      "design/*/functional-design/rules.md (location unresolved)",
+      "design/*/functional-design/functional-spec.md (location unresolved)",
+      "design/*/functional-design/traceability.json (location unresolved)",
     ]);
   });
 

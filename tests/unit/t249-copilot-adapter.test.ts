@@ -1000,7 +1000,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     const originalInput = {
       agent: "aidlc-product-agent",
       prompt:
-        "Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution.",
+        "Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution.",
     };
     const first = runAdapter(dir, "guard-tool-call", {
       hook_event_name: "PreToolUse",
@@ -1067,7 +1067,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
       tool_input: {
         agent: "aidlc-product-agent",
         prompt:
-          "Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution.",
+          "Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution.",
       },
     });
     expect(result.code).toBe(0);
@@ -4552,7 +4552,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     // Every launch tool rewrites the brief with the stage rules; the subagent's
     // first message is the rewritten brief, whatever its line endings.
     for (const [index, launcher] of LAUNCHERS.entries()) {
-      const original = `Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution (${launcher.toolName}).`;
+      const original = `Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution (${launcher.toolName}).`;
       const pre = launch(dir, launcher, "aidlc-product-agent", original, session);
       expect(pre.code, pre.stderr).toBe(0);
       const rewritten = String(hostRewrite(pre.stdout)?.prompt ?? "");
@@ -5930,7 +5930,7 @@ describe("t249 Copilot guard-tool-call runs the four guards in the adapter's own
           hook_event_name: "PreToolUse",
           cwd: dir,
           tool_name: "agent",
-          tool_input: { agent: "aidlc-product-agent", prompt: "Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution." },
+          tool_input: { agent: "aidlc-product-agent", prompt: "Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution." },
         }),
         expect: (d) => expect(d.stdout).toContain("AIDLC_DISPATCH_RULES_BEGIN"),
       },

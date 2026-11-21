@@ -691,7 +691,7 @@ describe("t315 standalone plugin builder", () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Plugin build: FAILED");
     expect(result.stderr).toContain(
-      `ERROR stages/construction/beta-example-stage.md [base-reference]: requires_stage "zeta-example-stage" is not a core stage or one of beta's own`,
+      `ERROR stages/build/beta-example-stage.md [base-reference]: requires_stage "zeta-example-stage" is not a core stage or one of beta's own`,
     );
     expect(result.stderr).toContain('Fix: If another plugin ships it, add that plugin to dependencies next to "core"');
     expect(existsSync(outDir)).toBe(false);
@@ -719,7 +719,7 @@ describe("t315 standalone plugin builder", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain("Plugin build: COMPLETE");
     expect(result.stdout).toContain(
-      'WARNING stages/construction/alpha-example-stage.md [base-reference]: agent "zeta-example-agent" is not checked: it would come from zeta, the base this plugin builds on',
+      'WARNING stages/build/alpha-example-stage.md [base-reference]: agent "zeta-example-agent" is not checked: it would come from zeta, the base this plugin builds on',
     );
     expect(existsSync(join(outDir, "stages", "construction", "alpha-example-stage.md"))).toBe(true);
   });

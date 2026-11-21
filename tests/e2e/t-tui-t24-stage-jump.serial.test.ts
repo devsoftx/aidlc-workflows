@@ -1,4 +1,4 @@
-// covers: stage:ideation/approval-handoff
+// covers: stage:discover/approval-handoff
 //
 // t-tui-t24-stage-jump.serial.test.ts - a forward `--stage` jump driven
 // through a REAL claude TUI (Pattern A "landed + rendered").

@@ -124,7 +124,7 @@ export function createCodeGenerationProject(
 }
 
 export function stageDir(proj: string, unit: string | null = null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), "build", ...(unit ? [unit] : []), "code-generation");
 }
 
 export function writePlan(proj: string, extra = "", unit: string | null = null, contract = resolveTestingPosture(proj)): void {

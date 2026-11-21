@@ -1,4 +1,4 @@
-// covers: stage:ideation/intent-capture
+// covers: stage:discover/intent-capture
 //
 // t-tui-t73-intent-capture.serial.test.ts - drive the IDEATION intent-capture
 // stage through a REAL keystroke-driven claude TUI and prove it produces its
@@ -28,7 +28,7 @@
 //   - the answer-gate clears the stage's rendered AUQ menu(s) by taking the
 //     Recommended default and TERMINATES on approval AND advancement,
 //   - ON DISK:
-//       * <record>/ideation/intent-capture/ exists,
+//       * <record>/discover/intent-capture/ exists,
 //       * a *questions* file exists AND carries >=1 `[Answer]:` line
 //         (the gate's answers were written back),
 //       * a *intent*statement* artifact exists, is > 100 bytes, and has at least
@@ -281,7 +281,7 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
               "--assert-file-absent-at-option",
               "Looks correct",
               "--assert-file-absent",
-              "aidlc/spaces/default/intents/*/ideation/intent-capture/*intent*statement*",
+              "aidlc/spaces/default/intents/*/discover/intent-capture/*intent*statement*",
               // Wait for approval AND advancement (aidlc-state.ts handleApprove and
               // handleAdvance), not just the first write. Keep the completed
               // stage anchored exactly so the kill cannot land mid-approve.

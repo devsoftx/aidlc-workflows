@@ -19,11 +19,11 @@ const CODE_SUMMARY = "**/code-generation/**/code-summary.md";
 
 const TABLE: [pattern: string, path: string, expected: boolean][] = [
   // `**/` takes zero, one and many folders.
-  [CODE_SUMMARY, `${RECORD}/construction/code-generation/code-summary.md`, true],
-  [CODE_SUMMARY, `${RECORD}/construction/code-generation/unit-a/code-summary.md`, true],
-  [CODE_SUMMARY, `${RECORD}/construction/code-generation/unit-a/notes/code-summary.md`, true],
-  [CODE_SUMMARY, `${RECORD}/construction/code-generation/unit-a/code-summary.txt`, false],
-  [CODE_SUMMARY, `${RECORD}/construction/functional-design/code-summary.md`, false],
+  [CODE_SUMMARY, `${RECORD}/build/code-generation/code-summary.md`, true],
+  [CODE_SUMMARY, `${RECORD}/build/code-generation/unit-a/code-summary.md`, true],
+  [CODE_SUMMARY, `${RECORD}/build/code-generation/unit-a/notes/code-summary.md`, true],
+  [CODE_SUMMARY, `${RECORD}/build/code-generation/unit-a/code-summary.txt`, false],
+  [CODE_SUMMARY, `${RECORD}/design/functional-design/code-summary.md`, false],
   // Brace sets: one, two, nested.
   ["**/*.{ts,js}", "/p/src/a.js", true],
   ["**/*.{ts,js}", "/p/src/a.tsx", false],
@@ -43,7 +43,7 @@ const TABLE: [pattern: string, path: string, expected: boolean][] = [
   [CODE_SUMMARY, "C:\\p\\code-generation\\code-summary.md", true],
   ["**/*.{ts,tsx}", "c:/p/src/a.tsx", true],
   // The shipped manifests' patterns on the outputs they are bound to.
-  ["**/{aidlc-docs,intents}/**", `${RECORD}/inception/requirements-analysis/requirements.md`, true],
+  ["**/{aidlc-docs,intents}/**", `${RECORD}/design/requirements-analysis/requirements.md`, true],
   ["**/{aidlc-docs,intents}/**", "/p/aidlc/spaces/default/codekb/repo-a/architecture.md", false],
   ["**/{aidlc-docs,intents,codekb}/**", "/p/aidlc/spaces/default/codekb/repo-a/architecture.md", true],
   ["**/{aidlc-docs,intents,codekb}/**", "/p/aidlc-docs/inception/requirements.md", true],

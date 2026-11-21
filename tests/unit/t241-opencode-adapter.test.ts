@@ -1173,7 +1173,7 @@ describe("t241 OpenCode adapter dispatch rules", () => {
       args: {
         subagent_type: "aidlc-product-agent",
         prompt:
-          "Run .aidlc/aidlc-common/stages/inception/user-stories.md.",
+          "Run .aidlc/aidlc-common/stages/design/user-stories.md.",
         run_in_background: true,
       },
     };

@@ -918,13 +918,13 @@ describe("t261 a decision's text is recorded as passed; the person's reply decid
     expect(readAllAuditShards(proj)).toContain("GATE_REJECTED");
   });
 
-  test("autonomous exemption is phase-scoped to Construction", () => {
+  test("autonomous exemption is scoped to unit-loop stages, not to a phase", () => {
     const state = "- **Construction Autonomy Mode**: autonomous\n";
-    expect(isAutonomousConstructionDecision(state, "initialization")).toBe(false);
-    expect(isAutonomousConstructionDecision(state, "ideation")).toBe(false);
-    expect(isAutonomousConstructionDecision(state, "inception")).toBe(false);
-    expect(isAutonomousConstructionDecision(state, "construction")).toBe(true);
-    expect(isAutonomousConstructionDecision(state, "operation")).toBe(false);
+    const perUnit = { slug: "code-generation", phase: "build", for_each: "unit-of-work" };
+    const stageLevel = { slug: "requirements-analysis", phase: "design", for_each: null };
+    expect(isAutonomousConstructionDecision(state, perUnit)).toBe(true);
+    expect(isAutonomousConstructionDecision(state, stageLevel)).toBe(false);
+    expect(isAutonomousConstructionDecision(state, null)).toBe(false);
   });
 
   test("autonomous Construction reject and ordinary answer record the conductor's text", () => {

@@ -476,7 +476,7 @@ function logWorktreeReview(
   mkdirSync(dirname(draft), { recursive: true });
   writeFileSync(
     draft,
-    `## Review\n\n**Verdict:** ${verdict}\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Iteration:** ${iteration}\n\n### Findings\n\n| ID | Severity | Location | Finding | Required action | Status |\n|---|---|---|---|---|---|\n| R-01 | Minor | construction/${unit}/code-generation/code-generation-plan.md > Step 2 | Fixture finding for ${unit} | Fixture action | New |\n`,
+    `## Review\n\n**Verdict:** ${verdict}\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Iteration:** ${iteration}\n\n### Findings\n\n| ID | Severity | Location | Finding | Required action | Status |\n|---|---|---|---|---|---|\n| R-01 | Minor | build/${unit}/code-generation/code-generation-plan.md > Step 2 | Fixture finding for ${unit} | Fixture action | New |\n`,
   );
   const completed = spawnSync(
     BUN,

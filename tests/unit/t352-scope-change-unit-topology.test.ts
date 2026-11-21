@@ -234,7 +234,7 @@ describe("the Units carry on per Unit after the switch (#1401)", () => {
     // A fallback to one stage-level step would leave work that no Unit gate reads.
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "alpha" });
-    expect((directive.produces as string[])[0]).toContain("/construction/alpha/functional-design/");
+    expect((directive.produces as string[])[0]).toContain("/design/alpha/functional-design/");
   });
   test("a recompose that skips Units Generation keeps the Units too", () => {
     const p = fixture();
@@ -249,7 +249,7 @@ describe("the Units carry on per Unit after the switch (#1401)", () => {
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
-    expect((directive.produces as string[])[0]).toContain("/construction/functional-design/");
+    expect((directive.produces as string[])[0]).toContain("/design/functional-design/");
   });
   test("fully completed team Construction switches without a line", () => {
     const p = fixture();
@@ -428,7 +428,7 @@ describe("a switch into a scope that runs Units Generation, after the work passe
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
     expect(JSON.stringify(directive)).not.toContain("{unit-name}");
-    expect((directive.produces as string[])[0]).toContain("/construction/functional-design/");
+    expect((directive.produces as string[])[0]).toContain("/design/functional-design/");
   });
 
   test("the switch line counts the stages the work still runs: the ones done, and the ones from the current stage on", () => {

@@ -1202,7 +1202,7 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
       expect(auditBlockField(open.block, "Open Decisions")).toBe("1");
       expect(auditBlockField(open.block, "Decisions")).toBe("ALPHA-D1");
       const checks = auditBlockField(open.block, "Sensor State") ?? "";
-      expect(checks).toContain("/construction/alpha/functional-design/");
+      expect(checks).toContain("/design/alpha/functional-design/");
       expect(checks).not.toContain("/construction/beta/");
     }
     expect(auditBlockField(alphaRows("GATE_APPROVED").at(-1)!.block, "Decisions Accepted Open")).toBe("ALPHA-D1");
@@ -1999,7 +1999,7 @@ describe("t324 scope-change Unit topology (#1401)", () => {
     // (#1401). Now alpha carries on at the next stage refactor runs, per Unit.
     const next = runNext(proj);
     expect(next).toMatchObject({ kind: "run-stage", stage: "code-generation", unit: "alpha", gate: false });
-    expect((next.produces as string[])[0]).toContain("/construction/alpha/code-generation/");
+    expect((next.produces as string[])[0]).toContain("/build/alpha/code-generation/");
     settleBody(proj, next);
     const gate = runNext(proj);
     expect(gate).toMatchObject({ stage: "code-generation", unit: "alpha", unit_gate: "per-stage", gate: true });

@@ -263,7 +263,7 @@ describe("the pure helpers", () => {
     expect(open.reviewFile).toBe(FILE);
     expect(open.unit).toBeNull();
     expect(openReviewRequests([requested(1, { "Review File": "../elsewhere/1.review.md" })])).toEqual([]);
-    expect(openReviewRequests([requested(1, { "Review File": "inception/requirements-analysis/requirements.md" })])).toEqual([]);
+    expect(openReviewRequests([requested(1, { "Review File": "design/requirements-analysis/requirements.md" })])).toEqual([]);
   });
 
   test("reviewerCompletionAfter: the latest completion of that reviewer after the row", () => {

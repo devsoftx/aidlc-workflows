@@ -528,7 +528,7 @@ describe("t272 code-generation joins the unit-major walk", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/code-generation/code-summary.md`,
+      `${RP}/build/alpha/code-generation/code-summary.md`,
     );
     const state = readFileSync(seededStateFile(proj), "utf-8");
     expect(state).toContain("- **Current Stage**: functional-design");

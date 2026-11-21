@@ -1,4 +1,4 @@
-// covers: stage:ideation/intent-capture
+// covers: stage:discover/intent-capture
 //
 // t-tui-kiro-intent-capture.serial.test.ts — drive the IDEATION intent-capture
 // stage through a REAL keystroke-driven `kiro-cli chat` TUI against the SHIPPED

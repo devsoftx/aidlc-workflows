@@ -1,4 +1,4 @@
-// covers: stage:construction/functional-design
+// covers: stage:design/functional-design
 //
 // Functional Design's produces_kinds give a `ui` Unit no rules.md (rules apply
 // to service, spec and library Units), yet the traceability sensor required
@@ -37,8 +37,8 @@ function project(): string {
   projects.push(proj);
   mkdirSync(join(seededStateFile(proj), ".."), { recursive: true });
   writeFileSync(seededStateFile(proj), "# State\n");
-  write(proj, "inception/requirements-analysis/requirements.md", "# Requirements\n\n- FR1 Checkout\n- FR2 Cart page\n");
-  write(proj, "inception/user-stories/stories.md", [
+  write(proj, "design/requirements-analysis/requirements.md", "# Requirements\n\n- FR1 Checkout\n- FR2 Cart page\n");
+  write(proj, "design/user-stories/stories.md", [
     "# Stories",
     "",
     "## US1.1 Pay for the cart",
@@ -48,7 +48,7 @@ function project(): string {
     "- AC1.2.1 lists every item with its price",
     "- AC1.2.2 shows an empty state",
   ].join("\n"));
-  write(proj, "inception/units-generation/unit-of-work.md", [
+  write(proj, "design/units-generation/unit-of-work.md", [
     "# Units",
     "",
     "| Unit ID | Directory | Purpose |",
@@ -56,7 +56,7 @@ function project(): string {
     "| U1 | checkout-service | Checkout |",
     "| U2 | cart-page | Cart page |",
   ].join("\n"));
-  write(proj, "inception/units-generation/unit-of-work-dependency.md", [
+  write(proj, "design/units-generation/unit-of-work-dependency.md", [
     "# Dependencies",
     "",
     "```yaml",
@@ -69,7 +69,7 @@ function project(): string {
     "    depends_on: [checkout-service]",
     "```",
   ].join("\n"));
-  write(proj, "inception/units-generation/unit-of-work-story-map.md", [
+  write(proj, "design/units-generation/unit-of-work-story-map.md", [
     "# Story Map",
     "",
     "| Story | Unit ID | Directory |",
@@ -81,7 +81,7 @@ function project(): string {
 }
 
 function run(proj: string, unit: string, coverage: { id: string; status: string; target?: string }[]) {
-  const file = write(proj, `construction/${unit}/functional-design/traceability.json`, JSON.stringify({
+  const file = write(proj, `design/${unit}/functional-design/traceability.json`, JSON.stringify({
     stage: "functional-design",
     unit,
     upstream_ids: coverage.map((row) => row.id),
@@ -99,8 +99,8 @@ function run(proj: string, unit: string, coverage: { id: string; status: string;
 describe("t-traceability-ui-unit a UI Unit traces to its UI design, not to business rules", () => {
   test("a ui Unit with no rules.md passes when each row names the Functional Design file that covers it", () => {
     const proj = project();
-    write(proj, "construction/cart-page/functional-design/functional-spec.md", "# Cart page\n");
-    write(proj, "construction/cart-page/functional-design/frontend-components.md", "# Components\n");
+    write(proj, "design/cart-page/functional-design/functional-spec.md", "# Cart page\n");
+    write(proj, "design/cart-page/functional-design/frontend-components.md", "# Components\n");
     const out = run(proj, "cart-page", [
       { id: "AC1.2.1", status: "OK", target: "frontend-components.md" },
       { id: "AC1.2.2", status: "OK", target: "functional-spec.md" },
@@ -112,7 +112,7 @@ describe("t-traceability-ui-unit a UI Unit traces to its UI design, not to busin
 
   test("a ui Unit's row must name one of its Functional Design files, and that file must exist", () => {
     const proj = project();
-    write(proj, "construction/cart-page/functional-design/functional-spec.md", "# Cart page\n");
+    write(proj, "design/cart-page/functional-design/functional-spec.md", "# Cart page\n");
     const out = run(proj, "cart-page", [
       { id: "AC1.2.1", status: "OK", target: "the cart list" },
       { id: "AC1.2.2", status: "OK", target: "frontend-components.md" },
@@ -128,8 +128,8 @@ describe("t-traceability-ui-unit a UI Unit traces to its UI design, not to busin
 
   test("a ui Unit that already has a rules.md keeps its rows that name those rules", () => {
     const proj = project();
-    write(proj, "construction/cart-page/functional-design/functional-spec.md", "# Cart page\n");
-    write(proj, "construction/cart-page/functional-design/rules.md", "# Rules\n\n- BR1.1 Every item shows its price\n- BR1.2 An empty cart says so\n");
+    write(proj, "design/cart-page/functional-design/functional-spec.md", "# Cart page\n");
+    write(proj, "design/cart-page/functional-design/rules.md", "# Rules\n\n- BR1.1 Every item shows its price\n- BR1.2 An empty cart says so\n");
     const out = run(proj, "cart-page", [
       { id: "AC1.2.1", status: "OK", target: "BR1.1" },
       { id: "AC1.2.2", status: "OK", target: "BR1.2" },
@@ -141,7 +141,7 @@ describe("t-traceability-ui-unit a UI Unit traces to its UI design, not to busin
 
   test("a service Unit still traces to BRx.y rules in rules.md", () => {
     const proj = project();
-    write(proj, "construction/checkout-service/functional-design/functional-spec.md", "# Checkout\n");
+    write(proj, "design/checkout-service/functional-design/functional-spec.md", "# Checkout\n");
     const out = run(proj, "checkout-service", [{ id: "AC1.1.1", status: "OK", target: "functional-spec.md" }]);
     expect(out.pass).toBe(false);
     expect(out.invalid_targets).toEqual(["AC1.1.1: target must name at least one BRx.y ID"]);

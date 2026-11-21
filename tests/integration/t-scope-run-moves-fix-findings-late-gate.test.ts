@@ -101,7 +101,7 @@ describe("a Fix findings pick at the late Code Generation gate in solo work buil
     agent.askPerson("blocking check", "code-generation", "A check failed on core's code summary. What next?",
       options, "Fix findings");
     agent.must("log", "answer", "--stage", "code-generation", "--details", "Fix findings");
-    const summary = `${activeRecord(proj).dir.slice(proj.length + 1)}/construction/core/code-generation/code-summary.md`;
+    const summary = `${activeRecord(proj).dir.slice(proj.length + 1)}/build/core/code-generation/code-summary.md`;
     host.write(summary, `${readFileSync(join(proj, summary), "utf-8")}\n## Error handling\n\nErrors are retried twice, then reported.\n`);
 
     expect(agent.drive(agent.next())).toMatchObject({ kind: "done" });

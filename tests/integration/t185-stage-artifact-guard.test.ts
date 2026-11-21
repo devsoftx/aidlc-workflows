@@ -319,7 +319,7 @@ function field(proj: string, name: string): string {
 
 // Write a stage's produces[] doc under the ACTIVE intent's record dir so the
 // produces-existence layer is satisfied. `rel` is relative to the record dir
-// (e.g. "ideation/feasibility/feasibility-assessment.md").
+// (e.g. "discover/feasibility/feasibility-assessment.md").
 function writeRecordDoc(proj: string, rel: string): void {
   const full = join(seededRecordDir(proj), rel);
   mkdirSync(join(full, ".."), { recursive: true });
@@ -504,7 +504,7 @@ function summaryMutationResult(
   writeFileSync(questions, mutate(readFileSync(questions, "utf-8")));
   recordArtifactWrite(
     proj,
-    "ideation/feasibility/feasibility-assessment.md",
+    "discover/feasibility/feasibility-assessment.md",
   );
   return summaryGuarded(proj, ["advance", "feasibility"]);
 }
@@ -765,7 +765,7 @@ describe("t185: stage-completion artifact guard (#366)", () => {
       writeSummaryQuestions(proj, "Looks correct");
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const result = summaryGuarded(proj, ["advance", "feasibility"]);
       expect(result.rc).not.toBe(0);
@@ -778,7 +778,7 @@ describe("t185: stage-completion artifact guard (#366)", () => {
       const questions = writeSummaryQuestions(proj);
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       confirmSummary(proj, questions);
       const result = summaryGuarded(proj, ["advance", "feasibility"]);
@@ -793,11 +793,11 @@ describe("t185: stage-completion artifact guard (#366)", () => {
       confirmSummary(proj, questions, "intent-capture");
       recordArtifactWrite(
         proj,
-        "ideation/intent-capture/intent-statement.md",
+        "discover/intent-capture/intent-statement.md",
       );
       recordArtifactWrite(
         proj,
-        "ideation/intent-capture/stakeholder-map.md",
+        "discover/intent-capture/stakeholder-map.md",
       );
       writeFileSync(
         questions,
@@ -847,7 +847,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -869,7 +869,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -896,7 +896,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -930,7 +930,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -1116,7 +1116,7 @@ X. Other (please specify)
       confirmSummary(proj, questions, "feasibility", confirmedBody);
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -1640,7 +1640,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -1662,7 +1662,7 @@ X. Other (please specify)
       appendSummaryReceipt(proj, questions);
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const result = summaryGuarded(proj, ["advance", "feasibility"]);
       expect(result.rc).toBe(0);
@@ -1677,7 +1677,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const result = summaryGuarded(proj, ["advance", "feasibility"]);
       expect(result.rc).not.toBe(0);
@@ -1691,7 +1691,7 @@ X. Other (please specify)
       appendSummaryReceipt(proj, questions, "confirmed-content-v99");
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const result = summaryGuarded(proj, ["advance", "feasibility"]);
       expect(result.rc).not.toBe(0);
@@ -1714,7 +1714,7 @@ X. Other (please specify)
       );
       writeRecordDoc(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const timestamp = "2026-08-19T12:00:00Z";
       writeAuditShardRows(proj, "aaa-request-changes.md", [{
@@ -1755,7 +1755,7 @@ X. Other (please specify)
       );
       writeRecordDoc(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const timestamp = "2026-08-19T12:00:00Z";
       writeAuditShardRows(proj, "aaa-floor.md", [{
@@ -1793,7 +1793,7 @@ X. Other (please specify)
       );
       writeRecordDoc(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const timestamp = "2026-08-19T12:00:00Z";
       writeAuditShardRows(proj, "aaa-receipt.md", [{
@@ -1818,7 +1818,7 @@ X. Other (please specify)
       confirmSummary(proj, questions);
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       const result = summaryGuarded(proj, ["advance", "feasibility"]);
       expect(result.rc).toBe(0);
@@ -1836,7 +1836,7 @@ X. Other (please specify)
       );
       writeRecordDoc(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       // The pre-move write happened under the confirmation that is still
       // current, so its row carries that authorization; only its absolute
@@ -1874,7 +1874,7 @@ X. Other (please specify)
       );
       recordArtifactWrite(
         proj,
-        "ideation/feasibility/feasibility-assessment.md",
+        "discover/feasibility/feasibility-assessment.md",
       );
       expect(summaryGuarded(proj, ["advance", "feasibility"]).rc).toBe(0);
     });
@@ -1908,10 +1908,10 @@ X. Other (please specify)
       guarded(proj, ["set", "Current Stage=code-generation"]);
       guarded(proj, ["checkbox", "units-generation=completed"]);
       guarded(proj, ["checkbox", "code-generation=in-progress"]);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/code-generation-plan.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/unit-test-instructions.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/code-summary.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/traceability.json`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/code-generation-plan.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/unit-test-instructions.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/code-summary.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/traceability.json`);
     }
 
     test("REFUSES code-generation with planning docs but no source code", () => {
@@ -1943,9 +1943,9 @@ X. Other (please specify)
         "$1SKIP",
       );
       writeFileSync(statePath, state);
-      writeRecordDoc(proj, "construction/code-generation/code-generation-plan.md");
-      writeRecordDoc(proj, "construction/code-generation/unit-test-instructions.md");
-      writeRecordDoc(proj, "construction/code-generation/code-summary.md");
+      writeRecordDoc(proj, "build/code-generation/code-generation-plan.md");
+      writeRecordDoc(proj, "build/code-generation/unit-test-instructions.md");
+      writeRecordDoc(proj, "build/code-generation/code-summary.md");
       writeWorkspaceFile(proj, "src/stage-level.ts");
 
       reviewCodeGen(proj);
@@ -2097,9 +2097,9 @@ X. Other (please specify)
       );
       const boundarySecond = Math.floor(Date.now() / 1000);
       while (Math.floor(Date.now() / 1000) === boundarySecond) {}
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/code-generation-plan.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/code-summary.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/traceability.json`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/code-generation-plan.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/code-summary.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/traceability.json`);
     }
     function approveCodeGen(): { rc: number; out: string } {
       reviewCodeGen(proj, UNIT);
@@ -2261,9 +2261,9 @@ X. Other (please specify)
       );
       const boundarySecond = Math.floor(Date.now() / 1000);
       while (Math.floor(Date.now() / 1000) === boundarySecond) {}
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/code-generation-plan.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/code-summary.md`);
-      writeRecordDoc(proj, `construction/${UNIT}/code-generation/traceability.json`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/code-generation-plan.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/code-summary.md`);
+      writeRecordDoc(proj, `build/${UNIT}/code-generation/traceability.json`);
     }
     // The records-only commit in the workspace: a clean tree whose last commit
     // touched nothing outside aidlc/.

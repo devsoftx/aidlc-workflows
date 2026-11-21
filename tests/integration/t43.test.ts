@@ -308,7 +308,7 @@ describe("scope-definition -> team-formation edge", () => {
 // Domain-design's outputs name the design artifacts directly (components.md,
 // decisions.md, traceability.json ... engine-resolved). The downstream consumer
 // cites the producer by name: units-generation `inputs:` reads
-// `<record>/inception/domain-design/components.md`. So the edge-citation intent
+// `<record>/design/domain-design/components.md`. So the edge-citation intent
 // (producer emits the design artifacts, consumer reads domain-design's design
 // output) is checked: assert the producer names a design artifact
 // (components.md is the keystone, also pinned by t44 test 5) and the consumer

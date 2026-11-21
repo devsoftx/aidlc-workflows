@@ -598,7 +598,7 @@ describe("t122 Stop hook end-to-end — real hook, real engine (sdk+cli)", () =>
       try {
         // state-final-stage.md: Lifecycle Phase OPERATION, Current Stage
         // feedback-optimization at [-]. The stage dir lives under the
-        // record as <record>/operation/feedback-optimization/ (memoryPathFor shape).
+        // record as <record>/operate/feedback-optimization/ (memoryPathFor shape).
         const qDir = join(
           docsRoot(proj),
           "operation",

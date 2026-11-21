@@ -175,7 +175,7 @@ function runThroughBuild(p: string): void {
   expect(stateField(p, "Lifecycle Phase")).toBe("INCEPTION");
   expect(requirements.reviewer).toBeUndefined();
   approve(p, "requirements-analysis", [
-    "inception/requirements-analysis/requirements.md",
+    "design/requirements-analysis/requirements.md",
   ]);
 
   const code = next(p);
@@ -193,16 +193,16 @@ function runThroughBuild(p: string): void {
   expect(code.protocol_modules).toEqual(["ensemble", "construction", "loopback"]);
   expect(stateField(p, "Lifecycle Phase")).toBe("CONSTRUCTION");
   expect((code.produces as string[]).every((path) =>
-    path.includes("/construction/code-generation/") &&
+    path.includes("/build/code-generation/") &&
     !path.includes("{unit-name}")
   )).toBe(true);
   const codeAbsences = expectDesignedAbsences(code);
   expect(codeAbsences.some((path) => path.endsWith("/unit-of-work.md"))).toBe(true);
   approve(p, "code-generation", [
-    "construction/code-generation/code-generation-plan.md",
-    "construction/code-generation/unit-test-instructions.md",
-    "construction/code-generation/code-summary.md",
-    "construction/code-generation/traceability.json",
+    "build/code-generation/code-generation-plan.md",
+    "build/code-generation/unit-test-instructions.md",
+    "build/code-generation/code-summary.md",
+    "build/code-generation/traceability.json",
   ]);
 
   const build = next(p);
@@ -212,11 +212,11 @@ function runThroughBuild(p: string): void {
     gate: true,
   });
   expect((build.consumes as string[]).every((path) =>
-    path.includes("/construction/code-generation/")
+    path.includes("/build/code-generation/")
   )).toBe(true);
   approve(p, "build-and-test", [
-    "construction/build-and-test/build-and-test-summary.md",
-    "construction/build-and-test/test-results.md",
+    "test/build-and-test/build-and-test-summary.md",
+    "test/build-and-test/test-results.md",
   ]);
   expect(stateField(p, "Lifecycle Phase")).toBe("OPERATION");
 }
@@ -280,9 +280,9 @@ describe("t301 express scope routing (deterministic CLI journey)", () => {
     const pipelineAbsences = expectDesignedAbsences(pipeline);
     expect(pipelineAbsences).toHaveLength(4);
     approve(p, "deployment-pipeline", [
-      "operation/deployment-pipeline/cd-config.md",
-      "operation/deployment-pipeline/deployment-strategy.md",
-      "operation/deployment-pipeline/rollback-runbook.md",
+      "deploy/deployment-pipeline/cd-config.md",
+      "deploy/deployment-pipeline/deployment-strategy.md",
+      "deploy/deployment-pipeline/rollback-runbook.md",
     ]);
 
     const deployment = next(p);
@@ -291,17 +291,17 @@ describe("t301 express scope routing (deterministic CLI journey)", () => {
     expect(deploymentAbsences).toHaveLength(1);
     expect(deploymentAbsences[0]).toEndWith("/environment-inventory.md");
     approve(p, "deployment-execution", [
-      "operation/deployment-execution/deployment-log.md",
-      "operation/deployment-execution/smoke-test-results.md",
-      "operation/deployment-execution/health-check-report.md",
+      "deploy/deployment-execution/deployment-log.md",
+      "deploy/deployment-execution/smoke-test-results.md",
+      "deploy/deployment-execution/health-check-report.md",
     ]);
 
     const observability = next(p);
     expect(observability.stage).toBe("observability-setup");
     expect(expectDesignedAbsences(observability)).toHaveLength(5);
     approve(p, "observability-setup", [
-      "operation/observability-setup/dashboards.md",
-      "operation/observability-setup/alarms.md",
+      "operate/observability-setup/dashboards.md",
+      "operate/observability-setup/alarms.md",
     ]);
 
     const done = next(p);

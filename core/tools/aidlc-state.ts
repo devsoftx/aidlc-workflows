@@ -108,7 +108,6 @@ import {
   isPerUnitStage,
   findAllEvents,
   firstInScopeStageOfPhase,
-  firstPlannedUnitLoopStage,
   formatReceivedReply,
   freshReviewReceipts,
   unchangedChangeRequest,
@@ -310,7 +309,7 @@ import {
   mainCheckoutChangeStep, personTurnStands, proveMessage, readMessage, requestMessageStep, standingPersonTurn,
 } from "./aidlc-message-store.ts";
 import { swarmSourceChangedSince } from "./aidlc-swarm-source.ts";
-import { memoryDirFor, PATH_SET_SENSOR_IDS, STAGE_WIDE_SENSOR_IDS, templateEligibleArtifacts, withStageProgressRow } from "./aidlc-graph.ts";
+import { firstPlannedUnitLoopStage, memoryDirFor, PATH_SET_SENSOR_IDS, STAGE_WIDE_SENSOR_IDS, templateEligibleArtifacts, withStageProgressRow } from "./aidlc-graph.ts";
 import { generateFireId, recordUnfinishedFire, sensorMatchesPath, unfinishedFire } from "./aidlc-sensor-record.ts";
 import { inspectRequiredArtifactInstances } from "./aidlc-artifact-resolution.ts";
 import { aidlcDispatcherInvocation, aidlcToolInvocation, compiledExecutable, entrySkillInvocation, syncFolderClause } from "./aidlc-runtime-paths.ts";

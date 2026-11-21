@@ -273,7 +273,7 @@ export function startCodeGeneration(proj: string, perUnit: boolean): void {
   while (Math.floor(Date.now() / 1000) === boundarySecond) {
     // Records written after the stage start's second.
   }
-  const base = perUnit ? `construction/${UNIT}/code-generation` : "construction/code-generation";
+  const base = perUnit ? `build/${UNIT}/code-generation` : "build/code-generation";
   writeRecordDoc(proj, `${base}/code-generation-plan.md`);
   writeRecordDoc(proj, `${base}/unit-test-instructions.md`);
   writeRecordDoc(proj, `${base}/code-summary.md`);
@@ -303,7 +303,7 @@ export function review(
   const reviewer = "aidlc-architecture-reviewer-agent";
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    "build",
     ...(perUnit ? [UNIT] : []),
     "code-generation",
     "code-generation-plan.md",

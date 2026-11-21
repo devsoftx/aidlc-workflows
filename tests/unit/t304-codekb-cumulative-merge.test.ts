@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/reverse-engineering.md, file:knowledge/aidlc-developer-agent/re-artifacts.md, function:codekbSourceFingerprint, function:codekbStoreGeneration, subcommand:aidlc-utility:codekb-snapshot, subcommand:aidlc-utility:codekb-publish
+// covers: file:aidlc-common/stages/discover/reverse-engineering.md, file:knowledge/aidlc-developer-agent/re-artifacts.md, function:codekbSourceFingerprint, function:codekbStoreGeneration, subcommand:aidlc-utility:codekb-snapshot, subcommand:aidlc-utility:codekb-publish
 //
 // t304 - Focused Reverse Engineering rescans merge into the shared CodeKB
 // without stale-source publication or concurrent lost updates.

@@ -437,7 +437,7 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/nfr-requirements/performance-requirements.md`,
+      `${RP}/design/alpha/nfr-requirements/performance-requirements.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -455,7 +455,7 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/code-generation/code-generation-plan.md`,
+      `${RP}/build/alpha/code-generation/code-generation-plan.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -553,10 +553,10 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     // not the UI-only frontend artifact. The kind comes from the dependency
     // artifact because the cached graph deliberately has no DAG.
     expect(d.produces).toContain(
-      `${RP}/construction/contract/functional-design/rules.md`,
+      `${RP}/design/contract/functional-design/rules.md`,
     );
     expect(d.produces).toContain(
-      `${RP}/construction/contract/functional-design/entities.md`,
+      `${RP}/design/contract/functional-design/entities.md`,
     );
     expect(d.produces?.some((path) => path.endsWith("/functional-spec.md"))).toBe(true);
     expect(d.produces?.some((path) => path.endsWith("/frontend-components.md"))).toBe(false);

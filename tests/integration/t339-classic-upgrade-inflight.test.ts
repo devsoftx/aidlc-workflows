@@ -241,7 +241,7 @@ describe("t339 upgrading an in-flight classic intent", () => {
     const current = summaryAuthorizationRecordPath(record, stage, null);
     const authorization = {
       version: 1 as const, id: "1".repeat(64), stage, unit: null, workflow: null,
-      attempt: "unstarted", questions_file: "inception/requirements-analysis/questions.md",
+      attempt: "unstarted", questions_file: "design/requirements-analysis/questions.md",
       questions_sha256: "a".repeat(64), choice: "Looks correct",
       recorded_at: "2026-09-14T00:00:00Z",
     };

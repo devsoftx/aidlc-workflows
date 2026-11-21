@@ -1,3 +1,4 @@
+import { isUnitLoopStage, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 // Stage-graph library + CLI. Exports the 8-function API consumed by
 // the doctor collector (see aidlc-utility.ts collectDoctorReport) and the
 // runtime resolution layer (lib.ts's nextInScopeStage,
@@ -46,7 +47,7 @@
 //
 // See docs/reference/16-artifact-vocabulary.md for artifact naming.
 
-import { constants as fsConstants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { constants as fsConstants, copyFileSync, type Dirent, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -98,7 +99,6 @@ import {
   guardPolicyAtLeast,
   guardPolicyMemoryStrictRefusal,
   isPerUnitStage,
-  isUnitLoopStage,
   memoryGuardPolicyDeclarations,
   noteGuardPolicyRename,
   parseGuardPolicy,
@@ -124,6 +124,8 @@ import {
   escapeRegex,
   getField,
   parseCheckboxes,
+  PLAN_FIELD,
+  parseStateStageSuffixes,
 } from "./aidlc-lib.ts";
 import {
   parseRuleFrontmatter,
@@ -4571,3 +4573,57 @@ export async function main(argv: string[]): Promise<void> {
 }
 
 if (import.meta.main) void main(process.argv.slice(2));
+
+// The Unit folders of a record: each per-unit phase's directories, less the stage
+// folders that sit beside them, so a stage folder is never read as a Unit.
+export function recordUnitNames(record: string): string[] {
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const names = new Set<string>();
+  for (const phase of UNIT_RECORD_PHASES) {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(join(record, phase), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory() && !stageSlugs.has(entry.name)) names.add(entry.name);
+    }
+  }
+  return [...names].sort();
+}
+
+// The first stage that `matches`. With no state, or a state whose plan is not
+// composed for one piece of work, that is the first match on the scope's path.
+// A plan composed for one piece of work (its state carries a Plan line) is
+// defined by its state file's EXECUTE/SKIP suffixes, so it anchors on its own
+// first stage. Recompose refuses to move the unit-loop anchor, so the scope
+// grid stays the answer for every other workflow.
+export function firstStageWhere(
+  scope: string,
+  stateContent: string | null | undefined,
+  matches: (stage: StageEntry) => boolean,
+): StageEntry | null {
+  const mapping = loadScopeMapping()[scope];
+  if (!mapping) return null;
+  if (!stateContent || getField(stateContent, PLAN_FIELD) === null) {
+    for (const stage of subgraphForScope(scope)) {
+      if (matches(stage)) return stage;
+    }
+    return null;
+  }
+  const suffixes = parseStateStageSuffixes(stateContent);
+  return loadStageGraph().find((stage) =>
+    matches(stage) &&
+    (suffixes.get(stage.slug) ?? mapping.stages[stage.slug]) === "EXECUTE"
+  ) ?? null;
+}
+
+// The first unit-loop stage the workflow's approved plan runs, in whichever phase
+// it sits.
+export function firstPlannedUnitLoopStage(
+  scope: string,
+  stateContent?: string | null,
+): StageEntry | null {
+  return firstStageWhere(scope, stateContent, (stage) => isUnitLoopStage(stage));
+}

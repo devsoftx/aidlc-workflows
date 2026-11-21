@@ -1,4 +1,4 @@
-// covers: scope:security-patch, stage:initialization/workspace-scaffold, stage:initialization/workspace-detection, stage:initialization/state-init, stage:inception/reverse-engineering, stage:inception/requirements-analysis, stage:construction/nfr-requirements, stage:construction/code-generation, stage:construction/build-and-test, stage:operation/deployment-pipeline, stage:operation/deployment-execution
+// covers: scope:security-patch, stage:initialization/workspace-scaffold, stage:initialization/workspace-detection, stage:initialization/state-init, stage:discover/reverse-engineering, stage:design/requirements-analysis, stage:design/nfr-requirements, stage:build/code-generation, stage:test/build-and-test, stage:deploy/deployment-pipeline, stage:deploy/deployment-execution
 //
 // The security-patch scope from the person's first request to done, with no model: a
 // scripted stand-in plays the agent and the person through the real engine and

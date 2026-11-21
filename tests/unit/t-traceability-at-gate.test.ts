@@ -144,12 +144,12 @@ describe("t-traceability-at-gate: the check reads the finished tables when the g
       .replace("**In Progress**: requirements-analysis", "**In Progress**: user-stories");
     mkdirSync(seededRecordDir(proj), { recursive: true });
     writeFileSync(seededStateFile(proj), state);
-    recordFile(proj, "inception/requirements-analysis/requirements.md", "# Requirements\n\n### FR-1: Sign up\n### FR-2: Browse\n### NFR-1: Security\n");
-    recordFile(proj, "inception/requirements-analysis/traceability.json", JSON.stringify({
+    recordFile(proj, "design/requirements-analysis/requirements.md", "# Requirements\n\n### FR-1: Sign up\n### FR-2: Browse\n### NFR-1: Security\n");
+    recordFile(proj, "design/requirements-analysis/traceability.json", JSON.stringify({
       stage: "requirements-analysis",
       ids: [{ id: "FR-1", kind: "functional" }, { id: "FR-2", kind: "functional" }, { id: "NFR-1", kind: "non-functional" }],
     }));
-    recordFile(proj, "inception/user-stories/stories.md", "# Stories\n\n## US1.1 Sign up\n- AC1.1.1 works\n");
+    recordFile(proj, "design/user-stories/stories.md", "# Stories\n\n## US1.1 Sign up\n- AC1.1.1 works\n");
     return { proj, table: join(seededRecordDir(proj), "inception", STAGE, "traceability.json") };
   }
 
@@ -205,7 +205,7 @@ describe("t-traceability-at-gate: the check reads the finished tables when the g
       env: { ...ENV, CLAUDE_PROJECT_DIR: proj, AIDLC_PROJECT_DIR: proj },
     });
     expect(early.stdout, early.stderr).toContain('"result":"failed"');
-    recordFile(proj, "inception/user-stories/stories.md", "# Stories\n\n## US1.1 Sign up\n- AC1.1.1 works\n\n## US1.2 Browse\n- AC1.2.1 works\n");
+    recordFile(proj, "design/user-stories/stories.md", "# Stories\n\n## US1.1 Sign up\n- AC1.1.1 works\n\n## US1.2 Browse\n- AC1.2.1 works\n");
 
     const opened = openGate(proj);
     expect(String(opened.narration ?? "")).not.toContain(CHECK_LINE);
@@ -251,7 +251,7 @@ describe("t-traceability-at-gate: the check reads the finished tables when the g
   test("with no record, a requirement the table leaves out is said at the gate; a team's own form says nothing", () => {
     const left = project();
     rmSync(join(seededRecordDir(left.proj), "inception", "requirements-analysis", "traceability.json"));
-    recordFile(left.proj, "inception/requirements-analysis/requirements.md", "# Requirements\n\n- FR1 Sign up\n- FR2 Browse\n- NFR1 Security\n");
+    recordFile(left.proj, "design/requirements-analysis/requirements.md", "# Requirements\n\n- FR1 Sign up\n- FR2 Browse\n- NFR1 Security\n");
     writeTable(left.table, [
       { id: "FR1", status: "OK", target: "US1.1" },
       { id: "NFR1", status: "Deferred", target: "nfr-requirements" },

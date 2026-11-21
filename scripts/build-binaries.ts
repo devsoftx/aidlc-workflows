@@ -1101,7 +1101,7 @@ function realPluginSyncGate(artifact: string): GateResult {
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     );
     const graphPath = join(project, ".claude", "tools", "data", "stage-graph.json");

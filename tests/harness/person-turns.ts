@@ -233,7 +233,7 @@ export function unbackedDecisions(
       // The engine writes Recovered only on the rows an approval backfills.
       const backfilled = auditBlockField(row.block, "Recovered") === "true" &&
         (row.event === "GATE_REJECTED" || row.event === "STAGE_AWAITING_APPROVAL");
-      const construction = audit().findStageBySlug(stage)?.phase === "construction";
+      const construction = ["build", "test"].includes(audit().findStageBySlug(stage)?.phase ?? "");
       const checkpoint = auditBlockField(row.block, "Checkpoint");
       const engineApproved = row.event === "GATE_APPROVED" && construction && (
         (autonomous && checkpoint !== "walking-skeleton") || (checkpoint === null && covers(stage, index))

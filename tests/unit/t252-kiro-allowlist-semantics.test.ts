@@ -470,7 +470,7 @@ const WRITE_ASK = [
 // into one bound to a listed Unit whose approval holds. Kiro resolves `..`
 // before it matches, so a path cannot step out of the checkout.
 const WORKTREE = ".aidlc/worktrees/bolt-1a2b3c4d_u1";
-const WORKTREE_RECORD = `${WORKTREE}/aidlc/spaces/default/intents/fix/construction/u1/code-generation/code-generation-plan.md`;
+const WORKTREE_RECORD = `${WORKTREE}/aidlc/spaces/default/intents/fix/build/u1/code-generation/code-generation-plan.md`;
 const WORKTREE_WRITE_ALLOW = [
   WORKTREE_RECORD,
   `/project/${WORKTREE_RECORD}`,

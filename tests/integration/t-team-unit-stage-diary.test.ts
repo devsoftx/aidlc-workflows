@@ -57,7 +57,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     const directive = nextDirective(checkout);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "alpha" });
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/alpha/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${prefix}/design/alpha/functional-design/memory.md`);
   });
 
   test("a directive that names no Unit takes the claimed Unit's diary and creates no stage-level one", () => {
@@ -74,7 +74,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/alpha/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${prefix}/design/alpha/functional-design/memory.md`);
     expect(existsSync(join(checkout, prefix!, "construction", "functional-design", "memory.md"))).toBe(false);
   });
 
@@ -89,7 +89,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${prefix}/design/functional-design/memory.md`);
     expect(existsSync(join(checkout, prefix!, "construction", "functional-design", "memory.md"))).toBe(true);
   });
 
@@ -112,7 +112,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     const unit = directive.unit as string;
     expect(typeof unit).toBe("string");
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/${unit}/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${prefix}/design/${unit}/functional-design/memory.md`);
     const unitDiary = join(checkout, prefix!, "construction", unit, "functional-design");
     mkdirSync(unitDiary, { recursive: true });
     writeFileSync(join(unitDiary, "memory.md"), "## Tradeoffs\n- Took the shorter list over the grid\n");

@@ -827,7 +827,7 @@ describe("t-late-design-gates-one-approval: one question for the late stage appr
     );
     const reported = runReport(proj, ["--stage", "code-generation", "--result", "awaiting-approval"]);
     expect(reported.message).toStartWith('Stage "code-generation" is already awaiting approval; gate evidence revalidated.');
-    expect(JSON.stringify(reported.change_notices ?? [])).toContain("construction/alpha/code-generation/code-generation-plan.md changed after");
+    expect(JSON.stringify(reported.change_notices ?? [])).toContain("build/alpha/code-generation/code-generation-plan.md changed after");
     expect(nextAfterChange(proj)).toMatchObject({ kind: "run-stage", stage: "code-generation", gate_only: true });
   });
 

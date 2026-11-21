@@ -279,7 +279,7 @@ describe("a team's blocking check at the late Code Generation gate", () => {
     r.agent.must("log", "decision", "--stage", "code-generation", "--decision", "Blocking gate sensor failure",
       "--options", OPTIONS.join(","));
     r.agent.must("log", "answer", "--stage", "code-generation", "--details", "Fix findings");
-    const summary = `${activeRecord(r.proj).dir.slice(r.proj.length + 1)}/construction/core/code-generation/code-summary.md`;
+    const summary = `${activeRecord(r.proj).dir.slice(r.proj.length + 1)}/build/core/code-generation/code-summary.md`;
     r.host.write(summary, `${readFileSync(join(r.proj, summary), "utf-8")}\n${OK}\n`);
     expect(onToDone(r)).toMatchObject({ kind: "done" });
     const reviews = auditEvents(r.proj).filter((row) => row.event === "REVIEW_REQUESTED").slice(reviewsBefore)
@@ -292,7 +292,7 @@ describe("a team's blocking check at the late Code Generation gate", () => {
     expect(JSON.stringify(overrideInOrder(r))).not.toMatch(BLOCKING);
     // The person changes core's summary at the open gate, still without the team's line.
     r.person.say("I added a note to core's summary myself");
-    const summary = `${activeRecord(r.proj).dir.slice(r.proj.length + 1)}/construction/core/code-generation/code-summary.md`;
+    const summary = `${activeRecord(r.proj).dir.slice(r.proj.length + 1)}/build/core/code-generation/code-summary.md`;
     r.host.write(summary, `${readFileSync(join(r.proj, summary), "utf-8")}\nA note from the person.\n`);
     const step = r.agent.next();
     expect(step.kind).not.toBe("error");

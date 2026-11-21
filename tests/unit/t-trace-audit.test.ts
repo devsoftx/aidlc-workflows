@@ -35,7 +35,7 @@ function put(path: string, text: string): void {
 const at = (minute: number, second = 0) => new Date(Date.UTC(2026, 9, 20, 21, minute, second)).toISOString();
 const jsonl = (rows: unknown[]) => `${rows.map((r) => JSON.stringify(r)).join("\n")}\n`;
 
-const STAGE_DIR = "/home/x/proj/aidlc/spaces/default/intents/261020-greet/inception/requirements-analysis";
+const STAGE_DIR = "/home/x/proj/aidlc/spaces/default/intents/261020-greet/design/requirements-analysis";
 
 /** A nightly's artifacts: one SDK job, one Codex job, one Copilot job, as `gh run download` lays them out. */
 function nightly(): string {
@@ -228,7 +228,7 @@ describe("the extractor reads a nightly's live legs, the passing ones too", () =
   test("Codex numbers its items again in every turn: a later turn's approval is never matched to an earlier write", () => {
     const root = scratch();
     const leg = join(root, "7-full-suite-live-codex-1-Linux", "s", "e2e-artifacts", "t-exec-codex-x.serial", "attempt-1");
-    const plan = "/p/aidlc/spaces/default/intents/261020-x/construction/code-generation/code-generation-plan.md";
+    const plan = "/p/aidlc/spaces/default/intents/261020-x/build/code-generation/code-generation-plan.md";
     const turn = (prompt: string, items: unknown[]) => `Command: ["codex","exec",${JSON.stringify(prompt)}]\n\n${jsonl(items)}`;
     put(join(leg, "exec-codex-x-1.log"), turn("Approve Plan", [
       { type: "item.completed", item: { id: "item_0", type: "command_execution", command: "bun .codex/tools/aidlc.ts engine orchestrate next", aggregated_output: "{}", exit_code: 0 } },
@@ -243,7 +243,7 @@ describe("the extractor reads a nightly's live legs, the passing ones too", () =
   test("an approval in one chat is never matched to a write in another chat of the same leg", () => {
     const root = scratch();
     const leg = join(root, "8-full-suite-live-claude-tui-1-Linux", "s", "e2e-artifacts", "t-tui-two-runs.serial", "attempt-1");
-    const stageFile = (proj: string) => `/tmp/${proj}/aidlc/spaces/default/intents/261020-x/inception/requirements-analysis/requirements.md`;
+    const stageFile = (proj: string) => `/tmp/${proj}/aidlc/spaces/default/intents/261020-x/design/requirements-analysis/requirements.md`;
     const approve = { type: "assistant", timestamp: at(1), message: { content: [{ type: "tool_use", id: "a1", name: "Bash", input: { command: "bun .claude/tools/aidlc-orchestrate.ts report --stage requirements-analysis --result approved" } }] } };
     const approved = { type: "user", timestamp: at(1, 5), message: { content: [{ type: "tool_result", tool_use_id: "a1", content: '{"kind":"done"}' }] } };
     put(join(leg, "tc-1", "projects", "p", "clean.jsonl"), jsonl([approve, approved]));

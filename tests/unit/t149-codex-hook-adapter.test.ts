@@ -1326,7 +1326,7 @@ describe("t149 Codex hook adapter (live-captured payload fixtures)", () => {
         tool_input: {
           agent_type: "aidlc-product-agent",
           message:
-            "Run .codex/aidlc-common/stages/inception/user-stories.md.",
+            "Run .codex/aidlc-common/stages/design/user-stories.md.",
         },
       });
       expect(r.code, r.stderr).toBe(0);

@@ -28,7 +28,7 @@ function install(): string {
     ".kiro/hooks/aidlc-plan-approval-guard.ts": `const H = 'plan-approval-guard'; const M = "Code generation cannot run until the plan is approved:";`,
     ".kiro/sensors/aidlc-traceability.md": "",
     ".kiro/scopes/feature.md": "",
-    ".kiro/aidlc-common/stages/inception/requirements-analysis.md": "# Requirements Analysis",
+    ".kiro/aidlc-common/stages/design/requirements-analysis.md": "# Requirements Analysis",
   };
   for (const [rel, text] of Object.entries(files)) {
     mkdirSync(dirname(join(project, rel)), { recursive: true });

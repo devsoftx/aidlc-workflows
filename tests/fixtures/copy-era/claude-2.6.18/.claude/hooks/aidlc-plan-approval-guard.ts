@@ -91,7 +91,7 @@ const DISPATCH_TOOLS = new Set(["Task", "Agent"]);
 export interface UnitEvidence {
   /** Unit-of-work name, e.g. todo-core. */
   unit: string;
-  /** construction/<unit>/code-generation/code-generation-plan.md exists and is non-empty. */
+  /** build/<unit>/code-generation/code-generation-plan.md exists and is non-empty. */
   planExists: boolean;
   /** unit-test-instructions.md exists and is non-empty. */
   instructionsExist: boolean;

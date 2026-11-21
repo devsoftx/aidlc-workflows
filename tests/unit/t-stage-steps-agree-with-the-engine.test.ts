@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/reverse-engineering.md, file:aidlc-common/stages/inception/requirements-analysis.md, file:aidlc-common/stages/construction/ci-pipeline.md, file:aidlc-common/stages/operation/deployment-execution.md, file:aidlc-common/stages/operation/environment-provisioning.md
+// covers: file:aidlc-common/stages/discover/reverse-engineering.md, file:aidlc-common/stages/design/requirements-analysis.md, file:aidlc-common/stages/deploy/ci-pipeline.md, file:aidlc-common/stages/deploy/deployment-execution.md, file:aidlc-common/stages/deploy/environment-provisioning.md
 //
 // A stage file's own step says what the engine and the stage protocol do, not
 // something else beside them:
@@ -52,7 +52,7 @@ describe("t-stage-steps-agree-with-the-engine", () => {
             if (pattern.test(stage.text)) found.push(`${stage.slug}: inline, dispatches an agent (${pattern.source})`);
           }
         }
-        if (stage.text.includes("/construction/*/code-generation/") && !stage.text.includes("/construction/code-generation/")) {
+        if (stage.text.includes("/build/*/code-generation/") && !stage.text.includes("/build/code-generation/")) {
           found.push(`${stage.slug}: reads only the per-Unit Code Generation folders`);
         }
       }

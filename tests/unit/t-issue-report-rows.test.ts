@@ -184,8 +184,8 @@ describe("what the rule wrote reads back as it was", () => {
     expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/notes/plan.md")).toBe(
       "aidlc/spaces/default/intents/<custom-intent-1>/construction/<custom-dir-1>/<custom-file-2>.md",
     );
-    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/inception/requirements-analysis/requirements.md")).toBe(
-      "aidlc/spaces/default/intents/<custom-intent-1>/inception/requirements-analysis/requirements.md",
+    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/design/requirements-analysis/requirements.md")).toBe(
+      "aidlc/spaces/default/intents/<custom-intent-1>/design/requirements-analysis/requirements.md",
     );
   });
 
@@ -195,7 +195,7 @@ describe("a gate's check states", () => {
   test("each entry keeps its check, its result and AI-DLC's layout; a value of another shape is one label", () => {
     const v = vocab();
     const s = shape();
-    const raw = "required-sections@aidlc/spaces/default/intents/261022-x/inception/requirements-analysis/requirements.md=passed; traceability@aidlc/spaces/default/intents/261022-x/construction/u1/plan.md=failed(2) [detail: aidlc/spaces/default/intents/261022-x/.aidlc-engine/sensors/code-generation/required-sections-1a2b3c4d.md]; +3 more";
+    const raw = "required-sections@aidlc/spaces/default/intents/261022-x/design/requirements-analysis/requirements.md=passed; traceability@aidlc/spaces/default/intents/261022-x/construction/u1/plan.md=failed(2) [detail: aidlc/spaces/default/intents/261022-x/.aidlc-engine/sensors/code-generation/required-sections-1a2b3c4d.md]; +3 more";
     const out = String(shapeValue(v, s, "STAGE_AWAITING_APPROVAL", "Sensor State", raw));
     expect(out.split("; ").map((e) => e.replace(/@.*=/, "@=").replace(/ \[detail: .*\]/, " [detail]"))).toEqual(["required-sections@=passed", "traceability@=failed(2) [detail]", "+3 more"]);
     expect(out).not.toContain("261022-x");
@@ -211,8 +211,8 @@ describe("paths", () => {
   test("AI-DLC's layout stays, the person's names in it are labels", () => {
     const v = vocab();
     const s = shape();
-    expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/default/intents/261022-table-order/inception/requirements-analysis/requirements.md")).toBe(
-      "aidlc/spaces/default/intents/<custom-intent-1>/inception/requirements-analysis/requirements.md",
+    expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/default/intents/261022-table-order/design/requirements-analysis/requirements.md")).toBe(
+      "aidlc/spaces/default/intents/<custom-intent-1>/design/requirements-analysis/requirements.md",
     );
     expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/acme-team/intents/x/construction/u1/notes.md")).toBe(
       "aidlc/spaces/<custom-space-1>/intents/<custom-intent-2>/construction/<custom-dir-1>/<custom-file-1>.md",

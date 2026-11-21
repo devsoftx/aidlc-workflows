@@ -1,4 +1,4 @@
-// covers: function:workspaceSourceState, function:sameWorkspaceSource, function:recordedSourceListingUnderCurrentBoundary, function:shapeSourceSnapshotIndex, function:codekbSourceFingerprint, file:aidlc-common/stages/inception/reverse-engineering.md, file:knowledge/aidlc-developer-agent/code-analysis-guide.md
+// covers: function:workspaceSourceState, function:sameWorkspaceSource, function:recordedSourceListingUnderCurrentBoundary, function:shapeSourceSnapshotIndex, function:codekbSourceFingerprint, file:aidlc-common/stages/discover/reverse-engineering.md, file:knowledge/aidlc-developer-agent/code-analysis-guide.md
 //
 // A .NET build rewrites bin/ and obj/ beside the project file. When those
 // folders counted as source, a rebuild after a review or plan approval read as

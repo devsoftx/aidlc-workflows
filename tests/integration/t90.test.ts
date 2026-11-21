@@ -518,7 +518,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
           started_at: null,
           completed_at: null,
           agent: null,
-          memory_path: "aidlc-docs/construction/code-generation/memory.md",
+          memory_path: "aidlc-docs/build/code-generation/memory.md",
           memory_entries: null,
           memory_breakdown: null,
           sensor_firings: [],
@@ -531,7 +531,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
               started_at: "2024-01-01T11:00:00Z",
               completed_at: null,
               memory_path:
-                `${worktree}/aidlc-docs/construction/code-generation/memory.md`,
+                `${worktree}/aidlc-docs/build/code-generation/memory.md`,
               memory_entries: 2,
               memory_breakdown: {
                 interpretations: 1,

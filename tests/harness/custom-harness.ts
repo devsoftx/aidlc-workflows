@@ -124,7 +124,7 @@ export const CUSTOM_KNOWLEDGE_MARKER =
 export const SNAPSHOT_STAGE_SLUG = "schema-snapshot";
 export const SNAPSHOT_STAGE_NUMBER = "2.0";
 export const SNAPSHOT_STAGE_NAME = "Schema Snapshot";
-export const SNAPSHOT_STAGE_PHASE = "inception";
+export const SNAPSHOT_STAGE_PHASE = "design";
 
 /** The artefact the schema-snapshot stage PRODUCES: an inventory of the source
  *  database's tables/columns to migrate. Distinct from the stage slug (shipped
@@ -144,7 +144,7 @@ export const SNAPSHOT_ARTIFACT = "source-schema";
 export const PLAN_STAGE_SLUG = "migration-plan";
 export const PLAN_STAGE_NUMBER = "2.10";
 export const PLAN_STAGE_NAME = "Migration Plan";
-export const PLAN_STAGE_PHASE = "inception";
+export const PLAN_STAGE_PHASE = "design";
 
 /** The artefact the migration-plan stage PRODUCES: the ordered cutover plan
  *  (which tables move in which order, with what downtime). Built from the

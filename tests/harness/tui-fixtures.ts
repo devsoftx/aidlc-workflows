@@ -613,8 +613,8 @@ export function setupTuiProject(opts: TuiProjectOptions = {}): string {
     // (splitConsumesByPresence in aidlc-orchestrate.ts), so seeding them keeps
     // the jump free of `consumes_absent` gaps without touching checkbox state.
     const src = join(FIXTURES_DIR, "ideation-artifacts");
-    const intentDir = join(record, "ideation", "intent-capture");
-    const scopeDir = join(record, "ideation", "scope-definition");
+    const intentDir = join(record, "discover", "intent-capture");
+    const scopeDir = join(record, "discover", "scope-definition");
     mkdirSync(intentDir, { recursive: true });
     mkdirSync(scopeDir, { recursive: true });
     writeFileSync(

@@ -55,7 +55,7 @@ const CODE_GENERATION = {
   kind: "run-stage",
   stage: "code-generation",
   unit: "core",
-  produces: ["r/construction/core/code-generation/code-generation-plan.md", "r/construction/core/code-generation/unit-test-instructions.md"],
+  produces: ["r/build/core/code-generation/code-generation-plan.md", "r/build/core/code-generation/unit-test-instructions.md"],
 };
 
 describe("the stand-in on a project a release set up", () => {

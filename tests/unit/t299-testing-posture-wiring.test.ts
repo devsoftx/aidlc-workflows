@@ -1,4 +1,4 @@
-// covers: file:tools/aidlc-testing-posture.ts, file:aidlc-common/stages/construction/code-generation.md, file:aidlc-common/stages/inception/practices-discovery.md, file:aidlc-common/protocols/stage-protocol-construction.md, file:aidlc-common/protocols/stage-protocol-swarm.md, file:agents/aidlc-developer-agent.md, file:memory/org.md
+// covers: file:tools/aidlc-testing-posture.ts, file:aidlc-common/stages/build/code-generation.md, file:aidlc-common/stages/design/practices-discovery.md, file:aidlc-common/protocols/stage-protocol-construction.md, file:aidlc-common/protocols/stage-protocol-swarm.md, file:agents/aidlc-developer-agent.md, file:memory/org.md
 //
 // t299 - TESTING POSTURE CONTRACT. Deterministic behavior tests for additive
 // posture resolution, methodology-specific plan profiles, strategy/scope
@@ -42,9 +42,9 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
 
-const STAGE_REL = "core/aidlc-common/stages/construction/code-generation.md";
+const STAGE_REL = "core/aidlc-common/stages/build/code-generation.md";
 const PRACTICES_REL =
-  "core/aidlc-common/stages/inception/practices-discovery.md";
+  "core/aidlc-common/stages/design/practices-discovery.md";
 const SWARM_PROTOCOL_REL =
   "core/aidlc-common/protocols/stage-protocol-swarm.md";
 const AGENT_REL = "core/agents/aidlc-developer-agent.md";

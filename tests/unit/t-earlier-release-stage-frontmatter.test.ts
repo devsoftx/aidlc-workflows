@@ -1,4 +1,4 @@
-// covers: file:core/aidlc-common/stages/inception/requirements-analysis.md
+// covers: file:core/aidlc-common/stages/design/requirements-analysis.md
 //
 // A project set up on 2.8.0 to 2.11.0 refreshes to this release with its own
 // tool: `bun <dir>/tools/aidlc.ts config --from <runtime>` on a copy, and

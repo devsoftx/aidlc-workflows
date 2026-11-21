@@ -515,7 +515,7 @@ describe("t-keep-records-kept-documents: Keep after going back records the kept 
     const row = work.keepRow();
     expect(auditBlockField(row.block, "Summary Authorization Id")).toBe(work.authorization);
     const kept = auditBlockField(row.block, "Kept Outputs") ?? "";
-    expect(kept).toContain("inception/requirements-analysis/requirements.md");
+    expect(kept).toContain("design/requirements-analysis/requirements.md");
     expect(kept).toMatch(/\b[0-9a-f]{64}\b/);
     expect(kept).toContain(sha256(readFileSync(work.artifact, "utf-8").replace(/\r\n/g, "\n")));
   });
@@ -621,7 +621,7 @@ describe("t-keep-records-kept-documents: Keep after going back records the kept 
     const row = work.keepRow().block;
     expect(auditBlockField(row, "Workflow")).toBe(`single-stage:${STAGE}`);
     expect(auditBlockField(row, "Summary Authorization Id")).toBe(isolatedId);
-    expect(auditBlockField(row, "Kept Outputs") ?? "").toContain("inception/requirements-analysis/requirements.md");
+    expect(auditBlockField(row, "Kept Outputs") ?? "").toContain("design/requirements-analysis/requirements.md");
     // Back in the main run, its own confirmation mints another id, and the
     // isolated Keep does not stand in for one.
     work.confirmSummary();

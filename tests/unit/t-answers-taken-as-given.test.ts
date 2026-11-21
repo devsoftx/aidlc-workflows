@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/protocols/stage-protocol.md, file:aidlc-common/protocols/stage-protocol-governance.md, file:aidlc-common/stages/inception/requirements-analysis.md, file:knowledge/aidlc-shared/ai-dlc-principles.md
+// covers: file:aidlc-common/protocols/stage-protocol.md, file:aidlc-common/protocols/stage-protocol-governance.md, file:aidlc-common/stages/design/requirements-analysis.md, file:knowledge/aidlc-shared/ai-dlc-principles.md
 //
 // An answer the person gave is taken as given, and how they answer is asked
 // once. The stage protocol's "The person drives" says to ask only when their
