@@ -56,10 +56,13 @@ const MEMORY_FILES = [
   "org.md",
   "team.md",
   "project.md",
-  "phases/ideation.md",
-  "phases/inception.md",
-  "phases/construction.md",
-  "phases/operation.md",
+  "phases/discover.md",
+  "phases/design.md",
+  "phases/build.md",
+  "phases/test.md",
+  "phases/secure.md",
+  "phases/deploy.md",
+  "phases/operate.md",
 ];
 
 const scratch: string[] = [];
@@ -136,7 +139,7 @@ describe("t-active-space-includes: every shipped include reads the copy", () => 
     const rulesDir = distSurface("cursor", ".cursor", "rules");
     const standing = readFileSync(join(rulesDir, "aidlc.mdc"), "utf-8");
     for (const file of ["org.md", "team.md", "project.md"]) expect(standing).toContain(`- ${COPY}/${file}`);
-    for (const phase of ["ideation", "inception", "construction", "operation"]) {
+    for (const phase of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
       expect(readFileSync(join(rulesDir, `aidlc-phase-${phase}.mdc`), "utf-8")).toContain(`- ${COPY}/phases/${phase}.md`);
     }
     for (const name of readdirSync(rulesDir).filter((file) => file.endsWith(".mdc") && file !== "aidlc-onboarding.mdc")) {
@@ -200,7 +203,7 @@ describe("t-active-space-includes: refreshActiveMemory writes the space's memory
     seedSpaces(root);
     writeFileSync(join(root, "aidlc", "spaces", "default", "memory", "notes.md"), "# notes default\n");
     writeFileSync(join(root, "aidlc", "spaces", "teamB", "memory", "team.md"), "# team teamB\n");
-    writeFileSync(join(root, "aidlc", "spaces", "teamB", "memory", "phases", "ideation.md"), "# ideation teamB\n");
+    writeFileSync(join(root, "aidlc", "spaces", "teamB", "memory", "phases", "discover.md"), "# discover teamB\n");
     return root;
   }
 
@@ -209,7 +212,7 @@ describe("t-active-space-includes: refreshActiveMemory writes the space's memory
     expect(portablePaths(refreshActiveMemory(root, "teamB"))).toEqual([COPY]);
     expect(copyFile(root, "org.md")).toBe(copied("teamB", "org.md", "# org teamB\n"));
     expect(copyFile(root, "team.md")).toBe(copied("teamB", "team.md", "# team teamB\n"));
-    expect(copyFile(root, "phases/ideation.md")).toBe(copied("teamB", "phases/ideation.md", "# ideation teamB\n"));
+    expect(copyFile(root, "phases/discover.md")).toBe(copied("teamB", "phases/discover.md", "# discover teamB\n"));
     expect(existsSync(join(root, ...COPY.split("/"), "notes.md"))).toBe(false);
     expect(activeMemoryCopyDrift(root, "teamB")).toEqual([]);
     expect(refreshActiveMemory(root, "teamB")).toEqual([]);
@@ -218,9 +221,9 @@ describe("t-active-space-includes: refreshActiveMemory writes the space's memory
     expect(copyFile(root, "org.md")).toBe(copied("default", "org.md", "# org default\n"));
     expect(copyFile(root, "notes.md")).toBe(copied("default", "notes.md", "# notes default\n"));
     expect(existsSync(join(root, ...COPY.split("/"), "team.md"))).toBe(false);
-    expect(existsSync(join(root, ...COPY.split("/"), "phases", "ideation.md"))).toBe(false);
+    expect(existsSync(join(root, ...COPY.split("/"), "phases", "discover.md"))).toBe(false);
     expect(activeMemoryCopyDrift(root, "default")).toEqual([]);
-    expect(activeMemoryCopyDrift(root, "teamB").sort()).toEqual(["notes.md", "org.md", "phases/ideation.md", "team.md"]);
+    expect(activeMemoryCopyDrift(root, "teamB").sort()).toEqual(["notes.md", "org.md", "phases/discover.md", "team.md"]);
   });
 
   test("an edit of a memory file reaches the copy at the next refresh, and the source is never touched", () => {
@@ -249,7 +252,7 @@ describe("t-active-space-includes: refreshActiveMemory writes the space's memory
   test("an edit made in the copy is replaced at the next refresh, and the copy says so in its first line", () => {
     const root = setup();
     refreshActiveMemory(root, "teamB");
-    for (const rel of ["org.md", "team.md", "phases/ideation.md"]) {
+    for (const rel of ["org.md", "team.md", "phases/discover.md"]) {
       expect(copyFile(root, rel).split("\n")[0], rel).toBe(header("teamB", rel).trimEnd());
     }
     // An agent or a person who found the file through an include path and edited it there.
