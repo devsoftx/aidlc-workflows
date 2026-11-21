@@ -49,9 +49,9 @@ outputs: dashboards.md, alarms.md, slo-config.md, log-queries.md, tracing-config
 
 ### Step 1: Load Prior Context
 
-- Read NFR design (observability strategy) from `<record>/construction/nfr-design/`
-- Read infrastructure design from `<record>/construction/infrastructure-design/`
-- Read deployment execution log from `<record>/operation/deployment-execution/`
+- Read NFR design (observability strategy) from `<record>/design/nfr-design/`
+- Read infrastructure design from `<record>/design/infrastructure-design/`
+- Read deployment execution log from `<record>/deploy/deployment-execution/`
 
 `express` skips NFR Design and Infrastructure Design by design. When those
 artifacts are absent, derive the minimum observable surface from approved
@@ -85,12 +85,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 5: Present Completion & Request Approval
 
 Completion emoji: :eyes:
-Review path: `<record>/operation/observability-setup/`
+Review path: `<record>/operate/observability-setup/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/observability-setup/`.
+This stage's outputs are markdown artefacts under `<record>/operate/observability-setup/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

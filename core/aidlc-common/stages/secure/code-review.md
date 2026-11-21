@@ -41,7 +41,7 @@ outputs: "code-review-report.md and code-review-findings.md (under this stage's 
 
 ### Step 1: Gather the Code to Review
 
-Read every unit's code summary from `<record>/build/code-generation/code-summary.md`
+Read every unit's code summary from `<record>/build/<unit>/code-generation/code-summary.md` (for a zero-Unit scope, `<record>/build/code-generation/code-summary.md`)
 and the build-and-test summary from `<record>/test/build-and-test/build-and-test-summary.md`.
 Identify the source files that changed for each unit, using the source manifest
 where one exists.

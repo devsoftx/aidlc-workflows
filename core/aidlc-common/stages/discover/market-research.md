@@ -33,12 +33,12 @@ outputs: competitive-analysis.md, market-trends.md, build-vs-buy.md, market-rese
 
 ### Step 1: Load Prior Context
 
-- Read intent statement from `<record>/ideation/intent-capture/`
+- Read intent statement from `<record>/discover/intent-capture/`
 - Identify market-relevant aspects of the initiative
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/ideation/market-research/market-research-questions.md` with questions:
+Create `<record>/discover/market-research/market-research-questions.md` with questions:
 - What competing products or solutions exist in the market?
 - What are their strengths, weaknesses, and pricing models?
 - What industry trends or regulatory shifts are relevant?
@@ -66,12 +66,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :bar_chart:
-Review path: `<record>/ideation/market-research/`
+Review path: `<record>/discover/market-research/`
 Standard approval gate (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/market-research/`.
+This stage's outputs are markdown artefacts under `<record>/discover/market-research/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

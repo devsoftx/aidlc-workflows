@@ -44,14 +44,14 @@ outputs: feasibility-assessment.md, constraint-register.md, raid-log.md, feasibi
 
 ### Step 1: Load Prior Context
 
-- Read intent statement from `<record>/ideation/intent-capture/`
-- Read market research from `<record>/ideation/market-research/` (if exists)
+- Read intent statement from `<record>/discover/intent-capture/`
+- Read market research from `<record>/discover/market-research/` (if exists)
 - Load guardrails from
   `aidlc/spaces/<active-space>/memory/{org,team,project}.md`
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/ideation/feasibility/feasibility-questions.md` with questions:
+Create `<record>/discover/feasibility/feasibility-questions.md` with questions:
 - What existing systems must this integrate with?
 - Are there regulatory/compliance requirements (PCI, HIPAA, SOC2, data residency)?
 - What is the team's current tech stack and skill profile?
@@ -80,12 +80,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :test_tube:
-Review path: `<record>/ideation/feasibility/`
+Review path: `<record>/discover/feasibility/`
 Standard approval gate (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/feasibility/`.
+This stage's outputs are markdown artefacts under `<record>/discover/feasibility/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

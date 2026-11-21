@@ -264,7 +264,6 @@ import {
   evaluateGuardRefusal,
   filterProducesByKind,
   firstInScopeStageOfPhase,
-  firstPlannedStageOfPhase,
   formatReceivedReply,
   freshReviewReceipts,
   changeAlreadyAccepted,
@@ -430,6 +429,8 @@ import {
   parsePluginCommand,
   PHASE_NUMBERS,
   PHASES,
+  isUnitLoopStage,
+  UNIT_RECORD_PHASES,
   parseTeamBoardArgs,
   parseWorkspaceCommand,
   isWorkspaceNoun,
@@ -2913,13 +2914,13 @@ function withKeptReplies(directive: Directive): Directive {
   const projectDir = emissionProjectDir(directive);
   if (!projectDir) return directive;
   try {
-    const dir = directive.phase === "construction" && directive.unit
-      ? join(docsRoot(projectDir), "construction", directive.unit, directive.stage)
+    const dir = directive.unit
+      ? join(docsRoot(projectDir), directive.phase, directive.unit, directive.stage)
       : stageDir(projectDir, directive.phase, directive.stage);
     if (!hasBlankAnswer(dir)) return directive;
     const kept = keptRepliesSinceStageStart(projectDir, {
       stage: directive.stage,
-      ...(directive.phase === "construction" && directive.unit ? { unit: directive.unit } : {}),
+      ...(directive.unit ? { unit: directive.unit } : {}),
     });
     if (kept === null) return directive;
     directive.kept_replies = {
@@ -3434,8 +3435,8 @@ function toolErrorMessage(run: ToolRun): string {
 // transport, per-unit iteration beats, and anything the user did not ask about.
 // Absence is the instruction to say nothing, and it is the common case.
 
-// The user-facing name for a phase. The graph's phase tokens are SHOUTED
-// machine values (IDEATION); spoken prose wants ordinary words.
+// The user-facing name for a phase. The graph's phase tokens are lowercase
+// machine values (design); spoken prose wants ordinary words.
 function phaseInWords(phase: string): string {
   const normalized = phase.trim().toLowerCase();
   if (normalized.length === 0) return "";
@@ -3463,15 +3464,15 @@ function narrateStageEntry(
       `and I will stop for your review before anything is final.`
     );
   }
-  // Entering the build phase names a piece of vocabulary the user is about to
-  // see in their own artifacts (bolt-plan.md, and every later beat of this
-  // phase), so the line that introduces it defines it in the same breath. The
+  // Entering the first per-unit stage names a piece of vocabulary the user is
+  // about to see in their own artifacts (bolt-plan.md, and every later per-unit
+  // beat), so the line that introduces it defines it in the same breath. The
   // definition is delivery-planning's own, said the way a colleague would say
-  // it. Said once, on the phase boundary, and only on a plan that builds code:
-  // one with no Code Generation (stock infra, a plan made for an analysis)
-  // starts no build pass. A Bolt is a slice of Units, so a plan with no Units
-  // (refactor, security-patch) has none. Later Construction stages, and those
-  // plans, get the ordinary per-stage line.
+  // it. Said once, at that boundary, and only on a plan that builds code: one
+  // with no Code Generation (stock infra, a plan made for an analysis) starts no
+  // build pass. A Bolt is a slice of Units, so a plan with no Units (refactor,
+  // security-patch) has none. Later per-unit stages, and those plans, get the
+  // ordinary per-stage line.
   if (
     isFirstConstructionStage(node, scope, stateContent) &&
     effectivePlanAction("code-generation", scope, stateContent) === "EXECUTE" &&
@@ -3550,8 +3551,8 @@ function narratePerUnitBeat(directive: RunStageDirective): string | null {
   return `Now working on ${unit}: the ${stageName} ${directive.questions_only ? "questions" : "pass"}.`;
 }
 
-// True when `node` is the FIRST in-scope Construction stage, i.e. the stage the
-// workflow crosses the Construction boundary on. Reuses the same resolution the
+// True when `node` is the FIRST in-scope per-unit stage, i.e. the stage the
+// workflow starts Bolt 1 on. Reuses the same resolution the
 // walking-skeleton gate uses (isSkeletonGateStage), so "the first Bolt" means
 // the same stage to the spoken line as it does to the gate.
 function isFirstConstructionStage(node: GraphStage, scope: string, stateContent: string | null): boolean {
@@ -4593,10 +4594,17 @@ function openQuestionAgainDirective(
   // Only a question logged with no checkpoint can be one the file holds.
   if (checkpoint === null) {
     try {
-      const phase = nodeForSlug(stage)?.phase ?? "";
-      const construction = join(docsRoot(projectDir), "construction");
-      const unitDirs = phase === "construction" && existsSync(construction)
-        ? readdirSync(construction).map((unit) => join(construction, unit, stage))
+      const node = nodeForSlug(stage);
+      const phase = node?.phase ?? "";
+      // Unit folders sit under each unit-record phase; a stage folder there is not a unit.
+      const unitDirs = isUnitLoopStage(node)
+        ? UNIT_RECORD_PHASES.flatMap((unitPhase) => {
+          const folder = join(docsRoot(projectDir), unitPhase);
+          if (!existsSync(folder)) return [];
+          return readdirSync(folder)
+            .filter((unit) => nodeForSlug(unit) === undefined)
+            .map((unit) => join(folder, unit, stage));
+        })
         : [];
       if ([stageDir(projectDir, phase, stage), ...unitDirs].some(hasBlankAnswer)) return null;
     } catch {
@@ -5463,8 +5471,8 @@ function teamStanceReadStep(
   return directive;
 }
 
-// Who builds a plan of two or more Units is the person's to say, once, as
-// Inception ends: at the first step into a per-Unit Construction stage, while
+// Who builds a plan of two or more Units is the person's to say, once, when the
+// plan is set: at the first step into a per-Unit stage, while
 // nothing is built (a jump there meets the same rule). A pick records Unit
 // Ownership, which a resume, a second chat and a teammate's clone read. Once
 // the question was shown and the person spoke without a pick, this session
@@ -5479,7 +5487,7 @@ function constructionStaffingAsk(
   scope: string,
 ): AskDirective | null {
   const node = nodeForSlug(slug);
-  if (stateContent === null || !node || node.phase !== "construction" || !isPerUnit(node)) return null;
+  if (stateContent === null || !node || !isPerUnit(node)) return null;
   if (usesStageLevelPerUnitArtifacts(scope, stateContent)) return null;
   const ownership = (getField(stateContent, UNIT_OWNERSHIP_FIELD) ?? "").trim();
   const teams = ownership === "team";
@@ -5530,7 +5538,7 @@ function constructionStaffingAsk(
     kind: "ask",
     ask_type: "construction-staffing",
     response_route: "command",
-    question: `Inception is done, and the plan has ${units} Units. Who builds them?`,
+    question: `The plan is set, and it has ${units} Units. Who builds them?`,
     choices: [
       { label: "Just me", detail: `This session builds the Units ${order}.`, command: `${state} set-unit-ownership solo` },
       {
@@ -9492,19 +9500,20 @@ function resolveBoltBatches(projectDir: string, evidence?: ConstructionEvidence)
   return evidence?.dag ?? resolveBoltDag(projectDir);
 }
 
-// True when `node` is the SKELETON-GATE stage for `scope` — the FIRST
-// Construction EXECUTE stage of the workflow's plan (the start of Bolt 1). This
-// is derived, not hardcoded: firstPlannedStageOfPhase("construction", scope,
-// stateContent) returns the first construction stage the plan runs (e.g.
-// functional-design for feature/enterprise/mvp/refactor/classic, code-generation
-// for poc/bugfix/security-patch, nfr-requirements for infra, or whatever a plan
-// composed for this piece of work runs first). A scope-mapping edit that moves
-// the first construction stage moves the skeleton gate with it, no code change.
-// Non-construction stages are never the skeleton gate.
+// True when `node` is the SKELETON-GATE stage for `scope` — the FIRST per-unit
+// EXECUTE stage of the workflow's plan (the start of Bolt 1). This is derived,
+// not hardcoded: the first unit-loop stage the plan runs (e.g. functional-design
+// for feature/enterprise/mvp/refactor/classic, code-generation for poc/bugfix/
+// security-patch, nfr-requirements for infra, or whatever a plan composed for
+// this piece of work runs first). A scope-mapping edit that moves the first
+// per-unit stage moves the skeleton gate with it, no code change. Non-per-unit
+// stages are never the skeleton gate.
 function isSkeletonGateStage(node: GraphStage, scope: string, stateContent: string | null): boolean {
-  if (node.phase !== "construction") return false;
-  const first = firstPlannedStageOfPhase("construction", scope, stateContent);
-  return first !== null && first.slug === node.slug;
+  if (!isPerUnit(node)) return false;
+  const first = loadGraph().find((s) =>
+    isPerUnit(s) && effectivePlanAction(s.slug, scope, stateContent) === "EXECUTE"
+  );
+  return first !== undefined && first.slug === node.slug;
 }
 
 function scopeDefaultSkeletonStance(scope: string): SkeletonStance {
@@ -9519,13 +9528,13 @@ function scopeDefaultSkeletonStance(scope: string): SkeletonStance {
 // conductor's classified stance is in hand. The round-trip's whole point is to
 // turn "unresolved" into a DETERMINED boolean; this function is that resolution.
 //
-// The faithful answer is that the FIRST construction stage gates in every stance.
+// The faithful answer is that the FIRST per-unit stage gates in every stance.
 // Both skeleton-on AND skeleton-off present a gate at Bolt 1: skeleton-on forces
 // an always-gate "regardless of Construction Autonomy Mode" (SKILL.md Step 5 /
 // "When skeleton-on" §1); skeleton-off runs Bolt 1 "as a regular Bolt with the
 // standard batch-gate path". NOTE the NODE gate this function resolves is not
 // the Bolt-level gate: this one is the stage approval gate for the skeleton-gate
-// stage (the first in-scope Construction EXECUTE stage — a design stage such as
+// stage (the first in-scope per-unit EXECUTE stage — a design stage such as
 // functional-design in scopes that run one, code-generation in scopes that do
 // not), and it stays `true` in every stance so that stage is always reviewed.
 // The autonomy-governed gates are the REMAINING Construction stage gates, and
@@ -9641,8 +9650,8 @@ function codekbCtxFor(pd: string): CodekbCtx {
 
 // Resolve a single artifact vocabulary name to its canonical aidlc-docs/... path
 // UNDER THE STAGE THAT OWNS THE FILE. Non-per-unit stages map to
-// `aidlc-docs/<phase>/<stage-slug>/<name>.md`; per-unit Construction stages
-// inject a `{unit-name}` segment: `aidlc-docs/construction/{unit}/<stage>/<name>.md`.
+// `aidlc-docs/<phase>/<stage-slug>/<name>.md`; per-unit stages inject a
+// `{unit-name}` segment: `aidlc-docs/<phase>/{unit}/<stage>/<name>.md`.
 // `unit` defaults to the documented placeholder token; a caller with active
 // Bolt context passes the concrete unit name to materialise the real path. The
 // {unit-name} segment is INJECTED here — it never appears in the node's
@@ -9656,8 +9665,8 @@ function codekbCtxFor(pd: string): CodekbCtx {
 // artifact has exactly one producing stage (enforced by graph compile) and
 // lives in that producer's directory, NOT the consuming stage's. The per-unit
 // decision is likewise the OWNER's — a consume of a per-unit-produced artifact
-// resolves under construction/{unit}/<producer>/, a consume of a non-per-unit
-// artifact under <producer-phase>/<producer-slug>/ with no construction prefix.
+// resolves under <producer-phase>/{unit}/<producer>/, a consume of a non-per-unit
+// artifact under <producer-phase>/<producer-slug>/ with no unit segment.
 function resolveArtifactPath(
   name: string,
   owner: GraphStage,
@@ -9678,7 +9687,7 @@ function resolveArtifactPath(
   }
   const prefix = recordPrefix ?? relativeSpaceRecordPrefix();
   if (isPerUnit(owner) && unit !== null) {
-    return `${prefix}/construction/${unit}/${owner.slug}/${filename}`;
+    return `${prefix}/${owner.phase}/${unit}/${owner.slug}/${filename}`;
   }
   return `${prefix}/${owner.phase}/${owner.slug}/${filename}`;
 }
@@ -9973,7 +9982,7 @@ function applicableProduceNames(
 // Compute the `gate` value for a run-stage directive — the human-judgement
 // boundary axis. Three outcomes:
 //   - initialization stage → false (bootstrap auto-proceed, no governance gate).
-//   - the skeleton-gate stage (first Construction EXECUTE stage of the scope =
+//   - the skeleton-gate stage (first per-unit EXECUTE stage of the scope =
 //     Bolt 1) with NO stance recorded yet → GATE_UNRESOLVED, the classify
 //     round-trip sentinel. The conductor classifies `## Walking Skeleton` prose
 //     and reports the stance; the next `next` re-emits with the determined gate.
@@ -10058,7 +10067,7 @@ function inlineContextEntries(
         ).map((f) => ({ ...f, agent })),
       );
     }
-    const card = node.phase === "inception" ? documentsCardEntry(codekbCtx) : null;
+    const card = node.phase === "design" ? documentsCardEntry(codekbCtx) : null;
     if (card !== null) entries.push(card);
   }
   entries.push(...shipped.slice(personas));
@@ -10072,7 +10081,7 @@ function inlineContextEntries(
   });
 }
 
-// The team's documents, from the knowledge base's index, for an Inception
+// The team's documents, from the knowledge base's index, for a design
 // stage's reading list: written to the work's engine folder when its text
 // changed (never by a read-only probe or a chat that has not joined the work),
 // and listed only while the file is there.
@@ -10290,7 +10299,7 @@ function buildRunStageDirective(
     }
   }
   if (
-    !singleRun && node.phase === "construction" && stateContent && codekbCtx &&
+    !singleRun && isUnitLoopStage(node) && stateContent && codekbCtx &&
     checkpointPolicyEnabled(stateContent) &&
     !usesStageLevelPerUnitArtifacts(scope, stateContent)
   ) {
@@ -10423,7 +10432,7 @@ function buildRunStageDirective(
   if (effectiveSupports.length > 0 && node.mode !== "inline") {
     protocolModules.push("collaborators");
   }
-  if (node.phase === "construction") {
+  if (isUnitLoopStage(node)) {
     protocolModules.push("construction");
   }
   // A Build and Test failure can loop back to Code Generation, and a reopened
@@ -14588,7 +14597,7 @@ function isAutonomousSwarmCandidate(
   scope: string,
   stateContent: string | null,
 ): boolean {
-  if (node.phase !== "construction") return false;
+  if (!isUnitLoopStage(node)) return false;
   if (node.for_each !== SWARM_FOR_EACH || node.mode !== SWARM_MODE) return false;
   if (usesStageLevelPerUnitArtifacts(scope, stateContent)) return false;
   if (
@@ -15210,12 +15219,12 @@ function emitRunStageForSlug(
 
 // --- Per-unit iteration (issue #368): the engine drives the for_each loop ---
 //
-// A per-unit Construction stage (for_each: unit-of-work) runs ONCE PER Unit of
-// Work, but the state file carries ONE checkbox row per stage slug (the engine
+// A per-unit stage (for_each: unit-of-work) runs ONCE PER Unit of Work, but the
+// state file carries ONE checkbox row per stage slug (the engine
 // never duplicates rows, verified). So a single checkbox cannot, on its own,
 // track "stage done for 3 of 9 units". The COVERAGE LEDGER is the per-unit
 // ARTIFACTS on disk: a unit is "covered" for this stage once all of the stage's
-// produces[] exist under <recordPrefix>/construction/<unit>/<slug>/. The engine
+// produces[] exist under <recordPrefix>/<phase>/<unit>/<slug>/. The engine
 // walks the ordered unit list (the compiled Bolt DAG, flattened to topo order),
 // finds the FIRST uncovered unit, and emits a run-stage for THAT concrete unit,
 // with the gate SUPPRESSED (false) on EVERY not-yet-covered unit. The conductor
@@ -15230,7 +15239,7 @@ function emitRunStageForSlug(
 
 // True when `unit` is COVERED for `node`: every APPLICABLE artifact in
 // node.produces[] (the REQUIRED set) exists on disk under the resolved per-unit
-// path (<recordPrefix>/construction/<unit>/<owner.slug>/<name>.md).
+// path (<recordPrefix>/<owner.phase>/<unit>/<owner.slug>/<name>.md).
 // node.optional_produces entries are DELIBERATELY not checked here - they are
 // artifacts the unit MAY write (marked CONDITIONAL in the stage body), so their
 // absence never blocks coverage. The resolved path
@@ -17715,7 +17724,8 @@ export function unitWalkStanding(
 }
 
 // The per-unit block of a solo unit-major walk once Current Stage has moved
-// on past it to a later Construction stage (Build and Test, say), as a walk
+// on past it to a later non-per-unit build, test or secure stage (Build and
+// Test, say), as a walk
 // whose Units are all covered; null on the same conditions as
 // unitMajorWalkBeat. From here a jump back that names one Unit reopens its
 // step for that Unit only. `team`: the team walk's block instead
@@ -17730,7 +17740,7 @@ function unitMajorFinishedWalk(
   if (readConstructionIteration(stateContent) !== "unit-major") return null;
   if (isTeamUnitOwnership(stateContent) !== team) return null;
   const node = nodeForSlug(currentSlug);
-  if (!node || isPerUnit(node) || node.phase !== "construction") return null;
+  if (!node || isPerUnit(node) || !["build", "test", "secure"].includes(node.phase)) return null;
   const checkpoints = team || checkpointPolicyEnabled(stateContent);
   if (!team && checkpoints && getField(stateContent, "Construction Execution") === "swarm") return null;
   if (!team && usesStageLevelPerUnitArtifacts(scope, stateContent)) return null;
@@ -19527,7 +19537,11 @@ function planChangeDirective(
       return at;
     };
     const closes = owed
-      ? after(first, (slug) => !["construction", "operation"].includes(nodeForSlug(slug)?.phase ?? ""))
+      ? after(first, (slug) => {
+        const node = nodeForSlug(slug);
+        return node === undefined ||
+          !(isPerUnit(node) || ["build", "test", "secure", "deploy", "operate"].includes(node.phase));
+      })
       : onTheWalk
         ? after(walk.steps[walk.steps.length - 1], (slug) => {
           const node = nodeForSlug(slug);
@@ -21112,7 +21126,7 @@ function checkEnsembleEvidence(
   );
   const contributionDirs: Array<{ path: string; unit: string | null }> = usesUnitDirs
     ? evidenceUnits.map((unit) => ({
-        path: join(pd, prefix, "construction", unit, slug, "contributions"),
+        path: join(pd, prefix, node.phase, unit, slug, "contributions"),
         unit,
       }))
     : [{
@@ -21139,7 +21153,7 @@ function checkEnsembleEvidence(
   if (missing.length === 0) return { ok: true };
 
   const contributionPath = usesUnitDirs
-    ? `${prefix}/construction/<unit>/${slug}/contributions/<agent-slug>.md`
+    ? `${prefix}/${node.phase}/<unit>/${slug}/contributions/<agent-slug>.md`
     : `${prefix}/${node.phase}/${slug}/contributions/<agent-slug>.md`;
   return {
     ok: false,
@@ -21191,7 +21205,7 @@ function checkPipelineLinkEvidence(
 function practicesDraftPostureProblem(pd: string): string | null {
   const prefix = engineRelativeRecordDir(pd);
   if (prefix === null) return null;
-  const draft = join(pd, prefix, "inception", "practices-discovery", "team-practices.md");
+  const draft = join(pd, prefix, "design", "practices-discovery", "team-practices.md");
   if (!existsSync(draft)) return null;
   let content: string;
   try {
@@ -21213,7 +21227,7 @@ function practicesRulesGateLine(pd: string, node: { slug: string }): string | nu
   const projectRules = join(memoryDirFor(pd), "project.md");
   let rules: { mandated: string[]; forbidden: string[] };
   try {
-    const draft = readFileSync(join(pd, prefix, "inception", "practices-discovery", "discovered-rules.md"), "utf-8");
+    const draft = readFileSync(join(pd, prefix, "design", "practices-discovery", "discovered-rules.md"), "utf-8");
     rules = practicesRulesToAdd(draft, existsSync(projectRules) ? readFileSync(projectRules, "utf-8") : "");
   } catch {
     return null;
@@ -21636,7 +21650,7 @@ function skipTargetRefusal(
   const current = nodeForSlug(currentSlug);
   if (
     readConstructionIteration(stateContent) === "unit-major" &&
-    current !== undefined && current.phase === "construction" && isPerUnit(current)
+    current !== undefined && isPerUnit(current)
   ) {
     return `Cannot skip ${named} right now: a step can be skipped only while it is the step in ` +
       `progress for one of your units. Continue with \`${entrySkillInvocation()}\` and do the ` +
@@ -22497,7 +22511,7 @@ function handleReport(args: string[], projectDir: string | undefined): void {
     if (unit) {
       emit(errorDirective(
         readConstructionIteration(stateContent) !== "unit-major" &&
-          node.phase === "construction" && isPerUnit(node)
+          isPerUnit(node)
           ? `Cannot skip "${slug}" for unit "${unit}" only: a one-unit skip works only when ` +
             "Construction runs unit by unit, and here each step covers every unit. Do the step " +
             `(continue with \`${entrySkillInvocation()}\`), or, if it applies to no unit, skip ` +
@@ -22520,7 +22534,7 @@ function handleReport(args: string[], projectDir: string | undefined): void {
     // they are.
     const unitsDone =
       readConstructionIteration(stateContent) === "unit-major" &&
-      node.phase === "construction" && isPerUnit(node)
+      isPerUnit(node)
         ? unitsWithStageWork(pd, node, unitWorkContext(pd))
         : [];
     if (unitsDone.length > 0 && planAction !== "SKIP" && !personAsked) {
@@ -22626,7 +22640,6 @@ function handleReport(args: string[], projectDir: string | undefined): void {
 
   if (
     isTeamUnitOwnership(stateContent) &&
-    node.phase === "construction" &&
     isPerUnit(node)
   ) {
     const unit = flags.unit?.trim();
@@ -23174,7 +23187,7 @@ function handleReport(args: string[], projectDir: string | undefined): void {
   if (practicesApprovalHeld(pd, slug, stateContent)) {
     // Their Approve stands: the promotion it waits for is the agent's step,
     // named as the stage's Step 7 runs it, then this same report.
-    const drafts = `${engineRelativeRecordDir(pd) ?? "<record>"}/inception/practices-discovery`;
+    const drafts = `${engineRelativeRecordDir(pd) ?? "<record>"}/design/practices-discovery`;
     const promote = renderEngineInvocation({
       route: "state",
       args: [
@@ -24077,7 +24090,7 @@ function handleWait(args: string[], projectDir: string | undefined): void {
   }
   const prefix = relativeRecord ?? relativeSpaceRecordPrefix();
   const contributionsDir = flags.unit
-    ? join(pd, prefix, "construction", flags.unit, node.slug, "contributions")
+    ? join(pd, prefix, node.phase, flags.unit, node.slug, "contributions")
     : join(pd, prefix, node.phase, node.slug, "contributions");
   const reviewPath =
     flags.reviewFile === undefined

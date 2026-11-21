@@ -42,16 +42,16 @@ outputs: ci-config.md, quality-gates.md, ci-pipeline-questions.md (under this st
 
 ### Step 1: Load Prior Context
 
-- Read build/test results from `<record>/construction/build-and-test/` (if exists)
-- Read code summary from `<record>/construction/{unit-name}/code-generation/` (if exists)
-- Read infrastructure design from `<record>/construction/infrastructure-design/` (if exists)
+- Read build/test results from `<record>/test/build-and-test/` (if exists)
+- Read code summary from `<record>/build/{unit-name}/code-generation/` (if exists)
+- Read infrastructure design from `<record>/design/infrastructure-design/` (if exists)
 - Read workspace profile for existing CI configuration
 
 When code-generation or build-and-test did not run for this intent (a stage the person skipped), their inputs are absent: base the pipeline stages on the workspace's existing build/test setup (detected from the repo itself) instead — never invent the content of a missing artifact.
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/construction/ci-pipeline/ci-pipeline-questions.md` with questions:
+Create `<record>/deploy/ci-pipeline/ci-pipeline-questions.md` with questions:
 - What CI tool is in use (CodePipeline, CodeBuild, GitHub Actions, Jenkins)?
 - What is the branch strategy?
 - What quality gates are required before merge?
@@ -69,18 +69,18 @@ Create CI pipeline configuration (buildspec.yml, workflow YAML, or equivalent), 
 
 ### Step 5: Phase Boundary Verification
 
-Run Construction → Operation verification check:
+Run Build → Deploy verification check:
 - Read
-  `<record>/construction/build-and-test/cross-unit-traceability.md`.
+  `<record>/test/build-and-test/cross-unit-traceability.md`.
 - Confirm all Units built and tested, all code-generation tables have no
   unresolved findings, and the cross-Unit FR/NFR/AC gate passed.
 - Confirm the CI quality gates enforce the build and test commands recorded by
   Build and Test.
 - Write the boundary verdict to
-  `<record>/verification/phase-check-construction.md`.
+  `<record>/verification/phase-check-build.md`.
 
 If any traceability file is missing or any unresolved finding remains, stop
-the Construction → Operation transition and revisit the owning stage.
+the Build → Deploy transition and revisit the owning stage.
 
 ### Step 6: Completion Handoff
 
@@ -91,12 +91,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 7: Present Completion & Request Approval
 
 Completion emoji: :gear:
-Review path: `<record>/construction/ci-pipeline/`
+Review path: `<record>/deploy/ci-pipeline/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown design artefacts under `<record>/construction/ci-pipeline/`. Some sections include code samples that the code-shape sensors can also flag.
+This stage's outputs are markdown design artefacts under `<record>/deploy/ci-pipeline/`. Some sections include code samples that the code-shape sensors can also flag.
 
 Imports: `required-sections`, `upstream-coverage`, `linter`, `type-check`.
 

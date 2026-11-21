@@ -3,7 +3,7 @@ slug: approval-handoff
 name: Approval & Handoff
 phase: discover
 execution: ALWAYS
-condition: Always executes — compiles all Ideation artifacts into initiative brief for approval
+condition: Always executes — compiles all Discover artifacts into initiative brief for approval
 lead_agent: aidlc-delivery-agent
 support_agents:
   - aidlc-product-agent
@@ -44,7 +44,7 @@ sensors:
 scopes:
   - enterprise
   - feature
-inputs: All Ideation phase artifacts (intent, market research, feasibility, scope, team, mockups)
+inputs: All Discover phase artifacts (intent, market research, feasibility, scope, team, mockups)
 outputs: initiative-brief.md, decision-log.md, approval-handoff-questions.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -54,17 +54,17 @@ outputs: initiative-brief.md, decision-log.md, approval-handoff-questions.md (un
 
 ### Step 1: Load Prior Context
 
-Read ALL Ideation phase artifacts:
-- Intent statement and stakeholder map from `<record>/ideation/intent-capture/`
-- Market research from `<record>/ideation/market-research/` (if exists)
-- Feasibility assessment, constraint register, RAID log from `<record>/ideation/feasibility/` (if exists)
-- Scope definition and intent backlog from `<record>/ideation/scope-definition/`
-- Team formation artifacts from `<record>/ideation/team-formation/` (if exists)
-- Mockups/wireframes from `<record>/ideation/rough-mockups/` (if exists)
+Read ALL Discover phase artifacts:
+- Intent statement and stakeholder map from `<record>/discover/intent-capture/`
+- Market research from `<record>/discover/market-research/` (if exists)
+- Feasibility assessment, constraint register, RAID log from `<record>/discover/feasibility/` (if exists)
+- Scope definition and intent backlog from `<record>/discover/scope-definition/`
+- Team formation artifacts from `<record>/discover/team-formation/` (if exists)
+- Mockups/wireframes from `<record>/discover/rough-mockups/` (if exists)
 
 ### Step 2: Generate Approval Questions
 
-Create `<record>/ideation/approval-handoff/approval-handoff-questions.md` with questions:
+Create `<record>/discover/approval-handoff/approval-handoff-questions.md` with questions:
 - Do all stakeholders agree on the intent and scope?
 - Have all critical risks been acknowledged with mitigations?
 - Is there budget/resource commitment?
@@ -76,7 +76,7 @@ Follow stage-protocol.md question flow.
 
 ### Step 3: Compile Initiative Brief
 
-Create `<record>/ideation/approval-handoff/initiative-brief.md` — a one-pager combining:
+Create `<record>/discover/approval-handoff/initiative-brief.md` — a one-pager combining:
 - Intent and problem statement
 - Market validation summary
 - Feasibility and risk highlights
@@ -85,14 +85,14 @@ Create `<record>/ideation/approval-handoff/initiative-brief.md` — a one-pager 
 - Team plan
 - Go/no-go recommendation
 
-Create `<record>/ideation/approval-handoff/decision-log.md` — record of all decisions made during Ideation.
+Create `<record>/discover/approval-handoff/decision-log.md` — record of all decisions made during Discover.
 
 ### Step 4: Phase Boundary Verification
 
-Run Ideation → Inception verification check:
+Run Discover → Design verification check:
 - Intent → Scope → Intent Backlog consistency
 - All scope items have feasibility backing
-- Write results to `<record>/verification/phase-check-ideation.md`
+- Write results to `<record>/verification/phase-check-discover.md`
 
 ### Step 5: Completion Handoff
 
@@ -103,12 +103,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :white_check_mark:
-Review path: `<record>/ideation/approval-handoff/`
+Review path: `<record>/discover/approval-handoff/`
 Approval gate: Approve (Continue to `<directive.next_stage>`, the stage the engine names) / Request Changes.
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/approval-handoff/`.
+This stage's outputs are markdown artefacts under `<record>/discover/approval-handoff/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

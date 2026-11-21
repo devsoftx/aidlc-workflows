@@ -284,10 +284,10 @@ Template in `{{HARNESS_DIR}}/knowledge/aidlc-developer-agent/re-artifacts.md`:
 
 - Unrecorded project-root repo (no repo is registered, and `codekb-path`
   prints the name it gives the project folder):
-  `<record>/inception/reverse-engineering/developer-scan.md`, also when you
+  `<record>/discover/reverse-engineering/developer-scan.md`, also when you
   pass that name as `--repo`, so a rescan replaces the earlier handoff
 - Registered repo (including an exactly-one repo set):
-  `<record>/inception/reverse-engineering/developer-scan-<repo>.md`
+  `<record>/discover/reverse-engineering/developer-scan-<repo>.md`
 
 This file is the durable pipeline handoff. The developer's return summary names
 the handoff path and any concerns only; it does not repeat the scan body.
@@ -412,12 +412,12 @@ write the candidate there directly.
 **Coverage backstop - run BEFORE writing (the compare needs the prior store
 unchanged).** When the Step 1 guard found an existing store (any verdict but
 NO_STORE), write the new or merged timestamp content with your file-write
-tool to `<record>/inception/reverse-engineering/scope-draft-<repo>.md` (one
+tool to `<record>/discover/reverse-engineering/scope-draft-<repo>.md` (one
 draft per repo; NOT the timestamp filename - record-dir placement checks key on
 the artifact stems) and run, as a command of its own,
 
 ```
-{{INVOKE}} engine workspace codekb-scope-diff --repo <repo> --compare <record>/inception/reverse-engineering/scope-draft-<repo>.md
+{{INVOKE}} engine workspace codekb-scope-diff --repo <repo> --compare <record>/discover/reverse-engineering/scope-draft-<repo>.md
 ```
 
 Keep the output keyed by `<repo>` for Step 5's completion summary. This is the

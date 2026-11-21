@@ -83,7 +83,7 @@ Execute all steps sequentially as written.
 
 ### Step 1: Read Prior Artifacts
 
-Read functional design artifacts from `<record>/construction/{unit-name}/functional-design/` (if they exist). Read `<record>/inception/requirements-analysis/requirements.md` (if exists), the inter-unit contracts from `<record>/inception/contract-design/contract-summary.md` (if produced — its SLAs, retry/timeout, and integration-mechanism decisions constrain this unit's NFR targets), and any reverse engineering artifacts from `aidlc/spaces/<active-space>/codekb/<repo>/` (the directory `codekb-path --repo <repo>` prints). Incremental scopes (infra) skip functional-design by design; when its artifacts are absent, derive the NFR context from the requirements and the code knowledge base instead — never invent the content of a missing artifact.
+Read functional design artifacts from `<record>/design/{unit-name}/functional-design/` (if they exist). Read `<record>/design/requirements-analysis/requirements.md` (if exists), the inter-unit contracts from `<record>/design/contract-design/contract-summary.md` (if produced — its SLAs, retry/timeout, and integration-mechanism decisions constrain this unit's NFR targets), and any reverse engineering artifacts from `aidlc/spaces/<active-space>/codekb/<repo>/` (the directory `codekb-path --repo <repo>` prints). Incremental scopes (infra) skip functional-design by design; when its artifacts are absent, derive the NFR context from the requirements and the code knowledge base instead — never invent the content of a missing artifact.
 
 ### Step 2: Assess NFR Categories
 
@@ -96,7 +96,7 @@ Analyze the unit across NFR categories:
 
 ### Step 3: Generate Questions
 
-Create a questions file at `<record>/construction/{unit-name}/nfr-requirements/nfr-requirements-questions.md` for unclear NFR areas using [Answer]: tags. Focus on quantifiable targets and specific constraints.
+Create a questions file at `<record>/design/{unit-name}/nfr-requirements/nfr-requirements-questions.md` for unclear NFR areas using [Answer]: tags. Focus on quantifiable targets and specific constraints.
 
 ### Step 4: Collect and Analyze Answers
 
@@ -109,7 +109,7 @@ If ANY ambiguity found: create follow-up questions and resolve before proceeding
 
 ### Step 5: Generate Artifacts
 
-Generate the following in `<record>/construction/{unit-name}/nfr-requirements/`:
+Generate the following in `<record>/design/{unit-name}/nfr-requirements/`:
 
 - **performance-requirements.md**: Response time targets, throughput requirements, latency budgets, resource constraints, benchmarks
 - **security-requirements.md**: Authentication requirements, authorization model, data protection, compliance, threat considerations
@@ -118,14 +118,14 @@ Generate the following in `<record>/construction/{unit-name}/nfr-requirements/`:
 - **observability-requirements.md**: Monitoring requirements, logging standards, distributed tracing needs, alerting thresholds, dashboard requirements, SLI/SLO definitions
 - **tech-stack-decisions.md**: Technology selections and rationale — languages, frameworks, databases, infrastructure tools, and justification for each choice
 
-Every detailed requirement inherits its inception NFR ID and appends a
+Every detailed requirement inherits its design NFR ID and appends a
 sub-number, such as `NFR4.1` and `NFR4.2`. Carry these IDs on every requirement
 row.
 
 Create
-`<record>/construction/{unit-name}/nfr-requirements/traceability.json` by running
+`<record>/design/{unit-name}/nfr-requirements/traceability.json` by running
 `{{INVOKE}} engine sensor-traceability --stage nfr-requirements --output-path <that path> --write-upstream`:
-it lists every inception `NFR{n}` Requirements Analysis recorded, or, when User Stories
+it lists every design `NFR{n}` Requirements Analysis recorded, or, when User Stories
 did not run and `unit-of-work-story-map.md` gives this Unit NFR rows, the NFRs
 on those rows, each with a `GAP` row. Target the derived `NFRx.y` IDs; one that does not apply to this
 Unit is `N/A` in `coverage`, with the reason as its target:
@@ -159,21 +159,21 @@ Present completion message and approval gate:
 Summary of NFR categories addressed and key targets, then:
 
 ```
-**Review:** `<record>/construction/{unit-name}/nfr-requirements/`
+**Review:** `<record>/design/{unit-name}/nfr-requirements/`
 ```
 
 Approval gate: strictly 2-option (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown design artefacts under `<record>/construction/{unit-name}/nfr-requirements/`. Some sections include code samples that the code-shape sensors can also flag.
+This stage's outputs are markdown design artefacts under `<record>/design/{unit-name}/nfr-requirements/`. Some sections include code samples that the code-shape sensors can also flag.
 
 Imports: `required-sections`, `upstream-coverage`, `linter`, `type-check`, `traceability`.
 
 Upstream targets: `functional-spec`, `rules`, `requirements`, `contract-summary`, `technology-stack`.
 
 `linter` and `type-check` inspect matching TypeScript/JavaScript snippets.
-`traceability` verifies that inception NFR IDs are declared and covered by
+`traceability` verifies that design NFR IDs are declared and covered by
 per-Unit `NFRx.y` requirements.
 
 ## Learn

@@ -37,13 +37,13 @@ outputs: team-assessment.md, skill-matrix.md, mob-composition.md, team-formation
 
 ### Step 1: Load Prior Context
 
-- Read scope definition from `<record>/ideation/scope-definition/`
+- Read scope definition from `<record>/discover/scope-definition/`
 - Read feasibility assessment and constraint register (if exist)
 - Read intent backlog for work volume estimation
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/ideation/team-formation/team-formation-questions.md` with questions:
+Create `<record>/discover/team-formation/team-formation-questions.md` with questions:
 - What teams and individuals are available?
 - What is the current capacity and utilization?
 - What skills are required vs. available?
@@ -72,12 +72,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :people_holding_hands:
-Review path: `<record>/ideation/team-formation/`
+Review path: `<record>/discover/team-formation/`
 Standard approval gate (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/team-formation/`.
+This stage's outputs are markdown artefacts under `<record>/discover/team-formation/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

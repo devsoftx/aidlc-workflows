@@ -2,7 +2,7 @@
 slug: delivery-planning
 phase: design
 execution: ALWAYS
-condition: Always executes — capstone Inception stage, produces the detailed execution plan for Construction and Operation
+condition: Always executes — capstone Design stage, produces the detailed execution plan for Build and Operate
 lead_agent: aidlc-delivery-agent
 support_agents:
   - aidlc-architect-agent
@@ -44,7 +44,7 @@ scopes:
   - mvp
   - classic
   - workshop
-inputs: All Inception artifacts (requirements, stories, mockups, architecture, units)
+inputs: All Design artifacts (requirements, stories, mockups, architecture, units)
 outputs: bolt-plan.md, team-allocation.md, risk-and-sequencing-rationale.md, external-dependency-map.md, delivery-planning-questions.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -54,18 +54,18 @@ outputs: bolt-plan.md, team-allocation.md, risk-and-sequencing-rationale.md, ext
 
 ### Step 1: Load Prior Context
 
-Read all Inception phase artifacts:
-- Requirements from `<record>/inception/requirements-analysis/`
-- User stories from `<record>/inception/user-stories/`
-- Domain design (component catalogue) from `<record>/inception/domain-design/components.md`
-- Units from `<record>/inception/units-generation/`
-- Inter-unit contracts from `<record>/inception/contract-design/contract-summary.md` (if produced) — contract ownership and open contract questions map onto Bolt sequencing and the walking skeleton
-- Team formation from `<record>/ideation/team-formation/` (if exists)
+Read all Design phase artifacts:
+- Requirements from `<record>/design/requirements-analysis/`
+- User stories from `<record>/design/user-stories/`
+- Domain design (component catalogue) from `<record>/design/domain-design/components.md`
+- Units from `<record>/design/units-generation/`
+- Inter-unit contracts from `<record>/design/contract-design/contract-summary.md` (if produced) — contract ownership and open contract questions map onto Bolt sequencing and the walking skeleton
+- Team formation from `<record>/discover/team-formation/` (if exists)
 
 **If practices-discovery executed**, resolve three sections from
 `aidlc/spaces/<active-space>/memory/{project,team,org}.md` using the
 most-specific non-empty statement:
-- `## Way of Working` — base/target branch and merge strategy for Construction worktrees
+- `## Way of Working` — base/target branch and merge strategy for Build worktrees
 - `## Walking Skeleton` — whether the first Bolt should be a minimal end-to-end slice (gated, separate user approval) or a regular Bolt
 - `## Deployment` — parallel-vs-serial Bolt execution stance and approval-gate preferences
 
@@ -75,10 +75,10 @@ active space's `memory/org.md` defaults.
 
 ### Step 2: Generate Clarifying Questions
 
-This stage plans the Bolt sequence — the order in which Units of Work are executed through Construction. 2.7 produces the dependency DAG (topology); this stage (2.9) chooses a path through it. Economic value cannot be derived from the DAG — that's a human value judgment.
+This stage plans the Bolt sequence — the order in which Units of Work are executed through Build. 2.7 produces the dependency DAG (topology); this stage (2.9) chooses a path through it. Economic value cannot be derived from the DAG — that's a human value judgment.
 
 **Definitions for this stage:**
-- **Bolt** — per `stage-protocol.md` Glossary: the planned Construction delivery slice from this stage (2.9): one or more Units with a Definition of Done, a confidence hypothesis, and ownership. The engine does not consume `bolt-plan.md` for Unit grouping or walk order; runtime batches come from `unit-of-work-dependency.md`. A **Batch** is the group of Units that build concurrently (runtime; from that 2.7 artifact).
+- **Bolt** — per `stage-protocol.md` Glossary: the planned Build delivery slice from this stage (2.9): one or more Units with a Definition of Done, a confidence hypothesis, and ownership. The engine does not consume `bolt-plan.md` for Unit grouping or walk order; runtime batches come from `unit-of-work-dependency.md`. A **Batch** is the group of Units that build concurrently (runtime; from that 2.7 artifact).
 
 These definitions are for YOU. They are not written to be read out, and the user
 has not seen them. Every one of them names something that is about to appear in
@@ -95,7 +95,7 @@ is a term to replace with plain words instead.
 - **WSJF** (Reinertsen / SAFe) — Weighted Shortest Job First. Sequence score = (user-business value + time criticality + risk-reduction value) ÷ job size. Higher score ships first.
 - **Walking skeleton** (Cockburn) — the first DAG Unit delivers the smallest working end-to-end slice through the relevant integration points. Its applicable design stages and Code Generation finish before later Units; a real integrated check and human checkpoint approval demonstrate the result.
 
-Create `<record>/inception/delivery-planning/delivery-planning-questions.md` with questions. Strategic questions (one answer per project):
+Create `<record>/design/delivery-planning/delivery-planning-questions.md` with questions. Strategic questions (one answer per project):
 
 - What should we build first: the riskiest parts, the most valuable parts, a thin end-to-end slice that proves the whole thing hangs together, or some mix? If a mix, say which approach applies where.
 - Should we score and rank the work with a formal model (WSJF-style: value and urgency against size)? If so, how much weight goes on risk, on value, and on size?
@@ -117,7 +117,7 @@ the actual Unit DAG and iteration choice. When skeleton-on applies, confirm that
 the first resolved DAG Unit is the smallest working integrated slice, name its
 expected demo and the real project check that will prove it end to end, and make
 its prerequisites explicit. If the decomposition cannot support that slice,
-revisit Units Generation before Construction. Reordering only `bolt-plan.md`
+revisit Units Generation before Build. Reordering only `bolt-plan.md`
 does not change the Unit the engine builds first; never describe the first
 design-stage review as a shipped skeleton.
 
@@ -131,7 +131,7 @@ Validate the chosen Bolt sequence respects 2.7's dependency DAG (with aidlc-arch
 
 ### Step 4: Generate Artifacts
 
-Create four artifacts in `<record>/inception/delivery-planning/`. These are
+Create four artifacts in `<record>/design/delivery-planning/`. These are
 documents the user opens and reads at the gate, so the same rule the questions
 follow applies to the prose inside them: a term of art carries a one-clause
 definition at its first appearance in that file, and each file stands alone (the
@@ -147,20 +147,20 @@ the explanation.
 
 ### Step 5: Phase Boundary Verification
 
-Run the Inception → Construction completeness audit. Read every
-`traceability.json` produced by the Inception stages that executed:
+Run the Design → Build completeness audit. Read every
+`traceability.json` produced by the Design stages that executed:
 
-- `<record>/inception/user-stories/traceability.json`
-- `<record>/inception/domain-design/traceability.json`
-- `<record>/inception/units-generation/traceability.json`
+- `<record>/design/user-stories/traceability.json`
+- `<record>/design/domain-design/traceability.json`
+- `<record>/design/units-generation/traceability.json`
 
 (Contract Design produces no `traceability.json` — it owns formal contracts,
 not requirement coverage — so it does not contribute to this phase-boundary
 check.) Confirm there are no unresolved findings, including `GAP`, `ORPHAN`, invalid
 targets, or missing upstream IDs. Consolidate the tables into
-`<record>/verification/phase-check-inception.md` with a pass/fail verdict at
+`<record>/verification/phase-check-design.md` with a pass/fail verdict at
 the top. If any finding remains, stop the transition and revisit the owning
-stage before Construction begins.
+stage before Build begins.
 
 ### Step 6: Completion Handoff
 
@@ -271,12 +271,12 @@ and the typed setter; an autonomy grant does not authorize command selection.
 ### Step 7: Present Completion & Request Approval
 
 Completion emoji: :calendar:
-Review path: `<record>/inception/delivery-planning/`
+Review path: `<record>/design/delivery-planning/`
 Approval gate: Approve (Continue to `<directive.next_stage>`, the stage the engine names) / Request Changes.
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/inception/delivery-planning/`.
+This stage's outputs are markdown artefacts under `<record>/design/delivery-planning/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

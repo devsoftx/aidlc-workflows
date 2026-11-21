@@ -160,14 +160,14 @@ know.
 
 PROACTIVE: Always generate clarifying questions unless requirements are exceptionally clear and complete across all six dimensions.
 
-Create `<record>/inception/requirements-analysis/requirements-analysis-questions.md` using the [Answer]: tag format from stage-protocol.md. Include context-appropriate questions with {{OPTION_LETTERS}} options. Every ordinary clarifying question MUST end with `X. Other (please specify)` as the final option; the later Consolidated Summary Confirmation is the unlettered exception. Leave all [Answer]: tags blank.
+Create `<record>/design/requirements-analysis/requirements-analysis-questions.md` using the [Answer]: tag format from stage-protocol.md. Include context-appropriate questions with {{OPTION_LETTERS}} options. Every ordinary clarifying question MUST end with `X. Other (please specify)` as the final option; the later Consolidated Summary Confirmation is the unlettered exception. Leave all [Answer]: tags blank.
 
 Then follow the unified question flow from stage-protocol.md section 3.
 
 ### Step 7: Collect and Analyze Answers
 
 After all answers are collected:
-1. Read `<record>/inception/requirements-analysis/requirements-analysis-questions.md`
+1. Read `<record>/design/requirements-analysis/requirements-analysis-questions.md`
 2. Confirm ALL `[Answer]:` tags are filled in. If any are blank, present the unanswered questions as structured questions and write answers back. Do NOT proceed with partial answers.
 3. Then proceed with ambiguity detection and contradiction analysis on the full answer set.
 
@@ -188,7 +188,7 @@ This step applies only when `directive.ceremony.summary_confirmation === "on"`. 
 
 ### Step 10: Generate Requirements
 
-Create `<record>/inception/requirements-analysis/requirements.md` containing:
+Create `<record>/design/requirements-analysis/requirements.md` containing:
 - **Intent analysis** — What the user is trying to achieve (goals, not just features)
 - **Functional requirements** — Organized by feature area or domain. Give every requirement a stable `FR{n}` ID (for example `FR1`) and every sub-requirement an `FR{n}.{m}` ID (for example `FR1.2`).
 - **Non-functional requirements** — Performance, security, scalability, reliability, and observability targets. Give every requirement a stable `NFR{n}` ID (for example `NFR3`).
@@ -200,7 +200,7 @@ Create `<record>/inception/requirements-analysis/requirements.md` containing:
 These IDs are permanent traceability keys. Downstream stages must preserve
 them exactly rather than renumbering or replacing them with prose references.
 
-Record them in `<record>/inception/requirements-analysis/traceability.json`:
+Record them in `<record>/design/requirements-analysis/traceability.json`:
 every ID `requirements.md` defines, spelled exactly as it spells them (a
 team's own form stays as it is), with its `kind`, and for a
 sub-requirement the requirement it belongs to in `of`. Later stages trace from
@@ -234,7 +234,7 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 
 Use stage-protocol.md completion template with completion emoji: :mag:
 - Summary of requirements produced
-- Review path: `<record>/inception/requirements-analysis/`
+- Review path: `<record>/design/requirements-analysis/`
 IF User Stories is set to SKIP in the execution state:
 ```question
 prompt: "Requirements Analysis complete. How would you like to proceed?"
@@ -263,7 +263,7 @@ IF User Stories is NOT set to SKIP: use standard 2-option approval (Approve / Re
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/inception/requirements-analysis/`, plus its `traceability.json` record of the IDs.
+This stage's outputs are markdown artefacts under `<record>/design/requirements-analysis/`, plus its `traceability.json` record of the IDs.
 
 Imports: `required-sections`, `upstream-coverage`.
 

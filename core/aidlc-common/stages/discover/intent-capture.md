@@ -100,7 +100,7 @@ outputs: intent-statement.md, stakeholder-map.md, intent-capture-questions.md (u
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/ideation/intent-capture/intent-capture-questions.md`.
+Create `<record>/discover/intent-capture/intent-capture-questions.md`.
 
 Start the file with a `## Sources` register. Every source is a top-level
 Markdown list item using exactly one of these forms:
@@ -179,7 +179,7 @@ Apply this grounding contract to both artifacts:
 7. Each artifact MUST contain `## Assumptions & Open Questions`. Write `None.`
    when there are none.
 
-Create `<record>/ideation/intent-capture/intent-statement.md` containing:
+Create `<record>/discover/intent-capture/intent-statement.md` containing:
 - **Problem Statement** — What business problem is being solved
 - **Target Customer** — Who benefits and how
 - **Success Metrics** — Measurable outcomes
@@ -187,7 +187,7 @@ Create `<record>/ideation/intent-capture/intent-statement.md` containing:
 - **Initial Scope Signal** — Show the workflow-selected scope separately from
   the user-confirmed product boundary
 
-Create `<record>/ideation/intent-capture/stakeholder-map.md` containing:
+Create `<record>/discover/intent-capture/stakeholder-map.md` containing:
 - Key stakeholders and their interests
 - Decision-makers vs. influencers
 - Communication requirements
@@ -236,12 +236,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 
 Use stage-protocol.md completion template with completion emoji: :bulb:
 - Summary of intent statement and stakeholder map
-- Review path: `<record>/ideation/intent-capture/`
+- Review path: `<record>/discover/intent-capture/`
 - Standard approval gate (Approve / Request Changes)
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/intent-capture/`.
+This stage's outputs are markdown artefacts under `<record>/discover/intent-capture/`.
 
 Imports: `claim-sources`, `required-sections`, `upstream-coverage`.
 

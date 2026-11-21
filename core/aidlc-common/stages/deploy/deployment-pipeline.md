@@ -46,9 +46,9 @@ outputs: cd-config.md, deployment-strategy.md, rollback-runbook.md, deployment-p
 
 ### Step 1: Load Prior Context
 
-- Read CI pipeline config from `<record>/construction/ci-pipeline/` (if exists)
-- Read infrastructure design from `<record>/construction/infrastructure-design/` (if exists)
-- Read NFR design (deployment-related NFRs) from `<record>/construction/nfr-design/` (if exists)
+- Read CI pipeline config from `<record>/deploy/ci-pipeline/` (if exists)
+- Read infrastructure design from `<record>/design/infrastructure-design/` (if exists)
+- Read NFR design (deployment-related NFRs) from `<record>/design/nfr-design/` (if exists)
 
 Incremental scopes (`bugfix`, `refactor`, and `security-patch`) and `express`
 skip CI Pipeline and Infrastructure Design by design. On brownfield, inspect
@@ -83,12 +83,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 5: Present Completion & Request Approval
 
 Completion emoji: :rocket:
-Review path: `<record>/operation/deployment-pipeline/`
+Review path: `<record>/deploy/deployment-pipeline/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/deployment-pipeline/`.
+This stage's outputs are markdown artefacts under `<record>/deploy/deployment-pipeline/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

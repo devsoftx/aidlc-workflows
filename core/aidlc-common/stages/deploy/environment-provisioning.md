@@ -39,8 +39,8 @@ outputs: environment-inventory.md, validation-report.md, environment-provisionin
 
 ### Step 1: Load Prior Context
 
-- Read infrastructure design from `<record>/construction/infrastructure-design/`
-- Read security requirements from `<record>/construction/nfr-requirements/`
+- Read infrastructure design from `<record>/design/infrastructure-design/`
+- Read security requirements from `<record>/design/nfr-requirements/`
 
 ### Step 2: Generate Clarifying Questions
 
@@ -69,12 +69,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :cloud:
-Review path: `<record>/operation/environment-provisioning/`
+Review path: `<record>/deploy/environment-provisioning/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/environment-provisioning/`.
+This stage's outputs are markdown artefacts under `<record>/deploy/environment-provisioning/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

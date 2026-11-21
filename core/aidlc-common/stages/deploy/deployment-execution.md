@@ -37,7 +37,7 @@ scopes:
   - security-patch
   - workshop
   - express
-inputs: CD pipeline config from deployment-pipeline stage, provisioned environments from environment-provisioning stage, built artifacts from Construction
+inputs: CD pipeline config from deployment-pipeline stage, provisioned environments from environment-provisioning stage, built artifacts from Build
 outputs: deployment-log.md, smoke-test-results.md, health-check-report.md, deployment-execution-questions.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -47,9 +47,9 @@ outputs: deployment-log.md, smoke-test-results.md, health-check-report.md, deplo
 
 ### Step 1: Load Prior Context
 
-- Read CD pipeline config and deployment strategy from `<record>/operation/deployment-pipeline/` (if they exist)
-- Read environment inventory from `<record>/operation/environment-provisioning/` (if exists)
-- Read build/test results from `<record>/construction/build-and-test/` (if exists)
+- Read CD pipeline config and deployment strategy from `<record>/deploy/deployment-pipeline/` (if they exist)
+- Read environment inventory from `<record>/deploy/environment-provisioning/` (if exists)
+- Read build/test results from `<record>/test/build-and-test/` (if exists)
 - Read rollback runbook (if exists)
 
 Incremental scopes (`bugfix`, `refactor`, and `security-patch`) plus `express`
@@ -119,12 +119,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :package:
-Review path: `<record>/operation/deployment-execution/`
+Review path: `<record>/deploy/deployment-execution/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/deployment-execution/`.
+This stage's outputs are markdown artefacts under `<record>/deploy/deployment-execution/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

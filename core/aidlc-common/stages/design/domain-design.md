@@ -43,7 +43,7 @@ scopes:
   - mvp
   - classic
   - workshop
-inputs: <record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced), RE artifacts (if brownfield)
+inputs: <record>/design/requirements-analysis/requirements.md, <record>/design/user-stories/stories.md (if produced), RE artifacts (if brownfield)
 outputs: components.md (fenced ```yaml component catalogue plus a human-readable mermaid diagram and summary table), decisions.md (Architecture Decision Records), and traceability.json — all under this stage's record dir, engine-resolved
 ---
 
@@ -57,13 +57,13 @@ This stage does NOT decide deployment topology (monolith, microservices, serverl
 
 ### Step 1: Load Prior Context
 
-- Read `<record>/inception/requirements-analysis/requirements.md`
-- Read `<record>/inception/user-stories/stories.md` (if produced)
+- Read `<record>/design/requirements-analysis/requirements.md`
+- Read `<record>/design/user-stories/stories.md` (if produced)
 - If brownfield: Read relevant RE artifacts (especially architecture.md, component-inventory.md, dependencies.md)
 
 ### Step 2: Create Design Plan with Questions
 
-Create `<record>/inception/domain-design/domain-design-questions.md` with context-appropriate questions using [Answer]: tag format:
+Create `<record>/design/domain-design/domain-design-questions.md` with context-appropriate questions using [Answer]: tag format:
 - Component boundary decisions (what is a distinct building block, and why)
 - Entity ownership (each entity has exactly one owning component — ambiguity is a design smell)
 - Component responsibilities (what business logic each block owns)
@@ -80,7 +80,7 @@ Collect answers following stage-protocol.md §3 question flow (collect answers, 
 
 ### Step 4: Generate the Component Catalogue
 
-Create `<record>/inception/domain-design/components.md`. This single artifact carries both a machine-readable catalogue and the human-readable view.
+Create `<record>/design/domain-design/components.md`. This single artifact carries both a machine-readable catalogue and the human-readable view.
 
 **Entity capture depth.** Capture entities at the **ownership + shape** level only — which component owns each entity, its identifier, its attribute names, and any cross-component references. Do NOT specify data types, validation constraints, allowed values, or relationship cardinality here — that full schema belongs to Functional Design (`entities.md`). Every entity has **exactly one** owning component; ambiguous ownership is a design smell to resolve before the gate.
 
@@ -142,9 +142,9 @@ When only one decomposition is viable, state why and skip the block.
 
 ### Step 5: Record Architecture Decisions (ADRs)
 
-Create `<record>/inception/domain-design/decisions.md`. The `components.md` Rationale table is a quick per-component justification; `decisions.md` is the durable Architecture Decision Record log that the Inception phase rule requires. Record one ADR for every **significant** design choice made here — component-boundary decompositions, entity-ownership calls, cross-component interaction styles, and any deliberate dependency cycle.
+Create `<record>/design/domain-design/decisions.md`. The `components.md` Rationale table is a quick per-component justification; `decisions.md` is the durable Architecture Decision Record log that the Design phase rule requires. Record one ADR for every **significant** design choice made here — component-boundary decompositions, entity-ownership calls, cross-component interaction styles, and any deliberate dependency cycle.
 
-Each ADR MUST follow this structure (per the Inception phase guardrails):
+Each ADR MUST follow this structure (per the Design phase guardrails):
 
 - **ADR-NNN: <short title>**
   - **Context** — the forces and constraints that made a decision necessary
@@ -156,7 +156,7 @@ Number ADRs sequentially (`ADR-001`, `ADR-002`, …). Where a decision came from
 
 ### Step 6: Record Traceability
 
-Create `<record>/inception/domain-design/traceability.json` by running
+Create `<record>/design/domain-design/traceability.json` by running
 `{{INVOKE}} engine sensor-traceability --stage domain-design --output-path <that path> --write-upstream`:
 when `stories.md` exists it lists every `USx.y`, otherwise every `FR`
 Requirements Analysis recorded (a requirement with sub-requirements is traced through its `FR{n}.{m}` IDs and needs no row of its own), each with a `GAP` row. Map each upstream ID to the **component or entity**
@@ -187,7 +187,7 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 Use stage-protocol.md completion template with completion emoji: :building_construction:
 - Summary of components identified (count, key boundaries, entity ownership)
 - Key boundary decisions highlighted (with a pointer to the ADR log in `decisions.md`)
-- Review path: `<record>/inception/domain-design/`
+- Review path: `<record>/design/domain-design/`
 - Structured approval question with options:
   - Approve (continue to next stage)
   - Request Changes (provide revision feedback)
@@ -202,7 +202,7 @@ once whether they approve the design as it is or want anything changed.
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/inception/domain-design/` (`components.md` and `decisions.md`) plus `traceability.json`.
+This stage's outputs are markdown artefacts under `<record>/design/domain-design/` (`components.md` and `decisions.md`) plus `traceability.json`.
 
 Imports: `required-sections`, `upstream-coverage`, `traceability`.
 

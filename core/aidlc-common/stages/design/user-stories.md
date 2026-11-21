@@ -42,7 +42,7 @@ scopes:
   - mvp
   - classic
   - workshop
-inputs: <record>/inception/requirements-analysis/requirements.md, RE artifacts (if brownfield)
+inputs: <record>/design/requirements-analysis/requirements.md, RE artifacts (if brownfield)
 outputs: stories.md, personas.md, user-stories-assessment.md, traceability.json (under this stage's record dir, engine-resolved)
 ---
 
@@ -65,7 +65,7 @@ Assess whether user stories add value for this project. Provide reasoning:
 - **Execute if**: user-facing features, multiple user personas, complex business logic, cross-team coordination needed
 - **Skip if**: pure refactoring, isolated bug fixes, infrastructure-only, developer tooling
 
-Create `<record>/inception/user-stories/user-stories-assessment.md` documenting the assessment:
+Create `<record>/design/user-stories/user-stories-assessment.md` documenting the assessment:
 - Decision: Execute or Skip
 - Rationale: Why user stories are or are not needed for this project
 - Factors considered: project type, user-facing scope, complexity signals
@@ -78,7 +78,7 @@ The engine records the skip and advances to the next in-scope stage.
 
 ### Step 3: Load Prior Context
 
-- Read `<record>/inception/requirements-analysis/requirements.md`
+- Read `<record>/design/requirements-analysis/requirements.md`
 - If brownfield: Read relevant RE artifacts from `aidlc/spaces/<active-space>/codekb/<repo>/` (the directory `codekb-path --repo <repo>` prints)
 
 ---
@@ -87,7 +87,7 @@ The engine records the skip and advances to the next in-scope stage.
 
 ### Step 4: Create Story Plan with Questions
 
-Create a story plan in `<record>/inception/user-stories/user-stories-questions.md` containing:
+Create a story plan in `<record>/design/user-stories/user-stories-questions.md` containing:
 - **Persona development approach** — Who are the users? What are their goals?
 - **Story format** — Using INVEST criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable)
 - **Story prioritization** — Assign MoSCoW priority (Must Have / Should Have / Could Have / Won't Have) to each story based on requirements analysis. The MVP boundary will be formally decided during Delivery Planning; story priorities inform that decision.
@@ -124,11 +124,11 @@ participants, and the Product Leader reviews afterwards (`stage-protocol-reviewe
 
 **Round 0 — lead drafts.** As the lead, based on the approved plan, draft:
 
-**`<record>/inception/user-stories/personas.md`:**
+**`<record>/design/user-stories/personas.md`:**
 - User persona definitions (name, role, goals, pain points, context)
 - Persona relationships and priority ranking
 
-**`<record>/inception/user-stories/stories.md`:**
+**`<record>/design/user-stories/stories.md`:**
 - User stories in standard format: "As a [persona], I want [goal], so that [benefit]". Give each story a stable `US{group}.{seq}` ID (for example `US1.1`).
 - Acceptance criteria for each story. Give each criterion a three-segment `AC{story-group}.{story-seq}.{criterion-seq}` ID (for example `AC1.1.1`).
 - Story priority (Must Have / Should Have / Could Have / Won't Have)
@@ -140,7 +140,7 @@ dispatch exactly the collaborators the directive lists in `support_agents`, in
 parallel against the draft (artifacts by path: the two draft artifacts, the Q&A
 file, requirements.md; rules per `stage-protocol.md` § "For subagent stages" step 2),
 mutually blind. Each WRITES its contribution file at
-`<record>/inception/user-stories/contributions/<agent-slug>.md` (§11 format:
+`<record>/design/user-stories/contributions/<agent-slug>.md` (§11 format:
 identity-marker first line, Contribution, Positions): design on UX and
 persona fidelity, developer on implementability and story sizing, quality on
 testability of the acceptance criteria.
@@ -162,7 +162,7 @@ stage's ensemble evidence — the engine refuses approval while any in the
 directive's effective `support_agents` is missing. A lead working alone has none.
 
 **Write element-level traceability.** Create
-`<record>/inception/user-stories/traceability.json` by running
+`<record>/design/user-stories/traceability.json` by running
 `{{INVOKE}} engine sensor-traceability --stage user-stories --output-path <that path> --write-upstream`:
 it lists every `FR` and `NFR` ID Requirements Analysis recorded in
 `upstream_ids`, each with a `GAP` row (a requirement with sub-requirements is
@@ -200,7 +200,7 @@ evidence before presenting the human gate.
 
 Use stage-protocol.md completion template with completion emoji: :books:
 - Summary of personas and stories produced
-- Review path: `<record>/inception/user-stories/`
+- Review path: `<record>/design/user-stories/`
 - Structured approval question with options: Approve / Request Changes. On the Approve option's description write `Continue to <next stage name>`, taking that name from the `next_stage` field of the reply that opened the gate, else the run-stage directive's (`Complete workflow` when it is null) - the user sees the real stage name, never a field name.
 
 STOP for the human response, then read it. Report **Approve** with
@@ -212,7 +212,7 @@ owns every lifecycle transition and advancement.
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/inception/user-stories/`.
+This stage's outputs are markdown artefacts under `<record>/design/user-stories/`.
 
 Imports: `required-sections`, `upstream-coverage`, `traceability`.
 

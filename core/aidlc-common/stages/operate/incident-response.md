@@ -42,9 +42,9 @@ outputs: runbooks.md, incident-plan.md, escalation-matrix.md, incident-response-
 
 ### Step 1: Load Prior Context
 
-- Read observability setup from `<record>/operation/observability-setup/`
-- Read NFR design from `<record>/construction/nfr-design/`
-- Read infrastructure design from `<record>/construction/infrastructure-design/`
+- Read observability setup from `<record>/operate/observability-setup/`
+- Read NFR design from `<record>/design/nfr-design/`
+- Read infrastructure design from `<record>/design/infrastructure-design/`
 
 ### Step 2: Generate Clarifying Questions
 
@@ -70,12 +70,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 5: Present Completion & Request Approval
 
 Completion emoji: :fire_engine:
-Review path: `<record>/operation/incident-response/`
+Review path: `<record>/operate/incident-response/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/incident-response/`.
+This stage's outputs are markdown artefacts under `<record>/operate/incident-response/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

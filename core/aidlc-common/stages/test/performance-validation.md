@@ -44,9 +44,9 @@ outputs: load-test-plan.md, test-results.md, nfr-validation-matrix.md, performan
 
 ### Step 1: Load Prior Context
 
-- Read NFR requirements from `<record>/construction/nfr-requirements/`
-- Read NFR design from `<record>/construction/nfr-design/`
-- Read observability configuration from `<record>/operation/observability-setup/`
+- Read NFR requirements from `<record>/design/nfr-requirements/`
+- Read NFR design from `<record>/design/nfr-design/`
+- Read observability configuration from `<record>/operate/observability-setup/`
 
 ### Step 2: Generate Clarifying Questions
 
@@ -75,12 +75,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :zap:
-Review path: `<record>/operation/performance-validation/`
+Review path: `<record>/test/performance-validation/`
 Standard 2-option approval (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/performance-validation/`.
+This stage's outputs are markdown artefacts under `<record>/test/performance-validation/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

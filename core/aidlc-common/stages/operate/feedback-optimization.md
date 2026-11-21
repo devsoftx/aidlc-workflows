@@ -40,7 +40,7 @@ scopes:
   - enterprise
   - feature
   - workshop
-inputs: All Operation phase artifacts, production monitoring data
+inputs: All Deploy, Test and Operate phase artifacts, production monitoring data
 outputs: slo-report.md, cost-analysis.md, drift-report.md, feedback-loop.md, feedback-optimization-questions.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -50,8 +50,8 @@ outputs: slo-report.md, cost-analysis.md, drift-report.md, feedback-loop.md, fee
 
 ### Step 1: Load Prior Context
 
-- Read observability setup from `<record>/operation/observability-setup/`
-- Read performance validation results from `<record>/operation/performance-validation/`
+- Read observability setup from `<record>/operate/observability-setup/`
+- Read performance validation results from `<record>/test/performance-validation/`
 - Read SLO/SLI configuration
 - Read infrastructure design for drift comparison
 
@@ -68,7 +68,7 @@ Follow stage-protocol.md question flow.
 
 ### Step 3: Generate Artifacts
 
-Create SLO compliance report, AWS Cost Explorer analysis & optimization recommendations, AWS Config drift detection report, Trusted Advisor recommendations review, operational insights & improvement proposals, and feedback loop document (inputs to next Ideation cycle).
+Create SLO compliance report, AWS Cost Explorer analysis & optimization recommendations, AWS Config drift detection report, Trusted Advisor recommendations review, operational insights & improvement proposals, and feedback loop document (inputs to next Discover cycle).
 
 ### Step 4: Completion Handoff
 
@@ -79,14 +79,14 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 5: Present Completion & Request Approval
 
 Completion emoji: :recycle:
-Review path: `<record>/operation/feedback-optimization/`
+Review path: `<record>/operate/feedback-optimization/`
 Approval gate: Approve (workflow complete) / Request Changes.
 
-This is the final stage. Upon approval, the full AI-DLC workflow is complete. The feedback loop document feeds insights back into the next Ideation cycle if the user chooses to continue iterating.
+This is the final stage. Upon approval, the full AI-DLC workflow is complete. The feedback loop document feeds insights back into the next Discover cycle if the user chooses to continue iterating.
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/operation/feedback-optimization/`.
+This stage's outputs are markdown artefacts under `<record>/operate/feedback-optimization/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

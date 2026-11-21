@@ -34,7 +34,7 @@ scopes:
   - mvp
   - classic
   - workshop
-inputs: <record>/inception/units-generation/unit-of-work.md, <record>/inception/units-generation/unit-of-work-dependency.md, <record>/inception/domain-design/components.md (if produced), <record>/inception/requirements-analysis/requirements.md
+inputs: <record>/design/units-generation/unit-of-work.md, <record>/design/units-generation/unit-of-work-dependency.md, <record>/design/domain-design/components.md (if produced), <record>/design/requirements-analysis/requirements.md
 outputs: contract-summary.md (under this stage's record dir, engine-resolved) — a human-readable overview of every contract (inter-unit boundaries and public/external APIs), each with a fenced spec block (OpenAPI / AsyncAPI / shared schema) inline
 ---
 
@@ -51,14 +51,14 @@ This stage runs once per workflow (not per unit) — it maps the whole set of bo
 
 ### Step 1: Load Prior Context
 
-- Read `<record>/inception/units-generation/unit-of-work.md` (unit definitions and kinds)
-- Read `<record>/inception/units-generation/unit-of-work-dependency.md` (the dependency DAG — every edge is a candidate contract)
-- Read `<record>/inception/domain-design/components.md` (if produced) — the entity shapes inform payload design
-- Read `<record>/inception/requirements-analysis/requirements.md` (if produced) — NFRs shape SLAs and error budgets
+- Read `<record>/design/units-generation/unit-of-work.md` (unit definitions and kinds)
+- Read `<record>/design/units-generation/unit-of-work-dependency.md` (the dependency DAG — every edge is a candidate contract)
+- Read `<record>/design/domain-design/components.md` (if produced) — the entity shapes inform payload design
+- Read `<record>/design/requirements-analysis/requirements.md` (if produced) — NFRs shape SLAs and error budgets
 
 ### Step 2: Create Contract Plan with Questions
 
-Create `<record>/inception/contract-design/contract-design-questions.md` with context-appropriate questions using [Answer]: tag format:
+Create `<record>/design/contract-design/contract-design-questions.md` with context-appropriate questions using [Answer]: tag format:
 - Public/external API surface (which units expose an API consumed outside the system, and its shape) — the single-unit trigger for this stage
 - Integration mechanism per boundary (synchronous REST/HTTP, async event/message, shared schema, gRPC, etc.)
 - Contract ownership (which unit owns each spec)
@@ -74,7 +74,7 @@ Collect answers following stage-protocol.md §3 question flow (collect answers, 
 
 ### Step 4: Generate the Contract Summary
 
-Create `<record>/inception/contract-design/contract-summary.md`. This single artifact carries both the human-readable overview and the contract specs themselves.
+Create `<record>/design/contract-design/contract-summary.md`. This single artifact carries both the human-readable overview and the contract specs themselves.
 
 **Contracts table** — one row per boundary (inter-unit and public/external):
 
@@ -104,12 +104,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 
 Use stage-protocol.md completion template with completion emoji: :handshake:
 - Summary of contracts defined (count, mechanisms, ownership)
-- Review path: `<record>/inception/contract-design/`
+- Review path: `<record>/design/contract-design/`
 - Structured approval question with options: Approve (continue to next stage) / Request Changes
 
 ## Sensors
 
-This stage's output is a markdown artefact under `<record>/inception/contract-design/`.
+This stage's output is a markdown artefact under `<record>/design/contract-design/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

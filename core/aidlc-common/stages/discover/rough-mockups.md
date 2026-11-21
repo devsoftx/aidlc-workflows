@@ -43,12 +43,12 @@ outputs: wireframes.md, user-flow.md, rough-mockups-questions.md (under this sta
 
 ### Step 1: Load Prior Context
 
-- Read intent statement from `<record>/ideation/intent-capture/`
-- Read scope definition and intent backlog from `<record>/ideation/scope-definition/`
+- Read intent statement from `<record>/discover/intent-capture/`
+- Read scope definition and intent backlog from `<record>/discover/scope-definition/`
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/ideation/rough-mockups/rough-mockups-questions.md` with questions:
+Create `<record>/discover/rough-mockups/rough-mockups-questions.md` with questions:
 - What are the primary user entry points and key screens/views?
 - What is the core user flow (happy path)?
 - What does the information hierarchy look like?
@@ -80,12 +80,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :pencil2:
-Review path: `<record>/ideation/rough-mockups/`
+Review path: `<record>/discover/rough-mockups/`
 Standard approval gate (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/rough-mockups/`.
+This stage's outputs are markdown artefacts under `<record>/discover/rough-mockups/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

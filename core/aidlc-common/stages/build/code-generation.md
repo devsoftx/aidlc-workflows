@@ -80,15 +80,15 @@ outputs: application code + code-generation-plan.md, code-generation-questions.m
 ### Step 1: Read All Unit Artifacts
 
 Read all design artifacts for the current unit:
-- Functional design from `<record>/construction/{unit-name}/functional-design/` (if exists)
-- NFR requirements from `<record>/construction/{unit-name}/nfr-requirements/` (if exists)
-- NFR design from `<record>/construction/{unit-name}/nfr-design/` (if exists)
-- Infrastructure design from `<record>/construction/{unit-name}/infrastructure-design/` (if exists)
-- Domain design (component catalogue) from `<record>/inception/domain-design/components.md` (if exists)
-- Contracts from `<record>/inception/contract-design/contract-summary.md` (if exists)
-- Unit definition from `<record>/inception/units-generation/unit-of-work.md` (if exists)
-- Story map from `<record>/inception/units-generation/unit-of-work-story-map.md` (if exists)
-- Requirements from `<record>/inception/requirements-analysis/requirements.md` (if exists)
+- Functional design from `<record>/design/{unit-name}/functional-design/` (if exists)
+- NFR requirements from `<record>/design/{unit-name}/nfr-requirements/` (if exists)
+- NFR design from `<record>/design/{unit-name}/nfr-design/` (if exists)
+- Infrastructure design from `<record>/design/{unit-name}/infrastructure-design/` (if exists)
+- Domain design (component catalogue) from `<record>/design/domain-design/components.md` (if exists)
+- Contracts from `<record>/design/contract-design/contract-summary.md` (if exists)
+- Unit definition from `<record>/design/units-generation/unit-of-work.md` (if exists)
+- Story map from `<record>/design/units-generation/unit-of-work-story-map.md` (if exists)
+- Requirements from `<record>/design/requirements-analysis/requirements.md` (if exists)
 
 Incremental scopes (bugfix, poc, refactor, security-patch, infra) and the
 zero-Unit `express` scope skip Units Generation by design. When those inputs
@@ -99,7 +99,7 @@ missing artifact.
 
 For a zero-Unit directive (`directive.unit` absent and no Unit DAG), run exactly
 one implementation iteration and write this stage's artifacts under
-`<record>/construction/code-generation/` with no synthetic Unit segment. This is
+`<record>/build/code-generation/` with no synthetic Unit segment. This is
 ordinary stage work: no Bolt, walking-skeleton, ladder, per-Unit receipt, or
 swarm ceremony applies.
 
@@ -107,9 +107,9 @@ For every later path in this stage, set `<code-generation-record>` from the
 directive exactly once:
 
 - `directive.unit` present:
-  `<record>/construction/<directive.unit>/code-generation/`
+  `<record>/build/<directive.unit>/code-generation/`
 - `directive.unit` absent:
-  `<record>/construction/code-generation/`
+  `<record>/build/code-generation/`
 
 ### Step 2: PART 1 — Planning
 
@@ -468,7 +468,7 @@ Include in the delegation prompt:
   different, or stale hash. Do not write either marker yourself and do not repeat either marker
   for contextual dependencies.
 - Design artifacts for the CURRENT UNIT ONLY (not all units)
-- A 1-2 line summary of each inception-phase artifact with its file path (requirements summary, stories summary, domain design summary) — the subagent can Read specific files if it needs full content
+- A 1-2 line summary of each design-phase artifact with its file path (requirements summary, stories summary, domain design summary) — the subagent can Read specific files if it needs full content
 - The current plan and unit-test-instructions.md are already in that output:
   the plan with a terminal `## Review` appendix removed (when a review recorded under the
   earlier protocol left one), task markers reset to `[ ]`, and spacing
@@ -534,7 +534,7 @@ documenting:
 - Any deviations from the plan
 
 For a Unit (`directive.unit` present), create
-`<record>/construction/<directive.unit>/code-generation/source-manifest.json`
+`<record>/build/<directive.unit>/code-generation/source-manifest.json`
 with this strict schema:
 
 ```json
@@ -576,8 +576,8 @@ A zero-Unit directive (`directive.unit` absent) writes no
 `source-manifest.json` and creates no Unit directory for one: the engine reads
 the manifest only for a Unit, and a zero-Unit review binds the whole workspace
 source instead. Its Step 5 files are
-`<record>/construction/code-generation/code-summary.md` and
-`<record>/construction/code-generation/traceability.json`.
+`<record>/build/code-generation/code-summary.md` and
+`<record>/build/code-generation/traceability.json`.
 
 Create
 `<code-generation-record>/traceability.json` by running
@@ -641,7 +641,7 @@ Summary of code produced (files, tests, key decisions, and any tests written but
 
 Approval gate: strictly 2-option (Approve / Request Changes).
 
-> **Note - orchestrator-managed completion gating.** While plan approval is on, initial Plan Approval is a mandatory stop in every execution mode, including autonomous Construction: generation begins only after `next` returns `plan_approval.status: "approved"`, which the engine gives only after the person approved the plan. With plan approval off for the piece of work, `next` returns `approved` with `skipped: true` and the notice to say instead. A lowered Guard Policy never supplies the first approval. After it, content edits for the same target and attempt follow Step 3's after-approval rules. The Build-and-Test loop-back replay described above opens a new stage attempt and therefore asks for Plan Approval on the repaired plan (while plan approval is on), rather than inferring approval from the "Retry with fix" choice. Only the Step 7 completion approval gate is suppressed by the orchestrator during normal Construction. On the stage-major walk a single stage-level gate covers every Unit after the last Unit settles. Under an autonomous swarm the engine presents that Code Generation stage gate only after the final DAG batch has converged (intermediate batches merge without a gate). The completion gate still exists here for direct-invocation use (e.g., `/aidlc --stage code-generation` re-running a single Unit on the stage-major walk; when Construction runs one unit at a time it continues the unit on Code Generation, or jumps and says what it skipped), and subagents invoked via Task must NOT invoke that completion gate themselves - the orchestrator owns completion-gate presentation.
+> **Note - orchestrator-managed completion gating.** While plan approval is on, initial Plan Approval is a mandatory stop in every execution mode, including the autonomous unit loop: generation begins only after `next` returns `plan_approval.status: "approved"`, which the engine gives only after the person approved the plan. With plan approval off for the piece of work, `next` returns `approved` with `skipped: true` and the notice to say instead. A lowered Guard Policy never supplies the first approval. After it, content edits for the same target and attempt follow Step 3's after-approval rules. The Build-and-Test loop-back replay described above opens a new stage attempt and therefore asks for Plan Approval on the repaired plan (while plan approval is on), rather than inferring approval from the "Retry with fix" choice. Only the Step 7 completion approval gate is suppressed by the orchestrator during the normal unit loop. On the stage-major walk a single stage-level gate covers every Unit after the last Unit settles. Under an autonomous swarm the engine presents that Code Generation stage gate only after the final DAG batch has converged (intermediate batches merge without a gate). The completion gate still exists here for direct-invocation use (e.g., `/aidlc --stage code-generation` re-running a single Unit on the stage-major walk; when the unit loop runs one unit at a time it continues the unit on Code Generation, or jumps and says what it skipped), and subagents invoked via Task must NOT invoke that completion gate themselves - the orchestrator owns completion-gate presentation.
 
 ## Sensors
 

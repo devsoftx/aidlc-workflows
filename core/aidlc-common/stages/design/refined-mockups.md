@@ -50,15 +50,15 @@ outputs: mockups.md, interaction-spec.md, design-system-mapping.md, accessibilit
 
 ### Step 1: Load Prior Context
 
-- Read rough mockups from `<record>/ideation/rough-mockups/` (if exists)
-- Read user stories from `<record>/inception/user-stories/`
-- Read requirements from `<record>/inception/requirements-analysis/`
+- Read rough mockups from `<record>/discover/rough-mockups/` (if exists)
+- Read user stories from `<record>/design/user-stories/`
+- Read requirements from `<record>/design/requirements-analysis/`
 
-The classic scope skips rough-mockups by design (no Ideation phase); when the wireframes and user-flow inputs are absent, design the refined mockups directly from the user stories and requirements — never invent the content of a missing artifact.
+The classic scope skips rough-mockups by design (no Discover phase); when the wireframes and user-flow inputs are absent, design the refined mockups directly from the user stories and requirements — never invent the content of a missing artifact.
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/inception/refined-mockups/refined-mockups-questions.md` with questions:
+Create `<record>/design/refined-mockups/refined-mockups-questions.md` with questions:
 - How should each user story be represented in the UI?
 - What interaction patterns are needed (modals, inline edits, wizards, progressive disclosure)?
 - What states must each screen handle (loading, empty, error, success, partial)?
@@ -88,12 +88,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :art:
-Review path: `<record>/inception/refined-mockups/`
+Review path: `<record>/design/refined-mockups/`
 Standard approval gate (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/inception/refined-mockups/`.
+This stage's outputs are markdown artefacts under `<record>/design/refined-mockups/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

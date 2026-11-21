@@ -53,11 +53,11 @@ outputs: "build-instructions.md, build-and-test-summary.md, test-results.md, cro
 ### Step 1: Analyze Testing Requirements
 
 Read code generation outputs across all units from
-`<record>/construction/*/code-generation/code-summary.md` and per-unit test
+`<record>/build/*/code-generation/code-summary.md` and per-unit test
 instructions from
-`<record>/construction/*/code-generation/unit-test-instructions.md`. For a
+`<record>/build/*/code-generation/unit-test-instructions.md`. For a
 zero-Unit scope such as `express` or `infra`, read the stage-level equivalents
-under `<record>/construction/code-generation/`.
+under `<record>/build/code-generation/`.
 
 Build a source-complete inventory of every measurable quality target before
 generating instructions. Read all applicable stage-level and per-unit sources:
@@ -86,7 +86,7 @@ Catalog all required test types from this inventory.
 
 ### Step 2: Generate Build Instructions
 
-Create `<record>/construction/build-and-test/build-instructions.md`:
+Create `<record>/test/build-and-test/build-instructions.md`:
 - Dependency installation steps
 - Environment setup (env vars, config files, local services)
 - Build commands (compile, bundle, transpile)
@@ -113,7 +113,7 @@ tests are covered per-unit by Code Generation.
 - `security-test-instructions.md` (IF NFR security requirements exist): SAST/DAST, auth testing, injection testing
 - Additional types as applicable (contract tests, E2E, accessibility) — create specifically named files
 
-All files go in `<record>/construction/build-and-test/`.
+All files go in `<record>/test/build-and-test/`.
 
 Each instruction file should include:
 - Test framework setup and configuration
@@ -130,7 +130,7 @@ These are soft guidelines — the LLM can generate additional test types at any 
 
 ### Step 8: Generate Build and Test Summary
 
-Create `<record>/construction/build-and-test/build-and-test-summary.md`:
+Create `<record>/test/build-and-test/build-and-test-summary.md`:
 - Overall build status and prerequisites
 - Test type inventory (which test types were generated)
 - Coverage expectations for the project and each Unit
@@ -151,9 +151,9 @@ Attempt to execute the build and test commands documented in the instruction fil
 
 1. **Build**: Run the build commands from `build-instructions.md` via Bash. Capture output.
 2. **Unit tests**: Collect the run commands from both the stage-level
-   `<record>/construction/code-generation/unit-test-instructions.md` file (when
+   `<record>/build/code-generation/unit-test-instructions.md` file (when
    present, including Express) and all per-unit
-   `<record>/construction/*/code-generation/unit-test-instructions.md` files.
+   `<record>/build/*/code-generation/unit-test-instructions.md` files.
    Deduplicate identical commands and run each distinct command ONCE via Bash.
    Per-unit commands should already be scoped to their Unit. A stage-level or
    malformed per-unit file may carry a project-wide command; run that command
@@ -203,7 +203,7 @@ Attempt to execute the build and test commands documented in the instruction fil
    Provisioning owns it when the plan runs that stage. Never apply or deploy
    from this stage.
 5. **Finalize and report results**: Create or update
-   `<record>/construction/build-and-test/test-results.md` and the Build and Test
+   `<record>/test/build-and-test/test-results.md` and the Build and Test
    Summary on every exit path, including loop-back, halt-and-ask, abort, and
    accepted failure, with:
    - Build status (success/failure + output)
@@ -299,11 +299,11 @@ the Build and Test Summary with a successful readiness result.
 
 ### Step 10: Cross-Unit Final Coverage Gate
 
-This is a stage-level gate, not the Construction phase boundary. Run
+This is a stage-level gate, not the Build → Deploy phase boundary. Run
 `{{INVOKE}} engine sensor-traceability --stage build-and-test`: it prints every
 requirement and acceptance criterion this run traced, whether it is built or
 marked `N/A` with its reason, and the Units and files that build it. Write
-`<record>/construction/build-and-test/cross-unit-traceability.md` from that
+`<record>/test/build-and-test/cross-unit-traceability.md` from that
 output with a pass/fail verdict, per-ID coverage, owning stage/Unit, target
 file, and every uncovered element. Any uncovered ID is a build-and-test finding
 that must be surfaced at the approval gate. A criterion one Unit marked `N/A`
@@ -333,7 +333,7 @@ checked in Happy DOM, not a real browser." The person decides at the gate with
 that in front of them.
 
 ```
-**Review:** `<record>/construction/build-and-test/`
+**Review:** `<record>/test/build-and-test/`
 ```
 
 Approval gate: strictly 2-option (Approve / Request Changes).
@@ -341,7 +341,7 @@ Approval gate: strictly 2-option (Approve / Request Changes).
 ## Sensors
 
 This stage produces test-instruction markdown files under
-`<record>/construction/build-and-test/` and runs the project's build
+`<record>/test/build-and-test/` and runs the project's build
 and test commands as part of execution. The instruction artefacts are
 the agent-authored outputs the markdown-shape sensors check; the build
 itself emits exit codes and a results report.

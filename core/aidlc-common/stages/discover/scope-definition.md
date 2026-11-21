@@ -39,13 +39,13 @@ outputs: scope-document.md, intent-backlog.md, scope-definition-questions.md (un
 
 ### Step 1: Load Prior Context
 
-- Read intent statement from `<record>/ideation/intent-capture/`
-- Read feasibility assessment from `<record>/ideation/feasibility/` (if exists)
+- Read intent statement from `<record>/discover/intent-capture/`
+- Read feasibility assessment from `<record>/discover/feasibility/` (if exists)
 - Read constraint register and RAID log (if exist)
 
 ### Step 2: Generate Clarifying Questions
 
-Create `<record>/ideation/scope-definition/scope-definition-questions.md` with questions:
+Create `<record>/discover/scope-definition/scope-definition-questions.md` with questions:
 - What is the minimum viable scope that delivers value?
 - What capabilities are must-have vs. nice-to-have?
 - What are the dependencies between capabilities?
@@ -71,12 +71,12 @@ That `report` call owns every lifecycle transition and advancement; never perfor
 ### Step 6: Present Completion & Request Approval
 
 Completion emoji: :dart:
-Review path: `<record>/ideation/scope-definition/`
+Review path: `<record>/discover/scope-definition/`
 Standard approval gate (Approve / Request Changes).
 
 ## Sensors
 
-This stage's outputs are markdown artefacts under `<record>/ideation/scope-definition/`.
+This stage's outputs are markdown artefacts under `<record>/discover/scope-definition/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 

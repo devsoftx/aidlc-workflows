@@ -96,7 +96,7 @@ persona and knowledge; pass paths, not pasted persona prose.
   `aidlc/spaces/<active-space>/memory/team.md` as the current affirmed baseline.
 
 The lead writes an initial version of all four declared artifacts under
-`<record>/inception/practices-discovery/`. The timestamp artifact remains a
+`<record>/design/practices-discovery/`. The timestamp artifact remains a
 draft until final integration. Only the lead edits these declared artifacts.
 
 ### Step 3: Blind Support Review
@@ -122,7 +122,7 @@ present, is:
 
 Each dispatched support agent writes:
 
-`<record>/inception/practices-discovery/contributions/<agent-slug>.md`
+`<record>/design/practices-discovery/contributions/<agent-slug>.md`
 
 The first line must be `**Collaborator:** <agent-slug>`, followed by
 `## Contribution` and `## Positions` as defined by
@@ -133,7 +133,7 @@ completion evidence checked by the engine.
 ### Step 4: Interview (Always)
 
 Create
-`<record>/inception/practices-discovery/practices-discovery-questions.md` and
+`<record>/design/practices-discovery/practices-discovery-questions.md` and
 present structured questions for the five `memory/team.md` sections: Way of
 Working, Walking Skeleton, Testing Posture, Deployment, and Code Style.
 
@@ -249,8 +249,8 @@ The orchestrator does not edit active-space memory directly. Run:
 
 ```bash
 {{INVOKE}} engine state practices-promote \
-  --team-practices <record>/inception/practices-discovery/team-practices.md \
-  --discovered-rules <record>/inception/practices-discovery/discovered-rules.md \
+  --team-practices <record>/design/practices-discovery/team-practices.md \
+  --discovered-rules <record>/design/practices-discovery/discovered-rules.md \
   --affirming-user '<user>'
 ```
 
@@ -283,13 +283,13 @@ Use the stage-protocol.md completion template:
 
 - summarize all four artifacts, any contribution files produced (none when the
   lead works alone), and both promotion targets;
-- use `<record>/inception/practices-discovery/` as the review path;
+- use `<record>/design/practices-discovery/` as the review path;
 - name the next stage from the gate-opening reply's `next_stage`, else `directive.next_stage`.
 
 ## Sensors
 
 This stage's declared outputs are markdown artifacts under
-`<record>/inception/practices-discovery/`.
+`<record>/design/practices-discovery/`.
 
 Imports: `required-sections`, `upstream-coverage`.
 
