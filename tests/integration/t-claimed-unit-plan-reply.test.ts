@@ -27,6 +27,7 @@ import { type AuditMark, personRepliedAfter, readAuditShardEvents } from "../../
 import { readPlanApprovalAsk } from "../../dist/claude/.claude/tools/aidlc-plan-approval-ask.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { AIDLC_SRC, DEFAULT_INTENT_UUID, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { cleanupTempDirs, makeSeed, parallelDependencyBody } from "../harness/team-unit-merge.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -110,11 +111,17 @@ function leadAtPlanQuestion(policy: "strict" | "relaxed" | "off"): string {
   writeFileSync(seededStateFile(lead), state);
   says(lead, "carry on");
   let step = next(lead);
+  // The walking-skeleton stance is read before the team-handover offer; the
+  // lead records it, "off" as the sibling tests seed.
+  expect(step).toMatchObject({ kind: "run-stage", stage: "code-generation", gate: "unresolved" });
+  const stance = run(lead, "aidlc-orchestrate.ts", ["report", "--skeleton-stance", "off"]);
+  expect(stance.status, stance.out).toBe(0);
+  step = next(lead);
   // "Build them here for now": the lead's session builds alpha.
   expect(step).toMatchObject({ kind: "ask", ask_type: "team-handover" });
   step = next(lead);
   expect(step).toMatchObject({ kind: "run-stage", stage: "code-generation", unit: "alpha" });
-  const dir = join(seededRecordDir(lead), "construction", "alpha", "code-generation");
+  const dir = join(seededRecordDir(lead), phaseFor("code-generation"), "alpha", "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "code-generation-plan.md"),

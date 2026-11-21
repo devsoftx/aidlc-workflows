@@ -55,6 +55,7 @@ function project(typescript: "repo" | "none" | "3.9.10"): { proj: string; file: 
 // A native install: the dispatcher names its executable, and bunx is nowhere on PATH.
 function nativeEnv(proj: string): NodeJS.ProcessEnv {
   const env = envWithoutCommandOnPath("bunx");
+  delete env.NODE_PATH; // a machine-wide TypeScript here would count as the project's own
   env.AIDLC_COMPILED_EXECUTABLE = join(proj, "aidlc-native-stand-in");
   env.AIDLC_PROJECT_DIR = proj;
   return env;

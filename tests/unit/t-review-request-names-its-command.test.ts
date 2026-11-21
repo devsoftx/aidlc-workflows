@@ -12,7 +12,7 @@
 //
 // Mechanism: pure + cli. The remedy wording is checked on evaluateGuardRefusal;
 // the walk drives the real aidlc-orchestrate.ts and aidlc-log.ts against a
-// seeded Inception record.
+// seeded record.
 
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
@@ -29,6 +29,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { evaluateGuardRefusal, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -146,7 +147,7 @@ function runNamedRequest(action: string): { rc: number; out: string; args: strin
 }
 
 function writeOutputs(proj: string, body = "- A title cannot be blank.\n"): void {
-  const dir = join(seededRecordDir(proj), "inception", SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), SLUG);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "requirements.md"), `# requirements.md\n\n${body}`);
   const questions = join(dir, "requirements-analysis-questions.md");

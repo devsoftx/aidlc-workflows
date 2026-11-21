@@ -48,6 +48,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -175,7 +176,7 @@ class UnitReview {
       "- **Last Updated**: 2026-09-11T00:00:00Z", "",
     ].join("\n"));
     seedBoltDag(this.dir, [UNIT]);
-    this.stageDir = join(seededRecordDir(this.dir), "construction", UNIT, STAGE);
+    this.stageDir = join(seededRecordDir(this.dir), phaseFor(STAGE), UNIT, STAGE);
     mkdirSync(this.stageDir, { recursive: true });
     this.questions = join(this.stageDir, `${STAGE}-questions.md`);
   }

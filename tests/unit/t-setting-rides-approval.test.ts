@@ -23,6 +23,7 @@ import { auditBlockField, getField, readAuditShardEvents } from "../../dist/clau
 import { listMessages } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -123,7 +124,7 @@ function next(proj: string): { kind?: string; ask_type?: string } {
 
 /** The agent writes the code plan the plan step asks for. */
 function planWritten(proj: string): void {
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "code-generation-plan.md"),

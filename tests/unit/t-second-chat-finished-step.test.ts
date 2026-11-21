@@ -24,6 +24,7 @@ import { dirname, join, resolve } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { cleanupTestProject, seedBoltDag, seededRecordDir, seededStateFile, setupIntegrationProject } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { hostNamesThisChat } from "../../dist/kiro-ide/.kiro/tools/aidlc-record-core.ts";
@@ -112,7 +113,7 @@ class Folder {
       writeFileSync(seededStateFile(this.dir), STAGE_MAJOR_STATE);
       seedBoltDag(this.dir, options.stageMajorUnits);
     }
-    this.stageDir = join(seededRecordDir(this.dir), "inception", STAGE);
+    this.stageDir = join(seededRecordDir(this.dir), phaseFor(STAGE), STAGE);
     this.questions = join(this.stageDir, `${STAGE}-questions.md`);
     this.artifact = join(this.stageDir, "requirements.md");
     this.env = {
@@ -401,7 +402,7 @@ describe("t-second-chat-finished-step: a stage finished in another chat is shown
     const state = seededStateFile(folder.dir);
     writeFileSync(state, readFileSync(state, "utf-8").replace(`- [ ] ${UNIT_STAGE} `, `- [-] ${UNIT_STAGE} `));
     appendAuditEntry("STAGE_STARTED", { Stage: UNIT_STAGE }, folder.dir);
-    const unitDir = join(seededRecordDir(folder.dir), "construction", "beta", UNIT_STAGE);
+    const unitDir = join(seededRecordDir(folder.dir), phaseFor(UNIT_STAGE), "beta", UNIT_STAGE);
     const questions = join(unitDir, `${UNIT_STAGE}-questions.md`);
     const summary = ["--stage", UNIT_STAGE, "--unit", "beta", "--checkpoint", "summary-confirmation",
       "--questions-file", questions];
@@ -444,7 +445,7 @@ describe("t-second-chat-finished-step: a stage finished in another chat is shown
     appendAuditEntry("STAGE_AWAITING_APPROVAL", {
       Stage: UNIT_STAGE, "Question Id": "f1a1da01", "Question Type": "gate", "Question Chat": FIRST,
     }, folder.dir);
-    const unitDir = join(seededRecordDir(folder.dir), "construction", "alpha", UNIT_STAGE);
+    const unitDir = join(seededRecordDir(folder.dir), phaseFor(UNIT_STAGE), "alpha", UNIT_STAGE);
     const questions = join(unitDir, `${UNIT_STAGE}-questions.md`);
     const only = new Chat(folder, FIRST);
     only.start();

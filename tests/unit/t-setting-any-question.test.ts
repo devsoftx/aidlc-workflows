@@ -25,6 +25,7 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { listMessages } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -156,7 +157,7 @@ describe.each(["off", "strict"] as const)("Guard Policy %s: a setting asked besi
     const proj = await at("summary-confirmation", policy);
     const words = "request changes, and turn plan approval off for the rest of this work";
     const asked = await said(proj, words);
-    const file = join(seededRecordDir(proj), "inception", "requirements-analysis", "requirements-analysis-questions.md");
+    const file = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", "requirements-analysis-questions.md");
     writeFileSync(file, readFileSync(file, "utf-8").replace(/\[Answer\]: \n$/, "[Answer]: Request changes\n"), "utf-8");
     recordArtifactWriteViaHook(proj, file, "Edit");
     const recorded = await exec([process.execPath, join(AIDLC_SRC, "tools", "aidlc-log.ts"), "answer", "--checkpoint",

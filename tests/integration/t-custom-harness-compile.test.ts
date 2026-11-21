@@ -187,15 +187,16 @@ describe("t-custom-harness-compile (deterministic — harness-engineer edits res
 
       // rule chain attached to BOTH stages by compile (resolveRulesForStage).
       // The fixture pre-seeds rules_in_context: [] — compile fills it. The
-      // PHASE rule (phases/inception.md) attaches because the stage's
-      // `phase: inception` matches the rule filename — a value NO pre-seed
-      // carries, so its presence is airtight proof compile resolved the chain.
+      // PHASE rule (phases/<phase>.md) attaches because the stage's `phase:`
+      // matches the rule filename. The fixture's SNAPSHOT_STAGE_PHASE value is
+      // the one no pre-seed carries, so its presence is airtight proof compile
+      // resolved the chain.
       // The method lives in the harness-neutral aidlc/spaces/default/memory/ tree,
       // so the display paths are neutral.
       for (const node of [head, tail]) {
         const paths = (node?.rules_in_context ?? []).map((r) => r.path);
         expect(paths).toContain("aidlc/spaces/default/memory/project.md");
-        expect(paths).toContain("aidlc/spaces/default/memory/phases/inception.md");
+        expect(paths).toContain(`aidlc/spaces/default/memory/phases/${SNAPSHOT_STAGE_PHASE}.md`);
       }
 
       // what each stage produces (compile recomputes produces[] from the YAML

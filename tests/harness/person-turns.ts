@@ -39,6 +39,7 @@ type AuditReader = Pick<
   | "findStageBySlug"
   | "ANSWER_SOURCE_ON_INSTRUCTION"
   | "personsWordsText"
+  | "isUnitLoopStage"
 >;
 let reader: AuditReader | undefined;
 // The engine's own audit reader and question pairing, loaded on first use:
@@ -165,8 +166,8 @@ const gateItem = (row: AuditShardEvent) =>
  * never from a field a row carries. An approval is the engine's when the
  * person's grant of autonomous Construction is in force (the latest
  * WORKFLOW_STARTED or AUTONOMY_MODE_SET is AUTONOMY_MODE_SET to autonomous)
- * and the stage is a Construction stage; a walking-skeleton checkpoint still
- * asks the person. A Construction stage gate is also the engine's once every
+ * and the stage is a unit-loop stage; a walking-skeleton checkpoint still
+ * asks the person. A unit-loop stage gate is also the engine's once every
  * Unit of the work's compiled DAG has its checkpoint approved (and not since
  * rejected), in any shard of the work, and one of them covers the stage in its Gate Stages: the engine
  * settles the stage gate from those approvals (isAutonomousConstructionGate),
@@ -233,7 +234,7 @@ export function unbackedDecisions(
       // The engine writes Recovered only on the rows an approval backfills.
       const backfilled = auditBlockField(row.block, "Recovered") === "true" &&
         (row.event === "GATE_REJECTED" || row.event === "STAGE_AWAITING_APPROVAL");
-      const construction = ["build", "test"].includes(audit().findStageBySlug(stage)?.phase ?? "");
+      const construction = audit().isUnitLoopStage(audit().findStageBySlug(stage));
       const checkpoint = auditBlockField(row.block, "Checkpoint");
       const engineApproved = row.event === "GATE_APPROVED" && construction && (
         (autonomous && checkpoint !== "walking-skeleton") || (checkpoint === null && covers(stage, index))

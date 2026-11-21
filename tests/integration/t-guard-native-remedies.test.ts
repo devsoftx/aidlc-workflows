@@ -60,6 +60,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -474,7 +475,7 @@ function completeReview(
   fixture.env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD = "1";
   const stageDir = join(
     seededRecordDir(projectDir),
-    "inception",
+    phaseFor(STAGE),
     STAGE,
   );
   mkdirSync(stageDir, { recursive: true });
@@ -903,7 +904,7 @@ describe("source and native guard remedies execute their owning operations", () 
               .replace("- [ ] build-and-test — EXECUTE", "- [-] build-and-test — EXECUTE");
           }
           writeFileSync(seededStateFile(p.project), state);
-          const questions = join(seededRecordDir(p.project), "inception", STAGE, `${STAGE}-questions.md`);
+          const questions = join(seededRecordDir(p.project), phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
           const answers = "# Requirements Questions\n\n[Answer]: Preserve private saved searches.\n";
           mkdirSync(dirname(questions), { recursive: true });
           writeFileSync(questions, answers);

@@ -121,7 +121,7 @@ function next(p: string, args: string[] = []): Directive {
 function cover(p: string, unit: string, slugs = STAGES, receipts = true): void {
   for (const slug of slugs) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), stage.phase, unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
     if (slug === "code-generation") writePlan(p, unit);

@@ -16,6 +16,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { stateDigest, toPosix, writeActiveDirectiveMarker } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { codeGenerationRecordDir } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   CHECK, cleanupCheckpointFixtures, fixture, prepare, reviewRevisedSource, runCheckpointTool, STAGE, swarm, wt,
 } from "../harness/swarm-checkpoint.ts";
@@ -151,7 +152,7 @@ describe("a side-by-side Unit's worker writes its records where AI-DLC reads the
     const child = wt(pd);
     writeFileSync(join(child, "src", "alpha.ts"), "export const alpha = 2;\n");
     // A worker that put its manifest at the worktree's root instead of in the record folder.
-    const stray = join(child, "construction", "alpha", "code-generation");
+    const stray = join(child, phaseFor("code-generation"), "alpha", "code-generation");
     mkdirSync(stray, { recursive: true });
     writeFileSync(join(stray, "source-manifest.json"),
       JSON.stringify({ stage: STAGE, unit: "alpha", version: 1, writes: [{ path: "src/alpha.ts" }] }));
