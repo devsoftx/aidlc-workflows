@@ -12829,11 +12829,18 @@ export function stageRevisionCycles(
   return cycles;
 }
 
+// Construction's grant and checkpoints cover the Unit's walk: the per-Unit
+// stages and Build and Test. Five-phase Construction held that whole; the seven
+// phases split it across design, build and test, so walk membership, not a
+// phase name or the per-Unit marker alone, says which stages it covers.
+const inConstructionWalk = (slug: string): boolean =>
+  (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).inUnitWalk(slug);
+
 export function isAutonomousConstructionDecision(
   stateContent: string | null,
-  stage: { for_each?: string | null } | null | undefined,
+  stage: { slug: string; for_each?: string | null } | null | undefined,
 ): boolean {
-  return isUnitLoopStage(stage) && isAutonomousMode(stateContent);
+  return !!stage && inConstructionWalk(stage.slug) && isAutonomousMode(stateContent);
 }
 
 function firstConstructionApprovalStage(
@@ -12870,7 +12877,7 @@ export function isAutonomousConstructionGate(
   evidence?: ConstructionEvidence,
 ): boolean {
   const checkpoints = stateContent !== null && constructionCheckpointsApply(stateContent);
-  if (checkpoints && isUnitLoopStage(stage) && projectDir) {
+  if (checkpoints && inConstructionWalk(stage.slug) && projectDir) {
     if (
       (stage.slug === "code-generation" &&
         isConstructionSwarmEnabled(stateContent) &&
@@ -12937,7 +12944,7 @@ export function constructionCheckpointGaps(
 ): string[] | null {
   const scope = getField(stateContent, "Scope") ?? "";
   if (
-    !isUnitLoopStage(stage) ||
+    !inConstructionWalk(stage.slug) ||
     !constructionCheckpointsApply(stateContent) ||
     usesStageLevelPerUnitArtifacts(scope, stateContent)
   ) return null;
