@@ -35,6 +35,7 @@ import {
 import {
   copilotAdapter, copilotRuns, copilotStep, namedCommands, SHAPES, type Step,
 } from "../harness/code-generation-states.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { readMessage } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { guardOperationInvocation } from "../../dist/claude/.claude/tools/aidlc-guard-operation.ts";
@@ -99,11 +100,11 @@ ${options.legacy ? "" : `- **Construction Checkpoints**: enabled
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### ${phaseFor(current).toUpperCase()} PHASE
 ${stages.map((stage) => `- [${stage === current ? "-" : " "}] ${stage} — EXECUTE`).join("\n")}
 - [ ] build-and-test — EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `);
@@ -125,7 +126,7 @@ ${stages.map((stage) => `- [${stage === current ? "-" : " "}] ${stage} — EXECU
 function cover(p: string, unit: string, selected = stages, receipts = true) {
   for (const slug of selected) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), name === "unit-test-instructions" ? "" : `# ${unit} ${name}\n`);
@@ -392,7 +393,7 @@ describe("t342 Construction checkpoint routing", () => {
     const p = fixture();
     const surface = learningsSurface(p);
     const dash = "\u2014"; // the diary line's separator, an em dash
-    const diary = join(seededRecordDir(p), "construction", "functional-design", "memory.md");
+    const diary = join(seededRecordDir(p), phaseFor("functional-design"), "functional-design", "memory.md");
     mkdirSync(dirname(diary), { recursive: true });
     writeFileSync(diary, [
       "## Interpretations",
@@ -429,7 +430,7 @@ describe("t342 Construction checkpoint routing", () => {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, `${lines.join("\n")}\n`);
     };
-    const construction = join(seededRecordDir(p), "construction");
+    const construction = join(seededRecordDir(p), phaseFor("functional-design"));
     write(join(construction, "functional-design", "memory.md"), [
       "## Interpretations",
       `- 2026-10-05T10:00:00Z [unit alpha] ${dash} alpha keeps its own store; it owns the data`,
@@ -1802,7 +1803,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   test("a jump back to a stage beta finished reopens it for beta only; alpha keeps its work", () => {
     const p = betaBuilding();
     expect(tool(p, "state", ["unit", "start", "--stage", "code-generation", "--unit", "beta"]).status).toBe(0);
-    const alphaFile = join(seededRecordDir(p), "construction", "alpha", "nfr-design");
+    const alphaFile = join(seededRecordDir(p), phaseFor("nfr-design"), "alpha", "nfr-design");
     const said = reopenFor(p, ["--stage", "nfr-design"]);
     expect(said).toContain(
       "reopen --target nfr-design --stages nfr-design,infrastructure-design,code-generation --units beta ",
@@ -1854,7 +1855,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     const fields = {
       Stage: slug, Reviewer: stage.reviewer!, Unit: unit, Iteration: "1",
       "Artifact Fingerprint": reviewArtifactFingerprint(p, stage, unit)!,
-      "Review Appendix Artifact": `construction/${unit}/${slug}/${artifactFilename(stage.review_artifact!)}`,
+      "Review Appendix Artifact": `${phaseFor(slug)}/${unit}/${slug}/${artifactFilename(stage.review_artifact!)}`,
       "Review Appendix Offset": "0",
     };
     appendAuditEntry("REVIEW_REQUESTED", fields, p);
@@ -3055,7 +3056,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     approve(p, "alpha");
     expect(next(p)).toMatchObject({ stage: "functional-design", unit: "beta" });
     const design = findStageBySlug("functional-design")!;
-    const designDir = join(seededRecordDir(p), "construction", "alpha", design.slug);
+    const designDir = join(seededRecordDir(p), phaseFor(design.slug), "alpha", design.slug);
     for (const name of design.produces ?? []) rmSync(join(designDir, artifactFilename(name)), { force: true });
 
     const handedBack = next(p);
@@ -3097,7 +3098,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       cover(p, "alpha", [slug]);
     }
     const design = findStageBySlug("functional-design")!;
-    const designDir = join(seededRecordDir(p), "construction", "alpha", design.slug);
+    const designDir = join(seededRecordDir(p), phaseFor(design.slug), "alpha", design.slug);
     const review = (iteration: string) => reviewThroughLog(p, [
       "review", "--stage", design.slug, "--reviewer", design.reviewer!, "--unit", "alpha", "--iteration", iteration,
     ]);
@@ -3161,7 +3162,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   // records it.
   function editAlphaDocument(p: string, words: string): string {
     const slug = "nfr-requirements";
-    const document = join(seededRecordDir(p), "construction", "alpha", slug,
+    const document = join(seededRecordDir(p), phaseFor(slug), "alpha", slug,
       artifactFilename(findStageBySlug(slug)!.produces![0]));
     const file = relative(p, document).replaceAll("\\", "/");
     writeFileSync(document, `${readFileSync(document, "utf-8")}\n${words}\n`);
@@ -3266,7 +3267,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       const p = policyFixture("classic", policy);
       buildReviewed(p, "alpha");
       approve(p, "alpha");
-      const manifest = join(seededRecordDir(p), "construction", "beta", "code-generation", "source-manifest.json");
+      const manifest = join(seededRecordDir(p), phaseFor("code-generation"), "beta", "code-generation", "source-manifest.json");
       const built = buildReviewed(p, "beta", () => {
         writeFileSync(manifest, JSON.stringify({
           stage: "code-generation", unit: "beta", version: 1, writes: [{ path: "src/beta.ts" }, { path: "src/alpha.ts" }],
@@ -3522,7 +3523,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   // a plain edit, is not the person's redo.
   function redoAlphaDocument(p: string, byPerson: boolean) {
     if (byPerson) {
-      const document = join(seededRecordDir(p), "construction", "alpha", "nfr-requirements",
+      const document = join(seededRecordDir(p), phaseFor("nfr-requirements"), "alpha", "nfr-requirements",
         artifactFilename(findStageBySlug("nfr-requirements")!.produces![0]));
       const redo = tool(p, "state", [
         "reuse-artifact", "nfr-requirements", "--decision", "redo",
@@ -3589,7 +3590,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     const p = policyFixture("classic", "off (set by you)");
     buildReviewed(p, "alpha", undefined, true);
     approve(p, "alpha");
-    const document = join(seededRecordDir(p), "construction", "alpha", "nfr-requirements",
+    const document = join(seededRecordDir(p), phaseFor("nfr-requirements"), "alpha", "nfr-requirements",
       artifactFilename(findStageBySlug("nfr-requirements")!.produces![0]));
     // The path as the stage directive names it, from the project root.
     const redo = tool(p, "state", [
@@ -3667,7 +3668,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       const p = policyFixture("classic", policy);
       buildReviewed(p, "alpha");
       approve(p, "alpha");
-      const manifest = join(seededRecordDir(p), "construction", "beta", "code-generation", "source-manifest.json");
+      const manifest = join(seededRecordDir(p), phaseFor("code-generation"), "beta", "code-generation", "source-manifest.json");
       buildReviewed(p, "beta", () => {
         writeFileSync(manifest, JSON.stringify({
           stage: "code-generation", unit: "beta", version: 1, writes: [{ path: "src/beta.ts" }, { path: "src/alpha.ts" }],
@@ -3998,7 +3999,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       expect(started.status, started.out).toBe(0);
       const plan = planApproved(p, "alpha");
       writeFileSync(plan, readFileSync(plan, "utf-8").replaceAll("- [ ] Step", "- [x] Step"));
-      const built = join(seededRecordDir(p), "construction", "alpha", "code-generation");
+      const built = join(seededRecordDir(p), phaseFor("code-generation"), "alpha", "code-generation");
       for (const name of ["code-summary", "traceability"]) writeFileSync(join(built, artifactFilename(name)), `# alpha ${name}\n`);
       writeFileSync(join(built, "source-manifest.json"), JSON.stringify({
         stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "src/alpha.ts" }],
@@ -4041,7 +4042,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     });
     writeFileSync(plan, readFileSync(plan, "utf-8").replaceAll("- [ ] Step", "- [x] Step"));
     for (const n of [1, 2, 3, 4]) writeFileSync(join(p, "src", `part${n}.ts`), `export const part${n} = ${n};\n`);
-    const built = join(seededRecordDir(p), "construction", "beta", "code-generation");
+    const built = join(seededRecordDir(p), phaseFor("code-generation"), "beta", "code-generation");
     for (const name of ["code-summary", "traceability"]) writeFileSync(join(built, artifactFilename(name)), `# beta ${name}\n`);
     writeFileSync(join(built, "source-manifest.json"), JSON.stringify({
       stage: "code-generation", unit: "beta", version: 1,

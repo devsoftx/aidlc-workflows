@@ -64,6 +64,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename,
   readAllAuditShards,
@@ -219,7 +220,7 @@ ${iterationLine}
 }
 
 function coverUnit(proj: string, unit: string, slug: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of PRODUCES[slug]) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -338,7 +339,7 @@ function logReviewReady(proj: string, stage: string, unit: string): void {
   if (!reviewArtifact) throw new Error(`no review artifact fixture for ${stage}`);
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(reviewArtifact),
@@ -384,7 +385,7 @@ function seedStaleKindDependency(proj: string): void {
     join(seededRecordDir(proj), "runtime-graph.json"),
     `${JSON.stringify({ stages: [] }, null, 2)}\n`,
   );
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "unit-of-work-dependency.md"),
@@ -505,7 +506,7 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     const proj = seedProject("unit-major");
     seedBoltDag(proj, ["alpha", "beta"]);
     coverFullGrid(proj, ["alpha", "beta"]);
-    const dir = join(seededRecordDir(proj), "construction", "alpha", "nfr-design");
+    const dir = join(seededRecordDir(proj), phaseFor("nfr-design"), "alpha", "nfr-design");
     const { rmSync } = require("node:fs") as typeof import("node:fs");
     rmSync(join(dir, `${PRODUCES["nfr-design"][0]}.md`));
     const d = runNext(proj);

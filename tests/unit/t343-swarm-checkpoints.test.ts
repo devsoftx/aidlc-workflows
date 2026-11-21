@@ -65,6 +65,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   approvalFingerprint,
   codeGenerationRecordDir,
@@ -126,7 +127,7 @@ function state(autonomous = false): string {
 - **Test Strategy**: Standard
 
 ## Stage Progress
-### CONSTRUCTION PHASE
+### ${phaseFor(STAGE).toUpperCase()} PHASE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
@@ -135,7 +136,7 @@ function state(autonomous = false): string {
 - [ ] build-and-test — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}
 - **Current Stage**: code-generation
 - **Status**: Running
 `;
@@ -143,7 +144,7 @@ function state(autonomous = false): string {
 
 function artifacts(pd: string, unit: string, stage = STAGE): void {
   const definition = findStageBySlug(stage)!;
-  const dir = join(seededRecordDir(pd), "construction", unit, stage);
+  const dir = join(seededRecordDir(pd), phaseFor(stage), unit, stage);
   mkdirSync(dir, { recursive: true });
   for (const name of definition.produces ?? []) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${stage} ${unit} ${name}\n`);
@@ -281,7 +282,7 @@ function converge(pd: string, batch = 1, units = BATCH, kind = "bound"): void {
     const committed = gitCommitSourceListing(sourceRoot, commit, !repo)!;
     expect(committed).not.toBeNull();
     const nativeFingerprint = workspaceSourceFingerprint(sourceRoot)!;
-    const bytes = readFileSync(join(seededRecordDir(pd), "construction", unit, STAGE, "source-manifest.json"));
+    const bytes = readFileSync(join(seededRecordDir(pd), phaseFor(STAGE), unit, STAGE, "source-manifest.json"));
     // Child receipts deliberately contain repo-relative keys and unchanged,
     // unqualified manifest bytes, even when the parent has multiple repos.
     const manifest = repo ? {
@@ -341,7 +342,7 @@ function openFinding(pd: string): void {
   const requested = tool(pd, "log", args);
   expect(requested.code, requested.out).toBe(0);
   const request = JSON.parse(requested.stdout.trim().split(/\r?\n/).at(-1)!) as { reviewFile: string };
-  const artifact = relative(pd, join(seededRecordDir(pd), "construction", "alpha", STAGE,
+  const artifact = relative(pd, join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE,
     artifactFilename(definition.review_artifact ?? definition.produces![0]))).replaceAll("\\", "/");
   mkdirSync(dirname(join(pd, request.reviewFile)), { recursive: true });
   writeFileSync(join(pd, request.reviewFile), [
@@ -816,7 +817,7 @@ describe("t343 completed swarm batch checkpoints", () => {
     "transported child manifests retain reviewed bytes with repositories %j",
     ({ repos }) => {
       const pd = fixture(true, repos);
-      const path = join(seededRecordDir(pd), "construction/alpha", STAGE, "source-manifest.json");
+      const path = join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE, "source-manifest.json");
       const original = readFileSync(path);
       converge(pd);
       const approved = approveSwarmCheckpoint(pd, 1, BATCH);
@@ -912,7 +913,7 @@ for (const { commit, path, ok } of cases) {
   test("immutable manifest initialization stays private with ambient GIT_DIR", () => {
     const pd = fixture();
     const commit = git(pd, ["rev-parse", "HEAD"]);
-    const manifest = readFileSync(join(seededRecordDir(pd), "construction/alpha", STAGE, "source-manifest.json"));
+    const manifest = readFileSync(join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE, "source-manifest.json"));
     const config = readFileSync(join(pd, ".git/config"));
     const head = readFileSync(join(pd, ".git/HEAD"));
     const before = process.env.GIT_DIR;
@@ -938,7 +939,7 @@ for (const { commit, path, ok } of cases) {
       if (!manifest.ok) throw new Error(manifest.reason);
       return {
         pd, commit: git(pd, ["rev-parse", "HEAD"]),
-        file: join(seededRecordDir(pd), "construction/alpha", STAGE, "source-manifest.json"),
+        file: join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE, "source-manifest.json"),
         expected: unitSourceFingerprint(workspaceSourceListing(pd)!, manifest, manifest.rawBytesSha256),
       };
     });
@@ -994,10 +995,10 @@ if (invalid.ok) throw new Error("invalid manifest unexpectedly accepted");
     if (kind === "attempt") appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, pd);
     if (kind === "source") writeFileSync(join(pd, "src", "alpha.ts"), "export const alpha = 2;\n");
     if (kind === "artifact") {
-      writeFileSync(join(seededRecordDir(pd), "construction", "alpha", STAGE, artifactFilename(findStageBySlug(STAGE)!.produces![0])), "Changed output\n");
+      writeFileSync(join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE, artifactFilename(findStageBySlug(STAGE)!.produces![0])), "Changed output\n");
     }
     if (kind === "manifest") {
-      const file = join(seededRecordDir(pd), "construction", "alpha", STAGE, "source-manifest.json");
+      const file = join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE, "source-manifest.json");
       writeFileSync(file, `${readFileSync(file, "utf-8")}\n`);
     }
     if (kind === "set") {
@@ -1292,7 +1293,7 @@ if (invalid.ok) throw new Error("invalid manifest unexpectedly accepted");
   test("missing required output or immutable Source Commit refuses", () => {
     const pd = fixture(true);
     converge(pd);
-    rmSync(join(seededRecordDir(pd), "construction", "beta", STAGE, artifactFilename(findStageBySlug(STAGE)!.produces![0])));
+    rmSync(join(seededRecordDir(pd), phaseFor(STAGE), "beta", STAGE, artifactFilename(findStageBySlug(STAGE)!.produces![0])));
     expect(resolveSwarmCheckpoint(pd, 1, BATCH).errors.join(" ")).toContain("required Code Generation outputs");
     const other = fixture(true);
     converge(other);
@@ -1385,7 +1386,7 @@ describe("t343 response-bound swarm decisions", () => {
     };
     ask();
     choice(pd, session, "Approve");
-    writeFileSync(join(seededRecordDir(pd), "construction", "alpha", STAGE, artifactFilename(findStageBySlug(STAGE)!.produces![0])), "# Revised implementation evidence\n");
+    writeFileSync(join(seededRecordDir(pd), phaseFor(STAGE), "alpha", STAGE, artifactFilename(findStageBySlug(STAGE)!.produces![0])), "# Revised implementation evidence\n");
     converge(pd, 1, BATCH, "unmerged");
     expect(resolveSwarmCheckpoint(pd, 1, BATCH).ready).toBe(true);
     const approve = () => tool(pd, "bolt", [...route(), "--action", "approve", "--user-input", "Approve"]);
@@ -1422,7 +1423,7 @@ describe("t343 checkpoint question interleaving", () => {
     const pd = fixture();
     if (interleaving === "lifecycle-gate") {
       writeFileSync(seededStateFile(pd), readFileSync(seededStateFile(pd), "utf-8").replace(
-        "## Stage Progress", "## Stage Progress\n### INCEPTION PHASE\n- [-] delivery-planning — EXECUTE",
+        "## Stage Progress", `## Stage Progress\n### ${phaseFor(STAGE).toUpperCase()} PHASE\n- [-] delivery-planning — EXECUTE`,
       ));
     }
     converge(pd);

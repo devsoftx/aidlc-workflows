@@ -45,6 +45,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -138,7 +139,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 }
 
 function coverUnit(proj: string, unit: string, slug: string, names: string[]): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of names) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
 }
@@ -208,17 +209,17 @@ function reviewArtifactPath(
 ): string {
   const artifact = REVIEW_ARTIFACTS[stage];
   if (!artifact) throw new Error(`no review artifact fixture for ${stage}`);
-  const construction = join(seededRecordDir(proj), "construction");
+  const phaseDir = join(seededRecordDir(proj), phaseFor(stage));
   const targetUnit =
     unit ??
-    readdirSync(construction)
+    readdirSync(phaseDir)
       .sort()
       .find((name) =>
-        existsSync(join(construction, name, stage, artifactFilename(artifact))),
+        existsSync(join(phaseDir, name, stage, artifactFilename(artifact))),
       );
   if (!targetUnit) throw new Error(`no review artifact target for ${stage}`);
   return join(
-    construction,
+    phaseDir,
     targetUnit,
     stage,
     artifactFilename(artifact),
@@ -321,7 +322,7 @@ function completeWave(proj: string, unit: string, stage: string): void {
 function logArtifactUpdated(proj: string, unit: string): void {
   const file = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("functional-design"),
     unit,
     "functional-design",
     "rules.md",
@@ -329,7 +330,7 @@ function logArtifactUpdated(proj: string, unit: string): void {
   appendAuditEntry("ARTIFACT_UPDATED", {
     Tool: "Edit",
     File: file,
-    Context: `construction > ${unit} > functional-design > rules.md`,
+    Context: `${phaseFor("functional-design")} > ${unit} > functional-design > rules.md`,
   }, proj);
 }
 
@@ -341,7 +342,7 @@ function seedDependencyArtifact(
     join(seededRecordDir(proj), "runtime-graph.json"),
     `${JSON.stringify({ stages: [] }, null, 2)}\n`,
   );
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "unit-of-work-dependency.md"),
