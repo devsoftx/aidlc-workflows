@@ -286,6 +286,7 @@ import {
   planApprovalAskIsOpen,
   LEGACY_PLAN_APPROVAL_RECOVERY_CHOICE,
   resolveCeremony,
+  isUnitLoopStage,
 } from "./aidlc-lib.js";
 import type {
   StageEntry,
@@ -2596,7 +2597,7 @@ function handleAnswer(args: string[]): void {
       ? readFileSync(stateFilePath(pd), "utf-8")
       : null;
     const stageNode = loadStageGraphAll().find((stage) => stage.slug === flags.stage);
-    const autonomousDecision = isAutonomousConstructionDecision(content, stageNode?.phase);
+    const autonomousDecision = isAutonomousConstructionDecision(content, stageNode);
     const workflow =
       flags.single === "true" ? `single-stage:${flags.stage}` : undefined;
 
@@ -3951,7 +3952,7 @@ export function reviewVerdictStep(
       ...(complete !== null ? { complete } : {}),
     });
   }
-  if (node.phase === "construction" && isAutonomousConstructionGate(state, node, pd)) return null;
+  if (isUnitLoopStage(node) && isAutonomousConstructionGate(state, node, pd)) return null;
   // A recovery pass re-checked an invalidated review, and a backward jump began
   // this attempt: either way the gate's brief is the stale one.
   const stale = request.recovery ||
@@ -4246,7 +4247,7 @@ function handleReview(args: string[]): void {
       flags.unit as string,
     );
     if (!manifest.ok) {
-      const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/construction/${flags.unit}/${flags.stage}/source-manifest.json`;
+      const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/${node.phase}/${flags.unit}/${flags.stage}/source-manifest.json`;
       refuseReview(
         `Cannot record REVIEW_REQUESTED for "${flags.stage}": ${unitManifestRefusal(
           flags.unit as string,
@@ -5180,7 +5181,7 @@ function handleReview(args: string[]): void {
         ? readUnitSourceManifest(pd, flags.stage, flags.unit as string)
         : null;
       if (manifest?.ok === false) {
-        const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/construction/${flags.unit}/${flags.stage}/source-manifest.json`;
+        const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/${node.phase}/${flags.unit}/${flags.stage}/source-manifest.json`;
         refuseReview(
           `Cannot record review for "${flags.stage}": ${unitManifestRefusal(
             flags.unit as string,

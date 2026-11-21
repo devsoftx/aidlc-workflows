@@ -191,6 +191,7 @@ import {
   PHASE_LABELS,
   isUnitLoopStage,
   UNIT_RECORD_PHASES,
+  loadStageGraphAll,
   parseCheckboxes,
   parseRefsList,
   parseStateStageSuffixes,
@@ -1517,8 +1518,8 @@ function withMessageArg(args: string[]): { values: string[]; message?: string } 
 function requireHumanConstructionPolicyChange(
   pd: string, content: string, field: string, value: string, message: string | undefined,
 ): PolicyAsk | null {
-  // The person's call applies while the work is on a per-unit stage, so it is the
-  // stage the workflow is on that decides, not the lifecycle label.
+  // A policy change is the person's while the work is on a per-unit stage; the
+  // stage the workflow is on decides, since the lifecycle label is no longer the phase.
   if (!isUnitLoopStage(findStageBySlug(getField(content, "Current Stage") ?? ""))) return null;
   const receipt = constructionPolicyReceipt(pd, content, field, value);
   // An unattended run never changes it on its own, whatever presence bypass is
@@ -3681,12 +3682,13 @@ function producesDirsForStage(
     if (usesStageLevelPerUnitArtifacts(scope, stateContent)) {
       return [join(rec, stage.phase, stage.slug)];
     }
+    const stageSlugs = new Set(loadStageGraphAll().map((s) => s.slug));
     const units = new Set<string>();
     for (const unitPhase of UNIT_RECORD_PHASES) {
       const folder = join(rec, unitPhase);
       if (!existsSync(folder)) continue;
       for (const name of readdirSync(folder)) {
-        if (findStageBySlug(name) === undefined) units.add(name);
+        if (!stageSlugs.has(name)) units.add(name);
       }
     }
     const dirs: string[] = [];

@@ -511,9 +511,9 @@ function recordedRepos(stateFile: string): string[] {
 
 function extractField(text: string, label: string): string {
   // Match the Markdown list field pattern used throughout aidlc-state.md:
-  //   - **Lifecycle Phase**: IDEATION
+  //   - **Lifecycle Phase**: DISCOVER
   // Anchoring on "^-\s*\*\*LABEL\*\*:" prevents prose lines that happen to contain
-  // the label (e.g. "> The Lifecycle Phase: OPERATION was added in v2.") from
+  // the label (e.g. "> The Lifecycle Phase: OPERATE was added in v2.") from
   // hijacking the displayed value.
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(`^-\\s*\\*\\*${escaped}\\*\\*:[^\\S\\n]*([^\\n]*)`, "m");
@@ -524,7 +524,7 @@ function extractField(text: string, label: string): string {
 function phaseProgress(text: string, phase: string): { done: number; total: number } {
   if (!phase) return { done: 0, total: 0 };
   // Normalize: take the first whitespace-delimited token and uppercase it, so
-  // values like "INCEPTION (finalizing)" or mixed-case headings still match.
+  // values like "DESIGN (finalizing)" or mixed-case headings still match.
   const phaseToken = phase.trim().split(/\s+/)[0].toUpperCase();
   if (!phaseToken) return { done: 0, total: 0 };
   const lines = text.split(/\r?\n/);
@@ -754,7 +754,9 @@ async function main(stdinText: string): Promise<void> {
   // none (between steps in a teammate's clone, or past the Units' stages) the
   // light done-count could miss a skeleton's approval or a walk without
   // checkpoints, so the stage count stands.
-  const units = phase === "CONSTRUCTION" && shown.unit !== ""
+  // A Unit on the step marks per-unit work in design or build. This hot path
+  // does not load the stage graph, so the step's Unit decides it, not the phase.
+  const units = shown.unit !== ""
     ? unitProgress(dirname(stateFile), extractField(state, "Construction Iteration"), shown.unit)
     : null;
   if (units) {

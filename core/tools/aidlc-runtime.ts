@@ -412,7 +412,7 @@ function compile(opts: CompileOptions): { skipped?: string; written?: string } {
 
   // --- BoltInstance[] populator (parallel-Bolt detection) ----------------
   //
-  // For each Construction-phase stage row, detect parallel-Bolt audit
+  // For each per-unit stage row, detect parallel-Bolt audit
   // footprint and (when >= 2 distinct slugs are present in the stage's
   // window) replace the parent's single-instance fields with a populated
   // `instances[]` array. Single-Bolt stages stay single-instance — the
@@ -421,7 +421,7 @@ function compile(opts: CompileOptions): { skipped?: string; written?: string } {
   // Detection rule: a stage row gets `instances[]` when audit contains >= 2
   // distinct `Bolt slug` values whose STATE_FORKED rows fall within the
   // stage's [stage.started_at, stage.completed_at) window (unbounded above
-  // while the stage is incomplete) AND the stage's phase is `construction`.
+  // while the stage is incomplete) AND the stage is per-unit (`perUnit`).
   // The window's started_at is the LATEST STAGE_STARTED for that slug:
   // re-jumps reset the window so prior-cycle Bolts don't bleed into the new
   // cycle's instances[]. pairing.entries() already gives us the latest per
@@ -470,7 +470,7 @@ function compile(opts: CompileOptions): { skipped?: string; written?: string } {
 
   for (const stage of stages) {
     const phaseInfo = phaseMap.get(stage.stage_slug);
-    if (phaseInfo?.phase !== "construction") continue;
+    if (!phaseInfo?.perUnit) continue;
 
     const windowStart = stage.started_at;
     const windowEnd = stage.completed_at; // null → unbounded above (mid-flight)

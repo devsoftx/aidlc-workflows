@@ -98,6 +98,7 @@ import {
   guardPolicyAtLeast,
   guardPolicyMemoryStrictRefusal,
   isPerUnitStage,
+  isUnitLoopStage,
   memoryGuardPolicyDeclarations,
   noteGuardPolicyRename,
   parseGuardPolicy,
@@ -202,7 +203,7 @@ export interface GraphStage extends StageEntry {
   // produces_kinds - per-kind applicability map (artifact name to unit kinds).
   // Lives on stage YAML, round-trips through parse/emit, and compiles into
   // stage-graph.json. The engine's produces filter reads it to prune the
-  // per-unit construction matrix; an unlisted artifact applies to all kinds.
+  // per-unit matrix; an unlisted artifact applies to all kinds.
   produces_kinds?: Record<string, string[]>;
   consumes: Consume[];
   // cites - the consumes the stage marks `cited: true`: its deliverables cite
@@ -445,7 +446,7 @@ function rulesDir(): string {
  *  memory/org.md"). Replaces the old per-harness "<harness>/<rulesSubdir>/<f>"
  *  display form: the method now lives at the neutral aidlc/ roof, identical on
  *  every harness, so the baked path is harness-neutral too. `rel` is the file's
- *  sub-path under memory/ (e.g. "org.md" or "phases/construction.md"). */
+ *  sub-path under memory/ (e.g. "org.md" or "phases/design.md"). */
 function memoryDisplayPath(rel: string): string {
   return toPosix(join(...MEMORY_SEGMENTS, rel));
 }
@@ -1188,7 +1189,7 @@ export function loadRules(): RuleFile[] {
   if (!existsSync(dir)) return [];
 
   // Each candidate: the absolute on-disk path to read, the display sub-path
-  // (relative to aidlc/memory/, e.g. "org.md" or "phases/construction.md")
+  // (relative to aidlc/memory/, e.g. "org.md" or "phases/design.md")
   // baked into the RuleResolution, the resolved scope, and the phase name when
   // scope === "phase". The method tree is shallow: top-level layered files plus
   // one nested phases/ dir, so the walk is two explicit reads (no recursion).
@@ -1439,9 +1440,10 @@ export function withStageProgressRow(content: string, slug: string): string {
 }
 
 // True when `slug` runs before the first per-Unit stage of `stages` (a graph in
-// run order): Inception and earlier, where the Unit plan itself is made. A team
-// that goes back there is changing its Unit plan, which leaves each Unit's own
-// work to its claim. False for a slug the graph does not know.
+// run order): Discover and the Design stages before the per-Unit block, where
+// the Unit plan itself is made. A team that goes back there is changing its
+// Unit plan, which leaves each Unit's own work to its claim. False for a slug
+// the graph does not know.
 export function beforePerUnitBlock(stages: readonly { slug: string; for_each?: string }[], slug: string): boolean {
   const at = stages.findIndex((stage) => stage.slug === slug);
   const firstPerUnit = stages.findIndex((stage) => isPerUnitStage(stage));
@@ -2995,7 +2997,7 @@ export function compileStageGraph(): {
 
   // Edge-local invariant: for every edge A in B.requires_stage,
   // numericOrder(A) < numericOrder(B). Topological sort is non-unique
-  // in the presence of fan-out (Construction's NFR and functional-
+  // in the presence of fan-out (Design's NFR and functional-
   // design branches are independent); sort-equivalence would be
   // tautological. The edge-local check captures the real failure mode.
   const numberLookup = new Map(stages.map((s) => [s.slug, s.number]));
@@ -3037,16 +3039,15 @@ export function compileStageGraph(): {
 
   // Swarm-trigger guard (advisory): the autonomous Construction swarm fires
   // on a field match — for_each: unit-of-work + mode: subagent (see
-  // SWARM_FOR_EACH / SWARM_MODE in aidlc-orchestrate.ts). A per-unit
-  // Construction stage carrying any OTHER mode silently falls off the swarm
-  // path and builds its units serially, which is legal (the topology is the
+  // SWARM_FOR_EACH / SWARM_MODE in aidlc-orchestrate.ts). A per-unit stage
+  // carrying any OTHER mode silently falls off the swarm path and builds its
+  // units serially, which is legal (the topology is the
   // author's call) but easy to do by accident when retuning modes. Warn on
   // stderr; never fail — warnings do not affect the emitted JSON, so
   // compile --check parity is untouched.
   for (const stage of stages) {
     if (
-      stage.phase === "construction" &&
-      stage.for_each === "unit-of-work" &&
+      isUnitLoopStage(stage) &&
       stage.workspace_requires === true &&
       stage.mode !== "subagent"
     ) {
@@ -3632,7 +3633,7 @@ export function computeArs(
     }
   }
   // Pass 2 - a phase-gate executes iff other work in its phase executes or
-  // already ran (persona: approval-handoff is "Always at ideation->inception
+  // already ran (persona: approval-handoff is "Always at discover->design
   // boundary"; when the whole phase folds away, the boundary does not exist).
   // Activity is read from non-gate stages only: a gate, pending or already
   // completed, marks a boundary and is not work, so gates in an otherwise

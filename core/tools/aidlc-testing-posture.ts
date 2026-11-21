@@ -3282,7 +3282,7 @@ export function codeGenerationRecordDir(
   projectDir: string,
   unit: string | null,
 ): string {
-  const root = join(docsRoot(projectDir), "construction");
+  const root = join(docsRoot(projectDir), "build");
   const normalizedUnit = unit?.trim() ?? "";
   return normalizedUnit.length > 0
     ? join(root, normalizedUnit, "code-generation")

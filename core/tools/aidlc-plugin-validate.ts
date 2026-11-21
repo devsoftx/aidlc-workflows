@@ -25,6 +25,7 @@ import {
   GUARD_POLICY_HEADING,
   listField,
   parseStageFrontmatter,
+  PHASES,
   scalarField,
   structuredField,
   visibleMarkdownLines,
@@ -985,7 +986,8 @@ function validateManifest(
 // no setting field (SETTING_FIELDS, the one list of fields AI-DLC's tools
 // read from a rule file). Their own headings are nested at compose, never
 // refused.
-const RULE_PHASE_FILES = ["ideation", "inception", "construction", "operation"].map((phase) => `phases/${phase}.md`);
+const RULE_PHASE_NAMES = PHASES.filter((phase) => phase !== "initialization");
+const RULE_PHASE_FILES = RULE_PHASE_NAMES.map((phase) => `phases/${phase}.md`);
 
 function validateMemory(root: string, findings: MutableFindings): void {
   const memory = join(root, "memory");
@@ -1018,7 +1020,7 @@ function validateMemory(root: string, findings: MutableFindings): void {
         findings,
         display,
         "memory-file",
-        "a plugin's rules are memory/rules.md and memory/phases/<ideation|inception|construction|operation>.md; this file is not read",
+        `a plugin's rules are memory/rules.md and memory/phases/<${RULE_PHASE_NAMES.join("|")}>.md; this file is not read`,
         "Move its rules into memory/rules.md or the phase file they belong to.",
       );
       continue;

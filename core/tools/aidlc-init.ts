@@ -160,6 +160,7 @@ import {
   normalizeDriveLetter,
   pausedBySelection,
   pausedLine,
+  PHASES,
   resolveInvokingSessionId,
   resolveProjectDir,
   resumedLine,
@@ -5234,7 +5235,7 @@ function anchorOffset(content: string, anchor: string): number {
 // and seeds past that prefix's max. An upgrade that removes or reorders a stage
 // would otherwise resurrect an edge the compile invariant rejects. Same-prefix
 // edges need the staged graph; without a readable one they are dropped.
-const REFRESH_PHASE_ORDER = ["initialization", "ideation", "inception", "construction", "operation"];
+const REFRESH_PHASE_ORDER = PHASES;
 type RequiresEdgeHolds = (target: string, dependency: string) => boolean;
 function requiresEdgeOracle(stagedHarnessRoot: string): RequiresEdgeHolds {
   const phaseBySlug = new Map<string, number>();

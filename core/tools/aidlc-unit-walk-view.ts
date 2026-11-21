@@ -12,7 +12,7 @@ import { parseBoltDag, validateUnitName } from "./aidlc-unit-dag.ts";
 function plannedUnits(recordDir: string): string[] {
   let dag: string;
   try {
-    dag = readFileSync(join(recordDir, "inception", "units-generation", "unit-of-work-dependency.md"), "utf-8");
+    dag = readFileSync(join(recordDir, "design", "units-generation", "unit-of-work-dependency.md"), "utf-8");
   } catch {
     try {
       const graph = JSON.parse(readFileSync(join(recordDir, "runtime-graph.json"), "utf-8")) as {

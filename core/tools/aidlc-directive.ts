@@ -725,7 +725,7 @@ export interface ProjectTypeAskDirective extends AskDirectiveBase {
   new_project_command: string;
 }
 
-// As Inception ends, a plan of two or more Units: who builds them, this
+// As Design ends, a plan of two or more Units: who builds them, this
 // session or several teams each owning one. Each choice is one complete
 // command that records the answer.
 export interface ConstructionStaffingAskDirective extends AskDirectiveBase {
@@ -1651,14 +1651,14 @@ export function otherWorkNote(
   const listed = works.slice(0, OTHER_WORKS_SHOWN).map(({ work, record, paths }) => {
     const shown = paths.slice(0, OTHER_WORK_PATHS_SHOWN).map((path) => `\`${path}\``).join(", ");
     const more = paths.length > OTHER_WORK_PATHS_SHOWN
-      ? `, and ${paths.length - OTHER_WORK_PATHS_SHOWN} more, listed in its Units' source manifests under \`${record}/construction/\``
+      ? `, and ${paths.length - OTHER_WORK_PATHS_SHOWN} more, listed in its Units' source manifests under \`${record}/build/\``
       : "";
     return `${work} (${shown}${more})`;
   });
   // The note stays bounded however many pieces of work there are.
   if (works.length > OTHER_WORKS_SHOWN) {
     listed.push(`and ${works.length - OTHER_WORKS_SHOWN} more, each listing its files in its Units' source manifests ` +
-      "under its record's `construction/` folder");
+      "under its record's `build/` folder");
   }
   return `${works.length === 1 ? "Another piece of work is" : "Other pieces of work are"} under way in this same folder, ` +
     `and these files are ${works.length === 1 ? "its" : "their"} own: ${listed.join("; ")}. ` +
@@ -2423,6 +2423,12 @@ export function validateDirective(obj: unknown): ValidationResult {
   return { valid: true, data: o as unknown as Directive };
 }
 
+// The per-unit directive fields (construction_policy, construction_checkpoint,
+// artifact_reuse) are valid only on the phases that hold per-unit stages.
+function isPerUnitPhase(phase: unknown): boolean {
+  return (UNIT_RECORD_PHASES as readonly unknown[]).includes(phase);
+}
+
 // checkRunStageShared — the field set common to run-stage and
 // dispatch-subagent. `kind` is threaded through so each error names the actual
 // kind being validated (e.g. "dispatch-subagent: missing required field: lead_agent").
@@ -2534,7 +2540,7 @@ function checkRunStageShared(
   }
   if ("construction_policy" in o) {
     const policy = o.construction_policy;
-    if (!isObject(policy) || o.phase !== "construction") {
+    if (!isObject(policy) || !isPerUnitPhase(o.phase)) {
       errors.push(`${kind}: construction_policy requires a Construction policy object`);
     } else {
       checkEnum(policy, "iteration", ["unit-major", "stage-major"], kind, errors);
@@ -2547,7 +2553,7 @@ function checkRunStageShared(
   }
   if ("construction_checkpoint" in o) {
     const checkpoint = o.construction_checkpoint;
-    if (!isObject(checkpoint) || o.phase !== "construction" || checkpoint.unit !== o.unit) {
+    if (!isObject(checkpoint) || !isPerUnitPhase(o.phase) || checkpoint.unit !== o.unit) {
       errors.push(`${kind}: construction_checkpoint must name this Construction Unit`);
     } else {
       checkEnum(checkpoint, "kind", ["unit", "skeleton"], kind, errors);
@@ -2587,7 +2593,7 @@ function checkRunStageShared(
   }
   if ("artifact_reuse" in o) {
     const reuse = o.artifact_reuse;
-    if (!isObject(reuse) || o.phase !== "construction" || reuse.unit !== o.unit || reuse.decision !== "redo") {
+    if (!isObject(reuse) || !isPerUnitPhase(o.phase) || reuse.unit !== o.unit || reuse.decision !== "redo") {
       errors.push(`${kind}: artifact_reuse must be the redo decision for this Construction Unit`);
     }
   }
@@ -2599,7 +2605,7 @@ function checkRunStageShared(
   }
   if ("swarm_checkpoint" in o) {
     const checkpoint = o.swarm_checkpoint;
-    if (!isObject(checkpoint) || o.phase !== "construction" || o.stage !== "code-generation") {
+    if (!isObject(checkpoint) || o.phase !== "build" || o.stage !== "code-generation") {
       errors.push(`${kind}: swarm_checkpoint requires Code Generation`);
     } else {
       if (!Number.isSafeInteger(checkpoint.batch) || (checkpoint.batch as number) < 1) {
@@ -3831,7 +3837,7 @@ if (import.meta.main) {
     {
       kind: "run-stage",
       stage: "domain-design",
-      phase: "inception",
+      phase: "design",
       lead_agent: "aidlc-architect-agent",
       support_agents: ["aidlc-aws-platform-agent", "aidlc-design-agent"],
       mode: "inline",
@@ -3841,39 +3847,39 @@ if (import.meta.main) {
         ".claude/agents/aidlc-design-agent.md",
       ],
       gate: true,
-      memory_path: "aidlc-docs/inception/domain-design/memory.md",
-      consumes: ["aidlc-docs/inception/requirements/requirements.md"],
-      produces: ["aidlc-docs/inception/domain-design/components.md"],
+      memory_path: "aidlc-docs/design/domain-design/memory.md",
+      consumes: ["aidlc-docs/design/requirements-analysis/requirements.md"],
+      produces: ["aidlc-docs/design/domain-design/components.md"],
       rules_in_context: [
         "aidlc-org.md",
         "aidlc-team.md",
         "aidlc-project.md",
-        "aidlc-phase-inception.md",
+        "aidlc-phase-design.md",
       ],
       context_warnings: [
         "Could not read optional knowledge file example.md; fix its permissions.",
       ],
       sensors_applicable: ["required-sections", "upstream-coverage"],
       ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
-      stage_file: ".claude/aidlc-common/stages/inception/domain-design.md",
+      stage_file: ".claude/aidlc-common/stages/design/domain-design.md",
       next_stage: "Units Generation",
     },
     {
       kind: "dispatch-subagent",
       stage: "code-generation",
-      phase: "construction",
+      phase: "build",
       lead_agent: "aidlc-developer-agent",
       support_agents: ["aidlc-quality-agent"],
       mode: "subagent",
       inline_context_paths: [],
       gate: false,
-      memory_path: "aidlc-docs/construction/auth/code-generation/memory.md",
-      consumes: ["aidlc-docs/construction/auth/functional-design/functional-design.md"],
-      produces: ["aidlc-docs/construction/auth/code-generation/code-manifest.md"],
-      rules_in_context: ["aidlc-org.md", "aidlc-phase-construction.md"],
+      memory_path: "aidlc-docs/build/auth/code-generation/memory.md",
+      consumes: ["aidlc-docs/design/auth/functional-design/functional-design.md"],
+      produces: ["aidlc-docs/build/auth/code-generation/code-manifest.md"],
+      rules_in_context: ["aidlc-org.md", "aidlc-phase-build.md"],
       sensors_applicable: ["linter", "type-check"],
       ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
-      stage_file: ".claude/aidlc-common/stages/construction/code-generation.md",
+      stage_file: ".claude/aidlc-common/stages/build/code-generation.md",
       worker: "code-generation",
     },
     {
@@ -3889,8 +3895,8 @@ if (import.meta.main) {
     {
       kind: "present-gate",
       stage: "domain-design",
-      phase: "inception",
-      memory_path: "aidlc-docs/inception/domain-design/memory.md",
+      phase: "design",
+      memory_path: "aidlc-docs/design/domain-design/memory.md",
     },
     {
       kind: "ask",
@@ -3929,7 +3935,7 @@ if (import.meta.main) {
     {
       kind: "run-stage",
       stage: "functional-design",
-      phase: "construction",
+      phase: "design",
       lead_agent: "aidlc-architect-agent",
       support_agents: ["aidlc-developer-agent"],
       mode: "inline",
@@ -3938,13 +3944,13 @@ if (import.meta.main) {
         ".claude/agents/aidlc-developer-agent.md",
       ],
       gate: GATE_UNRESOLVED,
-      memory_path: "aidlc-docs/construction/{unit-name}/functional-design/memory.md",
+      memory_path: "aidlc-docs/design/{unit-name}/functional-design/memory.md",
       consumes: [],
-      produces: ["aidlc-docs/construction/{unit-name}/functional-design/functional-spec.md"],
-      rules_in_context: ["aidlc-org.md", "aidlc-phase-construction.md"],
+      produces: ["aidlc-docs/design/{unit-name}/functional-design/functional-spec.md"],
+      rules_in_context: ["aidlc-org.md", "aidlc-phase-design.md"],
       sensors_applicable: ["required-sections"],
       ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
-      stage_file: ".claude/aidlc-common/stages/construction/functional-design.md",
+      stage_file: ".claude/aidlc-common/stages/design/functional-design.md",
       conductor_persona: "# The Conductor's Craft …",
     },
   ];

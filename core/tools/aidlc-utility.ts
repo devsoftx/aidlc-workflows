@@ -335,7 +335,6 @@ import {
   stageReopenedByScopeChange,
   PHASES,
   PHASE_LABELS,
-  UNIT_RECORD_PHASES,
   isUnitLoopStage,
   parseArgs,
   parseBoltName,
@@ -944,7 +943,7 @@ Examples:
   ${entrySkillInvocation()} plugin build claude                 Build its Claude projection
   ${entrySkillInvocation()}                                        Resume or begin
   ${entrySkillInvocation()} --stage code-generation                Jump to code-generation stage
-  ${entrySkillInvocation()} --phase build --scope bugfix          Jump to build with bugfix scope
+  ${entrySkillInvocation()} --phase build --scope bugfix           Jump to build with bugfix scope
   ${entrySkillInvocation()} --scope bugfix --depth comprehensive  Bugfix with comprehensive depth
   ${entrySkillInvocation()} --depth minimal                       Change depth of active workflow
   ${entrySkillInvocation()} --depth standard --test-strategy minimal  Full artifacts, minimal tests
@@ -8976,7 +8975,6 @@ function handleIntentCreateStateBuild(
     (adjustedMapping["units-generation"] ?? scopeDef.stages["units-generation"]) === "EXECUTE" &&
     graph.some((stage) =>
       isUnitLoopStage(stage) &&
-      stage.workspace_requires === true &&
       stage.workspace_requires === true &&
       (adjustedMapping[stage.slug] ?? scopeDef.stages[stage.slug]) === "EXECUTE"
     )

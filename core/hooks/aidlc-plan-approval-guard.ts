@@ -42,8 +42,8 @@
 // engine reads and nothing else.
 //
 // How the hook decides: the active directive is the approval authority. A
-// directive with `unit` selects construction/<unit>/code-generation; a
-// zero-Unit directive selects construction/code-generation. Step 4 dispatches
+// directive with `unit` selects build/<unit>/code-generation; a
+// zero-Unit directive selects build/code-generation. Step 4 dispatches
 // carry that choice explicitly as `AIDLC-UNIT: <unit>` or
 // `AIDLC-STAGE: code-generation`, plus the exact `AIDLC-TESTING-CONTRACT`
 // marker. The selected target must have a non-empty plan and test instructions,
@@ -105,6 +105,7 @@ import {
   GUARD_RECOVERY_ASK_TYPE,
   loadScopeMapping,
   loadStageGraph,
+  loadStageGraphAll,
   nextLineFlags,
   normalizeStageName,
   parseCheckboxes,
@@ -130,6 +131,7 @@ import {
   readIssuedDirectiveMarker,
   spacesRoot,
   unitMajorConstructionStageSlugs,
+  UNIT_RECORD_PHASES,
   activeDirectiveOutOfDateReason,
   recordHookDrop,
   releaseAuditLock,
@@ -346,7 +348,7 @@ const SWARM_CHANGE_IN_ITS_WORKTREE =
 
 /** Per-unit evidence the main body gathers from disk. */
 export interface UnitEvidence {
-  /** Unit-of-work name, or null for construction/code-generation stage-level work. */
+  /** Unit-of-work name, or null for build/code-generation stage-level work. */
   unit: string | null;
   /** The selected record dir's code-generation-plan.md exists and is non-empty. */
   planExists: boolean;
@@ -880,9 +882,10 @@ function staleOr(marker: ActiveDirectiveMarker, otherwise: string): string {
 // --- Evidence gathering ---------------------------------------------------------
 
 // The workflow's known units: the compiled bolt DAG when one resolves, plus
-// every existing construction/<unit>/ dir (incremental scopes skip
+// every existing <unit>/ dir under the per-unit phases (design and build). A
+// stage folder beside them is never a Unit. Incremental scopes skip
 // units-generation, so a conductor-chosen unit dir is the only register
-// there). A malformed DAG contributes nothing - the dir listing still stands.
+// there. A malformed DAG contributes nothing - the dir listing still stands.
 export function knownUnits(projectDir: string, recordDir: string): string[] {
   const units = new Set<string>();
   try {
@@ -891,15 +894,18 @@ export function knownUnits(projectDir: string, recordDir: string): string[] {
   } catch {
     // DAG resolution is best-effort here.
   }
-  try {
-    const constructionDir = join(recordDir, "construction");
-    if (existsSync(constructionDir)) {
-      for (const entry of readdirSync(constructionDir, { withFileTypes: true })) {
-        if (entry.isDirectory() && entry.name !== GUARDED_STAGE) units.add(entry.name);
+  for (const phase of UNIT_RECORD_PHASES) {
+    try {
+      const phaseDir = join(recordDir, phase);
+      if (existsSync(phaseDir)) {
+        const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+        for (const entry of readdirSync(phaseDir, { withFileTypes: true })) {
+          if (entry.isDirectory() && !stageSlugs.has(entry.name)) units.add(entry.name);
+        }
       }
+    } catch {
+      // Unreadable phase dir - the DAG set (possibly empty) and the other phase stand.
     }
-  } catch {
-    // Unreadable construction dir - the DAG set (possibly empty) stands.
   }
   return Array.from(units);
 }

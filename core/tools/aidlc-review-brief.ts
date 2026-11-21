@@ -60,6 +60,7 @@ import {
   toPosix,
   type UnitGateScope,
   unitMajorConstructionStageSlugs,
+  UNIT_RECORD_PHASES,
   unreadableFindingsTableFinding,
   validateUnitName,
   writeRecordFileNoFollow,
@@ -153,8 +154,12 @@ function workspaceArtifactPath(
     : toPosix(relative(projectDir, entry.path));
 }
 
+// The unit-record phases a per-Unit stage's Unit folders sit under, as a regex
+// alternation: `<phase>/<unit>/<stage>/` in a record path.
+const UNIT_RECORD_PHASE_PATTERN = UNIT_RECORD_PHASES.join("|");
+
 function entryUnit(logicalPath: string, stageSlug: string): string | undefined {
-  const match = /^construction\/([^/]+)\/([^/]+)\//.exec(logicalPath);
+  const match = new RegExp(`^(?:${UNIT_RECORD_PHASE_PATTERN})\\/([^/]+)\\/([^/]+)\\/`).exec(logicalPath);
   return match?.[2] === stageSlug ? match[1] : undefined;
 }
 
@@ -1225,7 +1230,7 @@ function parseDispositionField(
 }
 
 // The open findings an approval recorded on the documents under one folder
-// (`construction/<unit>/<stage>/`); a disposition names its document by its
+// (`<phase>/<unit>/<stage>/`); a disposition names its document by its
 // path in the project.
 function approvalDispositionsOn(block: string, documents: string): ReviewFindingDisposition[] {
   return parseDispositionField(auditBlockField(block, REVIEW_FINDING_DISPOSITIONS_FIELD))
@@ -2177,7 +2182,7 @@ function parseAuditPathArray(value: string | null): string[] {
 }
 
 function pathUnit(path: string, stageSlug: string): string | undefined {
-  const match = /(?:^|\/)construction\/([^/]+)\/([^/]+)\//.exec(path);
+  const match = new RegExp(`(?:^|\\/)(?:${UNIT_RECORD_PHASE_PATTERN})\\/([^/]+)\\/([^/]+)\\/`).exec(path);
   return match?.[2] === stageSlug ? match[1] : undefined;
 }
 
@@ -2308,10 +2313,9 @@ export function reviewInvalidationDetails(
         addContextReviews(changedUnit ?? unit);
         continue;
       }
-      const sourceManifest =
-        /(?:^|\/)construction\/([^/]+)\/([^/]+)\/source-manifest\.json$/.exec(
-          normalized,
-        );
+      const sourceManifest = new RegExp(
+        `(?:^|\\/)(?:${UNIT_RECORD_PHASE_PATTERN})\\/([^/]+)\\/([^/]+)\\/source-manifest\\.json$`,
+      ).exec(normalized);
       if (sourceManifest?.[2] === stage.slug) {
         if (unit !== undefined && sourceManifest[1] !== unit) continue;
         changedUpstream.add(normalized);
@@ -2365,7 +2369,7 @@ export function reviewInvalidationDetails(
                 projectDir,
                 resolve(
                   record,
-                  "construction",
+                  stage.phase,
                   unit,
                   stage.slug,
                   "source-manifest.json",

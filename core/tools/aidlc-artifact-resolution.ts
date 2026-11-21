@@ -9,14 +9,17 @@ import {
   codekbRepoName,
   effectivePlanAction,
   filterProducesByKind,
+  findStageBySlug,
   getField,
   intentRepos,
   isPerUnitStage,
+  loadStageGraphAll,
   recordDir,
   assertNoSymlinkInChainOrThrow,
   readRegularFileNoFollowOrThrow,
   resolveBoltDag,
   toPosix,
+  UNIT_RECORD_PHASES,
   usesStageLevelPerUnitArtifacts,
 } from "./aidlc-lib.js";
 
@@ -74,24 +77,29 @@ function safeStageUnitDirectories(
 ): ArtifactRuntimeUnit[] {
   const record = recordDir(projectDir);
   if (record === null) return [];
-  const construction = join(record, "construction");
-  if (!existsSync(construction)) return [];
+  const phase = findStageBySlug(stageSlug)?.phase ?? "build";
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const unitNames = new Set<string>();
+  for (const unitPhase of UNIT_RECORD_PHASES) {
+    try {
+      for (const entry of readdirSync(join(record, unitPhase), { withFileTypes: true })) {
+        if (entry.isDirectory() && !stageSlugs.has(entry.name)) unitNames.add(entry.name);
+      }
+    } catch {
+      continue;
+    }
+  }
 
   const units: ArtifactRuntimeUnit[] = [];
-  try {
-    for (const entry of readdirSync(construction, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const stageDir = join(construction, entry.name, stageSlug);
-      try {
-        if (existsSync(stageDir) && statSync(stageDir).isDirectory()) {
-          units.push({ name: entry.name, kind: null });
-        }
-      } catch {
-        // An unreadable candidate is not reliable runtime evidence.
+  for (const name of unitNames) {
+    const stageDir = join(record, phase, name, stageSlug);
+    try {
+      if (existsSync(stageDir) && statSync(stageDir).isDirectory()) {
+        units.push({ name, kind: null });
       }
+    } catch {
+      // An unreadable candidate is not reliable runtime evidence.
     }
-  } catch {
-    return [];
   }
   return units.sort((left, right) => left.name.localeCompare(right.name));
 }
@@ -260,7 +268,7 @@ export function resolveArtifactInstances(
       if (!artifactAppliesToUnit(owner, artifact, unit.kind)) continue;
       const absolutePath = join(
         record,
-        "construction",
+        owner.phase,
         unit.name,
         owner.slug,
         filename,

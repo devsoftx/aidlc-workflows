@@ -113,6 +113,7 @@ import {
   currentFingerprintForm,
   rawFingerprintForm,
   committedTextSha256,
+  isUnitLoopStage,
 } from "./aidlc-lib.ts";
 import { unheardBroughtFilesLine } from "./aidlc-brought-files.ts";
 import type { ApprovalDecider } from "./aidlc-review-brief.ts";
@@ -443,7 +444,8 @@ function onlyLatest(rows: readonly AuditShardEvent[]): AuditShardEvent | null {
 }
 
 // A Redo answer names its Unit, or (recorded by `state reuse-artifact`) lists
-// only that Unit's own documents: by record path (`construction/<unit>/...`)
+// only that Unit's own documents: by record path (`<phase>/<unit>/...`, where the
+// phase is the per-unit stage's own, design or build)
 // or by the path from the project, which the stage directive names.
 function reuseIsForUnit(row: AuditShardEvent, unit: string): boolean {
   const named = auditBlockField(row.block, "Unit");
@@ -451,7 +453,7 @@ function reuseIsForUnit(row: AuditShardEvent, unit: string): boolean {
   const artifacts = (auditBlockField(row.block, "Artifacts") ?? "").split(",")
     .map((path) => path.trim().replaceAll("\\", "/")).filter((path) => path.length > 0);
   return artifacts.length > 0 && artifacts.every((path) =>
-    /(?:^|\/)construction\/([^/]+)\//.exec(path)?.[1] === unit);
+    /(?:^|\/)(?:design|build)\/([^/]+)\//.exec(path)?.[1] === unit);
 }
 
 function stagesInRow(row: AuditShardEvent): string[] {
@@ -537,8 +539,7 @@ function checkpointStageSlugs(
   return loadStageGraph()
     .filter((stage) =>
       active.has(stage.slug) || (
-        stage.phase === "construction" &&
-        stage.for_each === "unit-of-work" &&
+        isUnitLoopStage(stage) &&
         checkboxes.get(stage.slug) === "skipped" &&
         effectivePlanAction(stage.slug, scope, state) === "EXECUTE" &&
         unitSkippedUnits(projectDir, stage.slug, rows, evidenceState).size > 0
@@ -1050,7 +1051,7 @@ function snapshot(
       // The manifest reader validates the claim model; independently refuse
       // links and a manifest changing between that read and its byte binding.
       try {
-        const path = recordFileTargetOrThrow(root, `construction/${unit}/${slug}/source-manifest.json`);
+        const path = recordFileTargetOrThrow(root, `${stage.phase}/${unit}/${slug}/source-manifest.json`);
         const bytes = readRegularFileNoFollowOrThrow(path, "Unit source manifest");
         const manifest = readUnitSourceManifest(projectDir, slug, unit);
         if (
@@ -1936,9 +1937,12 @@ export function askConstructionCheckpoint(
     const question = mintProtectedQuestion(projectDir, {
       kind: "checkpoint-approval", session, target: approvalTarget(current), choices: APPROVAL_GATE_CHOICES,
     });
-    const leftOut = leftOutLine(current.result.stages
-      .filter((slug) => findStageBySlug(slug)?.workspace_requires === true)
-      .map((slug) => join(current.root, "construction", unit, slug, "traceability.json")));
+    const leftOut = leftOutLine(current.result.stages.flatMap((slug) => {
+      const stage = findStageBySlug(slug);
+      return stage?.workspace_requires === true
+        ? [join(current.root, stage.phase, unit, slug, "traceability.json")]
+        : [];
+    }));
     const offer = current.result.stages.map((slug) => findStageBySlug(slug))
       .map((stage) => stage ? reviewCheckOffer(projectDir, stage, unit) : null).find((found) => found !== null) ?? null;
     const changedFiles = current.result.stages.includes("code-generation")

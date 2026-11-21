@@ -30,7 +30,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { releaseBuildVersion, VERSION_ID_PATTERN } from "../core/tools/aidlc-channel.ts";
 import { targetTriple } from "../core/tools/aidlc-install-paths.ts";
-import { hooksHealthDir } from "../core/tools/aidlc-lib.ts";
+import { hooksHealthDir, PHASE_LABELS } from "../core/tools/aidlc-lib.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS, LONG_SUBPROCESS_TIMEOUT_MS } from "../core/tools/aidlc-runtime-budget.ts";
 
 // The version every built artifact must report: the source version, or the
@@ -432,7 +432,7 @@ function packagedRuntimeImmutableGate(artifact: string): GateResult {
 }
 
 function validateOutputsGate(artifact: string): GateResult {
-  const result = run(artifact, ["engine", "validate", "outputs", "inception"], {
+  const result = run(artifact, ["engine", "validate", "outputs", "design"], {
     cwd: standaloneGateCwd(),
     env: pathlessEnv(),
     timeoutMs: DEFAULT_SUBPROCESS_TIMEOUT_MS,
@@ -450,7 +450,7 @@ function validateOutputsGate(artifact: string): GateResult {
     "validate-outputs",
     result,
     result.status === 0 && pass && stageCount > 0,
-    { expected: "inception stage files validate", actual: `${stageCount} stages; pass=${pass}` },
+    { expected: "design stage files validate", actual: `${stageCount} stages; pass=${pass}` },
   );
 }
 
@@ -945,7 +945,7 @@ function swarmReentryGate(artifact: string): GateResult {
       .find((path) => existsSync(path));
     if (!cursor) throw new Error(`swarm reentry intent cursor missing under ${intentsRoot}`);
     const activeIntent = readFileSync(cursor, "utf-8").trim();
-    const dagDir = join(intentsRoot, activeIntent, "inception", "units-generation");
+    const dagDir = join(intentsRoot, activeIntent, "design", "units-generation");
     mkdirSync(dagDir, { recursive: true });
     writeFileSync(
       join(dagDir, "unit-of-work-dependency.md"),
@@ -1493,7 +1493,7 @@ function nativeStatuslineCustomizationGate(artifact: string): GateResult {
 function seedUnapprovedPlanProject(project: string): void {
   const intentsRoot = join(project, "aidlc", "spaces", "default", "intents");
   const recordDir = join(intentsRoot, "binary-plan-fixture");
-  mkdirSync(join(recordDir, "construction", "todo-core", "code-generation"), {
+  mkdirSync(join(recordDir, "build", "todo-core", "code-generation"), {
     recursive: true,
   });
   // The local cursor names the record, as it does after `/aidlc intent`.
@@ -1503,7 +1503,7 @@ function seedUnapprovedPlanProject(project: string): void {
     [
       "# AI-DLC State Tracking",
       "## Current Status",
-      "- **Lifecycle Phase**: CONSTRUCTION",
+      `- **Lifecycle Phase**: ${PHASE_LABELS.build}`,
       "- **Current Stage**: code-generation",
       "",
     ].join("\n"),

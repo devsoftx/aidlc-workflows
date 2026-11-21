@@ -6,6 +6,7 @@ import {
   currentFingerprintForm,
   entrySkillInvocation,
   getField,
+  isUnitLoopStage,
   MESSAGE_SPENDING_EVENTS,
   parseCheckboxes,
   readAllAuditShards,
@@ -392,7 +393,7 @@ function projectTypeFrom(
 // Construction testing plan and in-place rule follow it). Every other finished
 // stage stays valid, so the advisory names a stage worth redoing.
 function workDependsOnProjectType(stage: StageValidityNode): boolean {
-  return stage.phase === "construction" ||
+  return isUnitLoopStage(stage) ||
     (stage.consumes ?? []).some((consume) => consume.conditional_on !== undefined);
 }
 

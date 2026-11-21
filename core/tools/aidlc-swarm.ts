@@ -191,6 +191,7 @@ import {
   type WorkflowSelection,
   committedTextSha256,
   currentFingerprintForm,
+  UNIT_RECORD_PHASES,
 } from "./aidlc-lib.ts";
 import { messagesSince, proveMessage, requestMessageStep } from "./aidlc-message-store.ts";
 import { codeGenerationPlanNamedPaths } from "./aidlc-plan-approval-ask.ts";
@@ -982,7 +983,7 @@ function captureReviewedRecordSnapshot(
 
     const manifestPath = join(
       wtRecord,
-      "construction",
+      stage.phase,
       unit,
       stage.slug,
       "source-manifest.json",
@@ -1015,7 +1016,7 @@ function captureReviewedRecordSnapshot(
       return { error: `unit "${unit}" carries a malformed Unit Source Fingerprint` };
     }
     const evidenceLogicalPath =
-      `construction/${unit}/${stage.slug}/reviewed-source-${hex.slice(0, 12)}.tsv`;
+      `${stage.phase}/${unit}/${stage.slug}/reviewed-source-${hex.slice(0, 12)}.tsv`;
     const evidencePath = reviewedSourceEvidencePath(
       wtRecord,
       unit,
@@ -1064,7 +1065,7 @@ function captureReviewedRecordSnapshot(
     entries.push(
       {
         logicalPath:
-          `construction/${unit}/${stage.slug}/source-manifest.json`,
+          `${stage.phase}/${unit}/${stage.slug}/source-manifest.json`,
         bytes: manifestBytes,
       },
       { logicalPath: evidenceLogicalPath, bytes: evidenceBytes },
@@ -1075,7 +1076,7 @@ function captureReviewedRecordSnapshot(
   if (edits === null) {
     return { error: `cannot read the record edits unit "${unit}" made outside its stage folder` };
   }
-  return { snapshot: { entries, edits, stageFolder: `construction/${unit}/${stage.slug}` } };
+  return { snapshot: { entries, edits, stageFolder: `${stage.phase}/${unit}/${stage.slug}` } };
 }
 
 // The intent's records a side-by-side Unit carries, by path in the record (a
@@ -1089,7 +1090,7 @@ function unitCarriesRecord(path: string, stageSlug: string): boolean {
   return !(
     path === "aidlc-state.md" || path === "runtime-graph.json" || segments[0] === "audit" ||
     segments.some((segment) => segment.startsWith(".aidlc-")) ||
-    (segments[0] === "construction" && segments.length > 3 && segments[2] === stageSlug)
+    ((UNIT_RECORD_PHASES as readonly string[]).includes(segments[0]) && segments.length > 3 && segments[2] === stageSlug)
   );
 }
 
@@ -2687,9 +2688,9 @@ function archiveSwarmResume(resume: SwarmResume): string {
     ["state.md", worktreeStateFilePath(resume.worktree, resume.recordPrefix), false],
     ["audit", dirname(worktreeAuditFilePath(resume.worktree, resume.recordPrefix)), true],
     ["runtime-graph.json", worktreeRuntimeGraphPath(resume.worktree, resume.recordPrefix), true],
-    ["plan.md", join(root, "construction", resume.unit, "code-generation", "code-generation-plan.md"), false],
-    ["instructions.md", join(root, "construction", resume.unit, "code-generation", "unit-test-instructions.md"), false],
-    ["questions.md", join(root, "construction", resume.unit, "code-generation", "code-generation-questions.md"), false],
+    ["plan.md", join(root, "build", resume.unit, "code-generation", "code-generation-plan.md"), false],
+    ["instructions.md", join(root, "build", resume.unit, "code-generation", "unit-test-instructions.md"), false],
+    ["questions.md", join(root, "build", resume.unit, "code-generation", "code-generation-questions.md"), false],
   ] as const) {
     assertNoSymlinkInChainOrThrow(realpathSync(resume.worktree), relative(resume.worktree, path));
     const target = join(destination, label);

@@ -775,7 +775,8 @@ function spliceFragment(content: string, fragment: PluginFragment): string | nul
 // stage with no row there takes its phase directory as prefix and seeds past
 // that prefix's max. A stale edge is still stripped from the installed file's
 // base, so the upgrade proceeds; it is simply not re-created.
-const PHASE_ORDER = ["initialization", "ideation", "inception", "construction", "operation"];
+// The engine's phase order (initialization first), read from the lib shipped beside this installer so there is one list.
+const PHASE_ORDER: readonly string[] = (await import(join(DIST_ROOT, ".cursor", "tools", "aidlc-lib.ts"))).PHASES;
 type RequiresEdgeHolds = (target: string, dependency: string) => boolean;
 function requiresEdgeOracle(targetRoot: string, priorReceipt: InstallReceipt | null): RequiresEdgeHolds {
   const phaseBySlug = new Map<string, number>();
