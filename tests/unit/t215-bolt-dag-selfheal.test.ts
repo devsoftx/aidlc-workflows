@@ -36,6 +36,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename,
   parseBoltDag,
@@ -188,7 +189,7 @@ function seedInceptionProject(current: string): string {
 }
 
 function writeDependencyArtifact(proj: string, body: string): void {
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "unit-of-work-dependency.md"), body);
 }
@@ -258,7 +259,7 @@ function coverUnit(
   slug: string,
   producesNames: string[],
 ): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of producesNames) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -283,7 +284,7 @@ function logReview(
   const reviewer = "aidlc-architecture-reviewer-agent";
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("functional-design"),
     unit,
     "functional-design",
     artifactFilename("functional-spec"),

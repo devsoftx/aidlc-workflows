@@ -14,6 +14,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   afterEach,
   describe,
@@ -198,7 +199,7 @@ function requirementProject(
   seedStateFile(proj, "state-mid-inception.md");
   const dir = join(
     seededRecordDir(proj),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -329,7 +330,7 @@ function perUnitReviewProject(
   for (const [index, unit] of units.entries()) {
     const dir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor(stageSlug),
       unit,
       stageSlug,
     );
@@ -2192,7 +2193,7 @@ describe("t304 executable review brief scenarios", () => {
     writeFileSync(statePath, cleanState, "utf-8");
     const functionalDir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "widget-checkout",
       "functional-design",
     );
@@ -2308,7 +2309,7 @@ describe("t304 executable review brief scenarios", () => {
       `**Confirming:** Consolidated answers in \`${relativeQuestions}\` before generating \`${relativeArtifact}\`.\n`,
     );
 
-    const planning = join(seededRecordDir(proj), "inception", "delivery-planning");
+    const planning = join(seededRecordDir(proj), phaseFor("delivery-planning"), "delivery-planning");
     mkdirSync(planning, { recursive: true });
     const planningQuestions = join(planning, "delivery-planning-questions.md");
     writeFileSync(planningQuestions, "# Questions\n", "utf-8");
@@ -2329,7 +2330,7 @@ describe("t304 executable review brief scenarios", () => {
   // person confirms answers for: the brief names the person's documents only.
   test("the summary brief leaves the coverage record out of what it will generate", () => {
     const { proj } = requirementProject([]);
-    const stories = join(seededRecordDir(proj), "inception", "user-stories");
+    const stories = join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories");
     mkdirSync(stories, { recursive: true });
     const storiesQuestions = join(stories, "user-stories-questions.md");
     writeFileSync(storiesQuestions, "# Questions\n", "utf-8");

@@ -30,6 +30,7 @@ import {
   seedStateFile,
   setupWorktreeFixture,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -100,7 +101,7 @@ describe("t322 fix-round hardening", () => {
       seedBoltDag(proj, ["alpha"]);
       const dir = join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "alpha",
         "functional-design",
       );
@@ -179,7 +180,7 @@ describe("t322 fix-round hardening", () => {
 
     const dir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
     );

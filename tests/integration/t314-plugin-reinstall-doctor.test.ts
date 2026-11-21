@@ -24,6 +24,7 @@ import {
   composePluginFixture,
   copyHarnessInstall,
 } from "../harness/plugin-kit.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const TIMEOUT_MS = NATIVE_FIXTURE_SETUP_TIMEOUT_MS;
@@ -79,7 +80,7 @@ function buildProseOnlyPlugin(source: string, destination: string, plugin: strin
   const contributionPath = join(
     destination,
     "contributions",
-    "construction",
+    phaseFor("build-and-test"),
     "build-and-test.md",
   );
   mkdirSync(join(contributionPath, ".."), { recursive: true });
@@ -243,9 +244,9 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
 
   test("sync composes again a plugin whose additions an upgrade wrote over", () => {
     const project = composedProject("upgrade-overwrote");
-    const stage = stagePath(project, "construction", "build-and-test");
+    const stage = stagePath(project, phaseFor("build-and-test"), "build-and-test");
     const composed = readFileSync(stage, "utf-8");
-    cpSync(join(REPO_ROOT, "dist", "claude", ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), stage);
+    cpSync(join(REPO_ROOT, "dist", "claude", ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), stage);
     expect(surfaceRow(project)).toContain("test-pro: stage build-and-test");
 
     expect(syncPlugin(project)).toBeGreaterThan(0);
@@ -256,7 +257,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
 
   test("sync composes again a plugin whose fragments an earlier refresh nested", () => {
     const project = composedProject("upgrade-nested");
-    const stage = stagePath(project, "construction", "build-and-test");
+    const stage = stagePath(project, phaseFor("build-and-test"), "build-and-test");
     const composed = readFileSync(stage, "utf-8");
     const opens = [...composed.matchAll(/<!-- plugin:test-pro:after-step:8:(\d+):([0-9a-f]+) -->/g)];
     expect(opens.length).toBeGreaterThanOrEqual(2);
@@ -279,7 +280,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
 
   test("sync leaves a person's edit inside a fragment, and doctor names it", () => {
     const project = composedProject("edited-fragment");
-    const stage = stagePath(project, "construction", "build-and-test");
+    const stage = stagePath(project, phaseFor("build-and-test"), "build-and-test");
     const composed = readFileSync(stage, "utf-8");
     const heading = "### Step 8c (test-pro): API positive + negative";
     expect(composed).toContain(heading);
@@ -310,7 +311,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
         ".claude",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       ),
       join(
@@ -318,7 +319,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
         ".claude",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       ),
     );
@@ -348,7 +349,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
     const contribution = join(
       contractPlugin,
       "contributions",
-      "construction",
+      phaseFor("build-and-test"),
       "build-and-test.md",
     );
     const contributionBody = readFileSync(contribution, "utf-8");
@@ -378,7 +379,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
     ]);
     expect(runDoctor(project).status).toBe(0);
 
-    const target = stagePath(project, "construction", "build-and-test");
+    const target = stagePath(project, phaseFor("build-and-test"), "build-and-test");
     const composed = readFileSync(target, "utf-8");
     const changedRequired = composed.replace(
       "  - artifact: test-pro-test-harness-design\n    required: false",
@@ -486,7 +487,7 @@ describe("t314 doctor detects plugin composition erased by an engine reinstall",
     });
 
     const sidecar = sidecarPath(project, plugin);
-    const target = stagePath(project, "construction", "build-and-test");
+    const target = stagePath(project, phaseFor("build-and-test"), "build-and-test");
     const composed = readFileSync(target, "utf-8");
     const manifest = JSON.parse(readFileSync(sidecar, "utf-8"));
     const fragments = manifest["build-and-test"]?.fragments;

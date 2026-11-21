@@ -34,6 +34,7 @@ import {
   type StageValidationBasis,
   type StageValidityNode,
 } from "../../core/tools/aidlc-validity.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const LIVE_STAGE_GRAPH = join(
@@ -63,7 +64,7 @@ const runtimeUnits: ArtifactRuntimeUnit[] = [
 const graph: StageValidityNode[] = [
   {
     slug: "requirements-analysis",
-    phase: "inception",
+    phase: phaseFor("requirements-analysis"),
     produces: ["requirements"],
     consumes: [],
   },
@@ -76,7 +77,7 @@ const graph: StageValidityNode[] = [
   },
   {
     slug: "code-generation",
-    phase: "construction",
+    phase: phaseFor("code-generation"),
     for_each: "unit-of-work",
     consumes: [
       { artifact: "requirements", required: true },
@@ -86,7 +87,7 @@ const graph: StageValidityNode[] = [
   },
   {
     slug: "build-and-test",
-    phase: "construction",
+    phase: phaseFor("build-and-test"),
     consumes: [{ artifact: "code-summary", required: true }],
     produces: ["build-test-results"],
   },
@@ -163,7 +164,7 @@ function writeUnitArtifact(
 ): string {
   return writeArtifact(
     record,
-    join("construction", unit),
+    join(phaseFor("code-generation"), unit),
     stage,
     artifactFile,
     content,
@@ -173,7 +174,7 @@ function writeUnitArtifact(
 function writeGraphArtifacts(record: string, includeThreatModel = false): void {
   writeArtifact(
     record,
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
     "requirements.md",
     "requirements-v1\n",
@@ -198,7 +199,7 @@ function writeGraphArtifacts(record: string, includeThreatModel = false): void {
   }
   writeArtifact(
     record,
-    "construction",
+    phaseFor("build-and-test"),
     "build-and-test",
     "test-results.md",
     "tests-v1\n",
@@ -447,7 +448,7 @@ describe("v2 stage-graph compatibility", () => {
     if (!code) throw new Error("fixture missing code-generation");
     writeArtifact(
       record,
-      "construction",
+      phaseFor("code-generation"),
       "code-generation",
       "code-summary.md",
       "stage-level-v1\n",
@@ -491,7 +492,7 @@ describe("v2 stage-graph compatibility", () => {
     if (!code) throw new Error("fixture missing code-generation");
     writeArtifact(
       record,
-      "construction",
+      phaseFor("code-generation"),
       "code-generation",
       "code-summary.md",
       "stage-level-v1\n",
@@ -505,7 +506,7 @@ describe("v2 stage-graph compatibility", () => {
     );
     writeArtifact(
       record,
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
       "not a valid unit dag\n",
@@ -525,9 +526,9 @@ describe("v2 stage-graph compatibility", () => {
   test("falls back to existing per-unit stage directories only when no DAG exists", () => {
     const projectDir = tempProject();
     const record = initializeProject(projectDir);
-    writeUnitArtifact(
+    writeArtifact(
       record,
-      "legacy-unit",
+      join("build", "legacy-unit"),
       "legacy-stage",
       "legacy-note.md",
       "legacy\n",
@@ -554,7 +555,7 @@ describe("v2 stage-graph compatibility", () => {
     const record = initializeProject(projectDir);
     writeArtifact(
       record,
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
       "```yaml\nunits:\n  - name: api\n    kind: invalid-kind\n    depends_on: []\n```\n",
@@ -1008,14 +1009,14 @@ describe("read-only inspection", () => {
     if (!code) throw new Error("fixture missing code-generation");
     writeArtifact(
       record,
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "requirements.md",
       "requirements-v1\n",
     );
     const output = writeArtifact(
       record,
-      "construction",
+      phaseFor("code-generation"),
       "code-generation",
       "code-summary.md",
       "stage-level-v1\n",
@@ -1062,7 +1063,7 @@ describe("read-only inspection", () => {
     writeFileSync(
       join(
         record,
-        "inception",
+        phaseFor("requirements-analysis"),
         "requirements-analysis",
         "requirements.md",
       ),
@@ -1146,14 +1147,14 @@ describe("read-only inspection", () => {
   // names a stage worth redoing rather than the first one ever finished.
   test("a project-type change stales only the stages whose work follows the type", () => {
     const typed: StageValidityNode[] = [
-      { slug: "intent-capture", phase: "ideation", produces: [], consumes: [] },
+      { slug: "intent-capture", phase: phaseFor("intent-capture"), produces: [], consumes: [] },
       {
         slug: "requirements-analysis",
-        phase: "inception",
+        phase: phaseFor("requirements-analysis"),
         produces: [],
         consumes: [{ artifact: "architecture", required: true, conditional_on: "brownfield" }],
       },
-      { slug: "code-generation", phase: "construction", produces: [], consumes: [] },
+      { slug: "code-generation", phase: phaseFor("code-generation"), produces: [], consumes: [] },
     ];
     const asNew = basis({ inputs: [], outputs: [] });
     const audit = [
@@ -1191,7 +1192,7 @@ describe("a moved or copied project folder", () => {
     },
     {
       slug: "requirements-analysis",
-      phase: "inception",
+      phase: phaseFor("requirements-analysis"),
       produces: ["requirements"],
       consumes: [{ artifact: "architecture", required: true }],
     },
@@ -1217,7 +1218,7 @@ ${codekbGraph.map((stage) => `- [x] ${stage.slug} ${SEP} EXECUTE`).join("\n")}
     const store = join(projectDir, "aidlc", "spaces", "default", "codekb", "shop");
     mkdirSync(store, { recursive: true });
     writeFileSync(join(store, "architecture.md"), "architecture-v1\n");
-    writeArtifact(record, "inception", "requirements-analysis", "requirements.md", "requirements-v1\n");
+    writeArtifact(record, phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md", "requirements-v1\n");
     return { parent, audit: completionAudit(projectDir, state, codekbGraph) };
   }
 
@@ -1259,16 +1260,16 @@ ${codekbGraph.map((stage) => `- [x] ${stage.slug} ${SEP} EXECUTE`).join("\n")}
 // keeps today's issue.
 describe("a finished stage whose own definition changed", () => {
   const chain: StageValidityNode[] = [
-    { slug: "requirements-analysis", phase: "inception", produces: ["requirements"], consumes: [] },
+    { slug: "requirements-analysis", phase: phaseFor("requirements-analysis"), produces: ["requirements"], consumes: [] },
     {
       slug: "code-generation",
-      phase: "construction",
+      phase: phaseFor("code-generation"),
       produces: ["code-summary"],
       consumes: [{ artifact: "requirements", required: true }],
     },
     {
       slug: "build-and-test",
-      phase: "construction",
+      phase: phaseFor("build-and-test"),
       produces: ["build-test-results"],
       consumes: [{ artifact: "code-summary", required: true }],
     },

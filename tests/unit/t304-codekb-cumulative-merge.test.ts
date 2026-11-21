@@ -8,6 +8,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -226,7 +227,7 @@ const STAGE = readFileSync(
     "core",
     "aidlc-common",
     "stages",
-    "inception",
+    phaseFor("reverse-engineering"),
     "reverse-engineering.md",
   ),
   "utf-8",

@@ -61,7 +61,7 @@ function stageFrontmatter(slug: string): string {
   return [
     "---",
     `slug: ${slug}`,
-    "phase: construction",
+    "phase: build",
     "execution: ALWAYS",
     "condition: always",
     "lead_agent: aidlc-quality-agent",
@@ -82,15 +82,15 @@ function stageFrontmatter(slug: string): string {
 function compileStageFixture(filenameStem: string, slug: string): void {
   const root = tempDir("aidlc-t223-compile-");
   const stagesDir = join(root, "stages");
-  const construction = join(stagesDir, "construction");
+  const build = join(stagesDir, "build");
   const rulesDir = join(root, "rules");
   const sensorsDir = join(root, "sensors");
   const graphPath = join(root, "stage-graph.json");
   const gridPath = join(root, "scope-grid.json");
-  mkdirSync(construction, { recursive: true });
+  mkdirSync(build, { recursive: true });
   mkdirSync(rulesDir, { recursive: true });
   mkdirSync(sensorsDir, { recursive: true });
-  writeFileSync(join(construction, `${filenameStem}.md`), stageFrontmatter(slug), "utf-8");
+  writeFileSync(join(build, `${filenameStem}.md`), stageFrontmatter(slug), "utf-8");
   writeFileSync(graphPath, "[]\n", "utf-8");
   writeFileSync(gridPath, "{}\n", "utf-8");
 
@@ -278,7 +278,7 @@ describe("t223 naming enforcement", () => {
     harnessJson.plugins = ["aidlc"];
     writeFileSync(harnessJsonPath, `${JSON.stringify(harnessJson, null, 2)}\n`, "utf-8");
 
-    const brokenPath = join(project, ".claude", "aidlc-common", "stages", "construction", "bad-frontmatter.md");
+    const brokenPath = join(project, ".claude", "aidlc-common", "stages", "build", "bad-frontmatter.md");
     writeFileSync(brokenPath, "not frontmatter\n", "utf-8");
 
     const res = spawnSync(BUN, [join(project, ".claude", "tools", "aidlc-utility.ts"), "doctor"], {
@@ -359,12 +359,12 @@ describe("t223 naming enforcement", () => {
       const dir = agentsWith({ "foo-agent.md": HOST_AGENT }, "shipped");
       const compileWith = (lead: string): void => {
         const root = tempDir("aidlc-t223-host-compile-");
-        const construction = join(root, "stages", "construction");
-        mkdirSync(construction, { recursive: true });
+        const build = join(root, "stages", "build");
+        mkdirSync(build, { recursive: true });
         mkdirSync(join(root, "rules"), { recursive: true });
         mkdirSync(join(root, "sensors"), { recursive: true });
         writeFileSync(
-          join(construction, "probe-stage.md"),
+          join(build, "probe-stage.md"),
           stageFrontmatter("probe-stage").replace("lead_agent: aidlc-quality-agent", `lead_agent: ${lead}`),
           "utf-8",
         );

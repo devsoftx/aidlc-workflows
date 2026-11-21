@@ -54,6 +54,7 @@ import {
   seedStateFile,
   toPortablePath,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -380,7 +381,7 @@ describe("t27 aidlc-utility status", () => {
 
   test("6: status shows IDEATION phase", () => {
     const r = util(["status"], stateProj());
-    expect(r.stdout).toContain("IDEATION");
+    expect(r.stdout).toContain(phaseFor("feasibility").toUpperCase());
   });
 
   test("7: status shows Feasibility stage", () => {
@@ -410,7 +411,7 @@ describe("t27 aidlc-utility status", () => {
     const current = state(["get", "Current Stage"], p).stdout.trim();
     const reviewer = "aidlc-product-lead-agent";
     const iteration = 1;
-    const dir = join(recordDirOf(p), "inception", current);
+    const dir = join(recordDirOf(p), phaseFor(current), current);
     const artifact = join(dir, "requirements.md");
     mkdirSync(dir, { recursive: true });
     if (!existsSync(artifact)) writeFileSync(artifact, "# Requirements\n");
@@ -725,7 +726,7 @@ describe("t27 aidlc-utility init", () => {
     const p = emptyDir();
     util(["intent-create", "--scope", "feature"], p);
     const state = readFileSync(statePath(p), "utf-8");
-    expect(state).toContain("### CONSTRUCTION PHASE\n- [ ] functional-design");
+    expect(state).toContain(`### ${phaseFor("practices-discovery").toUpperCase()} PHASE\n- [ ] practices-discovery`);
     expect(state).not.toMatch(/^Per unit:/m);
   });
 
@@ -794,7 +795,7 @@ describe("t27 aidlc-utility scope-change", () => {
   test("17b: a record made with a per-unit line keeps it through a scope change", () => {
     const p = pocStateAuditProj();
     util(["scope-change", "--scope", "mvp"], p);
-    expect(readFileSync(statePath(p), "utf-8")).toContain("### CONSTRUCTION PHASE\nPer unit: todo-core\n- [ ] functional-design");
+    expect(readFileSync(statePath(p), "utf-8")).toContain(`### ${phaseFor("practices-discovery").toUpperCase()} PHASE\nPer unit: todo-core\n- [ ] practices-discovery`);
   });
 
   test("18: scope-change poc->mvp updates Depth to Standard for mvp", () => {
@@ -987,7 +988,7 @@ describe("t27 aidlc-utility set-status", () => {
   test("25: set-status updates Lifecycle Phase to IDEATION", () => {
     const p = stateProj();
     util(["set-status", "--stage", "feasibility"], p);
-    expect(stateField(p, "Lifecycle Phase")).toBe("IDEATION");
+    expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("feasibility").toUpperCase());
   });
 
   test("26: set-status updates Current Stage to feasibility", () => {
@@ -1027,7 +1028,7 @@ describe("t27 aidlc-utility set-status", () => {
   test("31: set-status cross-phase sets CONSTRUCTION for code-generation", () => {
     const p = stateProj();
     util(["set-status", "--stage", "code-generation"], p);
-    expect(stateField(p, "Lifecycle Phase")).toBe("CONSTRUCTION");
+    expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("code-generation").toUpperCase());
   });
 
   test("32: set-status explicit --agent overrides graph default", () => {

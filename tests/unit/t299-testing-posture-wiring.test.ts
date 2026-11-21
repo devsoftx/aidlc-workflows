@@ -41,6 +41,7 @@ import {
   stateDigest,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const STAGE_REL = "core/aidlc-common/stages/build/code-generation.md";
 const PRACTICES_REL =
@@ -862,7 +863,7 @@ describe("t299 (4) structured contract and approval fingerprint", () => {
       );
       const stageDir = join(
         recordDir,
-        "construction",
+        phaseFor("code-generation"),
         "auth",
         "code-generation",
       );

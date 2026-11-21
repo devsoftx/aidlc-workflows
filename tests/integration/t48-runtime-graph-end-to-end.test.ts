@@ -56,6 +56,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -202,7 +203,7 @@ beforeAll(() => {
   ];
   const reviewArtifact = join(
     recordDirOf(proj),
-    "inception",
+    phaseFor(firstStage),
     firstStage,
     "requirements.md",
   );

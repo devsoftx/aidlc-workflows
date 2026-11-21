@@ -47,6 +47,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const SKILL_MD = readFileSync(
   join(AIDLC_SRC, "skills", "aidlc", "SKILL.md"),
@@ -82,7 +83,7 @@ const CODE_GEN = readFileSync(
     AIDLC_SRC,
     "aidlc-common",
     "stages",
-    "construction",
+    phaseFor("code-generation"),
     "code-generation.md",
   ),
   "utf-8",

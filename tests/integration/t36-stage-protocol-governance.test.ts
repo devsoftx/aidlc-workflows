@@ -111,10 +111,12 @@ describe("t36 — §13 carries the checks, the phase-ending stages run them", ()
   });
 
   test("each phase-ending stage files the check under the name verification.md gives it [.sh 9 + 10 + 11]", () => {
+    // ci-pipeline compiles to the deploy phase but files phase-check-build
+    // (the Build to Operate boundary), so the check literal is not phaseFor(slug).
     const owners: Array<[string, string]> = [
-      ["approval-handoff", "ideation"],
-      ["delivery-planning", "inception"],
-      ["ci-pipeline", "construction"],
+      ["approval-handoff", "discover"],
+      ["delivery-planning", "design"],
+      ["ci-pipeline", "build"],
     ];
     for (const [slug, phase] of owners) {
       const dir = resolveBoundaryStage(slug);

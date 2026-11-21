@@ -42,6 +42,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { toPortablePath } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   worktreePath,
   auditFilePath,
@@ -149,7 +150,7 @@ function memoryEmptyCount(proj: string): number {
 
 /**
  * Per-stage memory.md lives under the bare space record root. intent-capture
- * lives in the ideation phase (stage-graph.json).
+ * lives in the discover phase (stage-graph.json).
  */
 function writeMemory(proj: string, phase: string, slug: string, body: string): void {
   const dir = join(recordRoot(proj), phase, slug);
@@ -218,7 +219,7 @@ const AUDIT_ONE_APPROVED = `## Workflow Start
 describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-compile.sh, plan 29)", () => {
   test("1: one approved stage -> outcome approved, memory_entries 1", () => {
     const proj = makeProject(AUDIT_ONE_APPROVED, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "## Interpretations\n- entry one\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "## Interpretations\n- entry one\n");
     const r = runCompile(proj);
     expect(r.rc).toBe(0);
     const g = readGraph(proj);
@@ -300,7 +301,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
 
   test("5: empty memory.md (approved) -> memory_entries 0, one MEMORY_EMPTY", () => {
     const proj = makeProject(AUDIT_ONE_APPROVED, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "\n");
     runCompile(proj);
     const g = readGraph(proj);
     expect(g.stages[0].memory_entries).toBe(0);
@@ -309,7 +310,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
 
   test("7: two compiles -> byte-equivalent runtime-graph.json", () => {
     const proj = makeProject(AUDIT_ONE_APPROVED, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "## Interpretations\n- entry\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "## Interpretations\n- entry\n");
     runCompile(proj);
     const hash1 = sha1(proj);
     runCompile(proj);
@@ -326,7 +327,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
 
   test("9: approved + populated memory.md -> memory_entries 2, no MEMORY_EMPTY", () => {
     const proj = makeProject(AUDIT_ONE_APPROVED, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "## Interpretations\n- one entry\n- another entry\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "## Interpretations\n- one entry\n- another entry\n");
     runCompile(proj);
     const g = readGraph(proj);
     expect(g.stages[0].memory_entries).toBe(2);
@@ -456,7 +457,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
 
   test("12: re-emit suppression -> first compile emits, 2nd + 3rd suppress (count stays 1)", () => {
     const proj = makeProject(AUDIT_PAST_APPROVED, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "\n");
     runCompile(proj);
     expect(memoryEmptyCount(proj)).toBe(1);
     runCompile(proj);
@@ -472,7 +473,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
   // #3 sees prior @ T2 >= new completed_at -> suppressed.
   test("13: re-approve still-empty -> fresh MEMORY_EMPTY (total 2), then suppressed", async () => {
     const proj = makeProject(AUDIT_PAST_APPROVED, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "\n");
     runCompile(proj);
     // Sleep 2s so wallclock advances past compile-#1's MEMORY_EMPTY Timestamp.
     await new Promise((r) => setTimeout(r, 2000));
@@ -565,7 +566,7 @@ describe("t90 aidlc-runtime compile — CLI contract (migrated from t90-runtime-
   // workflow_id.
   test("15: single-stage synthetic pair is absent from the main graph; real slug present", () => {
     const proj = makeProject(AUDIT_ONE_APPROVED + SINGLE_STAGE_PAIR, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", "## Interpretations\n- entry one\n");
+    writeMemory(proj, phaseFor("intent-capture"), "intent-capture", "## Interpretations\n- entry one\n");
     const r = runCompile(proj);
     expect(r.rc).toBe(0);
     const g = readGraph(proj);

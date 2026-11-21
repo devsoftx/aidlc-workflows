@@ -266,7 +266,7 @@ describe("t272 §3 retired framework-voice phrases stay out of user-visible pros
 describe("t272 §4 Construction keeps its own voice rules", () => {
   test("the protocol's voice contract covers the per-unit loop's bookkeeping", () => {
     const flat = read(PROTOCOL_REL).replace(/\s+/g, " ");
-    expect(flat).toContain("In Construction, the loop's bookkeeping is internal.");
+    expect(flat).toContain("In the unit loop, the loop's bookkeeping is internal.");
     // The substance, not just the heading: the rule's whole force is that a
     // PLAIN retelling is not an improvement (that is the move the live run
     // showed the model making), and that a re-entry's own narration value is

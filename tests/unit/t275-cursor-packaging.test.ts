@@ -142,10 +142,13 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
     const rules = readdirSync(join(ENGINE, "rules")).sort();
     expect(rules).toEqual([
       "aidlc-onboarding.mdc",
-      "aidlc-phase-construction.mdc",
-      "aidlc-phase-ideation.mdc",
-      "aidlc-phase-inception.mdc",
-      "aidlc-phase-operation.mdc",
+      "aidlc-phase-build.mdc",
+      "aidlc-phase-deploy.mdc",
+      "aidlc-phase-design.mdc",
+      "aidlc-phase-discover.mdc",
+      "aidlc-phase-operate.mdc",
+      "aidlc-phase-secure.mdc",
+      "aidlc-phase-test.mdc",
       "aidlc.mdc",
     ]);
     expect(readFileSync(join(ENGINE, "rules", "aidlc-onboarding.mdc"), "utf-8"))
@@ -158,7 +161,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
     }
     expect(standing).not.toContain("memory/phases/");
 
-    for (const phase of ["ideation", "inception", "construction", "operation"]) {
+    for (const phase of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
       const rule = readFileSync(
         join(ENGINE, "rules", `aidlc-phase-${phase}.mdc`),
         "utf-8",
@@ -448,7 +451,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
       expect(r.stdout).toContain(
         "ok    rules/aidlc.mdc present (standing method rule (alwaysApply read instruction))",
       );
-      for (const phase of ["Ideation", "Inception", "Construction", "Operation"]) {
+      for (const phase of ["Discover", "Design", "Build", "Test", "Secure", "Deploy", "Operate"]) {
         expect(r.stdout).toContain(
           `ok    rules/aidlc-phase-${phase.toLowerCase()}.mdc present (${phase} phase rule (agent-decided read instruction))`,
         );
@@ -778,7 +781,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
       expect(
         readFileSync(join(project, ".cursor", "rules", "aidlc-onboarding.mdc"), "utf-8"),
       ).toContain("aidlc/spaces/<space>/memory/");
-      for (const phase of ["ideation", "inception", "construction", "operation"]) {
+      for (const phase of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
         const installedRule = readFileSync(
           join(project, ".cursor", "rules", `aidlc-phase-${phase}.mdc`),
           "utf-8",
@@ -974,7 +977,7 @@ describe("t275 dist/cursor packaging parity + shell shape", () => {
         project,
         ".cursor",
         "rules",
-        "aidlc-phase-construction.mdc",
+        "aidlc-phase-design.mdc",
       );
       const agent = join(
         project,

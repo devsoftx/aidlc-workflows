@@ -26,6 +26,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -142,7 +143,7 @@ function next(args: string[] = []): Directive {
 function writeCodeGenerationArtifacts(unit: string): void {
   const dir = join(
     seededRecordDir(project),
-    "construction",
+    phaseFor("code-generation"),
     unit,
     "code-generation",
   );
@@ -186,7 +187,7 @@ function writeCodeGenerationArtifacts(unit: string): void {
 function recordReview(unit: string): void {
   const artifact = join(
     seededRecordDir(project),
-    "construction",
+    phaseFor("code-generation"),
     unit,
     "code-generation",
     "code-generation-plan.md",

@@ -110,8 +110,8 @@ const ROWS = extractGraphRows();
 describe("t38 Lead Agent cross-check (migrated from t38-stage-agent-cross-check.sh, plan 32)", () => {
   // An explicit corpus guard so a dropped/added Stage Graph row fails loudly
   // (test.each over an empty/short table would otherwise pass vacuously).
-  test("the Stage Graph table has the pinned 33 rows", () => {
-    expect(ROWS.length).toBe(33);
+  test("the Stage Graph table has the pinned 36 rows", () => {
+    expect(ROWS.length).toBe(36);
   });
 
   // --- The per-row Lead Agent assertions --------------------------------------

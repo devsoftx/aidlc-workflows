@@ -40,6 +40,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   aidlcRootIntegrations,
   codekbFingerprintExcludes,
@@ -591,7 +592,7 @@ describe("t248 codekb-scope-diff verb — compare mode", () => {
     seedStore(proj, timestampBody({ fingerprint: "abc" }));
     // A live record, as during Reverse Engineering: its state file selects it.
     writeFileSync(seededStateFile(proj), "# AI-DLC State\n\n**Current Stage**: reverse-engineering\n");
-    const reDir = join(seededRecordDir(proj), "inception", "reverse-engineering");
+    const reDir = join(seededRecordDir(proj), phaseFor("reverse-engineering"), "reverse-engineering");
     mkdirSync(reDir, { recursive: true });
     const draft = join(reDir, `scope-draft-${basename(proj)}.md`);
     writeFileSync(draft, timestampBody({ fingerprint: "abc" }));
@@ -613,7 +614,7 @@ describe("t248 codekb-scope-diff verb — compare mode", () => {
   test("a compare removes only the compared repo's draft, whatever the store says", () => {
     const proj = freshProject();
     writeFileSync(seededStateFile(proj), "# AI-DLC State\n\n**Current Stage**: reverse-engineering\n");
-    const reDir = join(seededRecordDir(proj), "inception", "reverse-engineering");
+    const reDir = join(seededRecordDir(proj), phaseFor("reverse-engineering"), "reverse-engineering");
     mkdirSync(reDir, { recursive: true });
     const draftFor = (repo: string) => {
       const path = join(reDir, `scope-draft-${repo}.md`);

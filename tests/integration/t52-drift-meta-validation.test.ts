@@ -90,6 +90,7 @@ function makeSandbox(): string {
     join("tests", "harness", "fixtures.ts"),
     join("tests", "harness", "custom-harness.ts"),
     join("tests", "harness", "test-budget.ts"),
+    join("tests", "harness", "stage-phase.ts"),
   ]) {
     cpSync(join(REPO_ROOT, file), join(sb, file));
   }

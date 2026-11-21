@@ -418,7 +418,7 @@ describe("t233 a stage's cited optional inputs checked where they exist", () => 
 	type GraphNode = { slug: string; cites?: string[]; consumes?: Array<Record<string, unknown>> } & Record<string, unknown>;
 
 	const stage = (cited: string, top = ""): string =>
-		`---\nslug: syn-cites\nphase: inception\nexecution: ALWAYS\ncondition: x\nlead_agent: aidlc-product-agent\nsupport_agents: []\nmode: inline\nproduces:\n  - requirements\nconsumes:\n  - artifact: intent-statement\n    required: false\n${cited}${top}requires_stage: []\ninputs: a\noutputs: b\n---\n`;
+		`---\nslug: syn-cites\nphase: design\nexecution: ALWAYS\ncondition: x\nlead_agent: aidlc-product-agent\nsupport_agents: []\nmode: inline\nproduces:\n  - requirements\nconsumes:\n  - artifact: intent-statement\n    required: false\n${cited}${top}requires_stage: []\ninputs: a\noutputs: b\n---\n`;
 	const consumes = (raw: string): Array<Record<string, unknown>> =>
 		(parseStageFrontmatter(raw) as { consumes: Array<Record<string, unknown>> }).consumes;
 

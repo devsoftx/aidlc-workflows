@@ -3,6 +3,9 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
+// test-pro-integration is not in the compiled stage graph, so phaseFor throws for
+// it; the tests below use the phase its frontmatter declares, the literal "test".
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -1013,7 +1016,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     ))).toBe(false);
     expect(existsSync(join(
@@ -1039,13 +1042,13 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     withClaudeFixture(root);
     await syncPlugins(project, [], ".claude");
 
-    const source = join(root, "stages", "construction", "test-pro-integration.md");
+    const source = join(root, "stages", "test", "test-pro-integration.md");
     const target = join(
       project,
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     );
     writeFileSync(source, `${readFileSync(source, "utf-8")}\nversion upgrade marker\n`);
@@ -1108,7 +1111,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     ]);
 
     // The plugin's next version lands on the CRLF checkout like on any other.
-    const source = join(root, "stages", "construction", "test-pro-integration.md");
+    const source = join(root, "stages", "test", "test-pro-integration.md");
     writeFileSync(source, `${readFileSync(source, "utf-8")}\nCRLF-UPGRADE marker\n`);
     writeFileSync(
       join(root, ".claude-plugin", "plugin.json"),
@@ -1120,7 +1123,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
         .replaceAll(`"version": "${TEST_PRO_VERSION}"`, '"version": "0.2.0"'),
     );
     await syncPlugins(project, [], ".claude");
-    const target = join(project, ".claude", "aidlc-common", "stages", "construction", "test-pro-integration.md");
+    const target = join(project, ".claude", "aidlc-common", "stages", "test", "test-pro-integration.md");
     expect(readFileSync(target, "utf-8")).toContain("CRLF-UPGRADE marker");
     expect(collectPluginStatus(project, ".claude").statuses).toEqual([
       expect.objectContaining({ key: "test-pro", installedVersion: "0.2.0", state: "current" }),
@@ -1168,13 +1171,13 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     withClaudeFixture(root);
     await syncPlugins(project, [], ".claude");
 
-    const source = join(root, "stages", "construction", "test-pro-integration.md");
+    const source = join(root, "stages", "test", "test-pro-integration.md");
     const target = join(
       project,
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     );
     writeFileSync(source, `${readFileSync(source, "utf-8")}\nsame-version marker\n`);
@@ -1195,7 +1198,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     );
     const shipped = readFileSync(stage, "utf-8");
@@ -1225,7 +1228,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     );
     await syncPlugins(project, [], ".claude");
@@ -1335,7 +1338,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     expect(printed).toContain(linkedLine(join(".claude", "tools", "data")));
     expect(surfaceSnapshot(outside)).toEqual(outsideBefore);
     expect(existsSync(join(
-      project, ".claude", "aidlc-common", "stages", "construction", "test-pro-integration.md",
+      project, ".claude", "aidlc-common", "stages", "test", "test-pro-integration.md",
     ))).toBe(false);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -1348,7 +1351,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     const outsideBefore = surfaceSnapshot(outside);
     expect(Object.keys(outsideBefore)).toContain("plugin-contrib-test-pro.json");
     writeFileSync(process.env.AIDLC_CLAUDE_PLUGIN_REGISTRY as string, "{\"version\":2,\"plugins\":{}}\n");
-    const stage = join(project, ".claude", "aidlc-common", "stages", "construction", "test-pro-integration.md");
+    const stage = join(project, ".claude", "aidlc-common", "stages", "test", "test-pro-integration.md");
     expect(existsSync(stage)).toBe(true);
     const { printed, code } = await pluginOutput(["sync", "--prune-missing", "--yes", "--project-dir", project]);
     expect(code).toBe(1);
@@ -1505,7 +1508,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      phaseFor("build-and-test"),
       "build-and-test.md",
     );
     // Precondition: compose merged test-pro's consumed artifacts into the stage.
@@ -1531,7 +1534,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
   function testProAddingItsScope(): string {
     const root = temp("aidlc-plugin-adds-scopes-");
     cpSync(TEST_PRO, root, { recursive: true });
-    const contribution = join(root, "contributions", "construction", "build-and-test.md");
+    const contribution = join(root, "contributions", phaseFor("build-and-test"), "build-and-test.md");
     const source = readFileSync(contribution, "utf-8");
     expect(source).toContain("adds:\n");
     writeFileSync(contribution, source.replace("adds:\n", SCOPE_ADD));
@@ -1566,7 +1569,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     });
     const installed = config("--harness", "claude");
     expect(installed.status, installed.stdout + installed.stderr).toBe(0);
-    const stage = join(project, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const stage = join(project, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const shipped = readFileSync(stage, "utf-8");
 
     withClaudeFixture(testProAddingItsScope());
@@ -1588,14 +1591,14 @@ describe("t242 transactional sync and ownership-safe prune", () => {
 
   test("a plugin update that stops adding its scope takes it back out of the core stage", async () => {
     const project = installedProject();
-    const stage = join(project, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const stage = join(project, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const shippedScopes = stageScopes(stage);
     const root = testProAddingItsScope();
     withClaudeFixture(root);
     await syncPlugins(project, [], ".claude");
     expect(stageScopes(stage)).toEqual([...shippedScopes, "test-pro-validation"]);
 
-    const contribution = join(root, "contributions", "construction", "build-and-test.md");
+    const contribution = join(root, "contributions", phaseFor("build-and-test"), "build-and-test.md");
     writeFileSync(contribution, readFileSync(contribution, "utf-8").replace(SCOPE_ADD, "adds:\n"));
     writeFileSync(
       join(root, ".claude-plugin", "plugin.json"),
@@ -1623,7 +1626,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
     const project = installedProject();
     withClaudeFixture(TEST_PRO);
     await syncPlugins(project, [], ".claude");
-    const stage = join(project, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const stage = join(project, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const composed = readFileSync(stage, "utf-8");
     expect(composed).toContain("  - nfr-design\n");
     writeFileSync(stage, composed.replace("  - nfr-design\n", "  - \"nfr-design\"\n  - nfr-design\n"));
@@ -1653,7 +1656,7 @@ describe("t242 transactional sync and ownership-safe prune", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "construction",
+      "test",
       "test-pro-integration.md",
     );
     writeFileSync(stage, `${readFileSync(stage, "utf-8")}\nlocal edit\n`);

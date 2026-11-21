@@ -31,6 +31,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -151,7 +152,7 @@ Cover the unit's requirements with isolated fixtures and stub external services.
 }
 
 function coverUnit(proj: string, unit: string, names: readonly string[]): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of names) {
     writeFileSync(join(dir, artifactFilename(name)), realisticArtifact(name, unit));
@@ -324,7 +325,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
   test("Express stage-level test instructions execute and traceability joins the final gate", () => {
     const proj = createTestProject();
     tempDirs.push(proj);
-    const codeDir = join(seededRecordDir(proj), "construction", "code-generation");
+    const codeDir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
     const sourceDir = join(proj, "src");
     mkdirSync(codeDir, { recursive: true });
     mkdirSync(sourceDir, { recursive: true });
@@ -394,7 +395,7 @@ ${quotedExecutable} -e 'await Bun.write("${marker}", "passed")'
     // The final gate's check reads the stage-level table and finds FR1 built.
     mkdirSync(join(seededStateFile(proj), ".."), { recursive: true });
     writeFileSync(seededStateFile(proj), "# State\n");
-    const requirementsDir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+    const requirementsDir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(requirementsDir, { recursive: true });
     writeFileSync(join(requirementsDir, "requirements.md"), "# Requirements\n\n- FR1 Express flow\n");
     const finalGate = spawnSync("bun", [join(AIDLC_SRC, "tools", "aidlc-sensor-traceability.ts"), "--stage", "build-and-test"], {

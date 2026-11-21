@@ -33,6 +33,7 @@ import { join } from "node:path";
 import { keepOwnHarnessBindings } from "../../scripts/harness-bindings.ts";
 import { AIDLC_SRC, REPO_ROOT } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const MAIN_PROTOCOL = readFileSync(
   join(AIDLC_SRC, "aidlc-common", "protocols", "stage-protocol.md"),
@@ -66,11 +67,11 @@ const RECOVERY = readFileSync(
   "utf-8",
 );
 const STAGE = readFileSync(
-  join(AIDLC_SRC, "aidlc-common", "stages", "construction", "build-and-test.md"),
+  join(AIDLC_SRC, "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"),
   "utf-8",
 );
 const CODE_GENERATION = readFileSync(
-  join(AIDLC_SRC, "aidlc-common", "stages", "construction", "code-generation.md"),
+  join(AIDLC_SRC, "aidlc-common", "stages", phaseFor("code-generation"), "code-generation.md"),
   "utf-8",
 );
 

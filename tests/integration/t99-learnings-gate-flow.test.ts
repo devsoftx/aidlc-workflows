@@ -51,6 +51,7 @@
 //     parseSensorManifest - extracts {id, matches, ...} from manifest YAML.
 
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -100,7 +101,7 @@ function mkproj(): string {
   const pd = createTestProject();
   projects.push(pd);
   cpSync(AIDLC_SRC, join(pd, ".claude"), { recursive: true });
-  mkdirSync(join(seededRecordDir(pd), "inception", "user-stories"), { recursive: true });
+  mkdirSync(join(seededRecordDir(pd), phaseFor("user-stories"), "user-stories"), { recursive: true });
   writeFileSync(
     seededStateFile(pd),
     "# AI-DLC State Tracking\n- **Current Stage**: user-stories\n- **Scope**: feature\n",
@@ -123,7 +124,7 @@ function mkproj(): string {
 }
 
 function seedMemoryMixed(pd: string): void {
-  cpSync(MEMORY_MIXED, join(seededRecordDir(pd), "inception", "user-stories", "memory.md"));
+  cpSync(MEMORY_MIXED, join(seededRecordDir(pd), phaseFor("user-stories"), "user-stories", "memory.md"));
 }
 
 interface CliResult {
@@ -198,7 +199,7 @@ describe("t99 §13 learning-gate end-to-end (migrated from t99-learnings-gate-fl
     expect(j.parked_open_questions.length).toBe(1);
     // The fixture memory_path carries the per-intent record dir, so the phase
     // must be the real one, not a prefix segment like "spaces".
-    expect(j.phase).toBe("inception");
+    expect(j.phase).toBe("design");
   }, TIMEOUT);
 
   test("Case 1: project pick lands as a practice in project.md [.sh 2]", () => {

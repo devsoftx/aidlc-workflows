@@ -41,6 +41,7 @@ import {
   writeBaselineSourceSnapshot,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_SRC, FIXTURES_DIR } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -126,7 +127,7 @@ function runtimeFixture(): { project: string; record: string } {
     .replace("- **Current Stage**: feasibility", "- **Current Stage**: code-generation\n- **Construction Iteration**: stage-major")
     .replace("- [ ] code-generation — EXECUTE", "- [?] code-generation — EXECUTE");
   writeFileSync(join(record, "aidlc-state.md"), state, "utf-8");
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(join(dag, "unit-of-work-dependency.md"), "```yaml\nunits:\n  - name: alpha\n    depends_on: []\n  - name: beta\n    depends_on: []\n```\n");
   const listing = workspaceSourceListing(project);
@@ -147,7 +148,7 @@ function runtimeFixture(): { project: string; record: string } {
 
 // `bom`: written the way Windows PowerShell 5.1 writes UTF-8, with a byte order mark.
 function writeManifest(record: string, unit: string, writes: Array<{ path: string; repo?: string }>, bom = false): void {
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md", "traceability.json"])
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), name.endsWith(".json") ? "{}\n" : `# ${name}\n`);
@@ -169,7 +170,7 @@ function review(project: string, record: string, unit: string, writes: Array<{ p
   // section matching verdict/reviewer/iteration. Strip any prior section
   // before the request (its bytes belong to the request-time snapshot), then
   // append the canonical appendix before submitting the verdict.
-  const artifact = join(record, "construction", unit, "code-generation", "code-generation-plan.md");
+  const artifact = join(record, phaseFor("code-generation"), unit, "code-generation", "code-generation-plan.md");
   const current = readFileSync(artifact, "utf-8");
   const reviewStart = current.search(/^## Review[ \t]*$/m);
   if (reviewStart !== -1) writeFileSync(artifact, `${current.slice(0, reviewStart).replace(/\s+$/, "")}\n`, "utf-8");
@@ -294,7 +295,7 @@ describe("t312 aidlc-attest resolve/anchor", () => {
       fullyLanded: true,
     });
     expect(unit.fingerprint).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(unit.evidence).toMatch(/^aidlc\/spaces\/default\/intents\/fixture-intent\/construction\/alpha\/code-generation\/reviewed-source-[0-9a-f]{12}\.tsv$/);
+    expect(unit.evidence).toMatch(new RegExp(`^aidlc/spaces/default/intents/fixture-intent/${phaseFor("code-generation")}/alpha/code-generation/reviewed-source-[0-9a-f]{12}\\.tsv$`));
 
     // This commit carries its own receipts, so the report says so rather than
     // implying more than it can: reproducible, self-attested (see the
@@ -408,7 +409,7 @@ describe("t312 aidlc-attest resolve/anchor", () => {
 
     // Nor can editing the checkout's committed evidence: the bytes that count
     // are the blob in c1's tree, so tampering the working copy is inert.
-    const evidenceDir = join(record, "construction", "alpha", "code-generation");
+    const evidenceDir = join(record, phaseFor("code-generation"), "alpha", "code-generation");
     const evidenceName = readdirSync(evidenceDir).find((name) => /^reviewed-source-[0-9a-f]{12}\.tsv$/.test(name)) as string;
     writeFileSync(join(evidenceDir, evidenceName), "tampered\n");
     expect(attest(["resolve", c1], project).stdout).toBe(beforeExtraReview);
@@ -558,7 +559,7 @@ describe("t312 aidlc-attest resolve/anchor", () => {
     // same unit with a later timestamp, so it wins ownership, and its fingerprint
     // points at the FIRST review's evidence — a signed file it has no right to.
     // The reverted source then matches that older evidence exactly.
-    const evidenceDir = join(record, "construction", "alpha", "code-generation");
+    const evidenceDir = join(record, phaseFor("code-generation"), "alpha", "code-generation");
     const evidenceNames = readdirSync(evidenceDir)
       .filter((name) => /^reviewed-source-[0-9a-f]{12}\.tsv$/.test(name))
       .sort();
@@ -727,7 +728,7 @@ describe("t312 aidlc-attest resolve/anchor", () => {
     review(project, record, "alpha", [{ path: "app.ts" }]);
     const c1 = commitAll(project, "reviewed change plus its record");
 
-    const evidenceDir = join(record, "construction", "alpha", "code-generation");
+    const evidenceDir = join(record, phaseFor("code-generation"), "alpha", "code-generation");
     const evidenceName = readdirSync(evidenceDir).find((name) => /^reviewed-source-[0-9a-f]{12}\.tsv$/.test(name));
     expect(evidenceName).toBeDefined();
     if (evidenceName === undefined) return;

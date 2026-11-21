@@ -25,6 +25,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseStageFrontmatter } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const STAGES_DIR = join(
@@ -204,25 +205,26 @@ describe("t44 stage-instruction completeness — parseStageFrontmatter (migrated
   }
 
   // ============================================================
-  // Tests 31-34: construction stages mention <record>/construction/
+  // Tests 31-34: construction stages mention their own phase folder
   // ============================================================
 
-  // Each per-unit construction stage writes under the per-unit record dir
-  // `<record>/construction/{unit-name}/<stage>/`, so its body cites
-  // `<record>/construction`.
+  // A stage's artefacts sit under `<record>/<phase>/`, with the phase read from
+  // the compiled stage graph (phaseFor). The titles below keep the old
+  // `<record>/construction/` wording; the check is the stage's own phase.
+  const phaseFolderRe = (slug: string): RegExp => new RegExp(`<record>/${phaseFor(slug)}`, "i");
   for (const slug of ["functional-design", "nfr-requirements", "nfr-design", "code-generation"]) {
     test(`construction dir: ${slug} mentions <record>/construction/`, () => {
-      expect(fileMatches(findStageFile(slug), /<record>\/construction/i)).toBe(true);
+      expect(fileMatches(findStageFile(slug), phaseFolderRe(slug))).toBe(true);
     });
   }
 
   // ============================================================
-  // Tests 35-37: operation stages mention <record>/operation/
+  // Tests 35-37: operation stages mention their own phase folder
   // ============================================================
 
   for (const slug of ["deployment-pipeline", "observability-setup", "incident-response"]) {
     test(`operation dir: ${slug} mentions <record>/operation/`, () => {
-      expect(fileMatches(findStageFile(slug), /<record>\/operation/i)).toBe(true);
+      expect(fileMatches(findStageFile(slug), phaseFolderRe(slug))).toBe(true);
     });
   }
 

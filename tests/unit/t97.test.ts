@@ -74,6 +74,7 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { memoryDirFor } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { writeLearningsSelections } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -194,12 +195,12 @@ function stateFile(pd: string): string {
   return join(recordRoot(pd), "aidlc-state.md");
 }
 function memoryFile(pd: string): string {
-  return join(recordRoot(pd), "inception", "user-stories", "memory.md");
+  return join(recordRoot(pd), phaseFor("user-stories"), "user-stories", "memory.md");
 }
 
 function mkproj(name: string): string {
   const pd = join(tmpRoot, name);
-  mkdirSync(join(recordRoot(pd), "inception", "user-stories"), { recursive: true });
+  mkdirSync(join(recordRoot(pd), phaseFor("user-stories"), "user-stories"), { recursive: true });
   mkdirSync(join(pd, ".claude", "rules"), { recursive: true });
   mkdirSync(join(pd, ".claude", "skills", "aidlc", "stages", "inception"), {
     recursive: true,
@@ -220,7 +221,7 @@ function mkproj(name: string): string {
     join(pd, ".claude", "skills", "aidlc", "stages", "inception", "user-stories.md"),
     `---
 slug: user-stories
-phase: inception
+phase: design
 execution: ALWAYS
 lead_agent: aidlc-product-agent
 support_agents: []
@@ -722,7 +723,7 @@ describe("t97 persist sensor bind keeps the stage header whole (cli)", () => {
     return [
       "---",
       "slug: user-stories",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "lead_agent: aidlc-product-agent",
       "support_agents: []",

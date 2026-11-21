@@ -63,6 +63,7 @@ import {
   seedStateFile,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   auditBlockField,
@@ -128,7 +129,7 @@ function runReview(
       definition.for_each === "unit-of-work"
         ? join(
             seededRecordDir(proj),
-            "construction",
+            phaseFor(stage),
             unit ?? "unit-alpha",
             stage,
           )
@@ -296,13 +297,13 @@ function seedProject(scope: "bugfix" | "feature" | "classic" | "express"): strin
   seedBoltDagBatches(proj, [["unit-alpha"]]);
   const stageArtifacts: Array<[string, string[]]> = [
     [
-      join(seededRecordDir(proj), "inception", "requirements-analysis"),
+      join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis"),
       ["requirements.md", "requirements-analysis-questions.md"],
     ],
     [
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "unit-alpha",
         "functional-design",
       ),
@@ -311,7 +312,7 @@ function seedProject(scope: "bugfix" | "feature" | "classic" | "express"): strin
     [
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("code-generation"),
         "unit-alpha",
         "code-generation",
       ),
@@ -336,7 +337,7 @@ function seedProject(scope: "bugfix" | "feature" | "classic" | "express"): strin
 function writeSourceManifest(proj: string, unit: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("code-generation"),
     unit,
     "code-generation",
   );
@@ -363,8 +364,8 @@ function writeReviewedArtifact(
 ): string {
   const dir =
     stage === "requirements-analysis"
-      ? join(seededRecordDir(proj), "inception", stage)
-      : join(seededRecordDir(proj), "construction", unit ?? "unit-alpha", stage);
+      ? join(seededRecordDir(proj), phaseFor(stage), stage)
+      : join(seededRecordDir(proj), phaseFor(stage), unit ?? "unit-alpha", stage);
   mkdirSync(dir, { recursive: true });
   const path = join(
     dir,
@@ -376,7 +377,7 @@ function writeReviewedArtifact(
   );
   writeFileSync(path, content, "utf-8");
   if (stage === "code-generation" && unit) {
-    const dagDir = join(seededRecordDir(proj), "inception", "units-generation");
+    const dagDir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
     mkdirSync(dagDir, { recursive: true });
     writeFileSync(
       join(dagDir, "unit-of-work-dependency.md"),
@@ -1216,7 +1217,7 @@ describe("t271 review iteration ceiling", () => {
 
   test("inline per-unit reviews remain subject to scope caps", () => {
     const proj = seedProject("bugfix");
-    const dagDir = join(seededRecordDir(proj), "inception", "units-generation");
+    const dagDir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
     mkdirSync(dagDir, { recursive: true });
     writeFileSync(
       join(dagDir, "unit-of-work-dependency.md"),
@@ -2210,7 +2211,7 @@ describe("t271 review iteration ceiling", () => {
     // Wave entries, gate refusals and the guard recovery all read this one
     // projection, so none of them sends the conductor to a retry that cannot work.
     const proj = seedProject("bugfix");
-    const dagDir = join(seededRecordDir(proj), "inception", "units-generation");
+    const dagDir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
     mkdirSync(dagDir, { recursive: true });
     writeFileSync(
       join(dagDir, "unit-of-work-dependency.md"),
@@ -3205,7 +3206,7 @@ describe("t271 review iteration ceiling", () => {
     const proj = seedProject("feature");
     const reviews = join(
       seededRecordDir(proj),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "reviews",
     );
@@ -3239,7 +3240,7 @@ describe("t271 review iteration ceiling", () => {
     for (const unit of ["zeta", "alpha"]) {
       const dir = join(
         seededRecordDir(noDag),
-        "construction",
+        "build",
         unit,
         "plugin-review-stage",
       );
@@ -3249,20 +3250,20 @@ describe("t271 review iteration ceiling", () => {
     }
     const pluginStage = {
       slug: "plugin-review-stage",
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       review_artifact: "primary",
       produces: ["plugin-preface", "primary"],
     };
     const pluginSnapshot = reviewArtifactSnapshot(noDag, pluginStage);
     expect(pluginSnapshot?.reviewArtifact).toBe(
-      "construction/alpha/plugin-review-stage/primary.md",
+      "build/alpha/plugin-review-stage/primary.md",
     );
 
     const kindProject = seedProject("feature");
     const kindDir = join(
       seededRecordDir(kindProject),
-      "construction",
+      phaseFor("functional-design"),
       "unit-alpha",
       "functional-design",
     );
@@ -3339,7 +3340,7 @@ describe("t271 review iteration ceiling", () => {
         const proj = seedProject("feature");
         const artifact = join(
           seededRecordDir(proj),
-          "inception",
+          phaseFor("requirements-analysis"),
           "requirements-analysis",
           name,
         );

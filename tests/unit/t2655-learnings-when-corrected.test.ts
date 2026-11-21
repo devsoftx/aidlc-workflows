@@ -32,6 +32,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -75,7 +76,7 @@ function surfaced(pd: string, slug: string, ...extra: string[]): Record<string, 
 }
 
 function writeDiary(pd: string): void {
-  const diary = join(seededRecordDir(pd), "inception", STAGE, "memory.md");
+  const diary = join(seededRecordDir(pd), phaseFor(STAGE), STAGE, "memory.md");
   mkdirSync(dirname(diary), { recursive: true });
   writeFileSync(diary, [
     "## Interpretations",

@@ -50,7 +50,7 @@ function stageFrontmatter(slug: string, extra = ""): string {
     "---",
     `slug: ${slug}`,
     extra.trim(),
-    "phase: construction",
+    "phase: build",
     "execution: ALWAYS",
     "condition: always",
     "lead_agent: aidlc-quality-agent",
@@ -71,7 +71,7 @@ function stageFrontmatter(slug: string, extra = ""): string {
 function compileFixture(stages: Record<string, string>) {
   const root = tempDir("aidlc-t222-compile-");
   const stagesDir = join(root, "stages");
-  const construction = join(stagesDir, "construction");
+  const construction = join(stagesDir, "build");
   mkdirSync(construction, { recursive: true });
   for (const [slug, body] of Object.entries(stages)) {
     writeFileSync(join(construction, `${slug}.md`), body, "utf-8");
@@ -248,7 +248,7 @@ describe("t222 plugin ownership and runner naming", () => {
       number: "3.85",
       name: "Cross-Unit Integration Testing",
       plugin: "test-pro",
-      phase: "construction",
+      phase: "build",
       execution: "ALWAYS",
       lead_agent: "aidlc-quality-agent",
       support_agents: [],

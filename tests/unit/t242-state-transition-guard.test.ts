@@ -28,6 +28,7 @@ import {
   ENGINE_OWNED_STATE_TRANSITIONS,
   MESSAGE_FILL,
   MESSAGE_SLOT,
+  PHASES,
   UTILITY_COMMANDS,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { RECORDABLE_PROJECT_BYPASSES } from "../../dist/claude/.claude/tools/aidlc-settings.ts";
@@ -94,12 +95,9 @@ const ENGINE_OWNED = [
   "fold-unit-merge",
 ] as const;
 const STAGES_ROOT = join(REPO_ROOT, "core", "aidlc-common", "stages");
-const NON_INITIALIZATION_STAGES = [
-  "ideation",
-  "inception",
-  "construction",
-  "operation",
-].flatMap((phase) =>
+const NON_INITIALIZATION_STAGES = PHASES.filter(
+  (phase) => phase !== "initialization",
+).flatMap((phase) =>
   readdirSync(join(STAGES_ROOT, phase))
     .filter((name) => name.endsWith(".md"))
     .map((name) => join(STAGES_ROOT, phase, name))

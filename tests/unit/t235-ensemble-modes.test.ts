@@ -43,7 +43,7 @@ const GRAPH_TOOL = join(REPO, "dist", "claude", ".claude", "tools", "aidlc-graph
 function stage(mode: string, support: string[]): Record<string, unknown> {
   return {
     slug: "fixture-stage",
-    phase: "construction",
+    phase: "build",
     execution: "ALWAYS",
     condition: "Always executes",
     lead_agent: "aidlc-architect-agent",
@@ -125,7 +125,7 @@ describe("t235 ensemble modes — directive enum carry-through", () => {
     return {
       kind: "run-stage",
       stage: "fixture-stage",
-      phase: "construction",
+      phase: "build",
       lead_agent: "aidlc-architect-agent",
       support_agents: ["aidlc-developer-agent"],
       mode,
@@ -133,9 +133,9 @@ describe("t235 ensemble modes — directive enum carry-through", () => {
         ? ["agents/aidlc-architect-agent.md", "agents/aidlc-developer-agent.md"]
         : [],
       gate: true,
-      memory_path: "aidlc-docs/construction/fixture-stage/memory.md",
+      memory_path: "aidlc-docs/build/fixture-stage/memory.md",
       consumes: [],
-      produces: ["aidlc-docs/construction/fixture-stage/fixture-artifact.md"],
+      produces: ["aidlc-docs/build/fixture-stage/fixture-artifact.md"],
       rules_in_context: [],
       sensors_applicable: [],
       ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
@@ -169,11 +169,11 @@ describe("t235 ensemble modes — compile advisory for the swarm-trigger trap", 
       mkdirSync(installedTools, { recursive: true });
       writeFileSync(join(installedTools, "aidlc-lib.ts"), "");
       const stagesRoot = join(root, "stages");
-      mkdirSync(join(stagesRoot, "construction"), { recursive: true });
+      mkdirSync(join(stagesRoot, "build"), { recursive: true });
       const fm = [
         "---",
         "slug: build-stage",
-        "phase: construction",
+        "phase: build",
         "execution: ALWAYS",
         "condition: Always executes",
         "lead_agent: orchestrator",
@@ -195,7 +195,7 @@ describe("t235 ensemble modes — compile advisory for the swarm-trigger trap", 
         "body",
         "",
       ].join("\n");
-      writeFileSync(join(stagesRoot, "construction", "build-stage.md"), fm);
+      writeFileSync(join(stagesRoot, "build", "build-stage.md"), fm);
       const graphPath = join(root, "stage-graph.json");
       writeFileSync(graphPath, "[]");
       const r = spawnSync("bun", [GRAPH_TOOL, "compile"], {

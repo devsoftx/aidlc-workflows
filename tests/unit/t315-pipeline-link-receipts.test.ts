@@ -42,6 +42,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   codekbRepoName,
@@ -152,7 +153,7 @@ function runLog(
 function developerHandoffPath(proj: string, repo?: string): string {
   return join(
     dirname(seededStateFile(proj)),
-    "inception",
+    phaseFor(RE_STAGE),
     RE_STAGE,
     repo ? `developer-scan-${repo}.md` : "developer-scan.md",
   );
@@ -2158,7 +2159,7 @@ describe("t315 an isolated run in a project with no work", () => {
     const directive = startIsolated(proj);
     const record = (directive.pipeline as { record: Array<{ link: string; command: string }> }).record;
     expect(record.map((row) => row.link)).toEqual([LEAD, FINAL]);
-    const handoff = `${NO_WORK_RECORD.join("/")}/inception/${RE_STAGE}/developer-scan.md`;
+    const handoff = `${NO_WORK_RECORD.join("/")}/${phaseFor(RE_STAGE)}/${RE_STAGE}/developer-scan.md`;
     expect(record[0].command).toContain(`--artifact ${handoff}`);
     mkdirSync(join(proj, dirname(handoff)), { recursive: true });
     writeFileSync(

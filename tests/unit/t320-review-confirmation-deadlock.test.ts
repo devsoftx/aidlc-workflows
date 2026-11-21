@@ -33,6 +33,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -90,7 +91,7 @@ function run(
 function requirementsPaths(proj: string) {
   const dir = join(
     seededRecordDir(proj),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -360,7 +361,7 @@ describe("t320 review/summary deadlock prevention", () => {
     seedBoltDag(proj, ["alpha"]);
     const dir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("code-generation"),
       "alpha",
       "code-generation",
     );
@@ -398,7 +399,7 @@ describe("t320 review/summary deadlock prevention", () => {
     const proj = project("state-construction-with-worktree.md");
     const dir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("code-generation"),
       "alpha",
       "code-generation",
     );
@@ -505,7 +506,7 @@ describe("t320 review/summary deadlock prevention", () => {
     const stageLevelProj = project("state-construction-with-worktree.md");
     const stageLevelDir = join(
       seededRecordDir(stageLevelProj),
-      "construction",
+      phaseFor("code-generation"),
       "code-generation",
     );
     mkdirSync(stageLevelDir, { recursive: true });

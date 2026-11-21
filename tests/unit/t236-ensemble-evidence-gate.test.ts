@@ -54,6 +54,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -173,7 +174,7 @@ function seedPracticesProject(
 
 function contribDir(
   proj: string,
-  phase = "inception",
+  phase = phaseFor("user-stories"),
   stage = "user-stories",
 ): string {
   return join(seededRecordDir(proj), phase, stage, "contributions");
@@ -183,7 +184,7 @@ function writeContribution(
   proj: string,
   agent: string,
   firstLine?: string,
-  phase = "inception",
+  phase = phaseFor("user-stories"),
   stage = "user-stories",
 ): void {
   const dir = contribDir(proj, phase, stage);
@@ -397,7 +398,7 @@ function perUnitEnsembleGraph(
   mutate?: (node: Record<string, unknown>) => void,
 ): string {
   return graphVariant(proj, (node) => {
-    node.phase = "construction";
+    node.phase = "design";
     node.for_each = "unit-of-work";
     node.mode = "mob";
     node.support_agents = ["aidlc-design-agent"];
@@ -432,7 +433,7 @@ function seedSwarmConverged(proj: string, units: string[]): void {
 function writeUnitContribution(proj: string, unit: string, agent: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("user-stories"),
     unit,
     "user-stories",
     "contributions",
@@ -447,7 +448,7 @@ function writeUnitContribution(proj: string, unit: string, agent: string): void 
 function writeFallbackContribution(proj: string, agent: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("user-stories"),
     "user-stories",
     "contributions",
   );
@@ -459,7 +460,7 @@ function writeFallbackContribution(proj: string, agent: string): void {
 }
 
 function writeUnitArtifact(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "user-stories");
+  const dir = join(seededRecordDir(proj), phaseFor("user-stories"), unit, "user-stories");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "fixture-artifact.md"), `# Fixture artifact for ${unit}\n`);
 }
@@ -734,7 +735,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     const proj = seedProject();
     setAutonomous(proj);
     const graph = graphVariant(proj, (node) => {
-      node.phase = "inception";
+      node.phase = "design";
       delete node.for_each;
       node.mode = "subagent";
       node.support_agents = ["aidlc-design-agent"];
@@ -786,7 +787,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         completeProj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -812,9 +813,9 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     const withDraft = (methodology: string): string => {
       const proj = seedPracticesProject("[-]");
       for (const agent of PRACTICES_SUPPORTS) {
-        writeContribution(proj, agent, undefined, "inception", "practices-discovery");
+        writeContribution(proj, agent, undefined, phaseFor("practices-discovery"), "practices-discovery");
       }
-      const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+      const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
       mkdirSync(draftDir, { recursive: true });
       writeFileSync(
         join(draftDir, "team-practices.md"),
@@ -854,7 +855,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         proj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -986,7 +987,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         proj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -1055,9 +1056,9 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
       Agent: "aidlc-pipeline-deploy-agent",
     });
     for (const agent of PRACTICES_SUPPORTS) {
-      writeContribution(proj, agent, undefined, "inception", "practices-discovery");
+      writeContribution(proj, agent, undefined, phaseFor("practices-discovery"), "practices-discovery");
     }
-    const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+    const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
     mkdirSync(draftDir, { recursive: true });
     writeFileSync(
       join(draftDir, "team-practices.md"),
@@ -1110,7 +1111,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         proj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -1178,7 +1179,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
   test("a malformed swarm DAG fails closed because the expected unit set is unknowable", () => {
     const proj = seedProject();
     setAutonomous(proj);
-    const depDir = join(seededRecordDir(proj), "inception", "units-generation");
+    const depDir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
     mkdirSync(depDir, { recursive: true });
     writeFileSync(
       join(depDir, "unit-of-work-dependency.md"),
@@ -1298,7 +1299,7 @@ describe("t236 an approval given with the collaborators switch stands", () => {
       Stage: "practices-discovery",
       Agent: "aidlc-pipeline-deploy-agent",
     });
-    const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+    const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
     mkdirSync(draftDir, { recursive: true });
     const teamPractices = join(draftDir, "team-practices.md");
     const discoveredRules = join(draftDir, "discovered-rules.md");

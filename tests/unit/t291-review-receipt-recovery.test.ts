@@ -36,6 +36,7 @@ import {
   seedBoltDagBatches,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const LOG_TOOL = join(AIDLC_SRC, "tools", "aidlc-log.ts");
 
@@ -75,7 +76,7 @@ function run(tool: string, args: string[], proj: string) {
 function writeRequirements(proj: string, content: string): string {
   const dir = join(
     seededRecordDir(proj),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -90,7 +91,7 @@ function recordArtifactUpdate(proj: string, artifact: string): void {
   appendAuditEntry("ARTIFACT_UPDATED", {
     File: artifact,
     Tool: "Edit",
-    Context: "inception > requirements-analysis > requirements.md",
+    Context: `${phaseFor("requirements-analysis")} > requirements-analysis > requirements.md`,
   }, proj);
 }
 
@@ -157,7 +158,7 @@ describe("t291 stale review receipt recovery", () => {
     const budgetStage = findStageBySlug("functional-design")!;
     const budgetDir = join(
       seededRecordDir(budgetProj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
     );

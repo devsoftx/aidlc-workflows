@@ -80,6 +80,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const DIST_CLAUDE = join(REPO_ROOT, "dist", "claude", ".claude");
@@ -890,7 +891,7 @@ function projBeforeGate(): string {
   seedStateFile(p, join(FIXTURES_DIR, "state-mid-inception.md"));
   const dir = join(
     seededRecordDir(p),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -1003,7 +1004,7 @@ function runHook(
 }
 
 function raArtifact(p: string): string {
-  return join(seededRecordDir(p), "inception", "requirements-analysis", "requirements.md");
+  return join(seededRecordDir(p), phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md");
 }
 
 function writePayload(file: string): Record<string, unknown> {
@@ -1091,7 +1092,7 @@ describe("t264 (b) shipped-hook lifecycle over a real ledger", () => {
     const p = projBeforeGate();
     recordReview(p, "READY");
     openGate(p);
-    const diary = join(seededRecordDir(p), "inception", "requirements-analysis", "memory.md");
+    const diary = join(seededRecordDir(p), phaseFor("requirements-analysis"), "requirements-analysis", "memory.md");
     expect(runHook(p, writePayload(diary)).code).toBe(0);
   });
 
@@ -1178,7 +1179,7 @@ describe("t264 (b) shipped-hook lifecycle over a real ledger", () => {
       `cp ${JSON.stringify(file)} /tmp/review-freeze-copy 2>&1`,
       `cp --target-directory=/tmp ${JSON.stringify(file)}`,
       `cp /tmp/requirements.md ${JSON.stringify(
-        join(p, "unrelated", "inception", "requirements-analysis"),
+        join(p, "unrelated", phaseFor("requirements-analysis"), "requirements-analysis"),
       )}`,
       `truncate -r ${JSON.stringify(file)} /tmp/review-freeze-output`,
       `sed --version; cat ${JSON.stringify(file)}`,

@@ -59,6 +59,7 @@ import {
   seedStateFile,
   sedReplaceInFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -160,7 +161,7 @@ function recordRequiredReview(proj: string, slug: string): void {
   const iteration = 1;
   const reviewArtifact =
     slug === "intent-capture" ? "intent-statement.md" : "wireframes.md";
-  const dir = join(dirname(statePath(proj)), "ideation", slug);
+  const dir = join(dirname(statePath(proj)), phaseFor(slug), slug);
   const artifact = join(dir, reviewArtifact);
   mkdirSync(dir, { recursive: true });
   if (!existsSync(artifact)) writeFileSync(artifact, `# ${reviewArtifact}\n`);
@@ -198,8 +199,8 @@ function advance(proj: string, slug: string): RunResult {
 }
 
 // Feature scope, greenfield: creation lands on intent-capture; the whole
-// Ideation ladder then approval-handoff -> practices-discovery crosses the
-// ideation->inception boundary (greenfield SKIPs reverse-engineering).
+// IDEATION_LADDER (the discover phase) then approval-handoff -> practices-discovery
+// crosses the discover->design boundary (greenfield SKIPs reverse-engineering).
 const IDEATION_LADDER = [
   "intent-capture",
   "market-research",
@@ -215,10 +216,10 @@ describe("t232 Phase Progress - creation seed", () => {
     tempDirs.push(proj);
     expect(runIntentCreate(proj, "feature").rc).toBe(0);
     expect(rowStatus(proj, "Initialization")).toBe("Verified");
-    expect(rowStatus(proj, "Ideation")).toBe("Active");
-    expect(rowStatus(proj, "Inception")).toBe("Pending");
-    expect(rowStatus(proj, "Construction")).toBe("Pending");
-    expect(rowStatus(proj, "Operation")).toBe("Pending");
+    expect(rowStatus(proj, "Discover")).toBe("Active");
+    expect(rowStatus(proj, "Design")).toBe("Pending");
+    expect(rowStatus(proj, "Build")).toBe("Pending");
+    expect(rowStatus(proj, "Operate")).toBe("Pending");
   });
 
   test("bugfix scope: excluded Ideation Skipped, first post-init phase Active", () => {
@@ -251,9 +252,9 @@ describe("t232 Phase Progress - advance", () => {
     const res = run(STATE_TOOL, proj, ["advance", "approval-handoff"]);
     expect(res.rc).toBe(0);
     expect(res.combined).toContain('"phase_boundary":true');
-    expect(rowStatus(proj, "Ideation")).toBe("Verified");
-    expect(rowStatus(proj, "Inception")).toBe("Active");
-    expect(rowStatus(proj, "Construction")).toBe("Pending");
+    expect(rowStatus(proj, "Discover")).toBe("Verified");
+    expect(rowStatus(proj, "Design")).toBe("Active");
+    expect(rowStatus(proj, "Build")).toBe("Pending");
   });
 });
 
@@ -266,23 +267,23 @@ describe("t232 Phase Progress - finalize", () => {
       expect(advance(proj, slug).rc).toBe(0);
     }
     expect(run(STATE_TOOL, proj, ["finalize", "approval-handoff"]).rc).toBe(0);
-    expect(rowStatus(proj, "Ideation")).toBe("Verified");
-    expect(rowStatus(proj, "Inception")).toBe("Active");
+    expect(rowStatus(proj, "Discover")).toBe("Verified");
+    expect(rowStatus(proj, "Design")).toBe("Active");
   });
 
   test("final-stage finalize flips the last phase to Verified", () => {
     const proj = createTestProject();
     tempDirs.push(proj);
     seedStateFile(proj, "state-final-stage.md");
-    // Force the Operation row back to Active so the transition under test is
+    // Force the Operate row back to Active so the transition under test is
     // observable.
     sedReplaceInFile(
       statePath(proj),
-      "- **Operation**: Verified",
-      "- **Operation**: Active",
+      "- **Operate**: Verified",
+      "- **Operate**: Active",
     );
     expect(run(STATE_TOOL, proj, ["finalize", "feedback-optimization"]).rc).toBe(0);
-    expect(rowStatus(proj, "Operation")).toBe("Verified");
+    expect(rowStatus(proj, "Operate")).toBe("Verified");
   });
 });
 
@@ -321,14 +322,14 @@ describe("t232 Phase Progress - jump + complete-workflow", () => {
       "execute", "--target", "practices-discovery", "--direction", "backward",
     ]);
     expect(res.rc).toBe(0);
-    expect(rowStatus(proj, "Inception")).toBe("Active");
-    expect(rowStatus(proj, "Construction")).toBe("Pending");
-    expect(rowStatus(proj, "Operation")).toBe("Pending");
+    expect(rowStatus(proj, "Design")).toBe("Active");
+    expect(rowStatus(proj, "Build")).toBe("Pending");
+    expect(rowStatus(proj, "Operate")).toBe("Pending");
     // History before the target is not rewritten.
-    expect(rowStatus(proj, "Ideation")).toBe("Verified");
-    // The person left Operation unfinished: the record starts Inception again
+    expect(rowStatus(proj, "Discover")).toBe("Verified");
+    // The person left Operate unfinished: the record starts Design again
     // and never says the phase they left was completed or verified.
-    expect(phaseRows(proj).slice(before)).toEqual(["PHASE_STARTED inception"]);
+    expect(phaseRows(proj).slice(before)).toEqual(["PHASE_STARTED design"]);
   });
 
   test("complete-workflow flips the final phase to Verified", () => {
@@ -340,7 +341,7 @@ describe("t232 Phase Progress - jump + complete-workflow", () => {
     expect(
       run(STATE_TOOL, proj, ["complete-workflow", "feedback-optimization"]).rc,
     ).toBe(0);
-    expect(rowStatus(proj, "Operation")).toBe("Verified");
+    expect(rowStatus(proj, "Operate")).toBe("Verified");
   });
 });
 
@@ -354,14 +355,14 @@ describe("t232 Phase Progress - a forward jump records only the phases it passes
       "execute", "--target", "practices-discovery", "--direction", "forward",
     ]);
     expect(res.rc).toBe(0);
-    expect(rowStatus(proj, "Inception")).toBe("Active");
+    expect(rowStatus(proj, "Design")).toBe("Active");
     expect(phaseRows(proj).slice(before)).toEqual([
-      "PHASE_COMPLETED ideation", "PHASE_VERIFIED", "PHASE_STARTED inception",
+      "PHASE_COMPLETED discover", "PHASE_VERIFIED", "PHASE_STARTED design",
     ]);
     // The row records the crossing; a jump runs no traceability check, so the
     // row says nothing of one, as the advance's row does not.
     const verified = readAuditShardEvents(proj).filter((row) => row.event === "PHASE_VERIFIED").at(-1);
-    expect(auditBlockField(verified!.block, "Phase boundary")).toContain("ideation");
+    expect(auditBlockField(verified!.block, "Phase boundary")).toContain("discover");
     expect(auditBlockField(verified!.block, "Details")).toBeNull();
     expect(verified!.block).not.toContain("Traceability");
   });
@@ -397,10 +398,10 @@ describe("t232 Phase Progress - plan re-shaping re-derives unreached rows", () =
     tempDirs.push(proj);
     expect(runIntentCreate(proj, "feature").rc).toBe(0);
     expect(run(UTILITY_TOOL, proj, ["scope-change", "--scope", "bugfix"]).rc).toBe(0);
-    expect(rowStatus(proj, "Operation")).toBe("Pending");
+    expect(rowStatus(proj, "Deploy")).toBe("Pending");
     // The Active/Verified rows record history the plan change cannot rewrite.
     expect(rowStatus(proj, "Initialization")).toBe("Verified");
-    expect(rowStatus(proj, "Ideation")).toBe("Active");
+    expect(rowStatus(proj, "Discover")).toBe("Active");
   });
 
   test("recompose: skip-all empties a phase -> Skipped; add-back -> Pending", () => {
@@ -412,13 +413,13 @@ describe("t232 Phase Progress - plan re-shaping re-derives unreached rows", () =
       "observability-setup,incident-response,performance-validation," +
       "feedback-optimization";
     expect(run(UTILITY_TOOL, proj, ["recompose", "--skip", allOperation]).rc).toBe(0);
-    expect(rowStatus(proj, "Operation")).toBe("Skipped");
+    expect(rowStatus(proj, "Operate")).toBe("Skipped");
     // Add the whole set back - a lone add is refused by the strict validator
     // (its upstream producers would stay skipped, starving its consumes).
     expect(
       run(UTILITY_TOOL, proj, ["recompose", "--add", allOperation]).rc,
     ).toBe(0);
-    expect(rowStatus(proj, "Operation")).toBe("Pending");
+    expect(rowStatus(proj, "Operate")).toBe("Pending");
   });
 });
 
@@ -435,11 +436,11 @@ describe("t232 Phase Progress - missing section tolerated", () => {
       /## Phase Progress\n[\s\S]*?(?=## )/,
       "",
     );
-    expect(rowStatus(proj, "Ideation")).toBe("(not found)");
+    expect(rowStatus(proj, "Discover")).toBe("(not found)");
     expect(run(STATE_TOOL, proj, ["set", "Current Stage=approval-handoff"]).rc).toBe(0);
     const res = run(STATE_TOOL, proj, ["advance", "approval-handoff"]);
     expect(res.rc).toBe(0);
     expect(res.combined).toContain('"phase_boundary":true');
-    expect(rowStatus(proj, "Ideation")).toBe("(not found)");
+    expect(rowStatus(proj, "Discover")).toBe("(not found)");
   });
 });

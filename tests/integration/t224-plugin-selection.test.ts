@@ -33,6 +33,7 @@ import {
   composePluginFixture,
   copyHarnessInstall,
 } from "../harness/plugin-kit.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { typedHarnessName } from "../../core/tools/aidlc-runtime-paths.ts";
 
 const BUN = process.execPath;
@@ -251,7 +252,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
 
     expect(existsSync(join(project, ".claude", "skills", "test-pro-integration", "SKILL.md"))).toBe(false);
     expect(existsSync(join(project, ".claude", "skills", "test-pro-validation", "SKILL.md"))).toBe(false);
-    expect(existsSync(join(project, ".claude", "aidlc-common", "stages", "construction", "test-pro-integration.md"))).toBe(true);
+    expect(existsSync(join(project, ".claude", "aidlc-common", "stages", "test", "test-pro-integration.md"))).toBe(true);
     expect(graph(project).find((s) => s.slug === "test-pro-integration")?.enabled).toBe(false);
   });
 
@@ -269,7 +270,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
       pluginBuilt,
     });
 
-    const stagePath = join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const stagePath = join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const sidecar = join(proj, ".claude", "tools", "data", "plugin-contrib-test-pro.json");
     const composed = readFileSync(stagePath, "utf-8");
     expect(composed).toContain("test-pro-regression-suite");
@@ -324,7 +325,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
       pluginBuilt,
       copyInstall: false,
     });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).not.toContain("test-pro-regression-suite");
     expect(body).not.toContain("Step 8a (test-pro)");
   });
@@ -494,7 +495,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
     expect(result.stdout).toContain("config project --reset --yes");
     expect(JSON.parse(readFileSync(harnessPath(proj), "utf-8")).plugins).toEqual(["aidlc"]);
     // What the plugin merged into core stages is out, as with plugin select.
-    const buildAndTest = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const buildAndTest = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(buildAndTest).not.toContain("<!-- plugin:test-pro:");
     expect(buildAndTest).not.toContain("test-pro-regression-suite");
     expect(existsSync(join(proj, ".claude", "tools", "data", "plugin-contrib-test-pro.json"))).toBe(false);
@@ -528,7 +529,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
       expect(installed.status, `${installed.stdout}${installed.stderr}`).toBe(0);
       composePluginFixture({ plugin: PLUGIN, harness, projectDir: proj, pluginBuilt: built, copyInstall: false });
 
-      const stage = join(proj, leaf, "aidlc-common", "stages", "construction", "build-and-test.md");
+      const stage = join(proj, leaf, "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
       const persona = join(proj, leaf, "agents", "aidlc-quality-agent.md");
       const twin = join(proj, leaf, "agents", "aidlc-quality-agent.toml");
       const sidecar = join(proj, leaf, "tools", "data", "plugin-contrib-test-pro.json");

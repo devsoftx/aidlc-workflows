@@ -76,6 +76,7 @@ import {
   setupWorktreeFixture,
 } from "../harness/fixtures.ts";
 import { approveSuppliedCheckCommand } from "../harness/verification-command.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -129,7 +130,7 @@ function fixture(repos: string[] = []): { project: string; record: string } {
 }
 
 function manifest(record: string, unit: string, value: unknown): string {
-  const dir = join(record, "construction", unit, "code-generation"); mkdirSync(dir, { recursive: true });
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation"); mkdirSync(dir, { recursive: true });
   const path = join(dir, "source-manifest.json"); writeFileSync(path, `${JSON.stringify(value)}\n`); return path;
 }
 
@@ -1106,7 +1107,7 @@ function runtimeFixture(): { project: string; record: string } {
     .replace("- [ ] units-generation \u2014 EXECUTE", "- [x] units-generation \u2014 EXECUTE")
     .replace("- [ ] code-generation — EXECUTE", "- [?] code-generation — EXECUTE");
   writeFileSync(join(record, "aidlc-state.md"), state, "utf-8");
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(join(dag, "unit-of-work-dependency.md"), "```yaml\nunits:\n  - name: alpha\n    depends_on: []\n  - name: beta\n    depends_on: []\n```\n");
   const listing = workspaceSourceListing(project);
@@ -1127,7 +1128,7 @@ function runtimeFixture(): { project: string; record: string } {
 }
 
 function seedArtifacts(record: string, unit: string): string {
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md", "traceability.json"])
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), name.endsWith(".json") ? "{}\n" : `# ${name}\n`);
@@ -1136,8 +1137,8 @@ function seedArtifacts(record: string, unit: string): string {
 
 function reviewArtifact(record: string, unit?: string): string {
   const dir = unit
-    ? join(record, "construction", unit, "code-generation")
-    : join(record, "construction", "code-generation");
+    ? join(record, phaseFor("code-generation"), unit, "code-generation")
+    : join(record, phaseFor("code-generation"), "code-generation");
   return join(dir, "code-generation-plan.md");
 }
 
@@ -1334,7 +1335,7 @@ function writeAuthoredDag(
 ): void {
   const dir = join(
     seededRecordDir(project),
-    "inception",
+    phaseFor("units-generation"),
     "units-generation",
   );
   mkdirSync(dir, { recursive: true });
@@ -1554,7 +1555,7 @@ describe("t305 real receipt and guard flows", () => {
     appendReviewAppendix(reviewArtifact(record, "alpha"), "1");
     const path = join(
       record,
-      "construction",
+      phaseFor("code-generation"),
       "alpha",
       "code-generation",
       "source-manifest.json",
@@ -1799,7 +1800,7 @@ describe("t305 real receipt and guard flows", () => {
 
   test("9 fieldless per-unit bindings preserve legacy global policy and 11 zero-unit stays manifest-free", () => {
     const legacy=runtimeFixture(); review(legacy.project,legacy.record,"alpha",[{path:"app.ts"}]); review(legacy.project,legacy.record,"beta",[]); stripUnitBindings(legacy.project); expect(approve(legacy.project).rc).toBe(0);
-    const zero=runtimeFixture(); rmSync(join(zero.record,"inception"),{recursive:true,force:true});
+    const zero=runtimeFixture(); rmSync(join(zero.record,phaseFor("units-generation"),"units-generation"),{recursive:true,force:true});
     const zeroArtifact=reviewArtifact(zero.record); mkdirSync(join(zeroArtifact,".."),{recursive:true}); writeFileSync(zeroArtifact,"# code-generation-plan.md\n");
     const args=["review","--stage","code-generation","--reviewer",REVIEWER,"--iteration","1"]; expect(cli(LOG,args,zero.project).rc).toBe(0); appendReviewAppendix(zeroArtifact,"1"); expect(cli(LOG,[...args,"--verdict","READY"],zero.project).rc).toBe(0); expect(approve(zero.project).rc).toBe(0);
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -1858,7 +1859,7 @@ describe("t305 real receipt and guard flows", () => {
       rmSync(
         join(
           legacy.record,
-          "construction",
+          phaseFor("code-generation"),
           unit,
           "code-generation",
           "source-manifest.json",
@@ -1931,13 +1932,13 @@ describe("t305 real receipt and guard flows", () => {
       "other\n",
     );
     mkdirSync(
-      join(other, "construction", "other", "code-generation"),
+      join(other, phaseFor("code-generation"), "other", "code-generation"),
       { recursive: true },
     );
     writeFileSync(
       join(
         other,
-        "construction",
+        phaseFor("code-generation"),
         "other",
         "code-generation",
         "source-manifest.json",

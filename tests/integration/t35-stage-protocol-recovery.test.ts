@@ -62,31 +62,31 @@ describe("§6 Error Recovery — session resume + context loading", () => {
   });
 
   test("resume context covers IDEATION [.sh 7]", () => {
-    expect(recovery).toContain("IDEATION stages");
+    expect(recovery).toContain("DISCOVER stages");
   });
 
   test("resume context covers INCEPTION [.sh 8]", () => {
-    expect(recovery).toContain("INCEPTION");
+    expect(recovery).toContain("DESIGN");
   });
 
   test("resume context covers CONSTRUCTION [.sh 9]", () => {
-    expect(recovery).toContain("CONSTRUCTION");
+    expect(recovery).toContain("BUILD");
   });
 
   test("resume context covers OPERATION [.sh 10]", () => {
-    expect(recovery).toContain("OPERATION stages");
+    expect(recovery).toContain("OPERATE stages");
   });
 
   test("resume references <record>/ideation/ [.sh 11]", () => {
-    expect(recovery).toContain("<record>/ideation/");
+    expect(recovery).toContain("<record>/discover/");
   });
 
   test("resume references <record>/inception/ [.sh 12]", () => {
-    expect(recovery).toContain("<record>/inception/");
+    expect(recovery).toContain("<record>/design/");
   });
 
   test("resume references <record>/operation/ [.sh 13]", () => {
-    expect(recovery).toContain("<record>/operation/");
+    expect(recovery).toContain("<record>/operate/");
   });
 });
 

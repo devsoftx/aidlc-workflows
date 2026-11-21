@@ -6,6 +6,7 @@
 // stage-major negative control preserves autonomous swarm ownership.
 
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { setDefaultTimeout, afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -156,7 +157,7 @@ function unit(action: "start" | "complete", unitName: string) {
 function writeCodeGenerationArtifacts(unitName: string): void {
   const dir = join(
     seededRecordDir(project),
-    "construction",
+    phaseFor("code-generation"),
     unitName,
     "code-generation",
   );
@@ -200,7 +201,7 @@ function writeCodeGenerationArtifacts(unitName: string): void {
 function recordReview(unitName: string): void {
   const artifact = join(
     seededRecordDir(project),
-    "construction",
+    phaseFor("code-generation"),
     unitName,
     "code-generation",
     "code-generation-plan.md",
