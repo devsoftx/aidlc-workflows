@@ -25,7 +25,7 @@ export interface StageFrontmatter {
   // means the item belongs to core. An open set (plugin names), so string-only —
   // no enum. Stored only when authored, so core stages stay byte-identical.
   plugin?: string;
-  phase: "initialization" | "ideation" | "inception" | "construction" | "operation";
+  phase: "initialization" | "discover" | "design" | "build" | "test" | "secure" | "deploy" | "operate";
   execution: "ALWAYS" | "CONDITIONAL";
   condition: string;
   lead_agent: string;
@@ -131,10 +131,13 @@ export interface ValidationContext {
 
 export const VALID_PHASES = [
   "initialization",
-  "ideation",
-  "inception",
-  "construction",
-  "operation",
+  "discover",
+  "design",
+  "build",
+  "test",
+  "secure",
+  "deploy",
+  "operate",
 ] as const;
 
 export const VALID_EXECUTIONS = ["ALWAYS", "CONDITIONAL"] as const;

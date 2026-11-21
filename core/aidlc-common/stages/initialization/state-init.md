@@ -66,8 +66,8 @@ from the compiled stage graph and scope grid:
 ### Step 3: Determine Routing
 
 Based on project type:
-- **Brownfield** → First post-initialization stage: reverse-engineering (Inception)
-- **Greenfield** → First post-initialization stage: requirements-analysis (Inception), skip reverse-engineering
+- **Brownfield** → First post-initialization stage: reverse-engineering (Discover)
+- **Greenfield** → First post-initialization stage: requirements-analysis (Design), skip reverse-engineering
 
 Update aidlc-state.md with the routing decision:
 - Set `Stages to Execute` and `Stages to Skip` based on scope + project type
@@ -78,10 +78,10 @@ Update aidlc-state.md with the routing decision:
 **If invoked from `--init`:**
 - Set Lifecycle Phase to READY
 - Set Current Stage to `workspace initialized — run /aidlc [scope] to start`
-- Do NOT continue to the Ideation phase
+- Do NOT continue to the Discover phase
 
 **If invoked from workflow start:**
-- Set Lifecycle Phase to the first post-initialization phase (IDEATION or INCEPTION depending on scope)
+- Set Lifecycle Phase to the first post-initialization phase (DISCOVER or DESIGN depending on scope)
 - Set Current Stage to the first post-initialization stage
 
 ### Step 5: Update State and Audit

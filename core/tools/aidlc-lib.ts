@@ -697,22 +697,53 @@ export const CHECKBOX_REVERSE: Record<string, CheckboxState> = {
   "[S]": "skipped",
 };
 
+// Order is the execution order. "initialization" is a hidden setup pre-phase
+// that the person does not see as one of the seven delivery phases.
 export const PHASES = [
   "initialization",
-  "ideation",
-  "inception",
-  "construction",
-  "operation",
+  "discover",
+  "design",
+  "build",
+  "test",
+  "secure",
+  "deploy",
+  "operate",
 ] as const;
 
 export type Phase = (typeof PHASES)[number];
 
+// Display label for a phase in the state file and on screen. One source, so
+// no caller keeps its own copy of the names.
+export const PHASE_LABELS: Record<Phase, string> = {
+  initialization: "INITIALIZATION",
+  discover: "DISCOVER",
+  design: "DESIGN",
+  build: "BUILD",
+  test: "TEST",
+  secure: "SECURE",
+  deploy: "DEPLOY",
+  operate: "OPERATE",
+};
+
+// The unit loop (per-unit stages, unit checkpoints, autonomy gating) belongs to
+// stages that run once per unit of work, not to one phase. Those stages sit in
+// the design and build phases. Code asks this predicate, never the phase name.
+export function isUnitLoopStage(node: { for_each?: string | null } | null | undefined): boolean {
+  return node?.for_each === "unit-of-work";
+}
+
+// Record folders holding per-unit work: <record>/<phase>/<unit>/<stage>.
+export const UNIT_RECORD_PHASES: readonly Phase[] = ["design", "build"];
+
 export const PHASE_NUMBERS: Record<string, Phase> = {
   "0": "initialization",
-  "1": "ideation",
-  "2": "inception",
-  "3": "construction",
-  "4": "operation",
+  "1": "discover",
+  "2": "design",
+  "3": "build",
+  "4": "test",
+  "5": "secure",
+  "6": "deploy",
+  "7": "operate",
 };
 
 // --- Harness dir resolution (.claude vs .kiro vs .codex) ---
