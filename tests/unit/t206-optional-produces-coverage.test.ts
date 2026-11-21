@@ -45,6 +45,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
@@ -73,7 +74,7 @@ function logReviewReady(proj: string, stage: string, reviewer: string, unit?: st
   appendFileSync(
     join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor(stage),
       unit ?? "alpha",
       stage,
       "functional-spec.md",
@@ -182,7 +183,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 }
 
 function coverUnit(proj: string, unit: string, slug: string, names: string[]): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of names) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
