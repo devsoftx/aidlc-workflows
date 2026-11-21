@@ -8970,18 +8970,13 @@ function handleIntentCreateStateBuild(
     );
     return hasExecute ? "Pending" : "Skipped";
   };
-  const phaseProgressLines = [
-    `- **Initialization**: ${phaseStatus("initialization")}`,
-    `- **Ideation**: ${phaseStatus("ideation")}`,
-    `- **Inception**: ${phaseStatus("inception")}`,
-    `- **Construction**: ${phaseStatus("construction")}`,
-    `- **Operation**: ${phaseStatus("operation")}`,
-  ].join("\n");
+  const phaseProgressLines = PHASES.map((phase) => `- **${displayPhase(phase)}**: ${phaseStatus(phase)}`).join("\n");
 
   const constructionCheckpointDefaults =
     (adjustedMapping["units-generation"] ?? scopeDef.stages["units-generation"]) === "EXECUTE" &&
     graph.some((stage) =>
-      stage.phase === "construction" && stage.for_each === "unit-of-work" &&
+      isUnitLoopStage(stage) &&
+      stage.workspace_requires === true &&
       stage.workspace_requires === true &&
       (adjustedMapping[stage.slug] ?? scopeDef.stages[stage.slug]) === "EXECUTE"
     )
@@ -11845,7 +11840,7 @@ function handleCodekbPublish(
 // Always exits 0 with the verdict in the output (read-only query - mirrors
 // codekb-path; refusals are for lifecycle verbs). No mkdir, no state write,
 // no audit. The one write: the compared repo's own `scope-draft-<repo>.md` in
-// the active record's `inception/reverse-engineering/` is the stage's
+// the active record's `discover/reverse-engineering/` is the stage's
 // temporary input, written only for this compare, so the compare removes it
 // whatever the verdict (no shell delete). `record` is the record the handler
 // selected, so the draft is checked against the same record the compare ran for.
@@ -11858,7 +11853,7 @@ function comparedScopeDraft(
   if (basename(incomingPath) !== name) return null;
   if (record === null || !existsSync(record)) return null;
   const rel = toPosix(relative(realpathSync(record), realpathSync(resolve(incomingPath))));
-  return rel === `inception/reverse-engineering/${name}` ? { record, rel } : null;
+  return rel === `discover/reverse-engineering/${name}` ? { record, rel } : null;
 }
 
 // The store is the stage's own work in hand: the attempt in progress (the
@@ -12573,7 +12568,7 @@ function droppedUnitWorkLine(
   const oldScope = getField(before, "Scope");
   const newScope = getField(after, "Scope");
   const dropped = loadStageGraph().filter((stage) =>
-    stage.phase === "construction" && isPerUnitStage(stage) &&
+    isPerUnitStage(stage) &&
     effectivePlanAction(stage.slug, oldScope, before) === "EXECUTE" &&
     effectivePlanAction(stage.slug, newScope, after) !== "EXECUTE");
   if (dropped.length === 0) return null;
@@ -12784,18 +12779,13 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
         if (!phaseMap[stage.phase]) phaseMap[stage.phase] = [];
         phaseMap[stage.phase].push(stage);
       }
-      const phaseHeaders: Record<string, string> = {
-        initialization: "INITIALIZATION PHASE",
-        ideation: "IDEATION PHASE",
-        inception: "INCEPTION PHASE",
-        construction: "CONSTRUCTION PHASE",
-        operation: "OPERATION PHASE",
-      };
+      // The Per unit line sits under the header of the first phase holding a unit-loop stage.
+      const unitLoopPhase = graph.find((stage) => isUnitLoopStage(stage))?.phase;
       let newStageProgress = "";
       for (const phase of PHASES) {
         const stages = phaseMap[phase] || [];
-        newStageProgress += `\n### ${phaseHeaders[phase]}\n`;
-        if (phase === "construction") {
+        newStageProgress += `\n### ${PHASE_LABELS[phase]} PHASE\n`;
+        if (phase === unitLoopPhase) {
           const perUnitMatch = content.match(/^Per unit:.*$/m);
           if (perUnitMatch) newStageProgress += `${perUnitMatch[0]}\n`;
         }
@@ -13319,7 +13309,7 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
       }
     }
 
-    // The walking-skeleton gate derivation keys off the FIRST construction
+    // The walking-skeleton gate derivation keys off the FIRST unit-loop
     // EXECUTE stage (static). A flip that MOVES that anchor - skipping the
     // current anchor, or adding a construction stage AHEAD of it - would
     // silently relocate Bolt 1 and the skeleton stance round-trip. Compare
@@ -13327,7 +13317,7 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
     // (the cheapest sound answer; a suffix-aware gate derivation is a larger
     // change this verb must not smuggle in).
     const anchorOf = (plan: (slug: string) => "EXECUTE" | "SKIP"): string | undefined =>
-      graph.find((s) => s.phase === "construction" && plan(s.slug) === "EXECUTE")?.slug;
+      graph.find((s) => isUnitLoopStage(s) && plan(s.slug) === "EXECUTE")?.slug;
     const anchorBefore = anchorOf(effective);
     const anchorAfter = anchorOf((slug) => {
       if (skipList.includes(slug)) return "SKIP";

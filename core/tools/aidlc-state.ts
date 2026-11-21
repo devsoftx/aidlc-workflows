@@ -108,7 +108,7 @@ import {
   isPerUnitStage,
   findAllEvents,
   firstInScopeStageOfPhase,
-  firstPlannedStageOfPhase,
+  firstPlannedUnitLoopStage,
   formatReceivedReply,
   freshReviewReceipts,
   unchangedChangeRequest,
@@ -188,6 +188,9 @@ import {
   unitSkippedUnits,
   PHASE_NUMBERS,
   PHASES,
+  PHASE_LABELS,
+  isUnitLoopStage,
+  UNIT_RECORD_PHASES,
   parseCheckboxes,
   parseRefsList,
   parseStateStageSuffixes,
@@ -1514,7 +1517,9 @@ function withMessageArg(args: string[]): { values: string[]; message?: string } 
 function requireHumanConstructionPolicyChange(
   pd: string, content: string, field: string, value: string, message: string | undefined,
 ): PolicyAsk | null {
-  if (getField(content, "Lifecycle Phase")?.toLowerCase() !== "construction") return null;
+  // The person's call applies while the work is on a per-unit stage, so it is the
+  // stage the workflow is on that decides, not the lifecycle label.
+  if (!isUnitLoopStage(findStageBySlug(getField(content, "Current Stage") ?? ""))) return null;
   const receipt = constructionPolicyReceipt(pd, content, field, value);
   // An unattended run never changes it on its own, whatever presence bypass is
   // in force: only a choice the person recorded earlier counts there.
@@ -2091,10 +2096,7 @@ function handleRefreshUnitProgress(
         );
       }
       const stage = findStageBySlug(slug);
-      if (
-        stage?.phase !== "construction" ||
-        stage.for_each !== "unit-of-work"
-      ) {
+      if (!isUnitLoopStage(stage)) {
         refuseUnitProgress(`Invalid Unit Progress stage: ${slug}`);
       }
       content = setCheckbox(withStageProgressRow(content, slug), slug, state);
@@ -2116,6 +2118,7 @@ function handleRefreshUnitProgress(
     const currentSlug = getField(content, "Current Stage") ?? "";
     let started: string | null = null;
     let phaseBoundary = false;
+    let boundaryFromPhase = "";
     let workflowCompleted = false;
     let completedFinalStage: NonNullable<ReturnType<typeof findStageBySlug>> | null =
       null;
@@ -2128,6 +2131,7 @@ function handleRefreshUnitProgress(
         const nextAfter = nextInScopeStage(next.slug, workflowScope, content);
         const timestamp = isoTimestamp();
         phaseBoundary = finalStage.phase !== next.phase;
+        boundaryFromPhase = finalStage.phase;
         content = setCheckbox(withStageProgressRow(content, next.slug), next.slug, "in-progress");
         content = setField(content, "Current Stage", next.slug);
         content = setField(content, "Lifecycle Phase", next.phase.toUpperCase());
@@ -2183,12 +2187,12 @@ function handleRefreshUnitProgress(
         const next = findStageBySlug(started);
         if (phaseBoundary) {
           emitAudit(pd, "PHASE_COMPLETED", {
-            "From phase": "construction",
+            "From phase": boundaryFromPhase,
             "To phase": next?.phase ?? "",
             "Stages completed": String(countCheckboxes(content, "completed")),
           });
           emitAudit(pd, "PHASE_VERIFIED", {
-            "Phase boundary": `construction → ${next?.phase ?? ""}`,
+            "Phase boundary": `${boundaryFromPhase} → ${next?.phase ?? ""}`,
           });
           emitAudit(pd, "PHASE_STARTED", {
             Phase: next?.phase ?? "",
@@ -2450,14 +2454,11 @@ function handleSyncUnitScopeStage(args: string[]): void {
     const stamp = validateLiveUnitScope(pd, unit);
     if (!stamp) error("Scoped Unit stage sync requires a live Unit claim.");
     const stage = findStageBySlug(slug);
-    if (
-      stage?.phase !== "construction" ||
-      stage.for_each !== "unit-of-work"
-    ) {
+    if (!stage || !isUnitLoopStage(stage)) {
       error(`Stage "${slug}" is not a per-unit Construction stage.`);
     }
     content = setField(content, "Current Stage", slug);
-    content = setField(content, "Lifecycle Phase", "CONSTRUCTION");
+    content = setField(content, "Lifecycle Phase", PHASE_LABELS.build);
     content = setField(content, "In Progress", slug);
     content = setField(content, "Active Agent", stage.lead_agent);
     if (getSlugState(content, slug) !== "completed") {
@@ -3236,13 +3237,13 @@ function requireEngineRoutedWaveUnit(
 }
 
 // The unit's missing REQUIRED artifacts (kind-filtered like the engine's
-// unitCovered): resolved under <record>/construction/<unit>/<slug>/<name>.md.
+// unitCovered): resolved under <record>/<stage phase>/<unit>/<slug>/<name>.md.
 // Returns [] when everything applicable exists. Kind filtering reads the
 // bolt_dag the same way the engine does; with no readable dag the FULL
 // required list applies (fail strict, like unitCovered's kinds=null path).
 function missingUnitArtifacts(
   pd: string,
-  stage: { slug: string; produces?: string[]; produces_kinds?: Record<string, string[]> },
+  stage: { slug: string; phase: string; produces?: string[]; produces_kinds?: Record<string, string[]> },
   unit: string,
 ): string[] {
   const rec = recordDir(pd);
@@ -3260,7 +3261,7 @@ function missingUnitArtifacts(
   }
   const missing: string[] = [];
   for (const name of required) {
-    const p = join(rec, "construction", unit, stage.slug, artifactFilename(name));
+    const p = join(rec, stage.phase, unit, stage.slug, artifactFilename(name));
     if (!isRegularFile(p)) missing.push(name);
   }
   return missing;
@@ -3332,7 +3333,7 @@ function handleCount(args: string[]): void {
 // layout is gone - a stage's produces[] artifacts now live under the ACTIVE
 // intent's per-intent record dir (`aidlc/spaces/<space>/intents/<slug>-<id8>/
 // <phase>/<stage>/`), per-unit Construction artifacts under that record's
-// `construction/<unit>/<stage>/`, and codekb stages (reverse-engineering) under
+// `<phase>/<unit>/<stage>/`, and codekb stages (reverse-engineering) under
 // the space-level `aidlc/spaces/<space>/codekb/<repo>/`. This guard resolves
 // against those live seams (recordDir / codekbDir), mirroring
 // resolveArtifactPath in aidlc-orchestrate.ts so the two cannot drift on shape.
@@ -3408,8 +3409,8 @@ function autonomousSwarmOwnsStage(
   stateContent: string,
   pd: string,
 ): boolean {
-  if (stage.phase !== "construction") return false;
-  if (stage.for_each !== "unit-of-work" || stage.mode !== "subagent") return false;
+  if (!isUnitLoopStage(stage)) return false;
+  if (stage.mode !== "subagent") return false;
   if (!isConstructionSwarmEnabled(stateContent)) return false;
   if (getField(stateContent, "Construction Iteration")?.trim() === "unit-major") {
     return false;
@@ -3425,7 +3426,7 @@ function autonomousSwarmOwnsStage(
     }
     return true;
   }
-  const first = firstPlannedStageOfPhase("construction", scope, stateContent);
+  const first = firstPlannedUnitLoopStage(scope, stateContent);
   return first === null || first.slug !== stage.slug;
 }
 
@@ -3659,7 +3660,7 @@ function revisionBackstopDisabled(): boolean {
 //     - see the codekb arm of resolveArtifactPath).
 //   - per-unit Construction (for_each: unit-of-work): the {unit} segment is
 //     unknown at approve/advance time, so we glob every
-//     <record>/construction/<unit>/<slug>/ instead of resolving one.
+//     <record>/<stage phase>/<unit>/<slug>/ instead of resolving one.
 //   - everything else: <record>/<phase>/<slug>/.
 // Returns [] when no active intent record resolves (recordDir null) - a stage
 // that declares produces then vacuously fails the existence check, which is the
@@ -3678,13 +3679,19 @@ function producesDirsForStage(
     const stateContent = readStateFile(pd);
     const scope = getField(stateContent, "Scope");
     if (usesStageLevelPerUnitArtifacts(scope, stateContent)) {
-      return [join(rec, "construction", stage.slug)];
+      return [join(rec, stage.phase, stage.slug)];
     }
-    const ctorRoot = join(rec, "construction");
-    if (!existsSync(ctorRoot)) return [];
+    const units = new Set<string>();
+    for (const unitPhase of UNIT_RECORD_PHASES) {
+      const folder = join(rec, unitPhase);
+      if (!existsSync(folder)) continue;
+      for (const name of readdirSync(folder)) {
+        if (findStageBySlug(name) === undefined) units.add(name);
+      }
+    }
     const dirs: string[] = [];
-    for (const unit of readdirSync(ctorRoot)) {
-      const d = join(ctorRoot, unit, stage.slug);
+    for (const unit of units) {
+      const d = join(rec, stage.phase, unit, stage.slug);
       if (existsSync(d)) dirs.push(d);
     }
     return dirs;
@@ -6748,7 +6755,7 @@ function teamGateContext(
     }
     return null;
   }
-  if (stage.phase !== "construction" || stage.for_each !== "unit-of-work") {
+  if (!isUnitLoopStage(stage)) {
     if (unit) {
       error(
         `Stage "${stage.slug}" is not a per-unit Construction stage; team unit gates do not apply.`,
@@ -7241,7 +7248,7 @@ function declaredOutputsForGate(pd: string, stage: GateStage, unit: string | nul
   if (rec === null) return paths;
   const stateContent = readStateFile(pd);
   if (usesStageLevelPerUnitArtifacts(getField(stateContent, "Scope"), stateContent)) return paths;
-  let unitDir = join(rec, "construction", unit, stage.slug);
+  let unitDir = join(rec, stage.phase, unit, stage.slug);
   try {
     unitDir = realpathSync(unitDir);
   } catch {
@@ -8469,7 +8476,7 @@ function handleApprove(args: string[]): void {
   // the slug as already [x] and skip their own guard, so this is the single
   // enforcement point on the approve path. Bypass via AIDLC_SKIP_ARTIFACT_GUARD.
   // Covers per-unit Construction stages (globs the record's
-  // construction/<unit>/<slug>/) and code-producing stages (workspace_requires).
+  // <phase>/<unit>/<slug>/) and code-producing stages (workspace_requires).
   verifyStageArtifacts(pd, stage, "complete", !autonomousDecision && !humanPresenceGuardDisabled());
   verifySummaryConfirmationPrecondition(pd, content, stage);
 
@@ -9249,8 +9256,7 @@ function handleSkip(args: string[]): void {
     const approvedBehind = currentIndex > graph.findIndex((s) => s.slug === slug) &&
       getSlugState(content, slug) === "completed";
     if (!approvedBehind) validateSlugInState(content, slug, ["pending", "in-progress", "revising"]);
-    const perUnitConstruction = (s: { phase: string; for_each?: string } | undefined) =>
-      s?.phase === "construction" && s.for_each === "unit-of-work";
+    const perUnitConstruction = (s: { for_each?: string } | undefined) => isUnitLoopStage(s);
     const teamOwned = isTeamUnitOwnership(content);
     if (
       getField(content, "Construction Iteration")?.trim() !== "unit-major" ||
