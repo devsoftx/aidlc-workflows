@@ -40,7 +40,7 @@ scopes:
   - feature
   - mvp
   - workshop
-inputs: <record>/design/requirements-analysis/requirements.md, <record>/design/user-stories/stories.md (if produced), RE artifacts (if brownfield)
+inputs: <record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced), RE artifacts (if brownfield)
 outputs: components.md, component-methods.md, services.md, component-dependency.md, decisions.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -58,8 +58,8 @@ Load aidlc-design-agent persona from `agents/aidlc-design-agent.md` and knowledg
 
 ### Step 2: Load Prior Context
 
-- Read `<record>/design/requirements-analysis/requirements.md`
-- Read `<record>/design/user-stories/stories.md` (if produced)
+- Read `<record>/inception/requirements-analysis/requirements.md`
+- Read `<record>/inception/user-stories/stories.md` (if produced)
 - If brownfield: Read relevant RE artifacts (especially architecture.md, component-inventory.md, dependencies.md)
 
 ### Step 3: Create Design Plan with Questions

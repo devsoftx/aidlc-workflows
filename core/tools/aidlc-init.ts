@@ -5350,11 +5350,11 @@ function replaceGeneratedRegion(
 
 // Releases 2.8.0 to 2.11.0 kept the scope and stage tables inside the skill,
 // and a plugin sync there rewrote them, so the skill no longer matches its
-// record. With its tables put back to the ones this release ships, or to its
-// stage graph and the scope grid 2.9.0 to 2.11.0 shipped
-// (EARLIER_SKILL_SCOPE_GRID_BODY), it is the file the record says AI-DLC wrote,
-// and the refresh writes this release's skill over it. A skill recorded with
-// other tables, or changed anywhere else, keeps the conflict.
+// record. With its tables put back to the ones this release ships, or to the
+// scope grid and stage graph 2.9.0 to 2.11.0 shipped
+// (EARLIER_SKILL_SCOPE_GRID_BODY, EARLIER_SKILL_STAGE_GRAPH_BODY), it is the file
+// the record says AI-DLC wrote, and the refresh writes this release's skill over
+// it. A skill recorded with other tables, or changed anywhere else, keeps the conflict.
 function earlierSkillTablesOnly(
   skillPath: string,
   releaseTablesPath: string,
@@ -5364,9 +5364,12 @@ function earlierSkillTablesOnly(
   if (ownedFileHash(skillPath, [priorHash]).hash === priorHash) return false;
   const tables = readFileSync(releaseTablesPath, "utf-8").replaceAll("\r\n", "\n");
   const skill = readFileSync(skillPath, "utf-8").replaceAll("\r\n", "\n");
-  // This release's tables first, then the same tables with the scope grid
-  // those releases shipped, for a release whose scope grid has since changed.
-  for (const candidate of [tables, withEarlierScopeGrid(tables)]) {
+  // This release's tables first, then the same tables with the scope grid or
+  // the stage graph those releases shipped, for a release whose either has changed.
+  const withScope = withEarlierBody(tables, "scope grid", EARLIER_SKILL_SCOPE_GRID_BODY);
+  const withStage = withEarlierBody(tables, "stage graph", EARLIER_SKILL_STAGE_GRAPH_BODY);
+  const withBoth = withEarlierBody(withScope, "stage graph", EARLIER_SKILL_STAGE_GRAPH_BODY);
+  for (const candidate of [tables, withScope, withStage, withBoth]) {
     let restored: string;
     try {
       restored = replaceGeneratedRegion(skill, candidate, "stage");
@@ -5405,12 +5408,61 @@ export const EARLIER_SKILL_SCOPE_GRID_BODY = [
   "",
 ].join("\n");
 
-function withEarlierScopeGrid(tables: string): string {
-  const begin = tables.indexOf("<!-- BEGIN: compiled scope grid via ");
+// The stage graph body (between its BEGIN and END lines) that 2.9.0 to 2.11.0
+// kept in their /aidlc skill, the same on every harness. The migration to seven
+// phases changed the graph, so a later release's own graph no longer proves those
+// skills; earlierSkillTablesOnly carries this body as it does the scope grid.
+// Pinned by t-earlier-skill-tables-refresh.
+export const EARLIER_SKILL_STAGE_GRAPH_BODY = [
+  "",
+  "",
+  "| Slug | # | Stage | Phase | Execution | Lead Agent | Support Agents | Mode |",
+  "|------|---|-------|-------|-----------|------------|----------------|------|",
+  "| workspace-scaffold | 0.1 | Workspace Scaffold | Initialization | ALWAYS | (orchestrator) | \u2014 | inline |",
+  "| workspace-detection | 0.2 | Workspace Detection | Initialization | ALWAYS | (orchestrator) | \u2014 | inline |",
+  "| state-init | 0.3 | State Initialization | Initialization | ALWAYS | (orchestrator) | \u2014 | inline |",
+  "| intent-capture | 1.1 | Intent Capture & Framing | Ideation | ALWAYS | aidlc-product-agent | aidlc-architect-agent | inline |",
+  "| market-research | 1.2 | Market Research | Ideation | CONDITIONAL | aidlc-product-agent | \u2014 | inline |",
+  "| feasibility | 1.3 | Feasibility & Constraints | Ideation | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-compliance-agent | inline |",
+  "| scope-definition | 1.4 | Scope Definition | Ideation | ALWAYS | aidlc-product-agent | aidlc-delivery-agent | inline |",
+  "| team-formation | 1.5 | Team Formation | Ideation | CONDITIONAL | aidlc-delivery-agent | \u2014 | inline |",
+  "| rough-mockups | 1.6 | Rough Mockups | Ideation | CONDITIONAL | aidlc-design-agent | aidlc-product-agent | inline |",
+  "| approval-handoff | 1.7 | Approval & Handoff | Ideation | ALWAYS | aidlc-delivery-agent | aidlc-product-agent | inline |",
+  "| reverse-engineering | 2.1 | Reverse Engineering | Inception | CONDITIONAL | aidlc-developer-agent | aidlc-architect-agent | pipeline |",
+  "| practices-discovery | 2.2 | Practices Discovery | Inception | CONDITIONAL | aidlc-pipeline-deploy-agent | aidlc-quality-agent, aidlc-developer-agent, aidlc-devsecops-agent | subagent |",
+  "| requirements-analysis | 2.3 | Requirements Analysis | Inception | ALWAYS | aidlc-product-agent | \u2014 | inline |",
+  "| user-stories | 2.4 | User Stories | Inception | CONDITIONAL | aidlc-product-agent | aidlc-design-agent, aidlc-developer-agent, aidlc-quality-agent | mob |",
+  "| refined-mockups | 2.5 | Refined Mockups | Inception | CONDITIONAL | aidlc-design-agent | aidlc-product-agent | inline |",
+  "| domain-design | 2.6 | Domain Design | Inception | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-design-agent | inline |",
+  "| units-generation | 2.7 | Units Generation | Inception | ALWAYS | aidlc-architect-agent | aidlc-delivery-agent | inline |",
+  "| contract-design | 2.8 | Contract Design | Inception | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent | inline |",
+  "| delivery-planning | 2.9 | Delivery Planning | Inception | ALWAYS | aidlc-delivery-agent | aidlc-architect-agent | inline |",
+  "| functional-design | 3.1 | Functional Design | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-developer-agent | inline |",
+  "| nfr-requirements | 3.2 | NFR Requirements | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-devsecops-agent, aidlc-compliance-agent, aidlc-quality-agent | inline |",
+  "| nfr-design | 3.3 | NFR Design | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent | inline |",
+  "| infrastructure-design | 3.4 | Infrastructure Design | Construction | CONDITIONAL | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | inline |",
+  "| code-generation | 3.5 | Code Generation | Construction | ALWAYS | aidlc-developer-agent | \u2014 | subagent |",
+  "| build-and-test | 3.6 | Build and Test | Construction | ALWAYS | aidlc-quality-agent | aidlc-devsecops-agent | inline |",
+  "| ci-pipeline | 3.7 | CI Pipeline | Construction | CONDITIONAL | aidlc-pipeline-deploy-agent | \u2014 | inline |",
+  "| deployment-pipeline | 4.1 | Deployment Pipeline | Operation | CONDITIONAL | aidlc-pipeline-deploy-agent | \u2014 | inline |",
+  "| environment-provisioning | 4.2 | Environment Provisioning | Operation | CONDITIONAL | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | inline |",
+  "| deployment-execution | 4.3 | Deployment Execution | Operation | CONDITIONAL | aidlc-pipeline-deploy-agent | aidlc-developer-agent | inline |",
+  "| observability-setup | 4.4 | Observability Setup | Operation | CONDITIONAL | aidlc-operations-agent | \u2014 | inline |",
+  "| incident-response | 4.5 | Incident Response | Operation | CONDITIONAL | aidlc-operations-agent | \u2014 | inline |",
+  "| performance-validation | 4.6 | Performance Validation | Operation | CONDITIONAL | aidlc-quality-agent | \u2014 | inline |",
+  "| feedback-optimization | 4.7 | Feedback & Optimization | Operation | CONDITIONAL | aidlc-operations-agent | aidlc-aws-platform-agent | inline |",
+  "",
+  "",
+].join("\n");
+
+// `tables` with one compiled region's body (`noun` is "scope grid" or "stage
+// graph") replaced by `body`, the body 2.9.0 to 2.11.0 kept for it.
+function withEarlierBody(tables: string, noun: string, body: string): string {
+  const begin = tables.indexOf(`<!-- BEGIN: compiled ${noun} via `);
   const open = begin < 0 ? -1 : tables.indexOf("-->", begin);
-  const close = open < 0 ? -1 : tables.indexOf("<!-- END: compiled scope grid -->", open);
+  const close = open < 0 ? -1 : tables.indexOf(`<!-- END: compiled ${noun} -->`, open);
   if (close < 0) return tables;
-  return `${tables.slice(0, open + 3)}${EARLIER_SKILL_SCOPE_GRID_BODY}${tables.slice(close)}`;
+  return `${tables.slice(0, open + 3)}${body}${tables.slice(close)}`;
 }
 
 function generatedOverlayCandidate(rel: string, harnessDir: string): boolean {

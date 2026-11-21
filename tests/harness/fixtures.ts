@@ -50,6 +50,13 @@ const requireHere = createRequire(import.meta.url);
 export const REPO_ROOT = join(HARNESS_DIR, "..", "..");
 export const AIDLC_SRC = join(REPO_ROOT, "dist", "claude", ".claude");
 
+// The compiled stage graph and scope grid exist only under dist/. A test that
+// imports core/ directly reads them through the engine's own override variables.
+export function pointAtCompiledData(): void {
+  process.env.AIDLC_STAGE_GRAPH ??= join(AIDLC_SRC, "tools", "data", "stage-graph.json");
+  process.env.AIDLC_SCOPE_GRID ??= join(AIDLC_SRC, "tools", "data", "scope-grid.json");
+}
+
 // The per-intent WORKSPACE layout the fixtures seed. A fixture project gets a
 // SEED-style shell (aidlc/active-space + spaces/default/) plus ONE default
 // intent record so the path helpers resolve the record dir rather than the

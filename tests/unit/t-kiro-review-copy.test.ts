@@ -19,7 +19,9 @@ import {
   loadAgents,
   scopedReviewCopyName,
 } from "../../core/tools/aidlc-lib.ts";
-import { REPO_ROOT } from "../harness/fixtures.ts";
+import { pointAtCompiledData, REPO_ROOT } from "../harness/fixtures.ts";
+
+pointAtCompiledData();
 
 const STABLE = "2.11.0";
 const REVIEWER = "aidlc-architecture-reviewer-agent";

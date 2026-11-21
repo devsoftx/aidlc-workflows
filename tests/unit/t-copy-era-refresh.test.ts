@@ -27,7 +27,7 @@ const CLAUDE_COPY = join(REPO_ROOT, "dist", "claude");
 const CLAUDE_RELEASE = join(REPO_ROOT, "dist-release", "claude");
 const OLD = join(REPO_ROOT, "tests", "fixtures", "copy-era", "claude");
 const AGENT = ".claude/agents/aidlc-architect-agent.md";
-const RETIRED = ".claude/aidlc-common/stages/design/application-design.md";
+const RETIRED = ".claude/aidlc-common/stages/inception/application-design.md";
 
 const temporary: string[] = [];
 afterAll(() => {

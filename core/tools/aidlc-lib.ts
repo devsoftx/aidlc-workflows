@@ -38369,10 +38369,14 @@ const STARTED_STATES: ReadonlySet<string> = new Set(["in-progress", "awaiting-ap
 // folder holds code AI-DLC wrote, so the scan no longer tells new from
 // existing, and the workflow is not moved back into the stages before the unit loop.
 export function constructionHasStarted(content: string, workRecordDir?: string | null): boolean {
-  // Per-Unit output in the record means this work has built: a jump back
-  // resets its stages, but the code in the folder is still its own.
-  const holdsUnitWork = (record: string): boolean => (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record).some((unit) =>
-    UNIT_RECORD_PHASES.some((phase) => holdsAnyFile(join(record, phase, unit))));
+  // Output of a unit-loop stage in the record (its own folder, or a Unit's) means
+  // this work has built: a jump back resets its stages, but the code in the folder
+  // is still its own. Only unit-loop folders count: design/ and build/ also hold
+  // stages that never meant construction had begun.
+  const holdsUnitWork = (record: string): boolean =>
+    loadStageGraph().some((stage) => isUnitLoopStage(stage) && holdsAnyFile(join(record, stage.phase, stage.slug))) ||
+    (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record).some((unit) =>
+      UNIT_RECORD_PHASES.some((phase) => holdsAnyFile(join(record, phase, unit))));
   if (workRecordDir && holdsUnitWork(workRecordDir)) return true;
   const states = new Map(parseCheckboxes(content).map((c) => [c.slug, c.state]));
   const started = loadStageGraph().filter((stage) =>

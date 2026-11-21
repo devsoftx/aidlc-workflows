@@ -90,7 +90,7 @@ Per unit: [unit-name]
 ### SECURE PHASE
 - [ ] code-review — EXECUTE
 - [ ] security-review — EXECUTE
-- [S] conformance-review — SKIP (bugfix scope)
+- [ ] conformance-review — SKIP (bugfix scope)
 
 ### DEPLOY PHASE
 - [ ] ci-pipeline — SKIP (bugfix scope)

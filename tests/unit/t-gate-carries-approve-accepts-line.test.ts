@@ -104,7 +104,9 @@ describe("the gate carries the line that says what Approve accepts", () => {
   test("next showing the open gate again says it again, with the gate's rules as without the line", async () => {
     const proj = await reviewed([FINDING]);
     expect((await report(proj, "awaiting-approval")).directive?.kind).toBe("print");
-    const shown = await next(proj, []);
+    // The suite can run inside a Claude Code shell, where CLAUDECODE=1 makes the engine
+    // take this chat for the host's; the person's own chat is not that one.
+    const shown = await next(proj, [], { env: { CLAUDECODE: undefined } });
     expect(shown.directive?.gate_only, shown.out).toBe(true);
     const again = shown.directive as Directive | null;
     expect(again?.change_notices, shown.out).toContain(LINE);

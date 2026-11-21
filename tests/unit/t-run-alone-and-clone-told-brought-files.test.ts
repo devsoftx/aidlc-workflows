@@ -20,6 +20,7 @@ import {
 import { createCodeGenerationProject, reviewText, runNamed, stageDir, writePlan } from "../harness/code-generation-states.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { sourceBaselineAuditFields, workspaceBaselineStageSlugs } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks are not this file's subject, and its fixture documents
 // are not written for them.
@@ -236,15 +237,17 @@ describe("a teammate's clone that picks up the build", () => {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [S] functional-design \u2014 SKIP
 - [S] nfr-requirements \u2014 SKIP
 - [S] nfr-design \u2014 SKIP
 - [S] infrastructure-design \u2014 SKIP
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);
@@ -254,7 +257,7 @@ describe("a teammate's clone that picks up the build", () => {
     appendAuditEntry("WORKFLOW_STARTED", { Scope: "feature", ...sourceBaselineAuditFields(p, workspaceBaselineStageSlugs()) }, p);
     // Unit alpha's build ran on the machine the work started on.
     write(p, { "docs/alpha.md": "# Alpha\n" });
-    const manifest = join(seededRecordDir(p), "construction", "alpha", "code-generation", "source-manifest.json");
+    const manifest = join(seededRecordDir(p), phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json");
     mkdirSync(dirname(manifest), { recursive: true });
     writeFileSync(manifest, JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "docs/alpha.md" }] }));
     asClone(p);

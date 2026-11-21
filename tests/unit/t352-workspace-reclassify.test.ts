@@ -79,6 +79,7 @@ import { loadGraph } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { stageValidationAuditFields } from "../../dist/claude/.claude/tools/aidlc-validity.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 
+import { phaseFor } from "../harness/stage-phase.ts";
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 const BUN = process.execPath;
@@ -86,7 +87,7 @@ const UTIL = join(AIDLC_SRC, "tools", "aidlc-utility.ts");
 const ORCH = join(AIDLC_SRC, "tools", "aidlc-orchestrate.ts");
 const JUMP = join(AIDLC_SRC, "tools", "aidlc-jump.ts");
 const SEP = "\u2014";
-const GREENFIELD_MARK = `2.1 (reverse-engineering ${SEP} greenfield)`;
+const GREENFIELD_MARK = `1.4 (reverse-engineering ${SEP} greenfield)`;
 const NO_CODE_LINE = "The scan found no code in this folder yet; Reverse Engineering documents what is here when it runs.";
 const tempDirs: string[] = [];
 
@@ -263,6 +264,9 @@ function finishPracticesAsNewProject(proj: string): void {
   }, proj);
 }
 
+// Phases whose stages a jump back to Requirements Analysis resets (the seven-phase run of the old construction and inception).
+const RESET_PHASES = ["design", "build", "test", "secure"];
+
 describe("t352 creation: the person's word sets the project type", () => {
   test("brownfield in an empty folder keeps Reverse Engineering and says no code was found yet", () => {
     const proj = project();
@@ -362,8 +366,8 @@ describe("t352 next: the flag rides to creation and the preview is honest", () =
     expect(create(proj, "classic").status).toBe(0);
     // Finished the way the engine judges it: the last stage on the plan is done.
     edit(proj, (s) =>
-      mark(s, "build-and-test", "x")
-        .replace(/^- \*\*Current Stage\*\*: .*$/m, "- **Current Stage**: build-and-test")
+      mark(s, "conformance-review", "x")
+        .replace(/^- \*\*Current Stage\*\*: .*$/m, "- **Current Stage**: conformance-review")
         .replace(/^- \*\*Status\*\*: .*$/m, "- **Status**: Completed"));
     const d = next(proj, ["--project-type", "brownfield", "--scope", "classic", "add the export button"]);
     expect(String(d.message ?? d.question ?? "")).not.toContain("workspace reclassify");
@@ -891,7 +895,7 @@ describe("t352 code that arrives as Construction starts", () => {
     const proj = project();
     expect(create(proj, "poc").status).toBe(0);
     atCodeGeneration(proj);
-    const stageDir = join(recordDir(proj), "construction", "code-generation");
+    const stageDir = join(recordDir(proj), phaseFor("code-generation"), "code-generation");
     mkdirSync(stageDir, { recursive: true });
     writeFileSync(join(stageDir, "code-generation-plan.md"), "# Code Generation Plan\n");
     addRepo(proj);
@@ -900,22 +904,22 @@ describe("t352 code that arrives as Construction starts", () => {
     expect(next(proj).ask_type).not.toBe("project-type");
   });
 
-  // A jump back to Requirements Analysis resets every Construction stage, but
-  // the code in the folder is what this work's own Units built.
+  // A jump back to Requirements Analysis resets every stage from design through
+  // secure, but the code in the folder is what this work's own Units built.
   test("after a jump back past Construction, the work's own code asks nothing about the folder", () => {
     const proj = project();
     expect(create(proj, "poc").status).toBe(0);
     atCodeGeneration(proj);
-    const unitDir = join(recordDir(proj), "construction", "u1-note-store", "code-generation");
+    const unitDir = join(recordDir(proj), phaseFor("code-generation"), "u1-note-store", "code-generation");
     mkdirSync(unitDir, { recursive: true });
     writeFileSync(join(unitDir, "code-generation-plan.md"), "# Code Generation Plan\n");
     addRepo(proj);
-    // The jump back: every Construction stage is pending again and the cursor
-    // is on Requirements Analysis.
+    // The jump back: every stage from design through secure is pending again and
+    // the cursor is on Requirements Analysis.
     edit(proj, (s) => {
       let out = s;
       for (const stage of loadGraph()) {
-        if ((stage.phase === "construction" || stage.phase === "inception") && stageLine(out, stage.slug)?.endsWith("EXECUTE")) {
+        if (RESET_PHASES.includes(stage.phase) && stageLine(out, stage.slug)?.endsWith("EXECUTE")) {
           out = mark(out, stage.slug, " ");
         }
       }
@@ -933,7 +937,7 @@ describe("t352 code that arrives as Construction starts", () => {
     const proj = project();
     expect(create(proj, "express").status).toBe(0);
     const operation = loadGraph().find((stage) =>
-      stage.phase === "operation" && stageLine(state(proj), stage.slug)?.endsWith("EXECUTE"));
+      stage.phase === "operate" && stageLine(state(proj), stage.slug)?.endsWith("EXECUTE"));
     expect(operation, "express runs an Operation stage").toBeDefined();
     edit(proj, (s) => mark(s, operation!.slug, "-")
       .replace(/^- \*\*Current Stage\*\*: .*$/m, `- **Current Stage**: ${operation!.slug}`));

@@ -166,7 +166,7 @@ export async function exec(cmd: string[], opts: { cwd: string; env: NodeJS.Proce
   }
 }
 
-export interface RunOptions { session?: string; env?: Record<string, string> }
+export interface RunOptions { session?: string; env?: Record<string, string | undefined> }
 // Production guards, as a person's run has them; the chat the engine acts for is pinned the way a hook pins it.
 export function env(proj: string, opts: RunOptions = {}): NodeJS.ProcessEnv {
   return {

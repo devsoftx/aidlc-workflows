@@ -18,13 +18,15 @@ import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { REPO_ROOT } from "../harness/fixtures.ts";
+import { pointAtCompiledData, REPO_ROOT } from "../harness/fixtures.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { kiroAgentModelDoctorChecks } from "../../core/tools/aidlc-doctor.ts";
 import { renderReviewCopy } from "../../core/tools/aidlc-kiro-review-copy.ts";
 import * as policy from "../../core/tools/aidlc-model-policy.ts";
 import type { ModelPolicyRecord } from "../../core/tools/aidlc-model-policy.ts";
 import { normalizeSettingsModels, projectSettingsPath } from "../../core/tools/aidlc-settings.ts";
+
+pointAtCompiledData();
 
 const KIRO_IDE_RELEASE = join(REPO_ROOT, "dist-release", "kiro-ide");
 const REVIEWER = "architecture-reviewer";
