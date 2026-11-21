@@ -53,4 +53,5 @@ there is nothing to bootstrap.
 Keyword triggers: `fix`, `bug`, `broken`, `bugfix` (word-boundary matched, so
 "debug" and "fixture" do not trigger it). Initialization,
 reverse-engineering, requirements-analysis, code-generation, build-and-test,
-deployment-pipeline, and deployment-execution execute; the rest is SKIP.
+code-review, security-review, deployment-pipeline, and deployment-execution
+execute; the rest is SKIP.

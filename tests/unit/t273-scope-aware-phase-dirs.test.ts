@@ -1,22 +1,22 @@
 // covers: function:ensureWorkspaceDirs, function:phasesWithExecuteStages
 //
 // t273: SCOPE-AWARE PHASE DIRS at intent creation (deterministic, no-LLM,
-// no-network). Intent creation used to mkdir all five phase dirs unconditionally,
+// no-network). Intent creation used to mkdir every phase dir unconditionally,
 // so narrow-scope records shipped empty phase dirs that read as
 // planned-then-skipped work. Creation makes a phase dir only for a phase the
 // SCOPE RUNS (one holding at least one EXECUTE stage), derived from the same
 // stagesInScope data that drives the PHASE_SKIPPED audit rows. Bugfix omits
-// `ideation/` but includes `operation/` for its deployment stages.
+// `ideation/` but includes `deploy/` for its deployment stages.
 //
 // Five contracts land here:
-//   (a) NARROW SCOPE: a bugfix record has initialization/inception/construction/
-//       operation + verification, and NO ideation/ dir at all.
-//   (b) FULL SCOPE: a feature record still has all five phase dirs.
+//   (a) NARROW SCOPE: a bugfix record has initialization/discover/design/build/
+//       test/secure/deploy + verification, and NO ideation/ or operate/ dir at all.
+//   (b) FULL SCOPE: a feature record still has every phase dir.
 //   (c) AGREEMENT: the phase dirs on disk and the PHASE_SKIPPED audit rows are
 //       exact complements. This is the invariant that makes the trimming
 //       auditable rather than lossy, and it is what a future scope-grid edit
 //       would break silently if only (a)/(b) were pinned.
-//   (d) ADDITIVE ONLY: a pre-existing record already carrying all five dirs
+//   (d) ADDITIVE ONLY: a pre-existing record already carrying every phase dir
 //       (a legacy install) is never pruned.
 //   (e) ABSENCE IS WRITABLE: an artifact write into an EXCLUDED phase's dir
 //       still succeeds, because writers create their own parent chain. This is
@@ -112,17 +112,20 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
   test("a: a bugfix record gets only its in-scope phase dirs, no ideation/", () => {
     const record = createAndResolveRecord(mkTemp("bugfix"), "bugfix");
 
-    // bugfix runs initialization + inception + construction + operation;
-    // ideation has zero EXECUTE stages.
+    // bugfix runs initialization, discover, design, build, test, secure and
+    // deploy; ideation and operate have zero EXECUTE stages.
     expect(phaseDirsPresent(record).sort()).toEqual([
-      "construction",
-      "inception",
+      "build",
+      "deploy",
+      "design",
+      "discover",
       "initialization",
-      "operation",
+      "secure",
+      "test",
     ]);
     // Stated as explicit absences too, so the failure message names the dir.
     expect(existsSync(join(record, "ideation")), "no ideation/ dir for bugfix").toBe(false);
-    expect(existsSync(join(record, "operation")), "operation/ dir for bugfix").toBe(true);
+    expect(existsSync(join(record, "operate")), "operate/ dir for bugfix").toBe(false);
 
     // verification/ is scope-independent: every record gets it.
     const verification = join(record, "verification");
@@ -131,7 +134,7 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
   });
 
   // === (b) FULL SCOPE ======================================================
-  test("b: a feature record still gets all five phase dirs", () => {
+  test("b: a feature record still gets every phase dir", () => {
     const record = createAndResolveRecord(mkTemp("feature"), "feature");
 
     // feature runs every phase, so nothing is trimmed; this is the guard that
@@ -161,7 +164,7 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
   });
 
   // === (d) ADDITIVE ONLY ===================================================
-  test("d: a pre-existing record carrying all five phase dirs is never pruned", () => {
+  test("d: a pre-existing record carrying every phase dir is never pruned", () => {
     // A legacy install: a record created by an older engine already has all five
     // dirs. Creating a NEW narrow-scope intent alongside it must leave it alone:
     // this path only ever creates.
@@ -170,7 +173,7 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
     for (const phase of PHASES) mkdirSync(join(legacy, phase), { recursive: true });
     mkdirSync(join(legacy, "verification"), { recursive: true });
     // A sentinel artifact proves content survives, not just the dir entry.
-    const sentinel = join(legacy, "operation", "keep-me.md");
+    const sentinel = join(legacy, "operate", "keep-me.md");
     writeFileSync(sentinel, "legacy artifact\n", "utf-8");
 
     const res = create(proj, "bugfix");

@@ -8,6 +8,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const ROOTS = {
   core: join(REPO_ROOT, "core"),
@@ -16,7 +17,7 @@ const ROOTS = {
 
 describe.each(Object.entries(ROOTS))("Unit source manifest across attempts (%s)", (_name, root) => {
   const stage = (): string =>
-    readFileSync(join(root, "aidlc-common", "stages", "construction", "code-generation.md"), "utf-8")
+    readFileSync(join(root, "aidlc-common", "stages", phaseFor("code-generation"), "code-generation.md"), "utf-8")
       .replace(/\s+/g, " ");
 
   test("a Unit reopened by a rejection keeps its earlier claims", () => {

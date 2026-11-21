@@ -485,7 +485,7 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
     const every = message.slice(message.indexOf(EVERY_FROM));
     expect(every).toContain(`engine recompose --skip nfr-requirements,code-generation,build-and-test --reason '${PERSON}'`);
     expect(every).toContain(
-      '"Skipped NFR Requirements and Code Generation for every Unit from here, and Build and Test. You can undo that until CI Pipeline starts."',
+      '"Skipped NFR Requirements and Code Generation for every Unit from here, and Build and Test. You can undo that until Performance Validation starts."',
     );
   });
 

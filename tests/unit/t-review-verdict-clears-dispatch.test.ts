@@ -12,6 +12,7 @@ import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanupTestProject, createTestProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -51,7 +52,7 @@ function projectWithRequestedReview(): { p: string; stage: string; record: strin
   expect(stage).toBe("requirements-analysis");
   const intents = join(p, "aidlc", "spaces", "default", "intents");
   const record = join(intents, readFileSync(join(intents, "active-intent"), "utf-8").trim());
-  const dir = join(record, "inception", stage);
+  const dir = join(record, phaseFor(stage), stage);
   mkdirSync(dir, { recursive: true });
   const artifact = join(dir, "requirements.md");
   writeFileSync(artifact, "# Requirements\n");

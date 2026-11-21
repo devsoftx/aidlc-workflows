@@ -181,7 +181,7 @@ describe("t-skip-beside-reopen: a skip typed beside a plan switch on finished wo
 
     const out = actOn(proj, print);
     expect(out).toContain("Switched to feature");
-    expect(out).toContain("11 stages (4 done)");
+    expect(out).toContain("12 stages (6 done)");
     const text = state(proj);
     expect(field(text, "Status")).toBe("Running");
     expect(field(text, "Current Stage")).toBe("deployment-pipeline");
@@ -233,7 +233,7 @@ describe("t-skip-beside-reopen: a skip typed beside a plan switch on finished wo
     expect(step.stage).toBe("deployment-pipeline");
     const said = (step.change_notices ?? []).join(" ");
     expect(said.startsWith("Switched to feature"), said).toBe(true);
-    expect(said).toContain("11 stages (4 done)");
+    expect(said).toContain("12 stages (6 done)");
     expect(lib.pendingPersonLines(proj, SESSION).lines).toEqual([]);
     const again = next(proj);
     expect(`${(again.change_notices ?? []).join(" ")} ${again.narration ?? ""}`).not.toContain("Switched to");

@@ -64,8 +64,20 @@ as a row in `code-review-findings.md` so the approval gate can address it by ID.
 Present the blockers and major findings to the person. They decide whether to
 fix them now or accept them with a recorded reason. Do not fix code in this stage.
 
+Hand completion to `stage-protocol.md` via
+`{{INVOKE}} engine orchestrate report --stage code-review --result <outcome>`.
+That `report` call owns every lifecycle transition and advancement; never perform one in prose, and never narrate this bookkeeping to the user.
+
 Approval gate: strictly 2-option (Approve / Request Changes).
 
 ## Sensors
 
 Required-sections check on `code-review-report.md`.
+
+## Learn
+
+When `directive.protocol_modules` lists `learnings`, follow
+`stage-protocol-learnings.md`: keep the diary at `directive.memory_path` while
+working, and take the learnings step before the approval gate; that module says
+when it asks the person anything. When the module is absent, skip both the diary
+and the step.

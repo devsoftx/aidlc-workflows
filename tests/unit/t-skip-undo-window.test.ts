@@ -16,6 +16,7 @@ import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, removeWorkspaceRecord } from "../harness/fixtures.ts";
 import { env, exec, next, say, type Exec } from "../harness/aidlc-input-corpus.ts";
 import { getField, recordDir, stateFilePath } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS * 2);
 
@@ -67,6 +68,12 @@ async function skipped(proj: string, typed: string, args: string[]): Promise<{ s
   const undo = /If they later ask to undo it, run `([^`]+)`/.exec(message)?.[1] ?? "";
   expect(undo, message).not.toBe("");
   return { said: line(message), undo };
+}
+/** The person approves `stage` the way its gate's steps name: the awaiting-approval report, then the approval. */
+async function approve(proj: string, stage: string): Promise<void> {
+  await ran(proj, `bun .claude/tools/aidlc-orchestrate.ts report --stage ${stage} --result awaiting-approval`);
+  await say(proj, "approve", "claude");
+  await ran(proj, `bun .claude/tools/aidlc-orchestrate.ts report --stage ${stage} --result approved --user-input Approve`);
 }
 /** The person moves the work to `stage` with the jump the engine names. */
 async function jumpTo(proj: string, stage: string): Promise<void> {
@@ -141,9 +148,13 @@ describe("t-skip-undo-window: a skip says how long its undo holds", () => {
     expect(said).toBe(
       "Skipped Deployment Pipeline, Deployment Execution and Observability Setup. You can undo that until the work is finished.",
     );
-    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage build-and-test --result awaiting-approval");
-    await say(proj, "approve", "claude");
-    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage build-and-test --result approved --user-input Approve");
+    await approve(proj, "build-and-test");
+    // The express plan runs Code Review and Security Review between Build and Test and the deploy stages, so the work
+    // is still running once Build and Test is approved.
+    expect(getField(state(proj), "Current Stage")).toBe("code-review");
+    expect(getField(state(proj), "Status")).toBe("Running");
+    await approve(proj, "code-review");
+    await approve(proj, "security-review");
     expect(getField(state(proj), "Status")).toBe("Completed");
     const late = await runNamed(proj, undo);
     expect(late.status).not.toBe(0);
@@ -155,12 +166,12 @@ describe("t-skip-undo-window: a skip says how long its undo holds", () => {
   // refused on the very next line. So no window is offered there, only the way that still holds.
   test("a skip typed at the open gate of the stage before it names the run on its own, never a window that closes at once", async () => {
     const proj = await expressAtReverseEngineering();
-    await jumpTo(proj, "build-and-test");
-    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage build-and-test --result awaiting-approval");
+    await jumpTo(proj, "security-review");
+    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage security-review --result awaiting-approval");
     const { said, undo } = await skipped(proj, "approve, and skip the deployment pipeline", ["--skip", "deployment-pipeline"]);
     expect(said).toBe("Skipped Deployment Pipeline. It can still be run on its own with `/aidlc --stage deployment-pipeline --single`.");
     // The person approves in that reply: the work is past it, and the plan undo no longer holds.
-    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage build-and-test --result approved --user-input Approve");
+    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage security-review --result approved --user-input Approve");
     expect(getField(state(proj), "Current Stage")).toBe("deployment-execution");
     const late = await runNamed(proj, undo);
     expect(late.status).not.toBe(0);
@@ -190,7 +201,7 @@ describe("t-skip-undo-window: a skip says how long its undo holds", () => {
     await ran(proj, undo);
     await skipped(proj, "skip the reverse engineering after all", ["--skip", "reverse-engineering"]);
     await jumpTo(proj, "code-generation");
-    const plan = join(recordDir(proj) as string, "construction", "code-generation", "code-generation-plan.md");
+    const plan = join(recordDir(proj) as string, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
     mkdirSync(join(plan, ".."), { recursive: true });
     writeFileSync(plan, "# Code Generation Plan\n", "utf-8");
     const late = await runNamed(proj, undo);

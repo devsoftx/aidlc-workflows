@@ -650,6 +650,7 @@ import {
   producersOf,
   scopeSettingsOf,
   subgraphForScope,
+  inUnitWalk,
 } from "./aidlc-graph.ts";
 // The plan for a request the person described in their own words is proposed
 // by the agent (planProposalDirective), never inferred here from keywords; the
@@ -10432,7 +10433,9 @@ function buildRunStageDirective(
   if (effectiveSupports.length > 0 && node.mode !== "inline") {
     protocolModules.push("collaborators");
   }
-  if (isUnitLoopStage(node)) {
+  // The Unit walk, not only its per-Unit stages: Build and Test loads the
+  // construction module too (the same span inConstructionWalk uses).
+  if (inUnitWalk(node.slug)) {
     protocolModules.push("construction");
   }
   // A Build and Test failure can loop back to Code Generation, and a reopened

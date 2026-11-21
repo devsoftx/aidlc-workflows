@@ -227,9 +227,9 @@ describe.each([...HARNESSES])("$name: a plugin's rules on a real install", (harn
     const placementLine = first.split("\n").find((line) => line.startsWith("test-pro's rules are in")) ?? "";
     expect(personNotices(p, chat)).toContain(placementLine);
     expect(personNotices(p, chat)).not.toContain(placementLine);
-    expect(first).toContain("test-pro's rules are in team.md (and phases/inception.md), in a section of their own at the end.");
-    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/phases/inception.md", "aidlc/spaces/default/memory/team.md"]);
-    expect(briefHolding(p)).toEqual(["aidlc/spaces/default/memory/phases/inception.md", "aidlc/spaces/default/memory/team.md"]);
+    expect(first).toContain("test-pro's rules are in team.md (and phases/design.md), in a section of their own at the end.");
+    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/phases/design.md", "aidlc/spaces/default/memory/team.md"]);
+    expect(briefHolding(p)).toEqual(["aidlc/spaces/default/memory/phases/design.md", "aidlc/spaces/default/memory/team.md"]);
     const team = readFileSync(join(memory(p), "team.md"), "utf-8");
     expect(team.startsWith(before.get("aidlc/spaces/default/memory/team.md") ?? "")).toBe(true);
     expect(team).toContain("### Test-first habits");
@@ -299,8 +299,8 @@ describe.each([...HARNESSES])("$name: a plugin's rules on a real install", (harn
     // A new space has the sections from the start, and sync finds nothing to do.
     ok(tool(p, "aidlc-utility.ts", ["space-create", "beta", "--project-dir", p.proj]));
     expect(holding(p)).toEqual([
-      "aidlc/spaces/beta/memory/phases/inception.md", "aidlc/spaces/beta/memory/team.md",
-      "aidlc/spaces/default/memory/phases/inception.md", "aidlc/spaces/default/memory/team.md",
+      "aidlc/spaces/beta/memory/phases/design.md", "aidlc/spaces/beta/memory/team.md",
+      "aidlc/spaces/default/memory/phases/design.md", "aidlc/spaces/default/memory/team.md",
     ]);
     const withSpace = snapshot(p);
     expect(sync(p)).not.toContain("rules are in");
@@ -309,9 +309,9 @@ describe.each([...HARNESSES])("$name: a plugin's rules on a real install", (harn
     // A copy-channel refresh drops the default space's phase section; doctor
     // names it in its one row, and one sync puts it back.
     copyRefresh(p);
-    expect(holding(p)).not.toContain("aidlc/spaces/default/memory/phases/inception.md");
+    expect(holding(p)).not.toContain("aidlc/spaces/default/memory/phases/design.md");
     const row = doctorComposedRow(p);
-    expect(row).toContain("test-pro: rules missing from aidlc/spaces/default/memory/phases/inception.md");
+    expect(row).toContain("test-pro: rules missing from aidlc/spaces/default/memory/phases/design.md");
     numbers[`${harness.name}:copy-refresh-doctor`] = row;
     expect(sync(p)).not.toContain("rules are in");
     expect(snapshot(p)).toEqual(withSpace);
@@ -324,15 +324,15 @@ describe.each([...HARNESSES])("$name: a plugin's rules on a real install", (harn
     const crlf = snapshot(p);
 
     // Kiro CLI's install step, the same sync on every host: org, not team.
-    expect(sync(p, "--rules-level", "test-pro=org")).toContain("test-pro's rules are in org.md (and phases/inception.md)");
-    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/inception.md"]);
-    expect(briefHolding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/inception.md"]);
+    expect(sync(p, "--rules-level", "test-pro=org")).toContain("test-pro's rules are in org.md (and phases/design.md)");
+    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/design.md"]);
+    expect(briefHolding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/design.md"]);
     for (const [path, text] of ruleFiles(p)) expect(/(^|[^\r])\n/.test(text), path).toBe(false);
     sizes(p, "org-level");
 
     // The person moves them with select, no names: the selection stays as it is.
     const harnessJson = readFileSync(join(p.proj, harness.leaf, "tools", "data", "harness.json"), "utf-8");
-    expect(select(p, "--rules-level", "test-pro=project")).toContain("test-pro's rules are in project.md (and phases/inception.md)");
+    expect(select(p, "--rules-level", "test-pro=project")).toContain("test-pro's rules are in project.md (and phases/design.md)");
     expect(readFileSync(join(p.proj, harness.leaf, "tools", "data", "harness.json"), "utf-8")).toBe(harnessJson);
     // The record says the level moved and the selection did not.
     const audit = auditText(p);
@@ -340,8 +340,8 @@ describe.each([...HARNESSES])("$name: a plugin's rules on a real install", (harn
     expect(last).toContain("**Previous Selection**: all enabled (no selection)");
     expect(last).toContain("**New Selection**: all enabled (no selection)");
     expect(last).toContain("**Rules Level**: test-pro=project");
-    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/phases/inception.md", "aidlc/spaces/default/memory/project.md"]);
-    expect(briefHolding(p)).toEqual(["aidlc/spaces/default/memory/phases/inception.md", "aidlc/spaces/default/memory/project.md"]);
+    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/phases/design.md", "aidlc/spaces/default/memory/project.md"]);
+    expect(briefHolding(p)).toEqual(["aidlc/spaces/default/memory/phases/design.md", "aidlc/spaces/default/memory/project.md"]);
     expect(sync(p)).not.toContain("rules are in");
     const moved = snapshot(p);
     for (const [path, text] of moved) expect(/(^|[^\r])\n/.test(text), path).toBe(false);
@@ -368,7 +368,7 @@ describe("two harnesses in one project", () => {
     };
     sync(claude);
     sync(codex);
-    expect(holding(claude)).toEqual(["aidlc/spaces/default/memory/phases/inception.md", "aidlc/spaces/default/memory/team.md"]);
+    expect(holding(claude)).toEqual(["aidlc/spaces/default/memory/phases/design.md", "aidlc/spaces/default/memory/team.md"]);
 
     // Moved from one harness, kept by the other's next compose.
     expect(select(claude, "--rules-level", "test-pro=org")).toContain("test-pro's rules are in org.md");
@@ -377,7 +377,7 @@ describe("two harnesses in one project", () => {
     expect(snapshot(claude)).toEqual(moved);
     expect(sync(claude)).not.toContain("rules are in");
     expect(snapshot(claude)).toEqual(moved);
-    expect(holding(claude)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/inception.md"]);
+    expect(holding(claude)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/design.md"]);
   });
 
   test("turned off and moved in one select, the line says where the rules will be, not where they are", () => {
@@ -390,7 +390,7 @@ describe("two harnesses in one project", () => {
     expect(holding(p)).toEqual([]);
     select(p, "aidlc,test-pro");
     sync(p);
-    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/inception.md"]);
+    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/design.md"]);
   });
 });
 
@@ -403,7 +403,7 @@ describe("a rules-level request is never dropped", () => {
     expect(holding(p)).toEqual([]);
     select(p, "aidlc,test-pro");
     sync(p);
-    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/inception.md"]);
+    expect(holding(p)).toEqual(["aidlc/spaces/default/memory/org.md", "aidlc/spaces/default/memory/phases/design.md"]);
 
     const bare = tool(p, "aidlc-plugin.ts", ["sync", "--rules-level"]);
     expect(bare.status, bare.out).toBe(2);

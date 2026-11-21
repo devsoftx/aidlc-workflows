@@ -23,6 +23,7 @@ import {
   isLifecycleBoundaryCommand,
 } from "../../dist/claude/.claude/hooks/aidlc-state-transition-guard.ts";
 import { violatesRuntimeIntegrity } from "../../dist/claude/.claude/hooks/runtime-integrity.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { resolveAction, ROUTES } from "../../dist/claude/.claude/tools/aidlc.ts";
 import {
   ENGINE_OWNED_STATE_TRANSITIONS,
@@ -2571,7 +2572,7 @@ describe("t242 state-transition ownership guard", () => {
   });
 
   test("non-initialization stages delegate lifecycle transitions and Learn writes through the conditional module", () => {
-    expect(NON_INITIALIZATION_STAGES).toHaveLength(30);
+    expect(NON_INITIALIZATION_STAGES).toHaveLength(33);
     for (const path of NON_INITIALIZATION_STAGES) {
       const body = readFileSync(path, "utf-8");
       const label = relative(REPO_ROOT, path);
@@ -2608,16 +2609,16 @@ describe("t242 state-transition ownership guard", () => {
     const stage = (phase: string, slug: string): string =>
       readFileSync(join(STAGES_ROOT, phase, `${slug}.md`), "utf-8");
 
-    expect(stage("inception", "reverse-engineering")).toContain(
+    expect(stage(phaseFor("reverse-engineering"), "reverse-engineering")).toContain(
       "{{INVOKE}} engine orchestrate report --stage reverse-engineering --result skipped --reason '<reason>'",
     );
-    expect(stage("inception", "user-stories")).toContain(
+    expect(stage(phaseFor("user-stories"), "user-stories")).toContain(
       "{{INVOKE}} engine orchestrate report --stage user-stories --result skipped --reason '<reason>'",
     );
-    expect(stage("inception", "requirements-analysis")).toContain(
+    expect(stage(phaseFor("requirements-analysis"), "requirements-analysis")).toContain(
       "{{INVOKE}} engine orchestrate next --add user-stories",
     );
-    expect(stage("inception", "domain-design")).toContain(
+    expect(stage(phaseFor("domain-design"), "domain-design")).toContain(
       "{{INVOKE}} engine orchestrate next --add units-generation",
     );
   });

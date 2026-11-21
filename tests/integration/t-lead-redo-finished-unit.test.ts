@@ -26,6 +26,7 @@ import {
   artifactFilename, loadStageGraphAll, readAuditShardEvents, turnEndMarkerPath,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_SRC, createTestProject, seedAidlcMemory, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   AUTOMATIC_GIT_MAINTENANCE_OFF, ORCH, STATE, UNIT, cleanupTempDirs, clone, git, nextDirective, runMergeTool, tempDirs,
 } from "../harness/team-unit-merge.ts";
@@ -63,21 +64,25 @@ function leadsCheckout(codeGeneration = "SKIP"): { lead: string; remote: string 
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
 - [ ] nfr-requirements \u2014 SKIP
 - [ ] nfr-design \u2014 SKIP
 - [ ] infrastructure-design \u2014 SKIP
+
+### BUILD PHASE
 - [ ] code-generation \u2014 ${codeGeneration}
+
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
 `);
-  const depDir = join(seededRecordDir(lead), "inception", "units-generation");
+  const depDir = join(seededRecordDir(lead), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(join(depDir, "unit-of-work-dependency.md"),
     `# Unit dependencies\n\n\`\`\`yaml\nunits:\n${UNITS.map((u) => `  - name: ${u}\n    depends_on: []\n`).join("")}\`\`\`\n`);
@@ -101,7 +106,7 @@ const unitVerb = (c: string, action: string, unit: string) => runMergeTool(STATE
 
 function writeAndReview(checkout: string, unit: string): void {
   const stage = loadStageGraphAll().find((entry) => entry.slug === FD)!;
-  const dir = join(seededRecordDir(checkout), "construction", unit, FD);
+  const dir = join(seededRecordDir(checkout), phaseFor(FD), unit, FD);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n${unit}\n`);
   for (const args of [

@@ -713,7 +713,7 @@ describe("the engine asks for Plan Approval", () => {
     expect(planning.mode).toBe("inline");
     // The record's cursor is past User Stories to Infrastructure Design, never
     // started, so the count leaves them out, as a plan switch's line does.
-    expect(planning.narration).toBe("Writing the code plan for Code Generation (stage 11 of 20) first; the developer builds from it.");
+    expect(planning.narration).toBe("Writing the code plan for Code Generation (stage 11 of 22) first; the developer builds from it.");
 
     const ask = askFor(proj);
     expect(ask.question).toBe("Approve the code plan?");

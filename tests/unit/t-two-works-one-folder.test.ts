@@ -443,7 +443,7 @@ describe("the note's words", () => {
   const runStage = (fields: Record<string, unknown>): Record<string, unknown> => ({
     kind: "run-stage",
     stage: "code-generation",
-    phase: "construction",
+    phase: phaseFor("code-generation"),
     stage_file: ".claude/aidlc-common/stages/build/code-generation.md",
     ceremony: { summary_confirmation: "off" },
     ...fields,
@@ -467,7 +467,8 @@ describe("the note's words", () => {
 
   test("names no field, and caps a long list with where the rest are", () => {
     const note = otherWorkNote([{ ...works[0], paths: Array.from({ length: 25 }, (_, i) => `f${i}.ts`) }]);
-    expect(note).toContain("`f19.ts`, and 5 more, listed in its Units' source manifests under `aidlc/spaces/default/intents/other-work/construction/`");
+    const folder = `aidlc/spaces/default/intents/other-work/${phaseFor("code-generation")}/`;
+    expect(note).toContain("`f19.ts`, and 5 more, listed in its Units' source manifests under `" + folder + "`");
     expect(note).not.toContain("`f20.ts`");
     expect(note.replace(/`[^`]*`/g, " ")).not.toMatch(/[a-z]+_[a-z_]+/);
   });

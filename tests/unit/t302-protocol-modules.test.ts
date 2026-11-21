@@ -23,6 +23,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -100,7 +101,7 @@ function singleRequirementsAuditShard(): string {
 }
 
 function seedSingleSummaryQuestions(): void {
-  const dir = join(seededRecordDir(project), "inception", "requirements-analysis");
+  const dir = join(seededRecordDir(project), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "requirements-analysis-questions.md"),

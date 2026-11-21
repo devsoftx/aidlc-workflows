@@ -69,8 +69,9 @@ describe("a scope switch on a state file with Windows line endings", () => {
     const lf = await switchToBugfix("\n");
     const crlf = await switchToBugfix("\r\n");
 
-    // The LF twin is the switch as it has always run: bugfix's five stages, Intent Capture skipped with it.
-    expect(lf.lines[0]).toMatch(/^Switched to bugfix \(.*\): 5 stages \(0 done\), 5 approval gates\./);
+    // The LF twin is the switch as it has always run: bugfix's seven stages for a greenfield intent (reverse-engineering
+    // is dropped for greenfield), Intent Capture skipped with it.
+    expect(lf.lines[0]).toMatch(/^Switched to bugfix \(.*\): 7 stages \(0 done\), 7 approval gates\./);
     expect(lf.lines).toContain(
       "Skipped Intent Capture & Framing (it was waiting for your approval): bugfix does not run it. You can still run it on its own any time.",
     );
