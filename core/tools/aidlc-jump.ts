@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appendAuditEntry } from "./aidlc-audit.ts";
 import { personGitNameField } from "./aidlc-git-name.ts";
-import { beforePerUnitBlock, withStageProgressRow } from "./aidlc-graph.ts";
+import { beforePerUnitBlock, inUnitWalk, withStageProgressRow } from "./aidlc-graph.ts";
 import { keptSinceFinished } from "./aidlc-message-store.ts";
 import { isNonAnswer } from "./aidlc-reply-reader.ts";
 import { readReviewArtifactContexts } from "./aidlc-review-brief.ts";
@@ -375,10 +375,9 @@ function handleReopen(args: string[]): void {
   // with the messages they came in, as a gate's Request Changes row names them.
   const gateStage = getField(content, "Current Stage")?.trim() ?? targetSlug;
   const change = flags.via === "change" ? changeAsked(pd, content, gateStage) : null;
-  // From a later stage of the same phase (Delivery Planning after Units
-  // Generation, say) the work moves back to the target as a backward jump moves
-  // it, but with no STAGE_JUMPED or
-  // STAGE_STARTED: only these Units start the step again. Each Unit's row names
+  // From a later stage of the Unit's walk (Build and Test after Code Generation,
+  // say) the work moves back to the target as a backward jump moves it, but with
+  // no STAGE_JUMPED or STAGE_STARTED: only these Units start the step again. Each Unit's row names
   // the stage the work moved back from, the one record of that move (the Kiro
   // IDE audit-sync hook reads it).
   const current = getField(content, "Current Stage")?.trim() ?? "";
@@ -389,13 +388,14 @@ function handleReopen(args: string[]): void {
   const theirs = flags.via === "change" || !isAutonomousConstructionDecision(content, targetStage);
   let stagesReset: string[] = [];
   let movedFrom: string | undefined;
-  // Work whose walk ended on the target or a later stage of its phase (Units
-  // built one at a time, the later stages of the phase skipped) is put back
-  // to Running on the target, as a redo or backward jump puts it, so `next`
-  // takes these Units' step again; still only they start it over.
+  // Work whose walk ended on the target or a later stage of the Unit's walk
+  // (Units built one at a time, the later walk stages skipped) is put back to
+  // Running on the target, as a redo or backward jump puts it, so `next` takes
+  // these Units' step again; still only they start it over.
+  const inWalk = inUnitWalk(current);
   const finishedHere = getField(content, "Status")?.trim() === "Completed" && !!from &&
-    from.phase === targetStage.phase && stageIndex(current) >= stageIndex(targetSlug);
-  const fromLater = from && !isPerUnitStage(from) && from.phase === targetStage.phase &&
+    inWalk && stageIndex(current) >= stageIndex(targetSlug);
+  const fromLater = from && !isPerUnitStage(from) && inWalk &&
     stageIndex(current) > stageIndex(targetSlug);
   if (fromLater || finishedHere) {
     const scope = flags.scope || getField(content, "Scope") || "feature";

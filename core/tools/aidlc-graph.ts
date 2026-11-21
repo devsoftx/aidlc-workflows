@@ -1452,6 +1452,21 @@ export function beforePerUnitBlock(stages: readonly { slug: string; for_each?: s
   return at !== -1 && firstPerUnit !== -1 && at < firstPerUnit;
 }
 
+// True when `slug` lies in the Unit's walk: from the first per-Unit stage of the
+// graph through the stage right after the last one (Build and Test after Code
+// Generation). Five-phase Construction held that span whole; the seven phases
+// split it across design, build and test, so no single phase name can say it.
+// False for a slug the graph does not know.
+export function inUnitWalk(slug: string, stages: readonly { slug: string; for_each?: string }[] = loadGraph()): boolean {
+  const at = stages.findIndex((stage) => stage.slug === slug);
+  const first = stages.findIndex((stage) => isPerUnitStage(stage));
+  let last = -1;
+  stages.forEach((stage, index) => {
+    if (isPerUnitStage(stage)) last = index;
+  });
+  return at !== -1 && first !== -1 && at >= first && at <= last + 1;
+}
+
 /** Stages that produce the given artifact. Empty array = orphan
  *  consumer candidate (doctor surfaces). Unions produces and
  *  optional_produces so a conditionally-produced artifact still resolves to
