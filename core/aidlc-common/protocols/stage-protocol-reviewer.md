@@ -8,8 +8,8 @@ If the `run-stage` directive includes a `reviewer` field (non-null), the orchest
 
 The directive's `review_class` field tells you HOW the review runs - the engine has already resolved it (stage declaration, lowered by the scope's `review_cap` and any per-run `--review` override; a `none` resolution omits the reviewer block entirely, so a directive that carries a reviewer always carries a class):
 
-- **`adversarial`** - the refute-and-repair loop below, up to `reviewer_max_iterations` passes with lead fixes between them. The default for Construction stages, where findings are machine-checkable and fix loops converge.
-- **`advisory`** - ONE normal-flow review pass as decision support for the human gate (`reviewer_max_iterations` is 1). Whatever the verdict, do NOT re-invoke the lead and do NOT re-run the reviewer during normal flow: record the terminal receipt, proceed to §13 only when the `learnings` module is listed (otherwise directly to the approval gate), and print the engine's derived findings brief for the human to triage. The bounded stale-receipt recovery (the reviewer-repair module), and a review the person asks for, are the only exceptions. The default for the human-gated ideation/inception prose stages, where readiness is a judgment call that belongs to the human at the gate.
+- **`adversarial`** - the refute-and-repair loop below, up to `reviewer_max_iterations` passes with lead fixes between them. The default for per-unit stages, where findings are machine-checkable and fix loops converge.
+- **`advisory`** - ONE normal-flow review pass as decision support for the human gate (`reviewer_max_iterations` is 1). Whatever the verdict, do NOT re-invoke the lead and do NOT re-run the reviewer during normal flow: record the terminal receipt, proceed to §13 only when the `learnings` module is listed (otherwise directly to the approval gate), and print the engine's derived findings brief for the human to triage. The bounded stale-receipt recovery (the reviewer-repair module), and a review the person asks for, are the only exceptions. The default for the human-gated discover/design prose stages, where readiness is a judgment call that belongs to the human at the gate.
 
 ### What the user hears from this section
 
@@ -386,7 +386,7 @@ re-presented gate using the required Review brief).
 > `NOT-READY` verdict is
 > terminal. The precondition is hard on the review having happened and soft on
 > its verdict: a NOT-READY verdict after the iteration cap still reaches the
-> human gate. Autonomous Construction is not exempt; each swarm
+> human gate. Autonomous unit-loop work is not exempt; each swarm
 > Unit is reviewed in the worktree hosting its Bolt after convergence and before
 > finalization. The swarm referee verifies each configured unit's terminal
 > receipt after its `BOLT_STARTED` boundary before merging it, so autonomy

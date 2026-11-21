@@ -27,6 +27,7 @@ import {
   isPlainObject,
   shellArg,
   type StageAnswerMode,
+  UNIT_RECORD_PHASES,
   verificationCommandRecovery,
 } from "./aidlc-lib.ts";
 import {

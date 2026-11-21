@@ -375,8 +375,9 @@ function handleReopen(args: string[]): void {
   // with the messages they came in, as a gate's Request Changes row names them.
   const gateStage = getField(content, "Current Stage")?.trim() ?? targetSlug;
   const change = flags.via === "change" ? changeAsked(pd, content, gateStage) : null;
-  // From a later stage of the same phase (Build and Test, say) the work moves
-  // back to the target as a backward jump moves it, but with no STAGE_JUMPED or
+  // From a later stage of the same phase (Delivery Planning after Units
+  // Generation, say) the work moves back to the target as a backward jump moves
+  // it, but with no STAGE_JUMPED or
   // STAGE_STARTED: only these Units start the step again. Each Unit's row names
   // the stage the work moved back from, the one record of that move (the Kiro
   // IDE audit-sync hook reads it).
@@ -389,7 +390,7 @@ function handleReopen(args: string[]): void {
   let stagesReset: string[] = [];
   let movedFrom: string | undefined;
   // Work whose walk ended on the target or a later stage of its phase (Units
-  // built one at a time, the stages after Code Generation skipped) is put back
+  // built one at a time, the later stages of the phase skipped) is put back
   // to Running on the target, as a redo or backward jump puts it, so `next`
   // takes these Units' step again; still only they start it over.
   const finishedHere = getField(content, "Status")?.trim() === "Completed" && !!from &&
@@ -436,7 +437,7 @@ function handleReopen(args: string[]): void {
       emitAudit(pd, "ARTIFACT_REUSED", {
         Stage: targetSlug,
         Decision: "redo",
-        Artifacts: `construction/${unit}/${targetSlug}/`,
+        Artifacts: `${targetStage.phase}/${unit}/${targetSlug}/`,
         Unit: unit,
         Source: REDO_REUSE_SOURCE,
       });

@@ -36,7 +36,7 @@ asked about every plan.
 ## Why these stages, why skip those
 
 Requirements Analysis establishes the contract, Code Generation implements
-it, Build and Test verifies it, and the Operation tail can deploy and observe
+it, Build and Test verifies it, and the deploy and operate tail can deploy and observe
 the result. Reviewers are disabled by `review_cap: none`. Minimal testing still
 requires requirement-driven unit tests with a happy-path floor per component.
 

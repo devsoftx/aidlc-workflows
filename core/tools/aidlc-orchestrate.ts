@@ -5448,7 +5448,7 @@ function projectTypeAskDirective(
 }
 
 // The step that has the agent read it: the stage's own step with the classify
-// round-trip's gate, the step the first Construction stage gives with no
+// round-trip's gate, the step the first per-unit stage gives with no
 // stance recorded (computeGate), here on whichever stage the team work is on.
 // Null when there is nothing to read.
 function teamStanceReadStep(
@@ -10067,7 +10067,7 @@ function inlineContextEntries(
         ).map((f) => ({ ...f, agent })),
       );
     }
-    const card = node.phase === "design" ? documentsCardEntry(codekbCtx) : null;
+    const card = node.phase === "design" && !isPerUnit(node) ? documentsCardEntry(codekbCtx) : null;
     if (card !== null) entries.push(card);
   }
   entries.push(...shipped.slice(personas));
@@ -14553,7 +14553,7 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
 // The per-unit marker + run mode that isolate the per-unit build stage. The
 // swarm only fires for a Construction stage that runs once per Unit of Work AND
 // runs as a subagent — which, in the shipped graph, is EXACTLY code-generation
-// (verified: it is the only construction stage with for_each:unit-of-work +
+// (verified: it is the only per-unit stage with for_each:unit-of-work +
 // mode:subagent; every other for_each:unit-of-work stage is mode:inline). We
 // match on those two fields rather than the slug so a graph that moves the
 // per-unit build stage moves the trigger with it, no code change.
@@ -14912,7 +14912,7 @@ function applySwarmCheckpointShape(
 // grant autonomy on demand at any point in Construction, so an autonomous grant
 // can predate the first Unit-building stage by design (see
 // aidlc-common/protocols/stage-protocol-construction.md § Autonomy grant).
-// Scopes whose first Construction EXECUTE stage is a design stage therefore DO
+// Scopes whose first per-unit EXECUTE stage is a design stage therefore DO
 // swarm code-generation from the first Unit; scopes where code-generation is
 // itself the skeleton-gate stage still cannot, via the structural guard.
 function swarmRevisionNeedsPreparation(

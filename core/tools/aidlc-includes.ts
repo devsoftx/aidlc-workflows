@@ -72,10 +72,13 @@ const MEMORY_LAYERS = [
   "org.md",
   "team.md",
   "project.md",
-  "phases/ideation.md",
-  "phases/inception.md",
-  "phases/construction.md",
-  "phases/operation.md",
+  "phases/discover.md",
+  "phases/design.md",
+  "phases/build.md",
+  "phases/test.md",
+  "phases/secure.md",
+  "phases/deploy.md",
+  "phases/operate.md",
 ];
 
 // Inline text past this size would sit in every chat and every helper's

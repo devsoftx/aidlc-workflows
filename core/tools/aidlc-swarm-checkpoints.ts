@@ -240,7 +240,7 @@ function snapshot(pd: string, batch: number, requested: string[], stateContent?:
     }
     let source: string | null = null;
     try {
-      const path = recordFileTargetOrThrow(root, `construction/${unit}/${STAGE}/source-manifest.json`);
+      const path = recordFileTargetOrThrow(root, `${definition.phase}/${unit}/${STAGE}/source-manifest.json`);
       const bytes = readRegularFileNoFollowOrThrow(path, "Swarm Unit source manifest");
       const repo = merged && auditBlockField(merged.block, "Repo");
       if ((repos.length > 0 && (!repo || !repos.includes(repo))) ||

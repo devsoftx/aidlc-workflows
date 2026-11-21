@@ -78,7 +78,7 @@ no Bolt <slug> belongs to intent <record>; this checkout holds <name> (intent <i
 Creation without an intent registry UUID fails closed:
 
 ```text
-Intent record <relative record dir> has no registry identity (uuid); adopt or re-create the intent before Construction. Bolt worktrees are named by intent so parallel intents cannot collide.
+Intent record <relative record dir> has no registry identity (uuid); adopt or re-create the intent before the unit loop starts. Bolt worktrees are named by intent so parallel intents cannot collide.
 ```
 
 Identity-resolving commands (`create`, `merge`, `discard`, `restore`, `purge`)
@@ -93,7 +93,7 @@ selected intent's id8; without a UUID, an intent-scoped row fails closed, matchi
 the identity-resolving commands:
 
 ```text
-error: WORKTREE_CREATED block at <ts> names an intent-scoped Bolt, but intent <record> has no registry identity (uuid); adopt or re-create the intent before Construction
+error: WORKTREE_CREATED block at <ts> names an intent-scoped Bolt, but intent <record> has no registry identity (uuid); adopt or re-create the intent before the unit loop starts
 ```
 
 The `<id8>` is the whole of a Bolt's intent authority, so two registered intents
@@ -101,7 +101,7 @@ whose uuids share their last eight hex characters (a 2^-32 event per pair) refus
 every identity-resolving command rather than share names and recovery refs:
 
 ```text
-Intent record <relative record dir> shares its eight-character uuid suffix with another registered intent, so its Bolt names would collide; re-create one of the two intents before Construction.
+Intent record <relative record dir> shares its eight-character uuid suffix with another registered intent, so its Bolt names would collide; re-create one of the two intents before the unit loop starts.
 ```
 
 Before cleanup deletes a Bolt branch or its retained/parked refs, that branch
@@ -155,7 +155,7 @@ Identity validation uses these stable refusals in check order (timestamp, branch
 ```text
 error: malformed WORKTREE_CREATED block for Bolt <slug>: Timestamp is not an ISO 8601 UTC instant
 error: malformed WORKTREE_CREATED block at <ts>: Branch name does not name Bolt <slug> for <owner>
-error: WORKTREE_CREATED block at <ts> names an intent-scoped Bolt, but <owner> has no registry identity (uuid); adopt or re-create the intent before Construction
+error: WORKTREE_CREATED block at <ts> names an intent-scoped Bolt, but <owner> has no registry identity (uuid); adopt or re-create the intent before the unit loop starts
 error: malformed WORKTREE_CREATED block at <ts>: Worktree path is not the canonical directory <dir> of Bolt <name>
 ```
 

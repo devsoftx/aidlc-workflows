@@ -17,6 +17,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { PHASES } from "../core/tools/aidlc-lib.ts";
 
 export const CLASSES = [
   "sensor",
@@ -205,10 +206,14 @@ function stageInOutput(text: string): string | null {
   return m && knownStages().has(m[1]) ? m[1] : null;
 }
 
-/** The stage a record path belongs to: `<record>/<phase>/<stage>/` or `<record>/construction/<unit>/<stage>/`. */
+// The delivery phases a record folder is named for. Initialization is the hidden setup pre-phase, not one of them.
+const RECORD_PHASES = PHASES.filter((phase) => phase !== "initialization").join("|");
+const RECORD_PATH = new RegExp(`/intents/[^/]+/(${RECORD_PHASES})/([^/]+)/(?:([^/]+)/)?`);
+
+/** The stage a record path belongs to: `<record>/<phase>/<stage>/` or `<record>/build/<unit>/<stage>/`. */
 export function stageOfPath(path: string): string | null {
   const p = path.replace(/\\/g, "/");
-  const m = /\/intents\/[^/]+\/(ideation|inception|construction|operation)\/([^/]+)\/(?:([^/]+)\/)?/.exec(p);
+  const m = RECORD_PATH.exec(p);
   if (!m) return null;
   if (knownStages().has(m[2])) return m[2];
   return m[3] && knownStages().has(m[3]) ? m[3] : null;

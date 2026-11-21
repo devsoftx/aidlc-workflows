@@ -61,7 +61,7 @@ Write and edit files yourself with your file tools, never through the shell (no 
 ## Keeping the diary (memory.md)
 
 Only when `directive.protocol_modules` lists `learnings` and `directive.single !== true`, keep an observation diary at the `memory_path` the `run-stage`
-directive carries (`<record>/<phase>/<stage>/memory.md`, or at a per-Unit stage the Unit's own `<record>/construction/<unit>/<stage>/memory.md`). Otherwise keep no diary and run no learnings ritual. When enabled:
+directive carries (`<record>/<phase>/<stage>/memory.md`, or at a per-Unit stage the Unit's own `<record>/<phase>/<unit>/<stage>/memory.md`). Otherwise keep no diary and run no learnings ritual. When enabled:
 
 1. The engine creates `memory.md` from
    `{{HARNESS_DIR}}/knowledge/aidlc-shared/memory-template.md` when it emits the
@@ -123,7 +123,7 @@ vs *within* a stage (you loop on your own). Inside one stage you still own:
 ## Classifying a practices-derived gate (`gate: "unresolved"`)
 
 Most `gate` values are deterministic and the engine decides them. One is not:
-the first Construction Bolt depends on the **walking-skeleton stance**, which
+the first Bolt depends on the **walking-skeleton stance**, which
 no parser can derive — it is read from a team's free-form `## Walking Skeleton`
 practices prose. So the engine defers it: a `run-stage` directive for that Bolt
 carries `gate: "unresolved"` rather than a boolean.

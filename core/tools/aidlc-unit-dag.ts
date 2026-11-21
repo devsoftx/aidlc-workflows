@@ -1,5 +1,5 @@
 // The Unit DAG's grammar, one parser: the fenced yaml `units:` block of
-// inception/units-generation/unit-of-work-dependency.md (Units Generation writes
+// design/units-generation/unit-of-work-dependency.md (Units Generation writes
 // it), read into its Units, their kinds and dependencies, and the topological
 // batches Construction walks; and the Unit name rule the block, the compiled
 // graph and the lifecycle commands share. aidlc-lib.ts and
@@ -14,8 +14,8 @@
 export const UNIT_NAME_REGEX = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const UNIT_NAME_MAX_LENGTH = 64;
 
-// Unit names become path components under construction/<unit>/ and are also
-// mirrored into single-line state fields. Keep one canonical validator for the
+// Unit names become path components under design/<unit>/ and build/<unit>/, and
+// are also mirrored into single-line state fields. Keep one canonical validator for the
 // authored DAG, cached runtime graph, and lifecycle CLI. Lowercase kebab-case is
 // the authoring convention; leading digits, uppercase letters, underscores,
 // and dots remain accepted for safe legacy DAG names.

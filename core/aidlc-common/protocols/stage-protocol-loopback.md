@@ -56,7 +56,7 @@ impact-estimated fix identified):
    `aidlc-jump.ts execute --target code-generation --direction backward
    --scope <scope>` itself, which resets Code Generation and the stages after
    it for every unit and emits the canonical `STAGE_JUMPED`, and returns Code
-   Generation's step. When Construction runs
+   Generation's step. When the unit loop runs
    stage by stage (`Construction Iteration` in aidlc-state.md is not
    `unit-major`), one unit cannot be reopened alone: run that
    `next --stage code-generation` at once, without asking; "Retry with fix"

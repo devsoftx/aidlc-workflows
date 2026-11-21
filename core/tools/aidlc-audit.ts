@@ -197,7 +197,8 @@ const VALID_EVENT_TYPES = new Set([
   // unknown event).
   "REVIEW_VERDICT_DICTATED",
   // Reviewer read-scope enforcement (hook-emitted): a per-unit reviewer's
-  // tool call was refused for reaching into sibling units' construction/ paths.
+  // tool call was refused for reaching into sibling units' design/<unit>/ or
+  // build/<unit>/ paths.
   "REVIEWER_SCOPE_BLOCKED",
   // Terminal-receipt write-freeze enforcement (hook-emitted): a declared
   // produces-artifact write was refused because it would invalidate a fresh

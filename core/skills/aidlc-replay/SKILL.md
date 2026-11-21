@@ -68,7 +68,7 @@ record is
   events by their `Timestamp` fields for the narrative.
 - `<record>/aidlc-state.md` — the active-stage cursor.
 - The artefacts recursively under `<record>/<phase>/` — what each stage
-  produced, including per-unit Construction outputs.
+  produced, including per-unit stage outputs.
 
 These are your sources for *prose*. Do not derive counts from them when
 Step 1's JSON already carries the count.

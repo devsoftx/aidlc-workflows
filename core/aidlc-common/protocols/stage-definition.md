@@ -45,7 +45,7 @@ copies this table verbatim.
 |-------|------|----------|--------------------|
 | `slug` | string | yes | kebab-case; must match filename stem |
 | `name` | string | optional | user-facing display-name override. Omit when title-casing the slug is correct; use for acronyms, conjunctions, or established punctuation |
-| `phase` | string | yes | `initialization` \| `ideation` \| `inception` \| `construction` \| `operation` (lowercase) |
+| `phase` | string | yes | `initialization` \| `discover` \| `design` \| `build` \| `test` \| `secure` \| `deploy` \| `operate` (lowercase) |
 | `execution` | string | yes | `ALWAYS` \| `CONDITIONAL` |
 | `condition` | string | yes | free-form; describe always-on rationale for `ALWAYS`, branching condition for `CONDITIONAL` |
 | `lead_agent` | string | yes | agent slug; validated dynamically against `{{HARNESS_DIR}}/agents/*.md` via `loadAgents()` — no hardcoded enum |
@@ -78,7 +78,7 @@ Numeric display order is derived by the compile step, not authored in YAML.
 
 | Field | Derivation |
 |-------|------------|
-| `display_order` | `<phase-prefix>.<sequence>`. Phase prefix: `initialization=0`, `ideation=1`, `inception=2`, `construction=3`, `operation=4`. Sequence: topological sort of `requires_stage` edges filtered to this phase, slug-alphabetical tiebreak for parallel stages |
+| `display_order` | `<phase-prefix>.<sequence>`. Phase prefix: `initialization=0`, `discover=1`, `design=2`, `build=3`, `test=4`, `secure=5`, `deploy=6`, `operate=7`. Sequence: topological sort of `requires_stage` edges filtered to this phase, slug-alphabetical tiebreak for parallel stages |
 
 `name` defaults to title-casing the slug. Author an explicit `name:` only when
 that default would lose an acronym, conjunction, or established display label.
@@ -94,7 +94,7 @@ copy-paste template when authoring a new stage; the schema in
 ```yaml
 ---
 slug: scope-definition
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: Always executes — defines the scope boundary and prioritized backlog
 lead_agent: aidlc-product-agent
@@ -216,7 +216,7 @@ must handle `agent-team` explicitly. At minimum, throw "mode agent-team not
 yet implemented". Do not fall through to a default execution path — silent
 fallthrough on enum extension is a known foot-gun flagged by review.
 
-**Swarm-trigger coupling:** the autonomous Construction swarm fires on a
+**Swarm-trigger coupling:** the autonomous Build swarm fires on a
 field match (`for_each: unit-of-work` + `mode: subagent`). Re-moding the
 per-unit build stage to any other topology silently takes it off the swarm
 path (units build serially). `aidlc-graph compile` emits an advisory on

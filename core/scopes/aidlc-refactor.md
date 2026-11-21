@@ -19,7 +19,7 @@ collaborators: off
 # refactor scope
 
 Minimal depth for cleaning up existing code without changing behaviour.
-Like `bugfix` it skips ideation and most operations, but it adds back
+Like `bugfix` it skips the discover stages except reverse-engineering and most operations, but it adds back
 functional-design — a refactor reshapes structure, so the design of the
 behaviour being preserved matters — and retains the deployment stages needed
 to ship the verified change.

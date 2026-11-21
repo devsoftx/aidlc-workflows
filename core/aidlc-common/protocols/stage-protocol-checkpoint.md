@@ -125,7 +125,7 @@ after their review is accepted: no checkpoint carries `rereview`, the Unit's
 approval or readiness stands, and its one line arrives in `change_notices`.
 The same holds with reviews off: under `relaxed` and `off` a later change to an
 approved Unit's work keeps its approval, and its one line arrives in
-`change_notices` from the next checkpoint's `verify` or the Construction stage's
+`change_notices` from the next checkpoint's `verify` or the per-unit stage's
 own check. A change made after the approval question was asked and before the
 person answers is accepted the same way: their `approve` records it, and its one
 line arrives in that command's `change_notices`.

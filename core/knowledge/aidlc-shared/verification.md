@@ -17,10 +17,10 @@ Every file uses stable IDs:
 | Prefix | Meaning | Example |
 |--------|---------|---------|
 | `FR{n}` / `FR{n}.{m}` | Functional requirement | `FR1`, `FR1.2` |
-| `NFR{n}` | Inception non-functional requirement | `NFR2` |
+| `NFR{n}` | Design non-functional requirement | `NFR2` |
 | `US{n}.{m}` | User story | `US1.3` |
 | `AC{n}.{m}.{seq}` | Acceptance criterion | `AC1.3.2` |
-| `U{n}` / `u{n}-{description}` | Unit ID / Unit name (its construction directory) | `U1`, `u1-auth` |
+| `U{n}` / `u{n}-{description}` | Unit ID / Unit name (its per-unit directories) | `U1`, `u1-auth` |
 | `BR{group}.{seq}` | Business rule | `BR1.1` |
 | `NFRx.y` | Detailed NFR requirement | `NFR2.1` |
 
@@ -53,9 +53,9 @@ where possible, and derives functional-design business-rule orphans.
 
 | Trigger | What's Checked |
 |---------|---------------|
-| **Ideation → Inception** | Intent → Scope → Intent Backlog consistency; all scope items have feasibility backing |
-| **Inception → Construction** | Requirements → Stories → Architecture alignment; all stories trace to requirements; architecture covers all stories |
-| **Construction → Operation** | Architecture → Code → Tests alignment; all code traces to design; test coverage against acceptance criteria |
+| **Discover → Design** | Intent → Scope → Intent Backlog consistency; all scope items have feasibility backing |
+| **Design → Build** | Requirements → Stories → Architecture alignment; all stories trace to requirements; architecture covers all stories |
+| **Build → Operate** | Architecture → Code → Tests alignment; all code traces to design; test coverage against acceptance criteria |
 | **On demand** | Human can request verification at any point |
 | **Stage output write** | Validate the stage's element-level coverage and targets |
 

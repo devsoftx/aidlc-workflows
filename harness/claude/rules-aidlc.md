@@ -27,7 +27,10 @@
 @../../aidlc/active-memory/org.md
 @../../aidlc/active-memory/team.md
 @../../aidlc/active-memory/project.md
-@../../aidlc/active-memory/phases/ideation.md
-@../../aidlc/active-memory/phases/inception.md
-@../../aidlc/active-memory/phases/construction.md
-@../../aidlc/active-memory/phases/operation.md
+@../../aidlc/active-memory/phases/discover.md
+@../../aidlc/active-memory/phases/design.md
+@../../aidlc/active-memory/phases/build.md
+@../../aidlc/active-memory/phases/test.md
+@../../aidlc/active-memory/phases/secure.md
+@../../aidlc/active-memory/phases/deploy.md
+@../../aidlc/active-memory/phases/operate.md

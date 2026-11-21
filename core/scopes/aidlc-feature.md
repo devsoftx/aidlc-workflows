@@ -18,15 +18,15 @@ collaborators: off
 The full-lifecycle scope for new feature work at practical depth. Like
 `enterprise`, it runs every stage in the graph, but the stage bodies apply
 Standard rather than Comprehensive depth — lighter ceremony, the same
-end-to-end coverage from ideation through operation.
+end-to-end coverage from discover through operate.
 
 Guard Policy defaults to off: changed inputs are recorded and announced, the run continues, and plan approval, review freeze, state transition, and reviewer read scope are lowered for undirected work. Human presence stays up.
 
 ## Why every stage
 
 A new feature still needs the full arc: understand the problem
-(ideation), design it (inception), build and test it (construction), and
-operate it (operation). `feature` keeps all of those so nothing silently
+(discover), design it (design), build and test it (the unit loop), and
+deploy and operate it (deploy and operate). `feature` keeps all of those so nothing silently
 drops. The difference from `enterprise` is depth, expressed in the stage
 bodies and the org/team rule layers, not in which stages run.
 

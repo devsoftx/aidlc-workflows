@@ -46,7 +46,7 @@ entropy, failure cost, or verification weakness more than it costs.
    SonarQube-style JSON), triage findings into auto-fixable vs
    human-decision, estimate risk, and compose a compact fix-and-ship grid.
    Score for a FIX, not a project: the report IS the captured intent, so the
-   ideation framing stages (intent-capture, market-research, feasibility,
+   discover framing stages (intent-capture, market-research, feasibility,
    scope-definition, team-formation, rough-mockups, approval-handoff) are
    answered by its existence - screen them out rather than scoring them in.
    VE covers verifying the FIX (each finding's fix ships with its regression
@@ -377,7 +377,7 @@ target component is HIGH enough that reduction has meaningful value.
 | scope-definition | IAE, UA | Multi-axis work, unclear boundaries, phased delivery needed |
 | team-formation | UA | Multi-team coordination required |
 | rough-mockups | IAE, UA | UX is a primary concern and the change is user-facing |
-| approval-handoff | (phase gate) | Always at ideation→inception boundary |
+| approval-handoff | (phase gate) | Always at discover→design boundary |
 | reverse-engineering | CSU | Always on existing code, never on a new project: decided by project type, not by CSU, and the stage's own check of the code map it already has decides whether to scan. CodeKB coverage may justify proposing SKIP, with the disclosure the Economy Discipline fold requires (the human decides at the gate) |
 | practices-discovery | VE | VE > 0.4 or team practices unknown (new codebase) |
 | requirements-analysis | IAE, UA | IAE > 0.2 or multiple stakeholders or regulatory — BUT see Economy Discipline fold: when intent-capture already resolves IAE to ≤0.2, SKIP unless downstream EXECUTE stages (domain-design, functional-design) need its UNIQUE outputs (functional decomposition, constraints, out-of-scope) that intent-capture does not produce |
@@ -402,13 +402,13 @@ target component is HIGH enough that reduction has meaningful value.
 | performance-validation | VE, R | Performance is an explicit NFR |
 | feedback-optimization | VE | Post-launch iteration planned |
 
-#### Economy Discipline — Fold Overlapping Stages (esp. Ideation & Inception)
+#### Economy Discipline — Fold Overlapping Stages (esp. Discover & Design)
 
 Positive expected value is necessary but NOT sufficient for EXECUTE. A stage
 that reduces a high component still SKIPs when another EXECUTE stage already
 delivers that reduction or output — two stages that both "help" are one
-justified stage plus one fold candidate. Be brutal in the **Ideation** and
-**Inception** phases, where framing/discovery stages overlap most and bloat
+justified stage plus one fold candidate. Be brutal in the **Discover** and
+**Design** phases, where framing/discovery stages overlap most and bloat
 accumulates fastest.
 
 ##### Same-Component Overlap Resolution
@@ -467,7 +467,7 @@ upstream). If Requirements Analysis's unique outputs are NOT consumed downstream
 (e.g. domain-design is SKIPPED), then SKIP Requirements Analysis — its
 expensive spec work has no consumer.
 
-Before EXECUTEing any Ideation or Inception stage, run the subsumption test
+Before EXECUTEing any Discover or Design stage, run the subsumption test
 below. Each fold is a DEFAULT — un-SKIP only when specific evidence defeats it,
 and name that trigger in the rationale.
 

@@ -635,7 +635,7 @@ export interface StageEntry {
   }>;
 }
 
-// The per-unit marker carried by the Construction stages that run once per
+// The per-unit marker carried by the stages that run once per
 // Unit of Work. It lives on the stage's `for_each` field (stage frontmatter,
 // compiled onto the GraphStage and into stage-graph.json). The canonical
 // 5-stage set (nfr-requirements, nfr-design, functional-design,
@@ -734,6 +734,25 @@ export function isUnitLoopStage(node: { for_each?: string | null } | null | unde
 
 // Record folders holding per-unit work: <record>/<phase>/<unit>/<stage>.
 export const UNIT_RECORD_PHASES: readonly Phase[] = ["design", "build"];
+
+// The Unit folders of a record: each per-unit phase's directories, less the stage
+// folders that sit beside them, so a stage folder is never read as a Unit.
+function recordUnitNames(record: string): string[] {
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const names = new Set<string>();
+  for (const phase of UNIT_RECORD_PHASES) {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(join(record, phase), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory() && !stageSlugs.has(entry.name)) names.add(entry.name);
+    }
+  }
+  return [...names].sort();
+}
 
 export const PHASE_NUMBERS: Record<string, Phase> = {
   "0": "initialization",
@@ -3420,7 +3439,7 @@ function legacyEngineEngagementSegment(seg: string): boolean {
   }
   // aidlc-jump / aidlc-bolt / aidlc-swarm: a read-only query (--help/--status)
   // is not engagement; anything else mutates (jump moves the pointer, bolt forks/
-  // merges, swarm runs Construction) so counts as engagement.
+  // merges, swarm runs the per-Unit stages) so counts as engagement.
   if (hasReadOnlyFlag) return false;
   return true;
 }
@@ -8317,7 +8336,7 @@ export function createIntent(
     writeFileSync(statePath, "# AI-DLC State Tracking\n", "utf-8");
   }
   // An empty repo set (no --repos, no sibling discovery) records NO repos row;
-  // the lone repo is inferred on the construction path (resolveConstructionRepo).
+  // the lone repo is inferred on the per-Unit path (resolveConstructionRepo).
   registerIntentRecord(projectDir, minted, scope, repos, sessionId);
   return minted;
 }
@@ -12850,9 +12869,9 @@ export function stageRevisionCycles(
 
 export function isAutonomousConstructionDecision(
   stateContent: string | null,
-  stagePhase: string | null | undefined,
+  stage: { for_each?: string | null } | null | undefined,
 ): boolean {
-  return stagePhase === "construction" && isAutonomousMode(stateContent);
+  return isUnitLoopStage(stage) && isAutonomousMode(stateContent);
 }
 
 function firstConstructionApprovalStage(
@@ -12871,7 +12890,7 @@ function firstConstructionApprovalStage(
   // Keep [x] in the search so approving the anchor does not protect every
   // subsequent stage in turn. Plan overrides use the router's precedence.
   return loadStageGraph().find((stage) =>
-    stage.phase === "construction" &&
+    isUnitLoopStage(stage) &&
     !skipped.has(stage.slug) &&
     (overrides.get(stage.slug) ?? mapping.stages[stage.slug]) === "EXECUTE"
   ) ?? null;
@@ -12879,7 +12898,7 @@ function firstConstructionApprovalStage(
 
 // Completion approvals have a narrower grant than ordinary Construction
 // decisions. In particular, an early on-demand grant cannot approve the first
-// Construction stage, and the existing unit-major walk keeps its stage gates.
+// unit-loop stage, and the existing unit-major walk keeps its stage gates.
 // Keep report and state mutation on the same policy instead of interpreting
 // gate:true independently in each caller.
 export function isAutonomousConstructionGate(
@@ -12889,7 +12908,7 @@ export function isAutonomousConstructionGate(
   evidence?: ConstructionEvidence,
 ): boolean {
   const checkpoints = stateContent !== null && constructionCheckpointsApply(stateContent);
-  if (checkpoints && stage.phase === "construction" && projectDir) {
+  if (checkpoints && isUnitLoopStage(stage) && projectDir) {
     if (
       (stage.slug === "code-generation" &&
         isConstructionSwarmEnabled(stateContent) &&
@@ -12900,7 +12919,7 @@ export function isAutonomousConstructionGate(
       const gaps = constructionCheckpointGaps(projectDir, stateContent!, stage, evidence);
       return gaps !== null && gaps.length === 0;
     }
-    if (!isAutonomousConstructionDecision(stateContent, stage.phase)) return false;
+    if (!isAutonomousConstructionDecision(stateContent, stage)) return false;
     if (constructionSkeletonOn(stateContent!)) {
       const gaps = constructionCheckpointGaps(projectDir, stateContent!, stage, evidence);
       return gaps !== null && gaps.length === 0;
@@ -12909,7 +12928,7 @@ export function isAutonomousConstructionGate(
     // own authority and is never inferred from this setting.
     return getField(stateContent!, "Skeleton Stance") !== null;
   }
-  if (!isAutonomousConstructionDecision(stateContent, stage.phase)) return false;
+  if (!isAutonomousConstructionDecision(stateContent, stage)) return false;
   const scope = stateContent ? getField(stateContent, "Scope")?.trim() : null;
   if (!scope) return false;
   const first = firstConstructionApprovalStage(scope, stateContent!);
@@ -12956,7 +12975,7 @@ export function constructionCheckpointGaps(
 ): string[] | null {
   const scope = getField(stateContent, "Scope") ?? "";
   if (
-    stage.phase !== "construction" ||
+    !isUnitLoopStage(stage) ||
     !constructionCheckpointsApply(stateContent) ||
     usesStageLevelPerUnitArtifacts(scope, stateContent)
   ) return null;
@@ -13306,7 +13325,7 @@ export function constructionPolicyReceipt(
 }
 
 /**
- * Why a Construction policy change during Construction is the person's, or
+ * Why a Construction policy change during Build is the person's, or
  * null: their recorded choice from a policy question (`receipt`), or a message
  * of theirs since the last decision (`asked`), which the conductor read as
  * this request. An unattended run never changes it on its own. The setter and
@@ -13765,14 +13784,12 @@ function summaryQuestionFiles(
     return questionFilesInDir(join(rec, stage.phase, stage.slug), null);
   }
 
-  const constructionDir = join(rec, "construction");
-  if (!existsSync(constructionDir)) return [];
   const files: SummaryQuestionFile[] = [];
   try {
-    for (const unit of readdirSync(constructionDir).sort()) {
+    for (const unit of recordUnitNames(rec)) {
       files.push(
         ...questionFilesInDir(
-          join(constructionDir, unit, stage.slug),
+          join(rec, stage.phase, unit, stage.slug),
           unit,
         ),
       );
@@ -14432,11 +14449,12 @@ export function activeSummaryAuthorizationForRecordPath(
 }
 
 /**
- * The summary scope a record-relative artifact path belongs to. Construction
- * per-Unit outputs are recognized by the third segment naming a Construction
- * stage whose graph entry declares `for_each: unit-of-work`; this is path-shape
- * classification, so producesArtifactUnit cannot be reused because it requires
- * a declared artifact filename and summary stamping also covers other outputs.
+ * The summary scope a record-relative artifact path belongs to. Per-Unit
+ * outputs are recognized by the first segment naming the stage's phase, the
+ * second the Unit, and the third a unit-loop stage (`for_each: unit-of-work`).
+ * This is path-shape classification, so producesArtifactUnit cannot be reused
+ * because it requires a declared artifact filename and summary stamping also
+ * covers other outputs.
  */
 export function summaryScopeForRecordPath(
   relativePath: string,
@@ -14444,12 +14462,12 @@ export function summaryScopeForRecordPath(
 ): { stage: string; unit: string | null } | null {
   const parts = relativePath.split("/");
   if (parts.length < 3) return null;
-  if (parts[0] === "construction" && parts.length >= 4) {
+  if (parts.length >= 4) {
     const stage = stages.find(
       (entry) =>
         entry.slug === parts[2] &&
-        entry.phase === "construction" &&
-        entry.for_each === "unit-of-work",
+        entry.phase === parts[0] &&
+        isUnitLoopStage(entry),
     );
     if (stage !== undefined) return { stage: stage.slug, unit: parts[1] };
   }
@@ -14479,7 +14497,7 @@ export function summaryConfirmationOwed(
     return false;
   }
   if (stage.phase === "initialization") return false;
-  if (stage.phase === "construction" && options.stateContent && isAutonomousMode(options.stateContent)) {
+  if (isUnitLoopStage(stage) && options.stateContent && isAutonomousMode(options.stateContent)) {
     return false;
   }
   return stage.summary_confirmation !== undefined;
@@ -15759,8 +15777,8 @@ export class BoltIdentityError extends Error {
       code === "NO_INTENT"
         ? `No intent selected for Bolt ${slug}; pass --intent/--space or switch to the workflow.`
         : code === "AMBIGUOUS_INTENT_ID8"
-          ? `Intent record ${recordDir} shares its eight-character uuid suffix with another registered intent, so its Bolt names would collide; re-create one of the two intents before Construction.`
-          : `Intent record ${recordDir} has no registry identity (uuid); adopt or re-create the intent before Construction. ` +
+          ? `Intent record ${recordDir} shares its eight-character uuid suffix with another registered intent, so its Bolt names would collide; re-create one of the two intents before Build.`
+          : `Intent record ${recordDir} has no registry identity (uuid); adopt or re-create the intent before Build. ` +
             "Bolt worktrees are named by intent so parallel intents cannot collide.",
     );
     this.name = "BoltIdentityError";
@@ -15987,7 +16005,7 @@ export function auditRowWritesFile(projectDir: string, row: { event: string; blo
 // row, or a PreToolUse file_path) is one of the stage's declared produces[]
 // artifacts. Matches on the path suffix `/<slug>/<artifact filename>` rather than
 // resolving one absolute dir, so it covers BOTH the standard
-// <record>/<phase>/<slug>/ layout AND the per-unit construction/<unit>/<slug>/
+// <record>/<phase>/<slug>/ layout AND the per-unit <phase>/<unit>/<slug>/
 // layout without needing to know the {unit} segment. Codekb stages get their
 // own arm: their produces live DIRECTLY under a per-repo dir beneath the space
 // codekb root (codekb/<repo>/<name>.md) with no <slug> segment anywhere, so the
@@ -16031,7 +16049,7 @@ export function producesArtifactFile(
 // Resolve the unit targeted by a declared produces[] write. `undefined` means
 // the file does not belong to this stage, `null` means a matching stage-level
 // artifact (or an ambiguous per-unit path), and a string names the per-unit
-// Construction target.
+// target.
 export function producesArtifactUnit(
   stage: {
     slug: string;
@@ -16062,11 +16080,12 @@ export function producesArtifactUnit(
     const suffix = `/${stage.slug}/${artifactFilename(name)}`;
     if (!norm.endsWith(suffix)) continue;
     const parent = norm.slice(0, -suffix.length);
-    const marker = "/construction/";
-    const markerIdx = parent.lastIndexOf(marker);
-    if (markerIdx === -1) return null;
-    const unit = parent.slice(markerIdx + marker.length);
-    return unit.length > 0 && !unit.includes("/") ? unit : null;
+    const unitSlash = parent.lastIndexOf("/");
+    const phaseDir = unitSlash === -1 ? "" : parent.slice(0, unitSlash);
+    const phase = phaseDir.slice(phaseDir.lastIndexOf("/") + 1);
+    if (!(UNIT_RECORD_PHASES as readonly string[]).includes(phase)) return null;
+    const unit = parent.slice(unitSlash + 1);
+    return unit.length > 0 ? unit : null;
   }
   return null;
 }
@@ -16433,19 +16452,16 @@ export function reviewArtifactEntries(
       join(record, stage.phase, stage.slug, artifactFilename(artifact.name)),
     )
   );
-  const construction = join(record, "construction");
-  const discoveredUnits = existsSync(construction)
-    ? readdirSync(construction).filter((name) => {
-        try {
-          return (
-            statSync(join(construction, name)).isDirectory() &&
-            existsSync(join(construction, name, stage.slug))
-          );
-        } catch {
-          return false;
-        }
-      })
-    : [];
+  const discoveredUnits = recordUnitNames(record).filter((name) => {
+    try {
+      return (
+        statSync(join(record, stage.phase, name)).isDirectory() &&
+        existsSync(join(record, stage.phase, name, stage.slug))
+      );
+    } catch {
+      return false;
+    }
+  });
 
   let stateContent = options.stateContent;
   if (stateContent === undefined) {
@@ -16491,7 +16507,7 @@ export function reviewArtifactEntries(
   }
   if (units.length === 0) {
     return allArtifacts.map((artifact) => ({
-      logicalPath: `construction/*/${stage.slug}/${artifactFilename(artifact.name)}`,
+      logicalPath: `${stage.phase}/*/${stage.slug}/${artifactFilename(artifact.name)}`,
       path: null,
       boundary: record,
       required: artifact.required,
@@ -16501,8 +16517,8 @@ export function reviewArtifactEntries(
   }
   return units.flatMap((name) =>
     artifactsForKind(unitKinds.get(name) ?? null).map((artifact) => ({
-      logicalPath: `construction/${name}/${stage.slug}/${artifactFilename(artifact.name)}`,
-      path: join(record, "construction", name, stage.slug, artifactFilename(artifact.name)),
+      logicalPath: `${stage.phase}/${name}/${stage.slug}/${artifactFilename(artifact.name)}`,
+      path: join(record, stage.phase, name, stage.slug, artifactFilename(artifact.name)),
       boundary: record,
       required: artifact.required,
       reviewAppendixTarget: artifact.reviewAppendixTarget,
@@ -18755,18 +18771,12 @@ function hasDurableSourceBindingEvidence(
       );
     };
     if (hasSnapshot(snapshots)) return true;
-    const construction = join(record, "construction");
-    let units: string[] = [];
-    try {
-      units = readdirSync(construction);
-    } catch {
-      // No construction artifacts.
-    }
     if (
-      units.some((unit) =>
+      recordUnitNames(record).some((unit) =>
         existsSync(
           join(
-            construction,
+            record,
+            "build",
             unit,
             "code-generation",
             "source-manifest.json",
@@ -20365,7 +20375,7 @@ export function freshReviewReceipts(
 
   // Collect fresh matching terminal reviews after the attempt floor. A later
   // declared-artifact write clears the matching receipt. For per-unit stages,
-  // the path's construction/<unit>/ segment scopes invalidation to that unit;
+  // the path's <phase>/<unit>/ segment scopes invalidation to that unit;
   // an ambiguous matching path fails closed by clearing every unit receipt.
   const recordedRepos = new Set(intentRepos(projectDir));
   const unitVerdicts = new Map<string, ReviewVerdict>();
@@ -26556,10 +26566,11 @@ export function recordUnitClaimCheckouts(
 ): RecordedSourceCheckout[] {
   if (existsSync(join(projectDir, ".aidlc", "worktree-meta.json")) || intentRepos(projectDir).length > 0) return [];
   const record = recordDir(projectDir);
-  if (record === null || validateUnitName(unit) !== null || !/^[a-z][a-z0-9-]*$/.test(stageSlug)) return [];
+  const phase = findStageBySlug(stageSlug)?.phase;
+  if (record === null || phase === undefined || validateUnitName(unit) !== null || !/^[a-z][a-z0-9-]*$/.test(stageSlug)) return [];
   let writes: unknown;
   try {
-    writes = (JSON.parse(readFileSync(join(record, "construction", unit, stageSlug, "source-manifest.json"), "utf-8")) as {
+    writes = (JSON.parse(readFileSync(join(record, phase, unit, stageSlug, "source-manifest.json"), "utf-8")) as {
       writes?: unknown;
     }).writes;
   } catch {
@@ -26608,7 +26619,9 @@ export function readUnitSourceManifest(
   if (unitError !== null) return { ok: false, reason: unitError };
   const record = recordDir(projectDir);
   if (record === null) return { ok: false, reason: "no active intent record resolves" };
-  const manifestPath = join(record, "construction", unit, stageSlug, "source-manifest.json");
+  const phase = findStageBySlug(stageSlug)?.phase;
+  if (phase === undefined) return { ok: false, reason: `unknown stage ${JSON.stringify(stageSlug)}` };
+  const manifestPath = join(record, phase, unit, stageSlug, "source-manifest.json");
 
   let rawBytes: Buffer;
   try {
@@ -26632,7 +26645,8 @@ export function otherOpenWorkClaims(
   projectDir: string,
   stageSlug: string,
 ): { work: string; record: string; claims: SourceClaimModel; paths: string[] }[] {
-  if (!/^[a-z][a-z0-9-]*$/.test(stageSlug) || existsSync(join(projectDir, ".aidlc", "worktree-meta.json"))) return [];
+  const phase = findStageBySlug(stageSlug)?.phase;
+  if (phase === undefined || !/^[a-z][a-z0-9-]*$/.test(stageSlug) || existsSync(join(projectDir, ".aidlc", "worktree-meta.json"))) return [];
   const own = recordDir(projectDir);
   if (own === null) return [];
   const works: ReturnType<typeof otherOpenWorkClaims> = [];
@@ -26648,17 +26662,11 @@ export function otherOpenWorkClaims(
       const repos = { recordedRepos: Array.isArray(row?.repos) ? row.repos : [] };
       const claims: SourceClaimModel = { claims: new Set(), prefixes: [] };
       const paths = new Set<string>();
-      let units: string[];
-      try {
-        units = readdirSync(join(record, "construction"));
-      } catch {
-        continue;
-      }
-      for (const unit of units.sort()) {
+      for (const unit of recordUnitNames(record)) {
         if (validateUnitName(unit) !== null) continue;
         let raw: Buffer;
         try {
-          raw = readFileSync(join(record, "construction", unit, stageSlug, "source-manifest.json"));
+          raw = readFileSync(join(record, phase, unit, stageSlug, "source-manifest.json"));
         } catch {
           continue;
         }
@@ -27239,7 +27247,9 @@ export function unitStageRecordRelPath(
   stageSlug: string,
   fileName: string,
 ): string {
-  return `construction/${unit}/${stageSlug}/${fileName}`;
+  const phase = findStageBySlug(stageSlug)?.phase;
+  if (phase === undefined) throw new Error(`stage ${JSON.stringify(stageSlug)} is not in the stage graph`);
+  return `${phase}/${unit}/${stageSlug}/${fileName}`;
 }
 
 /** Record-relative path of a unit's committed reviewed-listing evidence. */
@@ -27683,12 +27693,7 @@ function withRepoBaselineAdditions(
     const claimed: SourceClaimModel[] = [];
     if (left !== null) {
       const record = recordDir(projectDir);
-      let units: string[] = [];
-      try {
-        units = record === null ? [] : readdirSync(join(record, "construction"));
-      } catch {
-        // Nothing built yet.
-      }
+      const units = record === null ? [] : recordUnitNames(record);
       for (const unit of units) {
         const manifest = readUnitSourceManifest(projectDir, "code-generation", unit);
         if (manifest.ok) claimed.push(manifest);
@@ -28070,7 +28075,7 @@ export interface RepoResolution {
   cwd: string;
 }
 
-// Resolve which repo a CONSTRUCTION op targets, decoupling "the repo to operate
+// Resolve which repo a per-Unit op targets, decoupling "the repo to operate
 // on" from "the single projectDir":
 //   - no recorded repos (legacy / projectDir-is-the-repo): with no --repo, null
 //     → cwd=projectDir (back-compat); an explicit --repo is HONOURED as a sibling
@@ -30815,13 +30820,13 @@ export function stageDir(projectDir: string, phase: string, slug: string, intent
 // shape, matching 16-artifact-vocabulary.md, "Filesystem mapping".
 export const UNIT_NAME_PLACEHOLDER = "{unit-name}";
 
-// Where a stage's `<slug>-questions.md` lives: a Construction stage run for a
+// Where a stage's `<slug>-questions.md` lives: a unit-loop stage run for a
 // Unit keeps it in that Unit's folder, any other stage (or the placeholder
 // Unit) in the stage's own folder. The run step looks there for answers
 // already given, and a guard's way on names it for questions never asked.
 export function stageQuestionsFile(projectDir: string, phase: string, slug: string, unit: string | null): string {
-  const dir = phase === "construction" && unit !== null && unit !== UNIT_NAME_PLACEHOLDER
-    ? join(docsRoot(projectDir), "construction", unit, slug)
+  const dir = unit !== null && unit !== UNIT_NAME_PLACEHOLDER && isUnitLoopStage(findStageBySlug(slug))
+    ? join(docsRoot(projectDir), phase, unit, slug)
     : stageDir(projectDir, phase, slug);
   return join(dir, `${slug}-questions.md`);
 }
@@ -30842,10 +30847,10 @@ export function memoryFilePath(projectDir: string, phase: string, stageSlug: str
   return join(docsRoot(projectDir, intent, space), phase, stageSlug, "memory.md");
 }
 
-// `<root>/inception/units-generation/unit-of-work-dependency.md` — the fenced
+// `<root>/design/units-generation/unit-of-work-dependency.md` — the fenced
 // edge block the Bolt-DAG node is computed from.
 export function unitDependencyPath(projectDir: string, intent?: string, space?: string): string {
-  return join(docsRoot(projectDir, intent, space), "inception", "units-generation", "unit-of-work-dependency.md");
+  return join(docsRoot(projectDir, intent, space), "design", "units-generation", "unit-of-work-dependency.md");
 }
 
 // --- Per-worktree mirror copies -----------------------------------------------
@@ -31278,15 +31283,14 @@ export function waveEligible(node: {
 }): boolean {
   return (
     WAVE_ELIGIBLE_STAGES.has(node.slug) &&
-    node.phase === "construction" &&
-    node.for_each === "unit-of-work" &&
+    isUnitLoopStage(node) &&
     node.mode === "inline" &&
     node.workspace_requires !== true
   );
 }
 
 // True only for the topology the engine can dispatch as an autonomous swarm.
-// A truthy `--unit` is not proof: the four inline Construction design stages
+// A truthy `--unit` is not proof: the four inline design stages
 // are also per-unit. Keep this predicate shared by receipt and budget guards so
 // scope/run review caps are bypassed only for a real Bolt-capable stage.
 export function isAutonomousSwarmStage(
@@ -31300,13 +31304,13 @@ export function isAutonomousSwarmStage(
   },
   evidence?: ConstructionEvidence,
 ): boolean {
-  if (stage.phase !== "construction") return false;
-  if (stage.for_each !== "unit-of-work" || stage.mode !== "subagent") return false;
+  if (!isUnitLoopStage(stage)) return false;
+  if (stage.mode !== "subagent") return false;
   if (!isConstructionSwarmEnabled(stateContent)) return false;
   const scope = stateContent ? getField(stateContent, "Scope") : null;
   if (!scope) return false;
   if (usesStageLevelPerUnitArtifacts(scope, stateContent)) return false;
-  const first = firstPlannedStageOfPhase("construction", scope, stateContent);
+  const first = firstPlannedUnitLoopStage(scope, stateContent);
   const checkpoints = getField(stateContent!, "Construction Checkpoints") === "enabled";
   if (first !== null && first.slug === stage.slug && !checkpoints) return false;
   if (checkpoints && constructionSkeletonOn(stateContent!)) {
@@ -31488,7 +31492,7 @@ export function setFieldStrict(content: string, field: string, value: string): s
 
 // setPhaseProgress: flip one `- **<Phase>**: <status>` row in the state
 // file's `## Phase Progress` section. The row label is the capitalized phase
-// slug ("ideation" -> "Ideation"), and each label appears exactly once in the
+// slug ("discover" -> "Discover"), and each label appears exactly once in the
 // state template (only inside that section), so the plain setField match
 // cannot collide with another field. A no-op when the row is absent (an older
 // or hand-edited state file): the section is display-only, so a missing row
@@ -32149,7 +32153,7 @@ function scopesRunningStage(slug: string): string[] {
   }
 }
 
-// The scopes whose plan runs at least one per-Unit Construction stage.
+// The scopes whose plan runs at least one per-Unit stage.
 function scopesRunningAnyPerUnitStage(): string[] {
   try {
     const perUnit = new Set(loadStageGraphAll().filter((stage) => stage.for_each === "unit-of-work").map((stage) => stage.slug));
@@ -32179,7 +32183,7 @@ function unresolvedTeamGateRemedy(
   return {
     op: "restore-scope",
     action:
-      "This Unit's gate cannot be resolved: no active per-Unit Construction " +
+      "This Unit's gate cannot be resolved: no active per-Unit " +
       `gate stage exists in the current plan (${resolution.reason}). Switch to a scope ` +
       `with one: run \`${aidlcToolInvocation("orchestrate")} next --scope <scope>\` with ` +
       scopeChoice(scopesRunningAnyPerUnitStage()) + ", then retry.",
@@ -34641,7 +34645,7 @@ export function pipelineLinkEvidence(
 // selected they sit in the space's own record, where an isolated run's
 // directive names them.
 export function developerHandoffPaths(projectDir: string, repo: string | null): string[] {
-  const dir = join(docsRoot(projectDir), "inception", "reverse-engineering");
+  const dir = join(docsRoot(projectDir), "discover", "reverse-engineering");
   return repo !== null
     ? [join(dir, `developer-scan-${repo}.md`)]
     : [join(dir, "developer-scan.md"), join(dir, `developer-scan-${codekbRepoName(projectDir)}.md`)];
@@ -34976,7 +34980,7 @@ export type TeamUnitGateResolution =
       reason: "no-active-gate-stage";
     };
 
-// The team gate that governs one Unit at one per-Unit Construction stage: the
+// The team gate that governs one Unit at one per-Unit stage: the
 // stage's own gate under a per-stage rhythm, or the last active per-Unit stage
 // under a unit-end rhythm. Undefined when no team gate applies.
 export function teamUnitGateStatus(
@@ -34989,8 +34993,7 @@ export function teamUnitGateStatus(
   if (
     !unit ||
     !isTeamUnitOwnership(stateContent) ||
-    stage?.phase !== "construction" ||
-    stage.for_each !== "unit-of-work"
+    !isUnitLoopStage(stage)
   ) {
     return undefined;
   }
@@ -38400,27 +38403,29 @@ export function holdsAnyFile(dir: string): boolean {
 
 const STARTED_STATES: ReadonlySet<string> = new Set(["in-progress", "awaiting-approval", "revising", "completed"]);
 
-// True once a Construction or Operation stage has started. From then on the
+// True once a unit-loop stage or an Operate stage has started. From then on the
 // folder holds code AI-DLC wrote, so the scan no longer tells new from
-// existing, and the workflow is not moved back into Inception.
+// existing, and the workflow is not moved back into the stages before the unit loop.
 export function constructionHasStarted(content: string, workRecordDir?: string | null): boolean {
-  // Construction output in the record means this work has built: a jump back
+  // Per-Unit output in the record means this work has built: a jump back
   // resets its stages, but the code in the folder is still its own.
-  if (workRecordDir && holdsAnyFile(join(workRecordDir, "construction"))) return true;
+  const holdsUnitWork = (record: string): boolean => recordUnitNames(record).some((unit) =>
+    UNIT_RECORD_PHASES.some((phase) => holdsAnyFile(join(record, phase, unit))));
+  if (workRecordDir && holdsUnitWork(workRecordDir)) return true;
   const states = new Map(parseCheckboxes(content).map((c) => [c.slug, c.state]));
   const started = loadStageGraph().filter((stage) =>
-    (stage.phase === "construction" || stage.phase === "operation") &&
+    (isUnitLoopStage(stage) || stage.phase === "operate") &&
     STARTED_STATES.has(states.get(stage.slug) ?? "pending"));
   if (started.length !== 1 || !workRecordDir) return started.length > 0;
-  // Only just entered: an approval moved the cursor onto the first
-  // Construction stage and nothing of it is written yet, so nothing was built
-  // for a new project. A jump straight into Operation is work under way.
+  // Only just entered: an approval moved the cursor onto the first unit-loop
+  // stage and nothing of it is written yet, so nothing was built for a new
+  // project. A jump straight into Operate is work under way.
   const [only] = started;
   return !(
-    only.phase === "construction" &&
+    isUnitLoopStage(only) &&
     only.slug === getField(content, "Current Stage") &&
     states.get(only.slug) === "in-progress" &&
-    !holdsAnyFile(join(workRecordDir, "construction"))
+    !holdsUnitWork(workRecordDir)
   );
 }
 
@@ -38621,10 +38626,7 @@ export function unitMajorConstructionStageSlugs(
   );
   return loadStageGraph()
     .filter((stage) => {
-      if (
-        stage.phase !== "construction" ||
-        stage.for_each !== "unit-of-work"
-      ) {
+      if (!isUnitLoopStage(stage)) {
         return false;
       }
       const checkbox = checkboxStates.get(stage.slug);
@@ -38751,48 +38753,61 @@ export function approvesTogetherFields(stages: readonly string[]): Record<string
   return stages.length >= 2 ? { [APPROVES_TOGETHER_FIELD]: stages.join(", ") } : {};
 }
 
+// The first stage that `matches`. With no state, or a state whose plan is not
+// composed for one piece of work, that is the first match on the scope's path.
+// A plan composed for one piece of work (its state carries a Plan line) is
+// defined by its state file's EXECUTE/SKIP suffixes, so it anchors on its own
+// first stage. Recompose refuses to move the unit-loop anchor, so the scope
+// grid stays the answer for every other workflow.
+function firstStageWhere(
+  scope: string,
+  stateContent: string | null | undefined,
+  matches: (stage: StageEntry) => boolean,
+): StageEntry | null {
+  const mapping = loadScopeMapping()[scope];
+  if (!mapping) return null;
+  if (!stateContent || getField(stateContent, PLAN_FIELD) === null) {
+    // Lazy require to avoid circular import (aidlc-graph imports from us).
+    // Type-only import at top of file pins the signature.
+    const { subgraphForScope } = require("./aidlc-graph.ts") as {
+      subgraphForScope: typeof SubgraphForScope;
+    };
+    for (const stage of subgraphForScope(scope)) {
+      if (matches(stage)) return stage;
+    }
+    return null;
+  }
+  const suffixes = parseStateStageSuffixes(stateContent);
+  return loadStageGraph().find((stage) =>
+    matches(stage) &&
+    (suffixes.get(stage.slug) ?? mapping.stages[stage.slug]) === "EXECUTE"
+  ) ?? null;
+}
+
 export function firstInScopeStageOfPhase(
   phase: string,
   scope: string
 ): StageEntry | null {
-  const mapping = loadScopeMapping()[scope];
-  if (!mapping) return null;
-
-  // Lazy require to avoid circular import (aidlc-graph imports from us).
-  // Type-only import at top of file pins the signature.
-  const { subgraphForScope } = require("./aidlc-graph.ts") as {
-    subgraphForScope: typeof SubgraphForScope;
-  };
-  const path = subgraphForScope(scope);
-
   const phaseLower = phase.toLowerCase();
-  for (const stage of path) {
-    if (stage.phase === phaseLower) return stage;
-  }
-  return null;
+  return firstStageWhere(scope, null, (stage) => stage.phase === phaseLower);
 }
 
-// The first stage of `phase` the workflow's approved plan runs. A plan composed
-// for one piece of work (its state carries a Plan line) is defined by its state
-// file's EXECUTE/SKIP suffixes, so it anchors on its own first stage. Every
-// other workflow keeps its scope's anchor, firstInScopeStageOfPhase: recompose
-// refuses to move the Construction anchor, so the scope grid stays the answer.
 export function firstPlannedStageOfPhase(
   phase: string,
   scope: string,
   stateContent?: string | null,
 ): StageEntry | null {
-  if (!stateContent || getField(stateContent, PLAN_FIELD) === null) {
-    return firstInScopeStageOfPhase(phase, scope);
-  }
-  const mapping = loadScopeMapping()[scope];
-  if (!mapping) return null;
-  const suffixes = parseStateStageSuffixes(stateContent);
   const phaseLower = phase.toLowerCase();
-  return loadStageGraph().find((stage) =>
-    stage.phase === phaseLower &&
-    (suffixes.get(stage.slug) ?? mapping.stages[stage.slug]) === "EXECUTE"
-  ) ?? null;
+  return firstStageWhere(scope, stateContent, (stage) => stage.phase === phaseLower);
+}
+
+// The first unit-loop stage the workflow's approved plan runs, in whichever phase
+// it sits.
+export function firstPlannedUnitLoopStage(
+  scope: string,
+  stateContent?: string | null,
+): StageEntry | null {
+  return firstStageWhere(scope, stateContent, (stage) => isUnitLoopStage(stage));
 }
 
 export function stagesInScope(
@@ -41902,7 +41917,7 @@ export function parseFieldArgs(args: string[]): Record<string, string> {
 // person's. Callers add the command to run again.
 export function unitsBlockRepair(reason: string, detail: string): string {
   return (
-    `The units block in inception/units-generation/unit-of-work-dependency.md cannot be read (${reason}: ${detail}), ` +
+    `The units block in design/units-generation/unit-of-work-dependency.md cannot be read (${reason}: ${detail}), ` +
     "and Construction walks its Units from it. Write it from the Units in unit-of-work.md and the dependencies " +
     "that file describes: one fenced yaml block that starts with `units:` and has, for each Unit, " +
     "`- name: <unit>` and `depends_on: [<the Units it depends on>]` (`[]` for none), plus " +

@@ -46,7 +46,7 @@ opens, on the tables as they are then:
    business rules, and workspace-relative code paths. At Units Generation, a
    story or requirement no Unit's row names is a gap, unless the team keeps it
    out of every Unit on purpose: a `Deferred` row with a non-empty target (the
-   reason, and where it is handled, say Operation) settles it, with `none` in
+   reason, and where it is handled, say Operate) settles it, with `none` in
    its story-map Units cell. An `N/A` row does not, since it is also how an ID
    is handed to another Unit. At Functional Design and Code Generation, an `N/A`
    row for an acceptance criterion (or an FR when there are no stories) whose

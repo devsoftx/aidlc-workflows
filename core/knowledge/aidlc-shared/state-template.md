@@ -15,7 +15,7 @@ Authoritative generated views:
 - **Project**: [single-line project description preview]
 - **Project Description Source**: project-description.json
 - **Project Type**: [Greenfield/Brownfield; the bare word, which every reader compares]
-- **Project Type Source**: [`workspace scan` or `you`: who decided the type. Written at intent creation (`you` when the request carried `--project-type`), rewritten to `you` by `workspace reclassify` (the person's `/aidlc --project-type` or plain words). A routing field: while it reads `workspace scan` on Greenfield work that has not started Construction, `next` asks once when the folder gains code; `you` is never second-guessed by a scan. A state file without the line reads as `workspace scan`]
+- **Project Type Source**: [`workspace scan` or `you`: who decided the type. Written at intent creation (`you` when the request carried `--project-type`), rewritten to `you` by `workspace reclassify` (the person's `/aidlc --project-type` or plain words). A routing field: while it reads `workspace scan` on Greenfield work that has not started the unit loop, `next` asks once when the folder gains code; `you` is never second-guessed by a scan. A state file without the line reads as `workspace scan`]
 - **Scope**: [scope slug from compiled scope grid]
 - **Plan**: [present only for a plan composed for this piece of work: its name as the gate showed it (`--plan-name`), or `tailored plan`; its stage changes are the Stage Progress suffixes, and a scope change removes the line]
 - **Start Date**: [ISO 8601 timestamp]
@@ -84,7 +84,7 @@ unit-major`. This table is an engine-owned, derived projection of the Unit DAG,
 artifact coverage, lifecycle receipts, and unit gate events. It is rewritten on
 every `next`; hand edits are never routing or completion evidence.
 
-| unit | owner | [per-unit Construction stage columns in graph order] | gate |
+| unit | owner | [per-unit stage columns in graph order] | gate |
 | --- | --- | --- | --- |
 | [Unit name] | - | [[ ]/[-]/[?]/[R]/[x]/[S] per stage] | [[ ]/[-]/[?]/[R]/[x]] |
 
@@ -95,7 +95,7 @@ Gate Rhythm. Stage Progress rows are derived complete only when their Unit
 Progress column and required team gates are complete.
 
 ## Current Status
-- **Lifecycle Phase**: [READY/INITIALIZATION/IDEATION/INCEPTION/CONSTRUCTION/OPERATION]
+- **Lifecycle Phase**: [READY/INITIALIZATION/DISCOVER/DESIGN/BUILD/TEST/SECURE/DEPLOY/OPERATE]
 - **Current Stage**: [stage slug or status text]
 - **Next Stage**: [next stage slug or none]
 - **Status**: [Running/Completed/Archived]

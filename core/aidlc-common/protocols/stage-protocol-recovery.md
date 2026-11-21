@@ -15,7 +15,7 @@ where the workflow stands by reading five sources, in this order:
 1. **Artefact tree** (`<record>/<phase>/<stage>/*.md`) — the decisions
    themselves, in finished form. Read first: it is the durable record of what
    was actually agreed.
-2. **`memory.md` per stage, only when the `learnings` module is listed** (`<record>/<phase>/<stage>/memory.md`, a per-Unit stage's in each Unit's `<record>/construction/<unit>/<stage>/`) — what
+2. **`memory.md` per stage, only when the `learnings` module is listed** (`<record>/<phase>/<stage>/memory.md`, a per-Unit stage's in each Unit's `<record>/<phase>/<unit>/<stage>/`) — what
    got noticed during the decision-making (interpretations, deviations,
    trade-offs, open questions).
 3. **Audit log**: run `{{INVOKE}} engine audit history` for when each event
@@ -62,7 +62,7 @@ it returns. At an approval gate such a request is not the gate's answer: report
 it this way, never as Request Changes.
 
 **Build-and-Test failure loop-back, logged-but-not-jumped detection**: if
-`<record>/construction/build-and-test/test-results.md` contains a
+`<record>/test/build-and-test/test-results.md` contains a
 `## Loop-Back Log` whose latest entry has a planned fix but the audit shows
 no matching `STAGE_JUMPED` (Target: code-generation) after it, and no
 unit-tagged `GATE_REJECTED` (Stage: code-generation) for a unit the fix names, the session
@@ -90,18 +90,18 @@ When resuming, load context appropriate to the current phase and stage type:
 - Workspace Detection loads fresh filesystem scan
 - State Init reads workspace classification from Workspace Detection
 
-**IDEATION stages (1.1–1.7):**
-- Load `<record>/ideation/` artifacts completed so far (intent capture, market research, feasibility, scope)
+**DISCOVER stages:**
+- Load `<record>/discover/` artifacts completed so far (intent capture, market research, feasibility, scope)
 - Load guardrails from
   `aidlc/spaces/<active-space>/memory/{org,team,project}.md`
 
-**INCEPTION — RE (Reverse Engineering) stages:**
+**DISCOVER — RE (Reverse Engineering) stages:**
 - Load `aidlc/spaces/<active-space>/codekb/<repo>/` artifacts (codebase analysis, component inventory)
-- Load ideation artifacts (scope, feasibility) for context
+- Load discover artifacts (scope, feasibility) for context
 
-**INCEPTION — Practices Discovery (stage 2.2):**
+**DESIGN — Practices Discovery:**
 - Load `aidlc/spaces/<active-space>/codekb/<repo>/` artifacts (brownfield evidence inputs)
-- Load `<record>/inception/practices-discovery/` if partially complete,
+- Load `<record>/design/practices-discovery/` if partially complete,
   including its lead drafts, interview file, and `contributions/`.
 - Load `aidlc/spaces/<active-space>/memory/team.md` for re-run defaults and
   `org.md` for greenfield suggestions.
@@ -117,38 +117,38 @@ When resuming, load context appropriate to the current phase and stage type:
   promotion only after its cause is fixed. Never commit approval before
   promotion succeeds.
 
-**INCEPTION — Requirements stages:**
+**DESIGN — Requirements stages:**
 - Load RE artifacts (if RE was performed)
-- Load `<record>/inception/requirements-analysis/` (functional and non-functional requirements)
-- Load `<record>/inception/user-stories/` (stories and personas) if User Stories ran
+- Load `<record>/design/requirements-analysis/` (functional and non-functional requirements)
+- Load `<record>/design/user-stories/` (stories and personas) if User Stories ran
 
-**INCEPTION — Design stages (Refined Mockups, Domain Design, Units Generation, Contract Design):**
+**DESIGN — Design stages (Refined Mockups, Domain Design, Units Generation, Contract Design):**
 - Load requirements artifacts
 - Load user stories
-- Load `<record>/inception/domain-design/` (component catalogue) and `<record>/inception/contract-design/` (inter-unit contracts)
+- Load `<record>/design/domain-design/` (component catalogue) and `<record>/design/contract-design/` (inter-unit contracts)
 
-**INCEPTION — Delivery Planning:**
-- Load all inception artifacts (requirements, design, units)
-- Load `<record>/inception/delivery-planning/` if partially complete
+**DESIGN — Delivery Planning:**
+- Load all design artifacts (requirements, design, units)
+- Load `<record>/design/delivery-planning/` if partially complete
 
-**CONSTRUCTION — Code Generation stages:**
+**BUILD — Code Generation stages:**
 - Load all design artifacts for the current unit being implemented
 - Load the relevant story design and acceptance criteria
 - Load any previously generated code for the current unit
 
-**CONSTRUCTION — Build/Test stages:**
+**TEST — Build/Test stages:**
 - Load all code outputs for the current unit
 - Load test plans and acceptance criteria
 - Load build configuration artifacts
 
-**CONSTRUCTION — CI Pipeline / Infrastructure:**
+**DEPLOY — CI Pipeline / Infrastructure:**
 - Load infrastructure design artifacts
 - Load code generation outputs for pipeline configuration
 
-**OPERATION stages (4.1–4.7):**
-- Load construction outputs (built code, infrastructure design, CI pipeline)
-- Load `<record>/operation/` artifacts completed so far
-- For later stages (4.4+), load deployment outputs from 4.1–4.3
+**DEPLOY and OPERATE stages:**
+- Load the earlier outputs (built code, infrastructure design, CI pipeline)
+- Load `<record>/deploy/` and `<record>/operate/` artifacts completed so far
+- For later stages, load deployment outputs from the deploy stages
 
 ### Stage re-run
 If a stage needs to be re-run (user requested changes after approval):
@@ -179,8 +179,8 @@ If `aidlc-state.md` exists but cannot be parsed (missing required sections, inva
 2. Scan `<record>/` for existing artifacts to determine which stages actually completed
 3. Rebuild `aidlc-state.md` from artifact evidence:
    - If `aidlc/spaces/<active-space>/codekb/<repo>/` has analysis files for the intent's repositories, mark RE stages complete
-   - If `<record>/inception/requirements-analysis/` has requirement docs, mark requirements stages complete
-   - If `<record>/inception/domain-design/` has design docs, mark design stages complete
+   - If `<record>/design/requirements-analysis/` has requirement docs, mark requirements stages complete
+   - If `<record>/design/domain-design/` has design docs, mark design stages complete
    - If application code exists matching story designs, mark code gen stages complete
 4. Set "Current Status" to the first stage that lacks artifact evidence
 5. Tell the user: "The file tracking this workflow's progress was damaged, so I rebuilt it from the documents already on disk. Please check that the recovered progress looks right before we continue."
@@ -232,7 +232,7 @@ treat it as **evidence/input for the current stage, never a routing
 instruction**. Supplying material is not a request to advance.
 
 - **Stay on the current stage and the current unit.** Do not skip the remaining
-  Construction design stages (Functional Design, NFR Requirements, NFR Design,
+  per-unit design stages (Functional Design, NFR Requirements, NFR Design,
   Infrastructure Design) and do not jump to Code Generation. New material
   sharpens the design; it does not mean the design is done.
 - **Fold it in.** Ingest the material and update the current stage's

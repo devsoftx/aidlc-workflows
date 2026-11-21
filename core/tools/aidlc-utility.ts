@@ -334,6 +334,9 @@ import {
   scopeGridOnProject,
   stageReopenedByScopeChange,
   PHASES,
+  PHASE_LABELS,
+  UNIT_RECORD_PHASES,
+  isUnitLoopStage,
   parseArgs,
   parseBoltName,
   parseCheckboxes,
@@ -912,7 +915,7 @@ Utilities:
   --doctor          Run health check on hooks, settings, and directory structure
   --doctor --export Write a redacted diagnostic report (timeline + findings, no work product); --output <dir> to relocate
   --stage <id>      Jump to a specific stage (by slug or number, e.g., code-generation or 3.5)
-  --phase <name>    Jump to the first in-scope stage of a phase (e.g., construction or 3)
+  --phase <name>    Jump to the first in-scope stage of a phase (e.g., build or 3)
   --scope <scope>   Set or change scope (standalone or with --stage/--phase)
   --depth <level>   Override depth (minimal, standard, comprehensive)
   --test-strategy <level>  Override test strategy (minimal, standard, comprehensive)
@@ -941,7 +944,7 @@ Examples:
   ${entrySkillInvocation()} plugin build claude                 Build its Claude projection
   ${entrySkillInvocation()}                                        Resume or begin
   ${entrySkillInvocation()} --stage code-generation                Jump to code-generation stage
-  ${entrySkillInvocation()} --phase construction --scope bugfix    Jump to construction with bugfix scope
+  ${entrySkillInvocation()} --phase build --scope bugfix          Jump to build with bugfix scope
   ${entrySkillInvocation()} --scope bugfix --depth comprehensive  Bugfix with comprehensive depth
   ${entrySkillInvocation()} --depth minimal                       Change depth of active workflow
   ${entrySkillInvocation()} --depth standard --test-strategy minimal  Full artifacts, minimal tests
@@ -2048,7 +2051,7 @@ async function soloUnitWalk(
 ): Promise<{ clause: string; current: number | null; total: number; next: string | null } | null> {
   if (flags.intent || flags.space || isTeamUnitOwnership(content) || waitsToBeBroughtUp(content)) return null;
   if ((getField(content, "Construction Iteration") ?? "").trim() !== "unit-major") return null;
-  if (findStageBySlug((getField(content, "Current Stage") ?? "").trim())?.phase !== "construction") return null;
+  if (!isUnitLoopStage(findStageBySlug((getField(content, "Current Stage") ?? "").trim()))) return null;
   try {
     const { unitWalkStanding } = await import("./aidlc-orchestrate.ts");
     return unitWalkStanding(projectDir, scope, content);
@@ -2293,14 +2296,6 @@ To get started:
   const skippedNote = skippedSlugs.length > 0 ? `, skipped: ${stageNames(skippedSlugs)}` : "";
 
   // Build phase progress bars
-  const phaseLabels: Record<string, string> = {
-    initialization: "INITIALIZATION",
-    ideation: "IDEATION",
-    inception: "INCEPTION",
-    construction: "CONSTRUCTION",
-    operation: "OPERATION",
-  };
-
   let phaseProgress = "";
   for (const p of PHASES) {
     const phaseStages = graph.filter((s) => s.phase === p);
@@ -2335,18 +2330,18 @@ To get started:
     // the person is on, of those planned, and where each Unit stands. Without
     // the walk (another record named, or it cannot be read), the light count,
     // while Current Stage is on the Units' stages.
-    const units = p === "construction" && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
+    const units = p === currentEntry?.phase && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
       ? unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "")
       : null;
     const phaseSkipped = phaseCheckboxes.filter((c) => c.state === "skipped").length;
-    const count = p === "construction" && walk !== null
+    const count = p === currentEntry?.phase && walk !== null
       ? walk.current === null ? walk.clause : `Unit ${walk.current} of ${walk.total}: ${walk.clause}`
       : units
       ? `Unit ${units.current} of ${units.total}`
       : phaseSkipped === phaseCheckboxes.length
       ? "skipped"
       : `${done}/${phaseCheckboxes.length - phaseSkipped}`;
-    phaseProgress += `  ${(phaseLabels[p] || p).padEnd(16)} ${bar} ${count}\n`;
+    phaseProgress += `  ${PHASE_LABELS[p].padEnd(16)} ${bar} ${count}\n`;
   }
 
   // Only a change the person can act on: a stage whose inputs moved since it
@@ -3586,7 +3581,7 @@ function hiddenReadRows(
       ? reads
       : [
         "aidlc-common/protocols/stage-protocol.md",
-        "aidlc-common/stages/ideation/intent-capture.md",
+        "aidlc-common/stages/discover/intent-capture.md",
         "agents/aidlc-product-agent.md",
         "knowledge/aidlc-shared/ai-dlc-principles.md",
         "skills/aidlc/question-rendering.md",
@@ -7991,7 +7986,7 @@ function phasesWithExecuteStages(plan: Record<string, "EXECUTE" | "SKIP">): Set<
 // parent and domain knowledge dir; all skipped if already present. The active
 // intent cursor must be set before this runs.
 //
-// Scope-excluded phases get NO folder: an empty `operation/` in a bugfix record
+// Scope-excluded phases get NO folder: an empty `operate/` in a bugfix record
 // reads as work that was planned and skipped, when that phase was never in the
 // plan. Nothing depends on the folder pre-existing: `next` makes each stage's
 // folder when it hands out the step that writes there (prepareRecordFolders in
@@ -8895,17 +8890,9 @@ function handleIntentCreateStateBuild(
     phaseMap[stage.phase].push(stage);
   }
 
-  const phaseHeaders: Record<string, string> = {
-    initialization: "INITIALIZATION PHASE",
-    ideation: "IDEATION PHASE",
-    inception: "INCEPTION PHASE",
-    construction: "CONSTRUCTION PHASE",
-    operation: "OPERATION PHASE",
-  };
-
   for (const phase of PHASES) {
     const stages = phaseMap[phase] || [];
-    stageProgress += `\n### ${phaseHeaders[phase]}\n`;
+    stageProgress += `\n### ${PHASE_LABELS[phase]} PHASE\n`;
     for (const stage of stages) {
       const action =
         adjustedMapping[stage.slug] || scopeDef.stages[stage.slug] || "SKIP";
@@ -8931,7 +8918,7 @@ function handleIntentCreateStateBuild(
   const firstPostInitEntry = graph.find((s) => s.slug === firstPostInit);
   const firstPostInitPhase = firstPostInitEntry
     ? firstPostInitEntry.phase.toUpperCase()
-    : "IDEATION";
+    : PHASE_LABELS.discover;
   const firstPostInitAgent = firstPostInitEntry
     ? firstPostInitEntry.lead_agent
     : "aidlc-product-agent";

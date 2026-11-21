@@ -23,7 +23,7 @@ caution nor default economy is acceptable.
   build-and-test). They do not need market-research, user-stories, or
   domain-design - those discover and shape a product that already exists.
 - **Net-new surface.** A new feature, product, or service needs the discovery
-  arc: intent-capture, scope-definition, then the inception design stages in
+  arc: intent-capture, scope-definition, then the design stages in
   proportion to how much NEW structure it introduces.
 - **Operational outcome.** Deployment, observability, incident-response, and
   performance stages belong on the plan when the task's DONE lives in an

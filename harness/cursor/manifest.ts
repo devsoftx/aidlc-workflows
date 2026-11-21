@@ -143,10 +143,13 @@ const manifest: HarnessManifest = {
     // instruction naming aidlc/active-memory/. /aidlc space refreshes that
     // copy (aidlc-includes.ts refreshActiveMemory).
     { src: "rules-aidlc.mdc", dst: "rules/aidlc.mdc" },
-    { src: "rules-aidlc-phase-ideation.mdc", dst: "rules/aidlc-phase-ideation.mdc" },
-    { src: "rules-aidlc-phase-inception.mdc", dst: "rules/aidlc-phase-inception.mdc" },
-    { src: "rules-aidlc-phase-construction.mdc", dst: "rules/aidlc-phase-construction.mdc" },
-    { src: "rules-aidlc-phase-operation.mdc", dst: "rules/aidlc-phase-operation.mdc" },
+    { src: "rules-aidlc-phase-discover.mdc", dst: "rules/aidlc-phase-discover.mdc" },
+    { src: "rules-aidlc-phase-design.mdc", dst: "rules/aidlc-phase-design.mdc" },
+    { src: "rules-aidlc-phase-build.mdc", dst: "rules/aidlc-phase-build.mdc" },
+    { src: "rules-aidlc-phase-test.mdc", dst: "rules/aidlc-phase-test.mdc" },
+    { src: "rules-aidlc-phase-secure.mdc", dst: "rules/aidlc-phase-secure.mdc" },
+    { src: "rules-aidlc-phase-deploy.mdc", dst: "rules/aidlc-phase-deploy.mdc" },
+    { src: "rules-aidlc-phase-operate.mdc", dst: "rules/aidlc-phase-operate.mdc" },
     // The hook shim + wiring (the adapter is authored; the core hook bodies
     // beside it are packaged byte-identical to the Claude harness).
     { src: "hooks/aidlc-cursor-adapter.ts", dst: "hooks/aidlc-cursor-adapter.ts" },
