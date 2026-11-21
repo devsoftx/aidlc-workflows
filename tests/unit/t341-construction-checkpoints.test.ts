@@ -74,6 +74,7 @@ import {
   seededAuditShard,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -110,7 +111,7 @@ function state(autonomous = false, iteration = "unit-major"): string {
 - **Stages to Skip**: none
 
 ## Stage Progress
-### CONSTRUCTION PHASE
+### ${phaseFor("nfr-requirements").toUpperCase()} PHASE
 - [x] functional-design — EXECUTE
 - [-] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
@@ -119,14 +120,14 @@ function state(autonomous = false, iteration = "unit-major"): string {
 - [ ] build-and-test — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("nfr-requirements").toUpperCase()}
 - **Current Stage**: nfr-requirements
 - **Status**: Running
 `;
 }
 
 function artifact(project: string, unit: string, slug: string, name?: string): string {
-  return join(seededRecordDir(project), "construction", unit, slug,
+  return join(seededRecordDir(project), phaseFor(slug), unit, slug,
     artifactFilename(name ?? findStageBySlug(slug)!.produces![0]));
 }
 
@@ -154,7 +155,7 @@ function project(autonomous = false, iteration = "unit-major"): string {
     writeFileSync(join(dir, "src", `${unit}.ts`), `export const ${unit} = 1;\n`);
     for (const slug of STAGES) {
       const definition = findStageBySlug(slug)!;
-      const output = join(seededRecordDir(dir), "construction", unit, slug);
+      const output = join(seededRecordDir(dir), phaseFor(slug), unit, slug);
       mkdirSync(output, { recursive: true });
       for (const name of definition.produces ?? []) {
         writeFileSync(join(output, artifactFilename(name)), `# ${slug}: ${unit}: ${name}\n`);
@@ -439,7 +440,7 @@ describe("t341 Construction checkpoint verification and evidence", () => {
     // A plan whose Construction writes no workspace code has no checkpoint:
     // infra builds its IaC in Code Generation, so here the plan skips it.
     expect(checkpointPolicyEnabled(
-      "- **Scope**: infra\n- **Construction Checkpoints**: enabled\n\n## Stage Progress\n### CONSTRUCTION PHASE\n" +
+      "- **Scope**: infra\n- **Construction Checkpoints**: enabled\n\n## Stage Progress\n### " + phaseFor("nfr-requirements").toUpperCase() + " PHASE\n" +
         "- [ ] nfr-requirements — EXECUTE\n- [ ] code-generation — SKIP\n- [ ] build-and-test — SKIP\n",
     )).toBe(false);
     expect(checkpointPolicyEnabled("- **Construction Checkpoints**: enabled-ish")).toBe(false);
@@ -739,7 +740,7 @@ describe("t341 Construction checkpoint verification and evidence", () => {
     writeFileSync(join(dir, "src", "alpha.ts"), "export const alpha = 2;\n");
     expect(resolveConstructionCheckpoint(dir, "alpha", "unit").verified).toBe(false);
     await pass(dir);
-    const manifest = join(seededRecordDir(dir), "construction", "alpha", "code-generation", "source-manifest.json");
+    const manifest = join(seededRecordDir(dir), phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json");
     writeFileSync(manifest, `${readFileSync(manifest, "utf-8")}\n`);
     expect(resolveConstructionCheckpoint(dir, "alpha", "unit").verified).toBe(false);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -758,7 +759,7 @@ describe("t341 Construction checkpoint verification and evidence", () => {
     }, other);
     expect(resolveConstructionCheckpoint(other, "alpha", "unit").ready).toBe(false);
     const unbound = project();
-    rmSync(join(seededRecordDir(unbound), "construction", "alpha", "code-generation", "source-manifest.json"));
+    rmSync(join(seededRecordDir(unbound), phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json"));
     expect(resolveConstructionCheckpoint(unbound, "alpha", "unit").errors.join("\n")).toContain("source manifest");
   });
 });
@@ -1611,7 +1612,7 @@ describe("t341 human authority, attempt boundaries, and scoped approval", () => 
     // Unlink the junction itself; Bun's rmSync can fail on Windows junctions.
     fs.unlinkSync(join(root, ".aidlc-construction-checkpoints"));
     expect(fs.existsSync(destination)).toBe(true);
-    const manifest = join(root, "construction", "alpha", "code-generation", "source-manifest.json");
+    const manifest = join(root, phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json");
     writeFileSync(join(destination, "manifest.json"), readFileSync(manifest));
     rmSync(manifest);
     symlinkSync(join(destination, "manifest.json"), manifest);
@@ -1627,7 +1628,7 @@ describe("t341 review evidence is independent of project check success", () => {
     for (const unit of ["alpha", "beta"]) {
       for (const slug of STAGES) {
         if (!findStageBySlug(slug)!.workspace_requires) continue;
-        writeFileSync(join(seededRecordDir(dir), "construction", unit, slug, "source-manifest.json"), JSON.stringify({
+        writeFileSync(join(seededRecordDir(dir), phaseFor(slug), unit, slug, "source-manifest.json"), JSON.stringify({
           stage: slug, unit, version: 1, writes: [{ path: `src/${unit}.ts` }, { path: "src/shared.ts" }],
         }));
       }
@@ -1938,9 +1939,9 @@ describe("t341 protected question interleaving", () => {
     const pd = project();
     if (interleaving === "lifecycle-gate") {
       writeFileSync(seededStateFile(pd), readFileSync(seededStateFile(pd), "utf-8").replace(
-        "## Stage Progress", "## Stage Progress\n### INCEPTION PHASE\n- [-] delivery-planning — EXECUTE",
+        "## Stage Progress", "## Stage Progress\n### " + phaseFor("delivery-planning").toUpperCase() + " PHASE\n- [-] delivery-planning — EXECUTE",
       ));
-      const output = join(seededRecordDir(pd), "inception", "delivery-planning");
+      const output = join(seededRecordDir(pd), phaseFor("delivery-planning"), "delivery-planning");
       mkdirSync(output, { recursive: true });
       for (const name of findStageBySlug("delivery-planning")!.produces ?? []) {
         writeFileSync(join(output, artifactFilename(name)), `# ${name}\n`);

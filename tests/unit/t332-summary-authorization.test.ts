@@ -68,6 +68,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -118,7 +119,7 @@ function project(
       state = state
         .replace("- **Inception**: Active", "- **Inception**: Verified")
         .replace("- **Construction**: Pending", "- **Construction**: Active")
-        .replace("- **Lifecycle Phase**: INCEPTION", "- **Lifecycle Phase**: CONSTRUCTION")
+        .replace("- **Lifecycle Phase**: INCEPTION", `- **Lifecycle Phase**: ${phaseFor(NFR_STAGE).toUpperCase()}`)
         .replace(`- **Current Stage**: ${STAGE}`, `- **Current Stage**: ${NFR_STAGE}`)
         .replace(`- **In Progress**: ${STAGE}`, `- **In Progress**: ${NFR_STAGE}`)
         .replace(`- [-] ${STAGE} — EXECUTE`, `- [x] ${STAGE} — EXECUTE`)
@@ -147,7 +148,7 @@ function run(args: string[], proj: string) {
 }
 
 function paths(proj: string, { stage = STAGE, unit }: SummaryTarget = {}) {
-  const phase = stage === STAGE ? "inception" : "construction";
+  const phase = phaseFor(stage);
   const dir = join(seededRecordDir(proj), phase, ...(unit ? [unit] : []), stage);
   mkdirSync(dir, { recursive: true });
   return {
@@ -330,8 +331,8 @@ describe("t332 summary authorization id", () => {
     expect(writes).toHaveLength(2);
     expect(auditBlockField(writes[1].block, SUMMARY_AUTHORIZATION_FIELD)).toBe(id as string);
     // An output of another stage is not this stage's descendant.
-    const other = join(seededRecordDir(proj), "inception", "user-stories", "stories.md");
-    mkdirSync(join(seededRecordDir(proj), "inception", "user-stories"), { recursive: true });
+    const other = join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories", "stories.md");
+    mkdirSync(join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories"), { recursive: true });
     writeArtifact(proj, other, "# stories\n");
     expect(auditBlockField(artifactWrites(proj)[2].block, SUMMARY_AUTHORIZATION_FIELD)).toBeNull();
   });
@@ -849,14 +850,14 @@ describe("t332 authorization scope resolution", () => {
       unit,
       workflow: null,
       attempt: "unstarted",
-      questions_file: `construction/${unit}/${stage}/${stage}-questions.md`,
+      questions_file: `${phaseFor(stage)}/${unit}/${stage}/${stage}-questions.md`,
       questions_sha256: "a".repeat(64),
       choice: "Looks correct",
       recorded_at: "2026-09-04T00:00:00Z",
     });
     const artifact = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor(stage),
       unit,
       stage,
       "entities.md",

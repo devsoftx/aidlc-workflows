@@ -42,6 +42,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -84,7 +85,7 @@ afterAll(() => {
 });
 
 /** A minimal audit shard: one WORKFLOW_STARTED + one STAGE_STARTED for a stage
- *  whose phase the stage-graph knows (user-stories -> inception). */
+ *  whose phase the stage-graph knows (user-stories -> design). */
 function auditShard(): string {
   return [
     "# AI-DLC Audit Log",
@@ -175,7 +176,7 @@ describe("t199 per-intent memory path (write + read)", () => {
         encoding: "utf-8",
       }).status,
     ).toBe(0);
-    const diaryDir = join(seededRecordDir(pd), "inception", "user-stories");
+    const diaryDir = join(seededRecordDir(pd), phaseFor("user-stories"), "user-stories");
     mkdirSync(diaryDir, { recursive: true });
     writeFileSync(join(diaryDir, "memory.md"), memoryDiary());
 
@@ -186,8 +187,8 @@ describe("t199 per-intent memory path (write + read)", () => {
     );
     expect(s.status).toBe(0);
     const out = JSON.parse(s.stdout);
-    // The phase is the real one (inception), NOT "spaces" (the old front-index bug).
-    expect(out.phase).toBe("inception");
+    // The phase is the real one (design), NOT "spaces" (the old front-index bug).
+    expect(out.phase).toBe(phaseFor("user-stories"));
     expect(out.memory_entries_total).toBe(1);
   }, TIMEOUT);
 
@@ -201,7 +202,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     ).toBe(0);
     const boundDiary = join(
       seededRecordDir(pd),
-      "inception",
+      phaseFor("user-stories"),
       "user-stories",
       "memory.md",
     );
@@ -233,7 +234,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     );
     const otherDiary = join(
       otherRecord,
-      "inception",
+      phaseFor("user-stories"),
       "user-stories",
       "memory.md",
     );
@@ -284,7 +285,7 @@ describe("t199 per-intent memory path (write + read)", () => {
       }),
     );
     // Seed the diary at the flat path (relative to projectDir, per surface's join).
-    const flatDir = join(pd, "aidlc-docs", "inception", "user-stories");
+    const flatDir = join(pd, "aidlc-docs", phaseFor("user-stories"), "user-stories");
     mkdirSync(flatDir, { recursive: true });
     writeFileSync(join(flatDir, "memory.md"), memoryDiary());
 
@@ -295,7 +296,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     );
     expect(s.status).toBe(0);
     const out = JSON.parse(s.stdout);
-    expect(out.phase).toBe("inception");
+    expect(out.phase).toBe(phaseFor("user-stories"));
     expect(out.memory_entries_total).toBe(1);
   }, TIMEOUT);
 
@@ -310,7 +311,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     expect(existsSync(join(seededRecordDir(pd), "runtime-graph.json"))).toBe(false);
     // Seed the diary at the path compile WOULD have recorded, so a wrong
     // recomputation counts no entries rather than passing by accident.
-    const diaryDir = join(seededRecordDir(pd), "inception", "user-stories");
+    const diaryDir = join(seededRecordDir(pd), phaseFor("user-stories"), "user-stories");
     mkdirSync(diaryDir, { recursive: true });
     writeFileSync(join(diaryDir, "memory.md"), memoryDiary());
 
@@ -321,7 +322,7 @@ describe("t199 per-intent memory path (write + read)", () => {
     );
     expect(s.status, s.stderr).toBe(0);
     const out = JSON.parse(s.stdout);
-    expect(out.phase).toBe("inception");
+    expect(out.phase).toBe(phaseFor("user-stories"));
     expect(out.memory_entries_total).toBe(1);
     // The recompute is exact and leaves the person nothing to do, so it says
     // nothing: Codex shows every stderr line, once per stage surfaced.

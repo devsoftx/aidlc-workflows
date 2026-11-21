@@ -8,6 +8,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, beforeAll, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
@@ -125,7 +126,7 @@ describe("t341 orchestrate wait", () => {
     expect(Number(waiting.json?.waited_ms)).toBeGreaterThanOrEqual(900);
     expect(String(waiting.json?.next)).toContain("Never replace it with a shell loop");
 
-    const dir = join(seededRecordDir(project), "inception", "practices-discovery", "contributions");
+    const dir = join(seededRecordDir(project), phaseFor("practices-discovery"), "practices-discovery", "contributions");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "aidlc-quality-agent.md"), "**Collaborator:** aidlc-quality-agent\n\nnotes\n");
     writeFileSync(join(dir, "aidlc-developer-agent.md"), "# not the identity marker\n");
@@ -163,7 +164,7 @@ describe("t341 orchestrate wait", () => {
       "design/requirements-analysis/requirements-analysis-questions.md (absent or empty)",
     ]);
 
-    const dir = join(seededRecordDir(project), "inception", "requirements-analysis");
+    const dir = join(seededRecordDir(project), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "requirements.md"), "# Requirements\n");
     writeFileSync(join(dir, "requirements-analysis-questions.md"), "");
@@ -280,7 +281,7 @@ describe("t341 orchestrate wait: a review holds until its reviewer has finished"
       const statePath = seededStateFile(p);
       writeFileSync(statePath, setGuardPolicyLine(readFileSync(statePath, "utf-8"), "relaxed (set by you)"));
     }
-    const dir = join(seededRecordDir(p), "inception", STAGE);
+    const dir = join(seededRecordDir(p), phaseFor(STAGE), STAGE);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "requirements.md"), "# Requirements\n");
     writeFileSync(join(dir, "requirements-analysis-questions.md"), "# Requirements Questions\n");

@@ -9,7 +9,7 @@
 // that lands on an in-flight per-unit Construction stage (off the swarm path),
 // the engine reads the ordered unit list (the compiled Bolt DAG, flattened),
 // finds the FIRST unsettled unit (required `produces[]` artifacts on disk under
-// `<recordPrefix>/construction/<unit>/<slug>/` plus, when the receipt ledger is
+// `<recordPrefix>/<stage phase>/<unit>/<slug>/` plus, when the receipt ledger is
 // in use, the unit's review and completion receipts), and emits a run-stage for
 // THAT concrete unit with `directive.unit` set. The gate is suppressed (false)
 // on every unsettled unit; the real gate fires only once every unit has
@@ -69,6 +69,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
@@ -115,7 +116,7 @@ function logReviewReady(proj: string, stage: string, unit: string): void {
   }
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(reviewArtifact),
@@ -270,7 +271,7 @@ function coverUnit(
   slug: string,
   producesNames: string[],
 ): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of producesNames) {
     writeFileSync(join(dir, artifactFilename(name)), name === "unit-test-instructions" ? "" : `# ${name} for ${unit}\n`);
