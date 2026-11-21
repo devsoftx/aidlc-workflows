@@ -41,6 +41,7 @@ const CLAUDE_TOOLS = join(REPO_ROOT, "dist", "claude", ".claude", "tools");
 const CLAUDE_LIB = join(CLAUDE_TOOLS, "aidlc-lib.ts");
 const LIB_SIBLINGS = [
   "aidlc-lib.ts",
+  "aidlc-phases.ts",
   "aidlc-settings.ts",
   "aidlc-markdown.ts",
   "aidlc-locks.ts",
