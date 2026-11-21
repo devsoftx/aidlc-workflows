@@ -13,6 +13,7 @@
 // aidlc-orchestrate.ts against a seeded unit-major Construction fixture.
 
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -83,7 +84,7 @@ const CONSTRUCTION_STATE = `# AI-DLC State Tracking
 - [S] code-generation \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-07-30T00:00:00Z
@@ -128,7 +129,7 @@ function unitVerb(proj: string, action: string, unit: string): { rc: number; out
 }
 
 function writeUnitArtifacts(proj: string, unit: string, skip: string | null = null): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), unit, SLUG);
   mkdirSync(dir, { recursive: true });
   for (const name of PRODUCES) {
     if (name === skip) continue;

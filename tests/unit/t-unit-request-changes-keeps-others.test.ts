@@ -26,6 +26,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, recordArtifactWriteViaHook, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, evaluateGuardRefusal, findStageBySlug, freshReviewReceipts, getField,
@@ -90,7 +91,7 @@ function fixture(options: { iteration?: "unit-major" | "stage-major" } = {}): st
 ${STAGES.map((slug) => `- [${slug === "functional-design" ? "-" : " "}] ${slug} \u2014 EXECUTE`).join("\n")}
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -128,7 +129,7 @@ function next(p: string, args: string[] = []): Directive {
 
 // The step's summary, confirmed by the person through its checkpoint.
 function confirm(p: string, unit: string, slug: string): void {
-  const dir = join(seededRecordDir(p), "construction", unit, slug);
+  const dir = join(seededRecordDir(p), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   const questions = join(dir, `${slug}-questions.md`);
   writeFileSync(questions, [
@@ -152,7 +153,7 @@ function reviewReady(p: string, slug: string, unit: string): void {
   const fields = {
     Stage: slug, Reviewer: stage.reviewer!, Unit: unit, Iteration: "1",
     "Artifact Fingerprint": reviewArtifactFingerprint(p, stage, unit)!,
-    "Review Appendix Artifact": `construction/${unit}/${slug}/${artifactFilename(stage.review_artifact!)}`,
+    "Review Appendix Artifact": `${phaseFor(slug)}/${unit}/${slug}/${artifactFilename(stage.review_artifact!)}`,
     "Review Appendix Offset": "0",
   };
   appendAuditEntry("REVIEW_REQUESTED", fields, p);
@@ -165,7 +166,7 @@ function cover(p: string, unit: string, selected = STAGES, finish = true): void 
   for (const slug of selected) {
     const stage = findStageBySlug(slug)!;
     if (stage.summary_confirmation === "required") confirm(p, unit, slug);
-    const out = join(seededRecordDir(p), "construction", unit, slug);
+    const out = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(out, { recursive: true });
     for (const name of stage.produces ?? []) {
       const file = join(out, artifactFilename(name));
@@ -202,7 +203,7 @@ function betaBuilding(options: { started?: boolean } = {}): string {
 
 function designFile(p: string, unit: string): string {
   const stage = findStageBySlug("functional-design")!;
-  return join(seededRecordDir(p), "construction", unit, "functional-design", artifactFilename(stage.produces![0]));
+  return join(seededRecordDir(p), phaseFor("functional-design"), unit, "functional-design", artifactFilename(stage.produces![0]));
 }
 
 // The agent's write, as the host hands it to the review-freeze hook.

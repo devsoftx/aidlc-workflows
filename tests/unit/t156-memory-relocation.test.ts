@@ -151,10 +151,13 @@ describe("t156 method relocation to aidlc/spaces/default/memory/ + per-harness i
         "templates",
       ]);
       expect(readdirSync(join(MEM(harness.name), "phases")).sort()).toEqual([
-        "construction.md",
-        "ideation.md",
-        "inception.md",
-        "operation.md",
+        "build.md",
+        "deploy.md",
+        "design.md",
+        "discover.md",
+        "operate.md",
+        "secure.md",
+        "test.md",
       ]);
     }
   });
@@ -172,10 +175,13 @@ describe("t156 method relocation to aidlc/spaces/default/memory/ + per-harness i
       "org.md",
       "team.md",
       "project.md",
-      "phases/ideation.md",
-      "phases/inception.md",
-      "phases/construction.md",
-      "phases/operation.md",
+      "phases/build.md",
+      "phases/deploy.md",
+      "phases/design.md",
+      "phases/discover.md",
+      "phases/operate.md",
+      "phases/secure.md",
+      "phases/test.md",
     ];
     for (const f of memFiles) {
       expect(stub, `stub @-line for ${f}`).toContain(`@../../aidlc/active-memory/${f}`);
@@ -251,7 +257,7 @@ describe("t156 method relocation to aidlc/spaces/default/memory/ + per-harness i
       '<memory-file path="aidlc/spaces/default/memory/org.md">',
     );
     expect(steering).toContain(
-      '<memory-file path="aidlc/spaces/default/memory/phases/operation.md">',
+      '<memory-file path="aidlc/spaces/default/memory/phases/operate.md">',
     );
     expect(steering).not.toContain("#[[file:");
   });
@@ -304,7 +310,7 @@ describe("t156 method relocation to aidlc/spaces/default/memory/ + per-harness i
 
     // Positive control: the one source of truth IS present.
     expect(existsSync(join(REPO_ROOT, "core", "memory", "org.md"))).toBe(true);
-    expect(existsSync(join(REPO_ROOT, "core", "memory", "phases", "construction.md"))).toBe(true);
+    expect(existsSync(join(REPO_ROOT, "core", "memory", "phases", "build.md"))).toBe(true);
     expect(existsSync(join(REPO_ROOT, "core", "rules"))).toBe(false);
   });
 });

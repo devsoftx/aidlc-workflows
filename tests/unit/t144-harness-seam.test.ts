@@ -74,6 +74,8 @@ const LIB_SIBLINGS = [
   "aidlc-guard-operation.ts",
   "aidlc-reply-reader.ts",
   "aidlc-stage-schema.ts",
+  // aidlc-lib.ts imports this at load time; a missing copy makes the spawned bun exit 1.
+  "aidlc-phases.ts",
   "aidlc-version.ts",
 ] as const;
 

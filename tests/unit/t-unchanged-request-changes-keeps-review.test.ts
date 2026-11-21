@@ -23,6 +23,7 @@ import { env, exec, LOG, next, ORCHESTRATE, reviewedStage, say } from "../harnes
 import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, recordArtifactWriteViaHook, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -81,7 +82,7 @@ async function run(proj: string, tool: string, args: string[]): Promise<{ status
 const report = (proj: string, result: string, extra: string[] = []) =>
   run(proj, ORCHESTRATE, ["report", "--stage", STAGE, "--result", result, ...extra]);
 
-const requirements = (proj: string): string => join(seededRecordDir(proj), "inception", STAGE, "requirements.md");
+const requirements = (proj: string): string => join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "requirements.md");
 
 function edit(proj: string): void {
   const doc = requirements(proj);

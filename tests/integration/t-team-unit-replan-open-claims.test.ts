@@ -16,6 +16,7 @@
 // had moved main on past the Unit stages before it. Claiming while the
 // plan is changed is in t-team-unit-replan-claim-warns.test.ts.
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -310,7 +311,7 @@ describe("t-team-unit-replan-open-claims: a plan change while Units are claimed 
 
     const state = readFileSync(seededStateFile(seed), "utf-8");
     expect(currentStage(seed)).toBe("units-generation");
-    expect(state).toContain("- **Lifecycle Phase**: INCEPTION");
+    expect(state).toContain(`- **Lifecycle Phase**: ${phaseFor("units-generation").toUpperCase()}`);
     expect(stageLine(seed, "units-generation")).toContain("[-]");
     expect(stageLine(seed, "delivery-planning")).toContain("[ ]");
     expect(unitProgressRow(seed, "beta")).toContain("beta-team");

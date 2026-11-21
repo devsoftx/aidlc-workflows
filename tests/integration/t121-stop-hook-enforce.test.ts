@@ -114,6 +114,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { writeSessionPidEntry, stateDigest, writeActiveDirectiveMarker,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -546,21 +547,21 @@ function seedActiveWithCheckbox(
  *   - `questions`: if given, writes `<slug>-questions.md` in the stage dir with
  *     this body (a blank `[Answer]:` tag = a pending question; an answered one
  *     = resolved). Omit to seed NO questions file.
- *   - `unit`: if given for Construction, writes under the per-unit
- *     `<record>/construction/<unit>/<slug>/` layout and must also be returned by
- *     the mock engine for the hook to select that exact directory.
+ *   - `unit`: if given, writes under the per-unit `<record>/<phase>/<unit>/<slug>/`
+ *     layout and must also be returned by the mock engine for the hook to select
+ *     that exact directory.
  *   - `currentSlug`: when set, keeps the state cursor on this different stage
  *     while the questions file belongs to `slug` (the unit-major interleave).
  *   - `autonomy`: if given, writes `- **Construction Autonomy Mode**: <value>`
  *     into state.
  *   - `iteration`: if given, writes the Construction Iteration runtime field.
- * `phase` defaults to inception (requirements-analysis' real phase).
+ * There is no phase option: the phase is the slug's own phase from the compiled
+ * stage graph (phaseFor), so the folder and the Lifecycle Phase line follow `slug`.
  */
 function seedInProgressWithQuestions(
   proj: string,
   opts: {
     slug?: string;
-    phase?: string;
     questions?: string;
     autonomy?: string;
     currentSlug?: string;
@@ -570,7 +571,7 @@ function seedInProgressWithQuestions(
 ): void {
   const slug = opts.slug ?? "requirements-analysis";
   const currentSlug = opts.currentSlug ?? slug;
-  const phase = opts.phase ?? "inception";
+  const phase = phaseFor(slug);
   const autonomyLine = opts.autonomy
     ? `- **Construction Autonomy Mode**: ${opts.autonomy}\n`
     : "";
@@ -1904,7 +1905,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     const proj = makeProject();
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       autonomy: "autonomous",
     });
     seedSessionlessResumeMarker(proj, "ask", "code-generation");
@@ -1967,7 +1967,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
   test("(b4) autonomous Construction still waits for required recovery feedback", () => {
     const proj = makeProject();
     seedInProgressWithQuestions(proj, {
-      slug: "code-generation", phase: "construction", autonomy: "autonomous",
+      slug: "code-generation", autonomy: "autonomous",
     });
     const markerPath = seedSessionlessRecoveryMarker(proj, "awaiting-feedback", "code-generation");
     const before = readFileSync(markerPath, "utf-8");
@@ -2285,7 +2285,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
 
   test("(e) [?] with a team Unit's reply to its gate on record carries on too", () => {
     const proj = makeProject();
-    seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction", autonomy: "gated", iteration: "unit-major" });
+    seedInProgressWithQuestions(proj, { slug: "code-generation", autonomy: "gated", iteration: "unit-major" });
     writeFileSync(
       seededStateFile(proj),
       readFileSync(seededStateFile(proj), "utf-8")
@@ -2449,7 +2449,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     // question. A blank [Answer]: must NOT release the stop here.
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       autonomy: "autonomous",
       questions: "# Questions\n\n## Q1\nEdge case?\n[Answer]:\n",
     });
@@ -2471,7 +2470,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     // unset) → the human is in the loop, so a pending question releases.
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       autonomy: "gated",
       questions: "# Questions\n\n## Q1\nEdge case?\n[Answer]:\n",
     });
@@ -2491,7 +2489,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     const proj = makeProject();
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       autonomy: "gated",
       unit: "checkout-api",
       questions: "# Plan Approval\n\nApprove this plan?\n[Answer]:\n",
@@ -2513,7 +2510,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -2547,7 +2543,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     const proj = makeProject();
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       autonomy: "gated",
       unit: "stale-unit",
       questions: "# Plan Approval\n\nApprove this old plan?\n[Answer]:\n",
@@ -2569,7 +2564,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "autonomous",
       iteration: "unit-major",
       unit: "alpha",
@@ -2606,7 +2600,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "autonomous",
       iteration: "unit-major",
       unit: "alpha",
@@ -2737,7 +2730,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     // cancelled that turn.
     const seed = (fields: Record<string, string>): string => {
       const proj = makeProject();
-      seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction", autonomy: "autonomous" });
+      seedInProgressWithQuestions(proj, { slug: "code-generation", autonomy: "autonomous" });
       seedInteractionAudit(proj, [
         { event: "STAGE_STARTED", stage: "code-generation" },
         { event: "DECISION_RECORDED", stage: "code-generation", fields },
@@ -2778,7 +2771,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     for (const evidence of ["claude", "codex", "kiro"] as const) {
       const proj = makeProject();
       const env = { ...(evidence === "kiro" ? addKiroLayout(proj) : {}), AIDLC_UNATTENDED: "0" };
-      seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction", autonomy: "autonomous" });
+      seedInProgressWithQuestions(proj, { slug: "code-generation", autonomy: "autonomous" });
       seedInteractionAudit(proj, [
         { event: "STAGE_STARTED", stage: "code-generation" },
         {
@@ -2930,7 +2923,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -2971,7 +2963,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -3007,7 +2998,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -3034,7 +3024,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -3071,7 +3060,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -3188,7 +3176,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
       currentSlug: "functional-design",
-      phase: "construction",
       autonomy: "gated",
       iteration: "unit-major",
       unit: "alpha",
@@ -3258,7 +3245,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
   // Step 4 generation, so an approved plan must not read as a human wait.
   test("(p1) control: legacy picker Plan Approval answered Request Changes blocks", () => {
     const proj = makeProject();
-    seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction" });
+    seedInProgressWithQuestions(proj, { slug: "code-generation" });
     seedInteractionAudit(proj, [
       { event: "STAGE_STARTED", stage: "code-generation" },
       { event: "DECISION_RECORDED", stage: "code-generation" },
@@ -3271,7 +3258,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
 
   test("(p2) legacy picker Plan Approval answered Approve Plan blocks", () => {
     const proj = makeProject();
-    seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction" });
+    seedInProgressWithQuestions(proj, { slug: "code-generation" });
     seedInteractionAudit(proj, [
       { event: "STAGE_STARTED", stage: "code-generation" },
       { event: "DECISION_RECORDED", stage: "code-generation" },
@@ -3287,7 +3274,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     const proj = makeProject();
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       questions: "## Plan Approval\n[Approval Fingerprint]: sha256:0\nA. Approve Plan\nB. Request Changes\n[Answer]: Approve Plan\n",
     });
     seedInteractionAudit(proj, [
@@ -3313,7 +3299,7 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
   // checkpoint must not answer an unrelated open question.
   const checkpointStop = (rows: Parameters<typeof seedInteractionAudit>[1]) => {
     const proj = makeProject();
-    seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction" });
+    seedInProgressWithQuestions(proj, { slug: "code-generation" });
     seedInteractionAudit(proj, [{ event: "STAGE_STARTED", stage: "code-generation" }, ...rows]);
     const r = runHook(proj, '{"stop_hook_active":false}', "run-stage", "", "", "code-generation");
     expect(r.rc).toBe(0);
@@ -3447,7 +3433,6 @@ describe("t121 aidlc-continue-workflow hook — forwarding-loop enforcement (mig
     const proj = makeProject();
     seedInProgressWithQuestions(proj, {
       slug: "code-generation",
-      phase: "construction",
       autonomy: "autonomous",
     });
     seedInteractionAudit(proj, [
@@ -5392,7 +5377,7 @@ describe("t121 (s4) an attended, gated run ends the turn when nothing on record 
   test("(s4) autonomous Construction still carries the turn on, with the same plain line on every tool", () => {
     for (const tool of ["claude", "codex", "copilot", "cursor", "kiro", "kiro-ide", "opencode"]) {
       const proj = makeProject();
-      seedInProgressWithQuestions(proj, { slug: "code-generation", phase: "construction", autonomy: "autonomous" });
+      seedInProgressWithQuestions(proj, { slug: "code-generation", autonomy: "autonomous" });
       const r = runHook(proj, '{"stop_hook_active":false}', "run-stage", "", "", "code-generation", "", false, {
         ...ATTENDED, AIDLC_HARNESS_NAME: tool,
       });

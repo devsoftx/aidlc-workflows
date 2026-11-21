@@ -18,6 +18,7 @@ import { readActiveDirectiveMarker, readUnitScopeStamp } from "../../dist/claude
 import { codeGenerationStepOnRecord } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { AIDLC_SRC, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
 import { gitBashPath, gitBashSkipReason } from "../harness/git-bash.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   ORCH,
   STATE,
@@ -628,7 +629,7 @@ function doneIn(checkout: string): Record<string, unknown> {
 // new files a publish commits as the Unit's own work.
 function claimAsUnitWork(checkout: string, paths: string[]): void {
   writeFileSync(
-    join(seededRecordDir(checkout), "construction", "alpha", "code-generation", "source-manifest.json"),
+    join(seededRecordDir(checkout), phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json"),
     `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: paths.map((path) => ({ path })) })}\n`,
   );
 }

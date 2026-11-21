@@ -25,6 +25,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -193,7 +194,7 @@ function approveUnit(p: string, unit: string, autonomous: boolean) {
 // The Unit's reviewed document of a stage, which its findings are recorded against.
 function stageArtifact(p: string, slug: string, unit: string): string {
   const stage = findStageBySlug(slug)!;
-  const document = join(seededRecordDir(p), "construction", unit, slug,
+  const document = join(seededRecordDir(p), phaseFor(slug), unit, slug,
     artifactFilename(stage.review_artifact ?? stage.produces![0]));
   return relative(p, document).replaceAll("\\", "/");
 }
@@ -236,7 +237,7 @@ function reviewThroughLog(
 function buildUnit(p: string, unit: string, stages = STAGES) {
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);

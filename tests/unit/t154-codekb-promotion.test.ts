@@ -36,6 +36,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { parseStageFrontmatter } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // AIDLC_SRC (tests/harness/fixtures.ts) is <repo>/dist/claude/.claude - the
@@ -84,14 +85,14 @@ function stageFrontmatter(phase: string, slug: string): Record<string, unknown> 
 describe("t154 codekb promotion — RE outputs land at aidlc/spaces/<active-space>/codekb/<repo>/", () => {
   // -- 1: RE stage outputs, filenames preserved --
   test("reverse-engineering `outputs:` names the space-level codekb path (not the old buried path)", () => {
-    const fm = stageFrontmatter("inception", "reverse-engineering");
+    const fm = stageFrontmatter(phaseFor("reverse-engineering"), "reverse-engineering");
     const outputs = fm.outputs as string;
     expect(outputs).toContain(NEW_CODEKB_PATH);
     expect(outputs).not.toContain(OLD_RE_OUTPUT_PATH);
   });
 
   test("reverse-engineering `outputs:` still enumerates all 9 RE artifact filenames", () => {
-    const outputs = stageFrontmatter("inception", "reverse-engineering").outputs as string;
+    const outputs = stageFrontmatter(phaseFor("reverse-engineering"), "reverse-engineering").outputs as string;
     for (const f of RE_ARTIFACT_FILES) {
       expect(outputs, `outputs: missing artifact filename ${f}`).toContain(f);
     }
@@ -99,7 +100,7 @@ describe("t154 codekb promotion — RE outputs land at aidlc/spaces/<active-spac
 
   // ── 2: RE body prose writes to the space-level codekb dir ────────────────
   test("reverse-engineering body prose writes artifacts to aidlc/spaces/<active-space>/codekb/<repo>/", () => {
-    const body = stageBody("inception", "reverse-engineering");
+    const body = stageBody(phaseFor("reverse-engineering"), "reverse-engineering");
     // The prose names the space-level store (backtick-wrapped) and defers the
     // concrete dir to `codekb-path`; neither the old record path nor the bare
     // workspace-root codekb form survives.
@@ -110,13 +111,13 @@ describe("t154 codekb promotion — RE outputs land at aidlc/spaces/<active-spac
 
   // ── 3: the freshness marker is preserved as the staleness gate ───────────
   test("reverse-engineering keeps reverse-engineering-timestamp in produces: and stays a freshness rerun", () => {
-    const fm = stageFrontmatter("inception", "reverse-engineering");
+    const fm = stageFrontmatter(phaseFor("reverse-engineering"), "reverse-engineering");
     expect(fm.produces as string[]).toContain("reverse-engineering-timestamp");
     expect((fm.condition as string).toLowerCase()).toContain("freshness");
   });
 
   test("multi-repo reuse decisions resolve before one aggregate lifecycle report", () => {
-    const body = stageBody("inception", "reverse-engineering");
+    const body = stageBody(phaseFor("reverse-engineering"), "reverse-engineering");
     expect(body.indexOf("Resolve the intent's repo set")).toBeLessThan(
       body.indexOf("Rerun guard: check each existing store"),
     );
@@ -139,10 +140,10 @@ describe("t154 codekb promotion — RE outputs land at aidlc/spaces/<active-spac
   });
 
   test("parallel repository comparisons use repository-specific scope drafts", () => {
-    const body = stageBody("inception", "reverse-engineering");
+    const body = stageBody(phaseFor("reverse-engineering"), "reverse-engineering");
     expect(body.match(/scope-draft-<repo>\.md/g)?.length).toBeGreaterThanOrEqual(3);
     expect(body).toMatch(
-      /--compare <record>\/inception\/reverse-engineering\/scope-draft-<repo>\.md/,
+      /--compare <record>\/discover\/reverse-engineering\/scope-draft-<repo>\.md/,
     );
     // The compare removes the draft; the stage never deletes it by hand.
     const flat = body.replace(/\s+/g, " ");
@@ -153,30 +154,30 @@ describe("t154 codekb promotion — RE outputs land at aidlc/spaces/<active-spac
 
   // -- 4: frontmatter consumers - dependency edge and read path --
   test("requirements-analysis keeps the reverse-engineering requires_stage edge", () => {
-    const fm = stageFrontmatter("inception", "requirements-analysis");
+    const fm = stageFrontmatter(phaseFor("requirements-analysis"), "requirements-analysis");
     expect(fm.requires_stage as string[]).toContain("reverse-engineering");
   });
 
   test("requirements-analysis RE-read prose resolves aidlc/codekb/<repo>/ (not the old path)", () => {
-    const body = stageBody("inception", "requirements-analysis");
+    const body = stageBody(phaseFor("requirements-analysis"), "requirements-analysis");
     expect(body).toContain(`Read RE artifacts from \`${NEW_CODEKB_PATH}\``);
     expect(body).not.toContain(OLD_RE_OUTPUT_PATH);
   });
 
   test("practices-discovery keeps the reverse-engineering requires_stage edge", () => {
-    const fm = stageFrontmatter("inception", "practices-discovery");
+    const fm = stageFrontmatter(phaseFor("practices-discovery"), "practices-discovery");
     expect(fm.requires_stage as string[]).toContain("reverse-engineering");
   });
 
   // -- 5: prose consumers --
   test("user-stories RE-read prose resolves aidlc/codekb/<repo>/ (not the old path)", () => {
-    const body = stageBody("inception", "user-stories");
+    const body = stageBody(phaseFor("user-stories"), "user-stories");
     expect(body).toContain(`Read relevant RE artifacts from \`${NEW_CODEKB_PATH}\``);
     expect(body).not.toContain(OLD_RE_OUTPUT_PATH);
   });
 
   test("nfr-requirements RE-read prose resolves aidlc/codekb/<repo>/ (not the old path)", () => {
-    const body = stageBody("construction", "nfr-requirements");
+    const body = stageBody(phaseFor("nfr-requirements"), "nfr-requirements");
     expect(body).toContain(`reverse engineering artifacts from \`${NEW_CODEKB_PATH}\``);
     expect(body).not.toContain(OLD_RE_OUTPUT_PATH);
   });

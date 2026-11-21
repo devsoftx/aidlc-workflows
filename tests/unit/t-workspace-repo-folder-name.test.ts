@@ -24,6 +24,7 @@ import {
   resetAidlcEnv,
   runOrchestrateNext,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   discoverSiblingRepos,
   isValidRepoName,
@@ -233,7 +234,7 @@ describe("work in a workspace whose repo folder has a space or another character
     const proj = workspace("my lib", "api");
     created(proj);
     const record = join(proj, "aidlc", "spaces", DEFAULT_SPACE, "intents", readIntentRegistry(proj)[0]?.dirName ?? "");
-    const dir = join(record, "construction", "code-generation");
+    const dir = join(record, phaseFor("code-generation"), "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "code-generation-plan.md"),
@@ -251,7 +252,7 @@ describe("work in a workspace whose repo folder has a space or another character
     const proj = workspace("my lib", "lib");
     created(proj);
     const record = join(proj, "aidlc", "spaces", DEFAULT_SPACE, "intents", readIntentRegistry(proj)[0]?.dirName ?? "");
-    const dir = join(record, "construction", "code-generation");
+    const dir = join(record, phaseFor("code-generation"), "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "code-generation-plan.md"), "# Plan\n\n- Touches: `my lib/src/greet.py` and lib/README.md\n");
     const named = codeGenerationPlanNamedPaths(proj, null) ?? [];

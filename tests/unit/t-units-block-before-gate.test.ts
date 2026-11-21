@@ -28,6 +28,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { findStageBySlug, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -102,7 +103,7 @@ ${row(" ", "code-generation")}
 ${row(" ", "build-and-test")}
 
 ## Current Status
-- **Lifecycle Phase**: ${current === "units-generation" ? "INCEPTION" : "CONSTRUCTION"}
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;
@@ -114,7 +115,7 @@ function project(current: "units-generation" | "functional-design", review: stri
   seedAidlcMemory(proj);
   writeFileSync(seededStateFile(proj), state(current, review));
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "feature" }, proj);
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "unit-of-work.md"),
     "# Units of Work\n\n| Unit ID | Directory | Name |\n|---|---|---|\n| U1 | u1-alpha | alpha |\n| U2 | u2-beta | beta |\n");
@@ -125,7 +126,7 @@ function project(current: "units-generation" | "functional-design", review: stri
 }
 
 function writeDependency(proj: string, body: string): void {
-  writeFileSync(join(seededRecordDir(proj), "inception", STAGE, "unit-of-work-dependency.md"), body);
+  writeFileSync(join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "unit-of-work-dependency.md"), body);
 }
 
 function run(tool: string, args: string[], proj: string): { rc: number; out: string } {

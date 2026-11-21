@@ -22,6 +22,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -1176,7 +1177,10 @@ describe("open-gate resume liveness", () => {
         .replace("[ ] units-generation", "[x] units-generation")
         .replace("[ ] functional-design", "[?] functional-design")
         .replace("**Current Stage**: requirements-analysis", "**Current Stage**: functional-design")
-        .replace("**Lifecycle Phase**: INCEPTION", "**Lifecycle Phase**: CONSTRUCTION")
+        .replace(
+          `**Lifecycle Phase**: ${phaseFor("requirements-analysis").toUpperCase()}`,
+          `**Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`,
+        )
         .replace("## Runtime State", [
           "## Runtime State",
           "- **Construction Iteration**: unit-major",
@@ -1637,7 +1641,8 @@ describe("AttemptView projections and refusal streaks", () => {
       "- **Unit Ownership**: team",
       "- **Unit Gate Rhythm**: per-stage",
       "- **Construction Iteration**: stage-major",
-      "- **Lifecycle Phase**: CONSTRUCTION",
+      // The plugin-shaped stage below inherits the functional-design row, so its phase is that row's.
+      `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`,
       `- **Current Stage**: ${slug}`,
       "- **Status**: Running",
       `- [R] ${slug} \u2014 EXECUTE`,
@@ -2958,7 +2963,7 @@ describe("AttemptView projections and refusal streaks", () => {
       );
       return { status: result.status ?? -1, out: `${result.stdout ?? ""}${result.stderr ?? ""}` };
     };
-    const outputDir = join(seededRecordDir(project), "inception", slug);
+    const outputDir = join(seededRecordDir(project), phaseFor(slug), slug);
     mkdirSync(outputDir, { recursive: true });
     for (const name of ["requirements.md", `${slug}-questions.md`]) {
       writeFileSync(join(outputDir, name), `# ${name}\n`, "utf-8");
@@ -2978,7 +2983,7 @@ describe("AttemptView projections and refusal streaks", () => {
     appendAuditEntry("ARTIFACT_UPDATED", {
       File: join(outputDir, "requirements.md"),
       Tool: "Edit",
-      Context: `inception > ${slug} > requirements.md`,
+      Context: `${phaseFor(slug)} > ${slug} > requirements.md`,
     }, project);
 
     const refused = run(STATE_TOOL, ["approve", slug]);

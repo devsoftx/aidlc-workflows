@@ -38,6 +38,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename,
   consumeSharedDirectiveAsk,
@@ -114,7 +115,7 @@ function teamState(): string {
 - [-] domain-design ${SEP} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: ${SLUG}
 - **Status**: Running
 `;
@@ -136,7 +137,7 @@ function seedTeamProject(): string {
   writeFileSync(seededStateFile(proj), teamState());
   seedBoltDag(proj, UNITS);
   for (const unit of UNITS) {
-    const dir = join(seededRecordDir(proj), "construction", unit, SLUG);
+    const dir = join(seededRecordDir(proj), phaseFor(SLUG), unit, SLUG);
     mkdirSync(dir, { recursive: true });
     for (const name of PRODUCES) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
   }
@@ -144,7 +145,7 @@ function seedTeamProject(): string {
 }
 
 function reviewUnitReady(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), unit, SLUG);
   const args = [
     LOG, "review", "--stage", SLUG, "--reviewer", REVIEWER, "--unit", unit,
     "--iteration", "1", "--project-dir", proj,

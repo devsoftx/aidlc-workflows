@@ -6,7 +6,7 @@
 //   RULES_DIR  = $AIDLC_SRC/rules
 //   STAGES_DIR = $AIDLC_SRC/aidlc-common/stages
 // where $AIDLC_SRC = <repo>/dist/claude/.claude (fixtures.ts), and for
-// each of the four non-initialization phases asserted three things:
+// each of the seven phases asserted three things:
 //   Part 1 (.sh L17-19): rules/aidlc-phase-<phase>.md EXISTS.
 //   Part 2 (.sh L25-28): that file is NON-EMPTY (wc -c > 0).
 //   Part 3 (.sh L34-64): the file REFERENCES at least one stage slug that
@@ -16,7 +16,7 @@
 //                        case-insensitively.
 //
 // Mechanism: none. This is a pure structural/file-inspection check over the
-// shipped bytes — do the four phase rule files exist, carry content, and
+// shipped bytes — do the seven phase rule files exist, carry content, and
 // mention their phase's stages? No process boundary, no argv/exit/stdout
 // seam, no LLM, zero tokens. We resolve the SAME trees the .sh resolved
 // (AIDLC_SRC = <repo>/dist/claude/.claude, fixtures.ts), enumerate the
@@ -49,9 +49,9 @@ import { AIDLC_SRC } from "../harness/fixtures.ts";
 const PHASES_DIR = join(AIDLC_SRC, "..", "aidlc", "spaces", "default", "memory", "phases");
 const STAGES_DIR = join(AIDLC_SRC, "aidlc-common", "stages");
 
-// The four non-initialization phases (initialization has no
+// The seven phases (initialization has no
 // phases/initialization.md rule file).
-const PHASES = ["ideation", "inception", "construction", "operation"] as const;
+const PHASES = ["discover", "design", "build", "test", "secure", "deploy", "operate"] as const;
 
 const phaseRuleFile = (phase: string): string =>
   join(PHASES_DIR, `${phase}.md`);
@@ -115,10 +115,13 @@ describe("t16 phase-rules file structure (migrated from t16-phase-rules-structur
       (typeof PHASES)[number],
       { slug: string; word: string | null }
     > = {
-      ideation: { slug: "feasibility", word: null }, // exact substring
-      inception: { slug: "requirements-analysis", word: "requirements" },
-      construction: { slug: "build-and-test", word: "test" },
-      operation: { slug: "deployment-execution", word: "deployment" },
+      discover: { slug: "feasibility", word: null }, // exact substring
+      design: { slug: "requirements-analysis", word: "requirements" },
+      build: { slug: "code-generation", word: "code" },
+      test: { slug: "build-and-test", word: "test" },
+      secure: { slug: "security-review", word: "security" },
+      deploy: { slug: "deployment-execution", word: "deployment" },
+      operate: { slug: "incident-response", word: "incident" },
     };
 
     for (const phase of PHASES) {
@@ -149,16 +152,19 @@ describe("t16 phase-rules file structure (migrated from t16-phase-rules-structur
   });
 
   // Re-count to guard against a phase being silently dropped from the roster
-  // (3 invariants x 4 phases = 12 rows).
+  // (3 invariants x 7 phases = 21 rows).
   test("covers EXACTLY 4 phases × 3 invariants = 12 assertions (TAP plan parity)", () => {
-    expect(PHASES.length).toBe(4);
+    expect(PHASES.length).toBe(7);
     const INVARIANTS_PER_PHASE = 3;
-    expect(PHASES.length * INVARIANTS_PER_PHASE).toBe(12);
+    expect(PHASES.length * INVARIANTS_PER_PHASE).toBe(21);
     expect([...PHASES]).toEqual([
-      "ideation",
-      "inception",
-      "construction",
-      "operation",
+      "discover",
+      "design",
+      "build",
+      "test",
+      "secure",
+      "deploy",
+      "operate",
     ]);
   });
 });

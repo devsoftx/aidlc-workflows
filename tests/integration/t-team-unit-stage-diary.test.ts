@@ -20,6 +20,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { join } from "node:path";
 import { relativeRecordDir } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_SRC, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -75,7 +76,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(directive.unit).toBeUndefined();
     const prefix = relativeRecordDir(checkout);
     expect(directive.memory_path).toBe(`${prefix}/design/alpha/functional-design/memory.md`);
-    expect(existsSync(join(checkout, prefix!, "construction", "functional-design", "memory.md"))).toBe(false);
+    expect(existsSync(join(checkout, prefix!, phaseFor("functional-design"), "functional-design", "memory.md"))).toBe(false);
   });
 
   test("on main working the Units unclaimed, a directive that names no Unit keeps main's own stage diary", () => {
@@ -90,7 +91,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(directive.unit).toBeUndefined();
     const prefix = relativeRecordDir(checkout);
     expect(directive.memory_path).toBe(`${prefix}/design/functional-design/memory.md`);
-    expect(existsSync(join(checkout, prefix!, "construction", "functional-design", "memory.md"))).toBe(true);
+    expect(existsSync(join(checkout, prefix!, phaseFor("functional-design"), "functional-design", "memory.md"))).toBe(true);
   });
 
   test("on main working the Units unclaimed, the directive and the learnings step use the same Unit diary", () => {
@@ -113,7 +114,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(typeof unit).toBe("string");
     const prefix = relativeRecordDir(checkout);
     expect(directive.memory_path).toBe(`${prefix}/design/${unit}/functional-design/memory.md`);
-    const unitDiary = join(checkout, prefix!, "construction", unit, "functional-design");
+    const unitDiary = join(checkout, prefix!, phaseFor("functional-design"), unit, "functional-design");
     mkdirSync(unitDiary, { recursive: true });
     writeFileSync(join(unitDiary, "memory.md"), "## Tradeoffs\n- Took the shorter list over the grid\n");
     const surfaced = runMergeTool(
@@ -129,7 +130,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
   test("the learnings step at the Unit's gate counts the Unit's own diary", () => {
     const checkout = claimedCheckout("beta");
     const prefix = relativeRecordDir(checkout);
-    const unitDiary = join(checkout, prefix!, "construction", "beta", "functional-design");
+    const unitDiary = join(checkout, prefix!, phaseFor("functional-design"), "beta", "functional-design");
     mkdirSync(unitDiary, { recursive: true });
     writeFileSync(
       join(unitDiary, "memory.md"),
@@ -138,7 +139,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     const surfaced = runMergeTool(LEARNINGS, ["surface", "--slug", "functional-design"], checkout);
     expect(surfaced.status, surfaced.out).toBe(0);
     const out = JSON.parse(surfaced.stdout) as { phase: string; memory_entries_total: number };
-    expect(out.phase).toBe("construction");
+    expect(out.phase).toBe(phaseFor("functional-design"));
     expect(out.memory_entries_total).toBe(1);
   });
 });

@@ -20,6 +20,7 @@ import {
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
 import { cleanupTestProject, runOrchestrateNext, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename, auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
@@ -141,7 +142,7 @@ function walk(units: string[], designed: boolean | number = true, rhythm: "unit-
     // starts it first, as the agent does.
     const started = run(proj, "aidlc-state.ts", ["unit", "start", "--stage", stage, "--unit", unit]);
     expect(started.status, started.out).toBe(0);
-    const dir = join(record, "construction", unit, stage);
+    const dir = join(record, phaseFor(stage), unit, stage);
     mkdirSync(dir, { recursive: true });
     for (const name of produces) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
     const review = ["review", "--stage", stage, "--reviewer", reviewer, "--unit", unit, "--iteration", "1"];
@@ -184,7 +185,7 @@ function workStep(proj: string, unit: string, stage: string): void {
   const reviewer = "aidlc-architecture-reviewer-agent";
   const started = run(proj, "aidlc-state.ts", ["unit", "start", "--stage", stage, "--unit", unit]);
   expect(started.status, started.out).toBe(0);
-  const dir = join(dirname(stateFile(proj)), "construction", unit, stage);
+  const dir = join(dirname(stateFile(proj)), phaseFor(stage), unit, stage);
   mkdirSync(dir, { recursive: true });
   for (const name of produces) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}, revised\n`);
   const review = ["review", "--stage", stage, "--reviewer", reviewer, "--unit", unit, "--iteration", "1"];

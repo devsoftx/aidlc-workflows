@@ -27,6 +27,7 @@ import {
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
 import { cleanupTestProject, runOrchestrateNext, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename, auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
@@ -148,7 +149,7 @@ function walk(units: string[], designed: boolean | number = true, rhythm: "unit-
     // starts it first, as the agent does.
     const started = run(proj, "aidlc-state.ts", ["unit", "start", "--stage", stage, "--unit", unit]);
     expect(started.status, started.out).toBe(0);
-    const dir = join(record, "construction", unit, stage);
+    const dir = join(record, phaseFor(stage), unit, stage);
     mkdirSync(dir, { recursive: true });
     for (const name of produces) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
     const review = ["review", "--stage", stage, "--reviewer", reviewer, "--unit", unit, "--iteration", "1"];
@@ -292,7 +293,7 @@ describe("a skip the person asks for on a team main that works every Unit itself
     expect(auditBlockField(String(row?.block), "Reason")).toBe(why);
     expect(existsSync(kept)).toBe(false);
     approveAlpha(proj, "code-generation");
-    const questions = join(dirname(stateFile(proj)), "construction", "beta", "functional-design", "functional-design-questions.md");
+    const questions = join(dirname(stateFile(proj)), phaseFor("functional-design"), "beta", "functional-design", "functional-design-questions.md");
     mkdirSync(dirname(questions), { recursive: true });
     writeFileSync(questions, "# Functional Design Questions\n\n## Question 1\nWhat does it greet?\n\n[Answer]:\n");
     const beta = next(proj) as Step & { kept_replies?: unknown };

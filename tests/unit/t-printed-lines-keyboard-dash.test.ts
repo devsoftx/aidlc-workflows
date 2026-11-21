@@ -42,6 +42,18 @@ const READ_FORMATS = new Set<string>([
   "core/tools/aidlc-utility.ts  \u2014 greenfield",
   "core/tools/aidlc-utility.ts  \u2014 ",
   "core/tools/aidlc-utility.ts \u2014",
+  "core/tools/aidlc-init.ts | workspace-scaffold | 0.1 | Workspace Scaffold | Initialization | ALWAYS | (orchestrator) | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | workspace-detection | 0.2 | Workspace Detection | Initialization | ALWAYS | (orchestrator) | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | state-init | 0.3 | State Initialization | Initialization | ALWAYS | (orchestrator) | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | market-research | 1.2 | Market Research | Ideation | CONDITIONAL | aidlc-product-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | team-formation | 1.5 | Team Formation | Ideation | CONDITIONAL | aidlc-delivery-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | requirements-analysis | 2.3 | Requirements Analysis | Inception | ALWAYS | aidlc-product-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | code-generation | 3.5 | Code Generation | Construction | ALWAYS | aidlc-developer-agent | \u2014 | subagent |",
+  "core/tools/aidlc-init.ts | ci-pipeline | 3.7 | CI Pipeline | Construction | CONDITIONAL | aidlc-pipeline-deploy-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | deployment-pipeline | 4.1 | Deployment Pipeline | Operation | CONDITIONAL | aidlc-pipeline-deploy-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | observability-setup | 4.4 | Observability Setup | Operation | CONDITIONAL | aidlc-operations-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | incident-response | 4.5 | Incident Response | Operation | CONDITIONAL | aidlc-operations-agent | \u2014 | inline |",
+  "core/tools/aidlc-init.ts | performance-validation | 4.6 | Performance Validation | Operation | CONDITIONAL | aidlc-quality-agent | \u2014 | inline |",
 ]);
 
 function sourceFiles(): string[] {

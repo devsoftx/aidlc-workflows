@@ -25,6 +25,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { EXTENDED_SUBPROCESS_TIMEOUT_MS } from "../../core/tools/aidlc-runtime-budget.ts";
 import { describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -2195,8 +2196,8 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
             cwd: dir,
             tool_name,
             tool_input: tool_name === "read_files"
-              ? { paths: [null, "construction/sibling-unit/design.md"] }
-              : { path: "construction/sibling-unit/design.md" },
+              ? { paths: [null, `${phaseFor("functional-design")}/sibling-unit/design.md`] }
+              : { path: `${phaseFor("functional-design")}/sibling-unit/design.md` },
           },
           ["aidlc-architecture-reviewer-agent"],
         );
@@ -2222,7 +2223,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
             hook_event_name: "preToolUse",
             cwd: dir,
             tool_name,
-            tool_input: mutationInput(tool_name, "construction/sibling-unit/design.md"),
+            tool_input: mutationInput(tool_name, `${phaseFor("functional-design")}/sibling-unit/design.md`),
           },
           ["aidlc-architecture-reviewer-agent"],
         );
@@ -2254,7 +2255,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           ...(FIXTURES.preToolUse_fs_read as Record<string, unknown>),
           cwd: dir,
           tool_input: {
-            operations: [null, { path: "construction/sibling-unit/design.md" }],
+            operations: [null, { path: `${phaseFor("functional-design")}/sibling-unit/design.md` }],
           },
         },
         ["aidlc-architecture-reviewer-agent"],

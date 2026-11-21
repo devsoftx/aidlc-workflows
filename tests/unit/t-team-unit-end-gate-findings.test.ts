@@ -16,6 +16,7 @@
 // walk's one gate: the checkpoint's brief shows each earlier stage's open
 // findings, and its approval records exactly those, from one stage list.
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
   NATIVE_STARTUP_TIMEOUT_MS,
@@ -138,7 +139,7 @@ ${guardPolicy === undefined ? "" : `- **Guard Policy**: ${guardPolicy}\n`}
 // The requirements as Requirements Analysis writes them: FR{n} and NFR{n} ids
 // in requirements.md and the same ids listed in its traceability.json.
 function seedRequirements(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+  const dir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "requirements.md"),
@@ -205,7 +206,7 @@ function runReport(proj: string, args: string[]): Directive {
 }
 
 function stageDir(proj: string, stage: string): string {
-  return join(seededRecordDir(proj), "construction", "alpha", stage);
+  return join(seededRecordDir(proj), phaseFor(stage), "alpha", stage);
 }
 
 function coverUnit(proj: string, stage: string): void {
@@ -515,7 +516,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     const shown = brief(proj, "code-generation");
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown).toContain("**Review outcome:** Concerns remain for your decision.");
-    expect(shown).toMatch(/construction\/alpha\/nfr-design\/[^`]+`\n\n\| ID \| Severity \| Where \| Status \|\n\|---\|---\|---\|---\|\n\| R-01 \| Major \|/);
+    expect(shown).toMatch(new RegExp(`${phaseFor("nfr-design")}/alpha/nfr-design/[^\`]+\`\\n\\n\\| ID \\| Severity \\| Where \\| Status \\|\\n\\|---\\|---\\|---\\|---\\|\\n\\| R-01 \\| Major \\|`));
     expect(shown).toContain("> R-01 Finding: The review did not finish, so there is no review result to rely on.");
     expect(shown).toContain("- **Approve** - continue with the open findings accepted.");
     expect(shown).not.toContain("No blocking concerns were found.");

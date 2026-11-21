@@ -23,6 +23,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   AUTOMATIC_GIT_MAINTENANCE_OFF,
   ORCH,
@@ -87,7 +88,7 @@ function makeLead(answer: string | null): { lead: string; remote: string } {
     seededStateFile(seed),
     stateBody().replace(/\| skeleton \| - \|[^\n]*\n/, ""),
   );
-  const depDir = join(seededRecordDir(seed), "inception", "units-generation");
+  const depDir = join(seededRecordDir(seed), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(join(depDir, "unit-of-work-dependency.md"), DEPENDENCIES);
   mkdirSync(seededAuditDir(seed), { recursive: true });

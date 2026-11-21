@@ -27,6 +27,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 resetAidlcEnv();
@@ -129,7 +130,7 @@ function project(
   seedAidlcMemory(proj);
   writeFileSync(seededStateFile(proj), stateFile(at, ownership));
   seedBoltDag(proj, ["alpha", "beta"]);
-  const units = join(seededRecordDir(proj), "inception", "units-generation");
+  const units = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(units, { recursive: true });
   writeFileSync(
     join(units, "unit-of-work-dependency.md"),

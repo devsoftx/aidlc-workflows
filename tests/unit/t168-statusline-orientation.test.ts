@@ -49,6 +49,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -287,9 +288,9 @@ describe("t168 statusline counts Units in a Unit walk", () => {
     const state = stateFilePath(p, created.dirName, "default");
     writeFileSync(state, stateBody(iteration), "utf-8");
     const record = dirname(state);
-    mkdirSync(join(record, "inception", "units-generation"), { recursive: true });
+    mkdirSync(join(record, phaseFor("units-generation"), "units-generation"), { recursive: true });
     writeFileSync(
-      join(record, "inception", "units-generation", "unit-of-work-dependency.md"),
+      join(record, phaseFor("units-generation"), "units-generation", "unit-of-work-dependency.md"),
       "# Unit Dependency DAG\n\n## Machine-Readable Edge Block\n\n```yaml\nunits:\n" +
         "  - name: u1-note-store\n    kind: library\n    depends_on: []\n" +
         "  - name: u2-note-tags\n    kind: library\n    depends_on: [u1-note-store]\n```\n",

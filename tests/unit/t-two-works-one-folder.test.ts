@@ -27,6 +27,7 @@ import {
   writeBaselineSourceSnapshot,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_MEMORY_SRC, AIDLC_SRC, FIXTURES_DIR } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -99,7 +100,7 @@ function project(policy: string, other: { status?: string; space?: string; atGat
   git(project, ["commit", "-qm", "seed"]);
   writeFileSync(join(record, "aidlc-state.md"), stateAt(policy, other.atGate), "utf-8");
   writeFileSync(join(otherRecord, "aidlc-state.md"), stateAt(policy), "utf-8");
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(
     join(dag, "unit-of-work-dependency.md"),
@@ -134,7 +135,7 @@ function cli(tool: string, args: string[], dir: string): { rc: number; out: stri
 }
 
 function unitDir(record: string, unit: string): string {
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md", "traceability.json"]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), name.endsWith(".json") ? "{}\n" : `# ${name}\n`);

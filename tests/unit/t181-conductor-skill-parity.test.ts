@@ -36,6 +36,7 @@ import { cleanupTestProject, createTestProject, REPO_ROOT, seededStateFile } fro
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { conductorSkillPaths, readConductorSurface } from "../harness/conductor-skill.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 /** Authored conductor SKILLs for every manifest-discovered distribution. */
 function harnessSkills(): string[] {
@@ -1261,7 +1262,7 @@ describe("t181 per-harness conductor-SKILL freshness gate (P11 RESOLVE-2)", () =
     ];
     for (const tree of trees) {
       if (tree.label !== "core") expectStepTwo(join(tree.protocols, "stage-protocol.md"), "### For subagent stages:");
-      const stories = join(tree.stages, "inception", "user-stories.md");
+      const stories = join(tree.stages, phaseFor("user-stories"), "user-stories.md");
       expectDefers(stories, section(stories, "**Round 1 — dispatch the mob.**", "\n\n"));
 
       // The authored module carries every binding; a shipped tree only its own.

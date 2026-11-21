@@ -100,7 +100,7 @@ describe("t157 seeded workspace shell + re-rooted .gitignore (SEED)", () => {
       for (const f of ["org.md", "team.md", "project.md"]) {
         expect(existsSync(mem(h, f)), `${h}: ${f}`).toBe(true);
       }
-      for (const p of ["ideation", "inception", "construction", "operation"]) {
+      for (const p of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
         expect(existsSync(mem(h, "phases", `${p}.md`)), `${h}: phases/${p}.md`).toBe(true);
       }
     }

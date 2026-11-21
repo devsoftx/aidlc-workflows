@@ -16,6 +16,7 @@ import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC, REPO_ROOT, seededAuditDir, seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTempDirs,
   clone,
@@ -43,7 +44,6 @@ setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 afterEach(cleanupTempDirs);
 
 const JUMP = join(AIDLC_SRC, "tools", "aidlc-jump.ts");
-const INCEPTION_STAGES = join(REPO_ROOT, "core", "aidlc-common", "stages", "inception");
 // beta waits on alpha; both wait on the skeleton, which lands with the seed.
 const PLAN: PlannedUnit[] = [
   { name: "skeleton", depends_on: [] },
@@ -73,11 +73,11 @@ function status(checkout: string): {
 /** The stage main is on, written, reviewed when it has a reviewer, and approved. */
 function approveCurrentInceptionStage(main: string): void {
   const stage = currentStage(main);
-  const front = readFileSync(join(INCEPTION_STAGES, `${stage}.md`), "utf-8").split("\n---")[0];
+  const front = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", phaseFor(stage), `${stage}.md`), "utf-8").split("\n---")[0];
   const reviewer = /^reviewer: (\S+)/m.exec(front)?.[1];
   const produces = (/^produces:\n((?: {2}- .*\n)+)/m.exec(`${front}\n`)?.[1] ?? "")
     .split("\n").map((line) => line.replace(/^ {2}- /, "").trim()).filter(Boolean);
-  const dir = join(seededRecordDir(main), "inception", stage);
+  const dir = join(seededRecordDir(main), phaseFor(stage), stage);
   mkdirSync(dir, { recursive: true });
   for (const artifact of produces) writeFileSync(join(dir, `${artifact}.md`), `# ${artifact}\n\nWritten.\n`);
   if (reviewer) reviewReady(main, stage, reviewer);

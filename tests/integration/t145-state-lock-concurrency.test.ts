@@ -56,6 +56,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   auditLockDir,
   getField,
@@ -144,7 +145,7 @@ function stateSync(args: string[], p: string): { status: number; stdout: string;
 /** Record a terminal READY review so a reviewer-bearing stage passes the §12a
  *  gate precondition (these tests target the state lock, not the reviewer gate). */
 function logReview(slug: string, reviewer: string, p: string): void {
-  const artifact = join(recordDirOf(p), "inception", slug, "requirements.md");
+  const artifact = join(recordDirOf(p), phaseFor(slug), slug, "requirements.md");
   mkdirSync(dirname(artifact), { recursive: true });
   const current = existsSync(artifact)
     ? readFileSync(artifact, "utf-8")

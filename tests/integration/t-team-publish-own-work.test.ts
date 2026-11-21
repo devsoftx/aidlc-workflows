@@ -12,6 +12,7 @@ import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -40,7 +41,7 @@ function claimedDone(claims?: string[]): string {
   const { checkout } = prepareCandidate(remote, "alpha", "team-a", { publish: false });
   if (claims !== undefined) {
     write(
-      join(seededRecordDir(checkout), "construction", "alpha", "code-generation"),
+      join(seededRecordDir(checkout), phaseFor("code-generation"), "alpha", "code-generation"),
       "source-manifest.json",
       `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: claims.map((path) => ({ path })) })}\n`,
     );

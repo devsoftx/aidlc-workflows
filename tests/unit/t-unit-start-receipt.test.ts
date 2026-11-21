@@ -51,6 +51,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 resetAidlcEnv();
@@ -106,7 +107,7 @@ ${rhythm ? `- **Unit Gate Rhythm**: ${rhythm}\n` : ""}
 - [-] domain-design ${SEP} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: ${SLUG}
 - **Status**: Running
 `;
@@ -136,7 +137,7 @@ function seedTeamProject(options: { artifacts: boolean; rhythm?: "unit-end" }): 
   seedBoltDag(proj, UNITS);
   if (options.artifacts) {
     for (const unit of UNITS) {
-      const dir = join(seededRecordDir(proj), "construction", unit, SLUG);
+      const dir = join(seededRecordDir(proj), phaseFor(SLUG), unit, SLUG);
       mkdirSync(dir, { recursive: true });
       for (const name of PRODUCES) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
     }
@@ -184,7 +185,7 @@ describe("a per-Unit stage's receipts hang off the Unit's start", () => {
     expect(unitLifecycleRecorded(proj, SLUG, "alpha")).toBe(true);
     expect(unitLifecycleRecorded(proj, SLUG, "beta")).toBe(false);
 
-    const dir = join(seededRecordDir(proj), "construction", "alpha", SLUG);
+    const dir = join(seededRecordDir(proj), phaseFor(SLUG), "alpha", SLUG);
     mkdirSync(dir, { recursive: true });
     for (const name of PRODUCES) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for alpha\n`);
     const recorded = requestReview(proj, "alpha");
@@ -221,7 +222,7 @@ describe("a per-Unit stage's receipts hang off the Unit's start", () => {
 
   test("3: with the Unit's files written before its first record, the request is recorded and never names the start", () => {
     const proj = seedTeamProject({ artifacts: false });
-    const dir = join(seededRecordDir(proj), "construction", "alpha", SLUG);
+    const dir = join(seededRecordDir(proj), phaseFor(SLUG), "alpha", SLUG);
     mkdirSync(dir, { recursive: true });
     for (const name of PRODUCES) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for alpha\n`);
     // The engine takes the step as done from its files, so it refuses the start.
@@ -237,7 +238,7 @@ describe("a per-Unit stage's receipts hang off the Unit's start", () => {
 
   test("4: on a unit-end walk, a Unit's files written before its start do not finish its step; the start is named", () => {
     const proj = seedTeamProject({ artifacts: false, rhythm: "unit-end" });
-    const dir = join(seededRecordDir(proj), "construction", "alpha", SLUG);
+    const dir = join(seededRecordDir(proj), phaseFor(SLUG), "alpha", SLUG);
     mkdirSync(dir, { recursive: true });
     for (const name of PRODUCES) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for alpha\n`);
 

@@ -60,6 +60,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { cleanupTestProject, createTestProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const REPO_ROOT = join(import.meta.dir, "..", "..");
@@ -156,7 +157,7 @@ function state(p: string, ...args: string[]): CliResult {
 function recordReview(p: string): void {
   const artifact = join(
     recordDirOf(p),
-    "inception",
+    phaseFor(SLUG),
     SLUG,
     "requirements.md",
   );

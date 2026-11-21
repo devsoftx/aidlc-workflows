@@ -65,6 +65,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { toPortablePath } from "../harness/fixtures.ts";
 import { auditFilePath } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -147,13 +148,8 @@ function makeBareProject(): string {
   return proj;
 }
 
-function writeMemory(
-  proj: string,
-  phase: string,
-  slug: string,
-  body: string,
-): void {
-  const dir = join(recordRoot(proj), phase, slug);
+function writeMemory(proj: string, slug: string, body: string): void {
+  const dir = join(recordRoot(proj), phaseFor(slug), slug);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "memory.md"), body, "utf-8");
 }
@@ -323,7 +319,7 @@ describe("t106 aidlc-runtime summary — CLI contract (migrated from t106-runtim
   describe("Case A: 2 approved + 1 pending across ideation", () => {
     function caseAProject(): string {
       const proj = makeProject(AUDIT_MIX, STATE_FEATURE);
-      writeMemory(proj, "ideation", "intent-capture", MEMORY_INTENT);
+      writeMemory(proj, "intent-capture", MEMORY_INTENT);
       return proj;
     }
 
@@ -434,7 +430,7 @@ describe("t106 aidlc-runtime summary — CLI contract (migrated from t106-runtim
   // approved each over-count by one.
   test("E1: synthetic single-stage pair appended to Case A leaves all counts unchanged", () => {
     const proj = makeProject(AUDIT_MIX + SINGLE_STAGE_PAIR, STATE_FEATURE);
-    writeMemory(proj, "ideation", "intent-capture", MEMORY_INTENT);
+    writeMemory(proj, "intent-capture", MEMORY_INTENT);
     const { summary } = compileAndSummarize(proj);
     expect(summary.stages.total).toBe(3);
     expect(summary.stages.approved).toBe(2);

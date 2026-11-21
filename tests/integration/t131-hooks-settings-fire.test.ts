@@ -282,6 +282,8 @@ function makeProject(withState: boolean): string {
     "aidlc-runtime.ts",
     "aidlc-stage-diary.ts",
     "aidlc-lib.ts",
+    // aidlc-lib.ts imports this at load time; a missing copy exits the hook 1.
+    "aidlc-phases.ts",
     "aidlc-settings.ts",
     "aidlc-markdown.ts",
     "aidlc-locks.ts",

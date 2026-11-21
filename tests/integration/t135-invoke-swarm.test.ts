@@ -92,6 +92,7 @@ import {
   setupWorktreeFixture,
 } from "../harness/fixtures.ts";
 import { approveSuppliedCheckCommand, approveVerificationCommand } from "../harness/verification-command.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   worktreePath,
   artifactFilename,
@@ -337,7 +338,7 @@ function seedApprovedCodeGenerationPlan(
   const authority = resolveCodeGenerationAuthority(proj, { unit });
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("code-generation"),
     unit,
     "code-generation",
   );
@@ -402,7 +403,7 @@ function logWorktreeReview(
   iteration = 1,
 ): void {
   const wt = worktreePath(proj, fixtureIntentId8(proj), unit);
-  const dir = join(seededRecordDir(wt), "construction", unit, "code-generation");
+  const dir = join(seededRecordDir(wt), phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   const reviewArtifact = join(dir, "code-generation-plan.md");
   if (!existsSync(reviewArtifact)) {
@@ -505,7 +506,7 @@ function finalizeWithNotReady(iteration: number): {
     writeFileSync(
       join(
         seededRecordDir(worktree),
-        "construction",
+        phaseFor("code-generation"),
         unit,
         "code-generation",
         "code-summary.md",
@@ -597,7 +598,7 @@ function setupStaleReviewRefusal(): void {
   const wt = worktreePath(proj, fixtureIntentId8(proj), "stale");
   const artifact = join(
     seededRecordDir(wt),
-    "construction",
+    phaseFor("code-generation"),
     "stale",
     "code-generation",
     "code-summary.md",
@@ -818,7 +819,7 @@ describe("t135 referee — batch-level swarm audit taxonomy + baton return (the 
     if (wtproj === undefined) throw new Error("referee fixture was not created");
     const unitRecord = join(
       seededRecordDir(wtproj),
-      "construction",
+      phaseFor("code-generation"),
       "win",
       "code-generation",
     );
@@ -867,7 +868,7 @@ describe("t135 referee — batch-level swarm audit taxonomy + baton return (the 
 
     const wtUnitRecord = join(
       seededRecordDir(wt),
-      "construction",
+      phaseFor("code-generation"),
       unit,
       "code-generation",
     );
@@ -901,7 +902,7 @@ describe("t135 referee — batch-level swarm audit taxonomy + baton return (the 
     expect(result.stdout).toContain('"converged": 1');
     const promotedEvidence = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("code-generation"),
       unit,
       "code-generation",
       evidenceName,

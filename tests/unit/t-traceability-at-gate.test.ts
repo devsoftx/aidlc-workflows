@@ -43,6 +43,7 @@ import {
   seededStateFile,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -150,7 +151,7 @@ describe("t-traceability-at-gate: the check reads the finished tables when the g
       ids: [{ id: "FR-1", kind: "functional" }, { id: "FR-2", kind: "functional" }, { id: "NFR-1", kind: "non-functional" }],
     }));
     recordFile(proj, "design/user-stories/stories.md", "# Stories\n\n## US1.1 Sign up\n- AC1.1.1 works\n");
-    return { proj, table: join(seededRecordDir(proj), "inception", STAGE, "traceability.json") };
+    return { proj, table: join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "traceability.json") };
   }
 
   function writeTable(path: string, rows: Array<{ id: string; status: string; target?: string }>): void {
@@ -250,7 +251,7 @@ describe("t-traceability-at-gate: the check reads the finished tables when the g
   // said, and a team's own form there adds no line.
   test("with no record, a requirement the table leaves out is said at the gate; a team's own form says nothing", () => {
     const left = project();
-    rmSync(join(seededRecordDir(left.proj), "inception", "requirements-analysis", "traceability.json"));
+    rmSync(join(seededRecordDir(left.proj), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json"));
     recordFile(left.proj, "design/requirements-analysis/requirements.md", "# Requirements\n\n- FR1 Sign up\n- FR2 Browse\n- NFR1 Security\n");
     writeTable(left.table, [
       { id: "FR1", status: "OK", target: "US1.1" },
@@ -259,7 +260,7 @@ describe("t-traceability-at-gate: the check reads the finished tables when the g
     expect(String(openGate(left.proj).narration ?? "")).toContain("The traceability check reports 1 finding in traceability.json.");
 
     const team = project();
-    rmSync(join(seededRecordDir(team.proj), "inception", "requirements-analysis", "traceability.json"));
+    rmSync(join(seededRecordDir(team.proj), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json"));
     writeTable(team.table, [
       { id: "FR-1", status: "OK", target: "US1.1" },
       { id: "FR-2", status: "OK", target: "US1.1" },
@@ -300,15 +301,15 @@ describe("t-traceability-at-gate: the Requirements Analysis gate open across the
     stage.optional_produces = stage.optional_produces!.filter((name) => name !== "traceability");
     writeFileSync(graphPath, JSON.stringify(graph));
 
-    recordFile(proj, `inception/${STAGE}/requirements.md`, "# Requirements\n\n- FR1 Sign up\n");
-    recordFile(proj, `inception/${STAGE}/${STAGE}-questions.md`, "# Questions\n");
+    recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/requirements.md`, "# Requirements\n\n- FR1 Sign up\n");
+    recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/${STAGE}-questions.md`, "# Questions\n");
     review(proj, ENV, STAGE, REVIEWER, 1);
     reply(proj, ENV, ["engine", "orchestrate", "report", "--stage", STAGE, "--result", "awaiting-approval"]);
 
     writeFileSync(graphPath, shipped);
-    expect(existsSync(join(seededRecordDir(proj), "inception", STAGE, "traceability.json"))).toBe(false);
+    expect(existsSync(join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "traceability.json"))).toBe(false);
     if (record) {
-      recordFile(proj, `inception/${STAGE}/traceability.json`,
+      recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/traceability.json`,
         `${JSON.stringify({ stage: STAGE, upstream_ids: ["FR1"], coverage: [{ id: "FR1", status: "OK" }] }, null, 2)}\n`);
     }
     personSays(proj, "Approve");
@@ -359,8 +360,8 @@ describe("t-traceability-at-gate: the Requirements Analysis gate open across the
     const stage = graph.find((entry) => entry.slug === STAGE)!;
     stage.optional_produces = stage.optional_produces!.filter((name) => name !== "traceability");
     writeFileSync(graphPath, JSON.stringify(graph));
-    recordFile(proj, `inception/${STAGE}/requirements.md`, "# Requirements\n\n- FR1 Sign up\n");
-    recordFile(proj, `inception/${STAGE}/${STAGE}-questions.md`, "# Questions\n");
+    recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/requirements.md`, "# Requirements\n\n- FR1 Sign up\n");
+    recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/${STAGE}-questions.md`, "# Questions\n");
     const base = ["engine", "log", "review", "--stage", STAGE, "--reviewer", REVIEWER, "--iteration", "1"];
     const requested = reply(proj, ENV, base);
 
@@ -400,8 +401,8 @@ describe("t-traceability-at-gate: the Requirements Analysis gate open across the
       projects.push(proj);
       const statePath = seededStateFile(proj);
       writeFileSync(statePath, setGuardPolicyLine(readFileSync(statePath, "utf-8"), `${policy} (set by you)`));
-      recordFile(proj, `inception/${STAGE}/requirements.md`, "# Requirements\n\n- FR1 Sign up\n");
-      recordFile(proj, `inception/${STAGE}/${STAGE}-questions.md`, "# Questions\n");
+      recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/requirements.md`, "# Requirements\n\n- FR1 Sign up\n");
+      recordFile(proj, `${phaseFor(STAGE)}/${STAGE}/${STAGE}-questions.md`, "# Questions\n");
       review(proj, ENV, STAGE, REVIEWER, 1);
       const opened = reply(proj, ENV, ["engine", "orchestrate", "report", "--stage", STAGE, "--result", "awaiting-approval"]);
       expect(opened.kind, JSON.stringify(opened)).toBe("print");
@@ -409,7 +410,7 @@ describe("t-traceability-at-gate: the Requirements Analysis gate open across the
       const approved = approve(proj);
       expect(approved.kind, JSON.stringify(approved)).toBe("done");
       expect(approved.change_notices).toBeUndefined();
-      expect(existsSync(join(seededRecordDir(proj), "inception", STAGE, "traceability.json"))).toBe(false);
+      expect(existsSync(join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "traceability.json"))).toBe(false);
     });
   }
 });

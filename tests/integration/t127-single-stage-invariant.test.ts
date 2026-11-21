@@ -55,6 +55,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   createCodeGenerationProject,
@@ -452,7 +453,7 @@ describe("t127 --single pointer invariant (migrated from t127-single-stage-invar
     ).toMatchObject({ stage: "requirements-analysis" });
     const stageDir = join(
       seededRecordDir(proj),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
     );
     mkdirSync(stageDir, { recursive: true });
@@ -526,7 +527,7 @@ describe("t127 --single pointer invariant (migrated from t127-single-stage-invar
     startSingle(proj, "functional-design");
     const stageDir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "api",
       "functional-design",
     );
@@ -635,9 +636,9 @@ describe("t127 --single pointer invariant (migrated from t127-single-stage-invar
         ceremony: { summary_confirmation: parentScope === "classic" ? "off" : "on" },
       });
       expect(started.directive?.produces).toContain(
-        `${relative(proj, seededRecordDir(proj)).replaceAll("\\", "/")}/construction/{unit-name}/${stage}/security-requirements.md`,
+        `${relative(proj, seededRecordDir(proj)).replaceAll("\\", "/")}/${phaseFor(stage)}/{unit-name}/${stage}/security-requirements.md`,
       );
-      const stageDir = join(seededRecordDir(proj), "construction", "api", stage);
+      const stageDir = join(seededRecordDir(proj), phaseFor(stage), "api", stage);
       mkdirSync(stageDir, { recursive: true });
       const questions = join(stageDir, `${stage}-questions.md`);
       const body = "# Questions\n\n## Q1\nEncrypt stored credentials.\n\n" +
@@ -734,7 +735,7 @@ describe("t127 --single pointer invariant (migrated from t127-single-stage-invar
     startSingle(proj, "requirements-analysis");
     const stageDir = join(
       seededRecordDir(proj),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
     );
     mkdirSync(stageDir, { recursive: true });
@@ -845,7 +846,7 @@ describe("t127 --single pointer invariant (migrated from t127-single-stage-invar
     const proj = freshProject();
     seedStateFile(proj, STATE_FIXTURE);
     const r = run(TOOL, [
-      "next", "--single", "--phase", "inception", "--project-dir", proj,
+      "next", "--single", "--phase", "design", "--project-dir", proj,
     ]);
     expect(r.out).toContain("Cannot use --single with --phase");
   });
@@ -979,7 +980,7 @@ describe("t127 --single pointer invariant (migrated from t127-single-stage-invar
 
     // The plan carries that contract, and the engine takes it: it asks for
     // Plan Approval instead of calling the contract out of date.
-    const planDir = join(seededRecordDir(proj), "construction", "code-generation");
+    const planDir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
     mkdirSync(planDir, { recursive: true });
     const render = spawnSync(BUN, [POSTURE_TOOL, "render", "--project-dir", proj], { encoding: "utf-8" });
     writeFileSync(

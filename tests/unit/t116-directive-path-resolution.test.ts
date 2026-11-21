@@ -96,6 +96,7 @@ import {
   seedStateFile,
   sedReplaceInFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -474,7 +475,7 @@ describe("t116 per-unit {unit-name} injection", () => {
         const p = join(
           proj,
           RP,
-          "inception",
+          phaseFor("contract-design"),
           "contract-design",
           "contract-summary.md",
         );
@@ -660,7 +661,7 @@ describe("t116 inline context roster", () => {
     ]);
     expect(directive.rules_in_context).toEqual([
       `aidlc/spaces/${DEFAULT_SPACE}/memory/org.md`,
-      `aidlc/spaces/${DEFAULT_SPACE}/memory/phases/inception.md`,
+      `aidlc/spaces/${DEFAULT_SPACE}/memory/phases/design.md`,
     ]);
     for (const path of directive.rules_in_context) {
       expect(existsSync(join(projectDir, ...path.split("/"))), path).toBe(true);

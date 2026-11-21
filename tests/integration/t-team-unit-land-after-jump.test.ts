@@ -47,6 +47,7 @@ import {
   runMergeTool,
   tempDirs,
 } from "../harness/team-unit-merge.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 process.env.AIDLC_DISABLE_SENSORS = "1";
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS * 2);
@@ -108,7 +109,7 @@ ${LATER.map((slug) => `- [ ] ${slug} \u2014 SKIP\n`).join("")}
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
 `);
-  const depDir = join(seededRecordDir(lead), "inception", "units-generation");
+  const depDir = join(seededRecordDir(lead), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(join(depDir, "unit-of-work-dependency.md"),
     `# Unit dependencies\n\n\`\`\`yaml\nunits:\n${["alpha", "beta", "gamma"].map((u) => `  - name: ${u}\n    depends_on: []\n`).join("")}\`\`\`\n`);
@@ -136,7 +137,7 @@ const unitVerb = (c: string, action: string, unit: string) =>
 
 function writeAndReview(checkout: string, unit: string): void {
   const stage = loadStageGraphAll().find((entry) => entry.slug === FD)!;
-  const dir = join(seededRecordDir(checkout), "construction", unit, FD);
+  const dir = join(seededRecordDir(checkout), phaseFor(FD), unit, FD);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n${unit}\n`);
   for (const args of [

@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC, cleanupTestProject, createTestProject, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -51,7 +52,7 @@ function write(proj: string, relative: string, content: string): string {
 }
 
 function table(proj: string, unit: string, stage: string, rows: Row[]): string {
-  return write(proj, `construction/${unit}/${stage}/traceability.json`, `${JSON.stringify({
+  return write(proj, `${phaseFor(stage)}/${unit}/${stage}/traceability.json`, `${JSON.stringify({
     stage,
     unit,
     upstream_ids: rows.map((row) => row.id),
