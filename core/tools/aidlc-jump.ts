@@ -386,7 +386,7 @@ function handleReopen(args: string[]): void {
   // While Construction runs on its own, the loop-back from Build and Test
   // reopens Units with nobody at the keyboard: those rows name nobody. A
   // change stands on the person's own reply at the gate.
-  const theirs = flags.via === "change" || !isAutonomousConstructionDecision(content, targetStage.phase);
+  const theirs = flags.via === "change" || !isAutonomousConstructionDecision(content, targetStage);
   let stagesReset: string[] = [];
   let movedFrom: string | undefined;
   // Work whose walk ended on the target or a later stage of its phase (Units
@@ -825,7 +825,7 @@ async function handleExecute(args: string[]): Promise<void> {
   const currentSlug = getField(content, "Current Stage") || "state-init";
   // While Construction runs on its own, its loop-back jump lands back inside
   // Construction with nobody at the keyboard, so its row names nobody.
-  const theirs = !isAutonomousConstructionDecision(content, targetStage.phase);
+  const theirs = !isAutonomousConstructionDecision(content, targetStage);
   // Where the person was: the active Unit's own step in a unit-at-a-time walk,
   // which Current Stage does not name, or else the step the engine last put to
   // them (a Unit's code plan, say) while it still matches this state.

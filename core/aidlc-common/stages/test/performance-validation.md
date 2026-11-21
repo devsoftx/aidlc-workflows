@@ -22,11 +22,10 @@ consumes:
   - artifact: scalability-design
     required: true
   - artifact: dashboards
-    required: true
+    required: false
 requires_stage:
   - nfr-requirements
   - nfr-design
-  - observability-setup
 sensors:
   - required-sections
   - upstream-coverage
