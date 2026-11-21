@@ -66,6 +66,9 @@
     "observability-setup": { "targets": ["ve"], "cost": 5 },
     "incident-response": { "targets": ["r"], "cost": null },
     "performance-validation": { "targets": ["ve", "r"], "cost": 5 },
-    "feedback-optimization": { "targets": ["ve"], "cost": null }
+    "feedback-optimization": { "targets": ["ve"], "cost": null },
+    "code-review": { "targets": ["ve"], "cost": 3 },
+    "security-review": { "targets": ["r"], "cost": 4 },
+    "conformance-review": { "targets": ["csu", "r"], "cost": 3 }
   }
 }
