@@ -504,6 +504,19 @@ export function seedStateFile(proj: string, fixturePath: string): void {
 }
 
 /**
+ * Mark a seeded state file's Reverse Engineering row SKIP, the way the engine
+ * writes it for a Greenfield project. state-mid-ideation.md is Greenfield but
+ * still reads EXECUTE, so a test that moves past feasibility uses this to match
+ * a real Greenfield state. Throws if the row is not in the file.
+ */
+export function markGreenfieldReverseEngineeringSkipped(stateFile: string): void {
+  const from = "- [ ] reverse-engineering — EXECUTE";
+  const body = readFileSync(stateFile, "utf-8");
+  if (!body.includes(from)) throw new Error(`no "${from}" row in ${stateFile}`);
+  writeFileSync(stateFile, body.replace(from, "- [ ] reverse-engineering — SKIP"));
+}
+
+/**
  * Copy the audit sample into the default intent's DETERMINISTIC per-clone shard
  * (<record>/audit/<host>-<FIXTURE_CLONE_ID>.md) — the SAME shard a spawned tool
  * resolves (the fixture pins the clone-id). Seeding the tool's own shard means
