@@ -4,7 +4,7 @@
 // filename stem and parent directory.
 // Mechanism: none (pure parse of on-disk files; zero LLM, zero tokens,
 // zero process spawns).
-// Technique: example-based, table-driven over the 32 committed stages.
+// Technique: example-based, table-driven over the 36 committed stages.
 //
 // In-process migration of tests/unit/t05-stage-files.sh (TAP plan 64).
 // The .sh spawned `bun -e` TWICE per stage (one for obj.slug, one for
@@ -32,16 +32,18 @@
 // the contract under test IS that the shipped files parse correctly, so
 // rebuilding them in a tempdir would test a copy, not the artifact.
 //
-// Parity mapping: the .sh's STAGE_TABLE (phase, slug) pairs are reproduced
-// verbatim below; each pair yields the same two assertions the .sh's
-// stage_check() emitted ("<phase>/<slug> slug matches filename" and
-// "<phase>/<slug> phase matches directory"). 64 old TAP assertions -> 64
-// expect() calls.
+// Parity mapping: the .sh's STAGE_TABLE listed (phase, slug) pairs. This file
+// lists the slugs and takes each phase from the compiled stage graph through
+// phaseFor(), so a stage that moves between phases needs no edit here. Each
+// stage yields the same two assertions the .sh's stage_check() emitted
+// ("<phase>/<slug> slug matches filename" and "<phase>/<slug> phase matches
+// directory"): 72 expect() calls for 36 stages.
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseStageFrontmatter } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const STAGES_DIR = join(
   import.meta.dir,
@@ -53,49 +55,55 @@ const STAGES_DIR = join(
   "stages",
 );
 
-// The stage table, in source order. [phase, slug]. Driving from this explicit
-// table (rather than globbing) asserts that slug equals the FILENAME STEM and
-// phase equals the PARENT DIRECTORY for each known stage - a glob would only
-// confirm self-consistency, not the filename/directory contract.
-const STAGE_TABLE: ReadonlyArray<readonly [phase: string, slug: string]> = [
+// The stage slugs, in source order. Driving from this explicit list (rather than
+// globbing) asserts that each stage's slug equals its FILENAME STEM and that its
+// phase (from phaseFor, the compiled graph) equals its PARENT DIRECTORY - a glob
+// would only confirm self-consistency, not the filename/directory contract.
+const STAGE_SLUGS: ReadonlyArray<string> = [
   // Initialization (3)
-  ["initialization", "workspace-scaffold"],
-  ["initialization", "workspace-detection"],
-  ["initialization", "state-init"],
-  // Ideation (7)
-  ["ideation", "intent-capture"],
-  ["ideation", "market-research"],
-  ["ideation", "feasibility"],
-  ["ideation", "scope-definition"],
-  ["ideation", "team-formation"],
-  ["ideation", "rough-mockups"],
-  ["ideation", "approval-handoff"],
-  // Inception (9)
-  ["inception", "reverse-engineering"],
-  ["inception", "practices-discovery"],
-  ["inception", "requirements-analysis"],
-  ["inception", "user-stories"],
-  ["inception", "refined-mockups"],
-  ["inception", "domain-design"],
-  ["inception", "units-generation"],
-  ["inception", "delivery-planning"],
-  ["inception", "contract-design"],
-  // Construction (7)
-  ["construction", "functional-design"],
-  ["construction", "nfr-requirements"],
-  ["construction", "nfr-design"],
-  ["construction", "infrastructure-design"],
-  ["construction", "code-generation"],
-  ["construction", "build-and-test"],
-  ["construction", "ci-pipeline"],
-  // Operation (7)
-  ["operation", "deployment-pipeline"],
-  ["operation", "environment-provisioning"],
-  ["operation", "deployment-execution"],
-  ["operation", "observability-setup"],
-  ["operation", "incident-response"],
-  ["operation", "performance-validation"],
-  ["operation", "feedback-optimization"],
+  "workspace-scaffold",
+  "workspace-detection",
+  "state-init",
+  // Discover (8)
+  "intent-capture",
+  "market-research",
+  "feasibility",
+  "reverse-engineering",
+  "scope-definition",
+  "team-formation",
+  "rough-mockups",
+  "approval-handoff",
+  // Design (12)
+  "practices-discovery",
+  "requirements-analysis",
+  "user-stories",
+  "refined-mockups",
+  "domain-design",
+  "units-generation",
+  "contract-design",
+  "delivery-planning",
+  "functional-design",
+  "nfr-requirements",
+  "nfr-design",
+  "infrastructure-design",
+  // Build (1)
+  "code-generation",
+  // Test (2)
+  "build-and-test",
+  "performance-validation",
+  // Secure (3)
+  "code-review",
+  "security-review",
+  "conformance-review",
+  // Deploy (4)
+  "ci-pipeline",
+  "deployment-pipeline",
+  "environment-provisioning",
+  "deployment-execution",
+  // Operate (3)
+  "observability-setup",
+  "incident-response",
+  "feedback-optimization",
 ];
 
 function parseStage(phase: string, slug: string): Record<string, unknown> {
@@ -109,16 +117,18 @@ function parseStage(phase: string, slug: string): Record<string, unknown> {
 // Guard: pin the table length so a stage added/removed without updating this
 // test is caught.
 describe("t05 stage table integrity", () => {
-  test("table holds exactly 33 stages (plan 66 = 33 x 2)", () => {
-    expect(STAGE_TABLE.length).toBe(33);
+  test("table holds exactly 36 stages (72 assertions = 36 x 2)", () => {
+    expect(STAGE_SLUGS.length).toBe(36);
   });
 });
 
 // =========================================================================
-// Per-stage parse (2 assertions per stage = 66 total).
+// Per-stage parse (2 assertions per stage = 72 total).
 // =========================================================================
 describe("each stage .md parses to a slug + phase matching its location", () => {
-  for (const [phase, slug] of STAGE_TABLE) {
+  for (const slug of STAGE_SLUGS) {
+    const phase = phaseFor(slug);
+
     test(`${phase}/${slug} slug matches filename`, () => {
       const obj = parseStage(phase, slug);
       expect(obj.slug).toBe(slug);

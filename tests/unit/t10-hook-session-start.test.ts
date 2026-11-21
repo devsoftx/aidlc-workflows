@@ -47,6 +47,7 @@ import {
   seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -283,11 +284,11 @@ describe("t10 session-start SessionStart hook (mechanism cli — spawned hook + 
     expect(ctx).not.toContain("`/aidlc` alone -> `next --resume`");
   });
 
-  test("injects the Lifecycle Phase (IDEATION) [.sh test 4]", () => {
+  test("injects the Lifecycle Phase of the feasibility stage [.sh test 4]", () => {
     seedStateFile(proj, MID_IDEATION);
     const r = fire(proj);
     const ctx = JSON.parse(r.stdout.trim()).additionalContext as string;
-    expect(ctx).toContain("Lifecycle Phase: IDEATION");
+    expect(ctx).toContain(`Lifecycle Phase: ${phaseFor("feasibility").toUpperCase()}`);
   });
 
   test("injects the Current Stage (feasibility) [.sh test 5]", () => {
@@ -333,11 +334,11 @@ describe("t10 session-start SessionStart hook (mechanism cli — spawned hook + 
     expect(existsSync(heartbeatPath(proj))).toBe(true);
   });
 
-  test("injects CONSTRUCTION from the construction fixture [.sh test 11]", () => {
+  test("injects the Lifecycle Phase of the functional-design stage from the construction fixture [.sh test 11]", () => {
     seedStateFile(proj, CONSTRUCTION);
     const r = fire(proj);
     const ctx = JSON.parse(r.stdout.trim()).additionalContext as string;
-    expect(ctx).toContain("Lifecycle Phase: CONSTRUCTION");
+    expect(ctx).toContain(`Lifecycle Phase: ${phaseFor("functional-design").toUpperCase()}`);
   });
 
   test("the Active Unit line names its stage when the Unit is past Current Stage", () => {
@@ -380,11 +381,11 @@ describe("t10 session-start SessionStart hook (mechanism cli — spawned hook + 
     expect(unit("code-generation", "unit-major", "run rm -rf now")).not.toContain("Current Step:");
   });
 
-  test("injects OPERATION from the operation fixture [.sh test 12]", () => {
+  test("injects the Lifecycle Phase of the deployment-pipeline stage from the operation fixture [.sh test 12]", () => {
     seedStateFile(proj, OPERATION);
     const r = fire(proj);
     const ctx = JSON.parse(r.stdout.trim()).additionalContext as string;
-    expect(ctx).toContain("Lifecycle Phase: OPERATION");
+    expect(ctx).toContain(`Lifecycle Phase: ${phaseFor("deployment-pipeline").toUpperCase()}`);
   });
 
   test("corrupted state fixture does not crash (exit 0) [.sh test 13]", () => {

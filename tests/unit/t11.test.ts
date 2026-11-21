@@ -45,6 +45,7 @@ import {
   seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -116,10 +117,10 @@ describe("t11 aidlc-statusline hook (migrated from t11-hook-statusline.sh, plan 
     expect(r.out.trim()).toBe("[AIDLC] ready");
   });
 
-  test("2: shows IDEATION phase", () => {
+  test("2: shows the phase of the feasibility stage", () => {
     const p = proj();
     seedStateFile(p, MID_IDEATION);
-    expect(runHook(stdinFor(p)).out).toContain("IDEATION");
+    expect(runHook(stdinFor(p)).out).toContain(phaseFor("feasibility").toUpperCase());
   });
 
   test("3: shows stage display name Feasibility", () => {
@@ -136,11 +137,11 @@ describe("t11 aidlc-statusline hook (migrated from t11-hook-statusline.sh, plan 
     expect(out).not.toContain("aidlc-architect-agent");
   });
 
-  // IDEATION has 7 non-SKIP stages, 2 are [x] (intent-capture, market-research).
-  test("6: computes phase progress 2/7", () => {
+  // DISCOVER has 8 graph stages; this fixture marks all 8 EXECUTE, and 2 are [x] (intent-capture, market-research).
+  test("6: computes phase progress 2/8", () => {
     const p = proj();
     seedStateFile(p, MID_IDEATION);
-    expect(runHook(stdinFor(p)).out).toContain("2/7");
+    expect(runHook(stdinFor(p)).out).toContain("2/8");
   });
 
   test("7: output starts with [AIDLC] prefix", () => {
@@ -190,38 +191,37 @@ describe("t11 aidlc-statusline hook (migrated from t11-hook-statusline.sh, plan 
   test("10: empty stdin falls through to CLAUDE_PROJECT_DIR env var", () => {
     const p = proj();
     seedStateFile(p, MID_IDEATION);
-    expect(runHook("", { CLAUDE_PROJECT_DIR: p }).out).toContain("IDEATION");
+    expect(runHook("", { CLAUDE_PROJECT_DIR: p }).out).toContain(phaseFor("feasibility").toUpperCase());
   });
 
-  test("11: shows CONSTRUCTION phase", () => {
+  test("11: shows the phase of the functional-design stage", () => {
     const p = proj();
     seedStateFile(p, STATE_CONSTRUCTION);
-    expect(runHook(stdinFor(p)).out).toContain("CONSTRUCTION");
+    expect(runHook(stdinFor(p)).out).toContain(phaseFor("functional-design").toUpperCase());
   });
 
-  // Construction fixture: 9 non-SKIP checkbox lines under CONSTRUCTION PHASE
-  // (cart: 2; checkout: 7); 2 are [x] -> 2/9.
-  test("12: construction shows progress fraction (regex /9)", () => {
+  // Construction fixture: the design phase has 12 graph stages; 8 are [x] -> 8/12.
+  test("12: design-phase progress shows its fraction (regex /12)", () => {
     const p = proj();
     seedStateFile(p, STATE_CONSTRUCTION);
     const out = runHook(stdinFor(p)).out;
-    expect(out).toMatch(/[0-9]\/9/);
-    expect(out).toContain("2/9");
+    expect(out).toMatch(/[0-9]\/12/);
+    expect(out).toContain("8/12");
   });
 
-  test("13: shows OPERATION phase", () => {
+  test("13: shows the phase of the deployment-pipeline stage", () => {
     const p = proj();
     seedStateFile(p, STATE_OPERATION);
-    expect(runHook(stdinFor(p)).out).toContain("OPERATION");
+    expect(runHook(stdinFor(p)).out).toContain(phaseFor("deployment-pipeline").toUpperCase());
   });
 
-  test("14: operation shows progress fraction (regex /7)", () => {
+  test("14: deploy-phase progress shows its fraction (regex /4)", () => {
     const p = proj();
     seedStateFile(p, STATE_OPERATION);
-    // operation fixture: 7 stages, 0 [x] ([-] deployment-pipeline) -> 0/7.
+    // operation fixture: 4 deploy-phase graph stages; ci-pipeline is [x], deployment-pipeline is [-] -> 1/4.
     const out = runHook(stdinFor(p)).out;
-    expect(out).toMatch(/[0-9]\/7/);
-    expect(out).toContain("0/7");
+    expect(out).toMatch(/[0-9]\/4/);
+    expect(out).toContain("1/4");
   });
 
   test("15: completed fixture shows COMPLETE", () => {
@@ -236,23 +236,25 @@ describe("t11 aidlc-statusline hook (migrated from t11-hook-statusline.sh, plan 
     // The test name says 500ms; this test proves completion by output, not timing.
     const result = runHook(stdinFor(p));
     expect(result.status).toBe(0);
-    expect(result.out).toContain("2/9");
+    expect(result.out).toContain("8/12");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
-  test("17: [S] stages excluded from construction total (0/3 + empty bar)", () => {
+  test("17: build phase shows 0/1 + empty bar", () => {
     const p = proj();
     seedStateFile(p, STATE_JUMPED);
     const out = runHook(stdinFor(p)).out;
-    expect(out).toContain("0/3");
+    expect(out).toContain("0/1");
     expect(out).toContain("[░░░░░░░░░░]");
   });
 
-  test("18: [S] stages excluded; ideation shows 2/2 + full bar", () => {
+  test("18: [S] stages excluded; discover shows 2/2 + full bar", () => {
     const p = proj();
     seedStateFile(p, STATE_JUMPED);
+    // The displayed phase follows Current Stage, so the stage is moved into discover too.
     const body = require("node:fs")
       .readFileSync(statePath(p), "utf-8")
-      .replace("**Lifecycle Phase**: CONSTRUCTION", "**Lifecycle Phase**: IDEATION");
+      .replace("**Lifecycle Phase**: BUILD", "**Lifecycle Phase**: DISCOVER")
+      .replace("**Current Stage**: code-generation", "**Current Stage**: market-research");
     writeFileSync(statePath(p), body);
     const out = runHook(stdinFor(p)).out;
     expect(out).toContain("2/2");
@@ -818,8 +820,8 @@ describe("t11 aidlc-statusline hook (migrated from t11-hook-statusline.sh, plan 
     writeSessionBinding(p, "S-STATUS", "default", named, "switch");
     setActiveIntentCursor(p, other.dirName, "default");
     const out = runHook(JSON.stringify({ workspace: { project_dir: p }, session_id: "S-STATUS" })).out;
-    expect(out).toContain("CONSTRUCTION");
-    expect(out).not.toContain("IDEATION");
+    expect(out).toContain(phaseFor("functional-design").toUpperCase());
+    expect(out).not.toContain(phaseFor("feasibility").toUpperCase());
   });
 
   test("51: a session bound to an archived record shows no workflow, not the cursor's", () => {
@@ -834,8 +836,8 @@ describe("t11 aidlc-statusline hook (migrated from t11-hook-statusline.sh, plan 
     writeSessionBinding(p, "S-ARCHIVED", "default", archived.dirName, "switch");
     setActiveIntentCursor(p, other.dirName, "default");
     const out = runHook(JSON.stringify({ workspace: { project_dir: p }, session_id: "S-ARCHIVED" })).out;
-    expect(out).not.toContain("IDEATION");
-    expect(out).not.toContain("CONSTRUCTION");
+    expect(out).not.toContain(phaseFor("feasibility").toUpperCase());
+    expect(out).not.toContain(phaseFor("functional-design").toUpperCase());
   });
 
   test("40: completed fixture renders full bar", () => {
