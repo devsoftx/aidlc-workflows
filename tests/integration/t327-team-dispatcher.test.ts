@@ -41,6 +41,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // Every case spawns several tool processes plus real git remotes; bun's 5s default is too tight under --parallel 4.
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -129,7 +130,7 @@ function teamState(): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
@@ -148,7 +149,7 @@ function teamState(): string {
 | blocked | - | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Active Agent**: aidlc-architect-agent
@@ -324,7 +325,7 @@ function writeIntent(
   if (dependency) {
     const path = join(
       record,
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
     );

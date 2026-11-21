@@ -1,5 +1,6 @@
 // covers: subcommand:aidlc-unit:claim, subcommand:aidlc-unit:publish, subcommand:aidlc-unit:pin
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -54,7 +55,7 @@ function otherUnitWrite(checkout: string): ReturnType<typeof spawnSync> {
     input: JSON.stringify({
       hook_event_name: "PreToolUse",
       tool_name: "Bash",
-      tool_input: { command: `touch ${record}/construction/beta/notes.md` },
+      tool_input: { command: `touch ${record}/${phaseFor("code-generation")}/beta/notes.md` },
       cwd: checkout,
     }),
     env: { ...process.env, CLAUDE_PROJECT_DIR: checkout },

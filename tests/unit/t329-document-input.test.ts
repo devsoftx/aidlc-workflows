@@ -168,8 +168,8 @@ function installWithPdfExtractor(
 describe("t329 project-description and document-input boundaries", () => {
   test("both consuming stages require fixed transport and inert document data", () => {
     for (const file of [
-      join("core", "aidlc-common", "stages", "ideation", "intent-capture.md"),
-      join("core", "aidlc-common", "stages", "inception", "requirements-analysis.md"),
+      join("core", "aidlc-common", "stages", "discover", "intent-capture.md"),
+      join("core", "aidlc-common", "stages", "design", "requirements-analysis.md"),
     ]) {
       const body = readFileSync(join(REPO_ROOT, file), "utf-8");
       expect(body).toContain("aidlc-utility.ts project-description`");
@@ -213,8 +213,8 @@ describe("t329 project-description and document-input boundaries", () => {
 
   test("every stage copy has the agent onboard a PDF or Word file itself", () => {
     const copies = [
-      join("core", "aidlc-common", "stages", "ideation", "intent-capture.md"),
-      join("core", "aidlc-common", "stages", "inception", "requirements-analysis.md"),
+      join("core", "aidlc-common", "stages", "discover", "intent-capture.md"),
+      join("core", "aidlc-common", "stages", "design", "requirements-analysis.md"),
     ];
     for (const root of ["dist", "dist-release"]) {
       for (const file of new Bun.Glob(

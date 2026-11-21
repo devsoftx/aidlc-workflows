@@ -5,6 +5,7 @@ import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { seededAuditDir, seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -38,7 +39,7 @@ describe("t326 pinned team Unit merge: a record outside the Unit's tree", () => 
     const published = claimTip(candidate.checkout);
     const summary = join(
       seededRecordDir(candidate.checkout),
-      "inception",
+      phaseFor("contract-design"),
       "contract-design",
       "contract-summary.md",
     );
@@ -83,7 +84,7 @@ describe("t326 pinned team Unit merge: a record outside the Unit's tree", () => 
     const { seed, remote } = makeSeed();
     const candidate = prepareCandidate(remote, "alpha", "alpha-team");
     const record = seededRecordDir(candidate.checkout);
-    appendFileSync(join(record, "construction", "functional-design", "memory.md"), "\nalpha's note\n");
+    appendFileSync(join(record, phaseFor("functional-design"), "functional-design", "memory.md"), "\nalpha's note\n");
     const mainShard = git(candidate.checkout, [
       "ls-tree", "--name-only", "origin/main", `${relativeAuditDir(candidate.checkout)}/`,
     ]).split("\n").find((path) => path && !path.endsWith(candidate.auditShard));

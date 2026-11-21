@@ -76,8 +76,8 @@ const NON_READS = [
 ];
 type GraphNode = { slug: string; phase: string; mode: string; lead_agent: string; support_agents: string[]; plugin?: string };
 const GRAPH: GraphNode[] = [
-  { slug: "intent-capture", phase: "ideation", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
-  { slug: "code-generation", phase: "construction", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
+  { slug: "intent-capture", phase: "discover", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
+  { slug: "code-generation", phase: "build", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
 ];
 // A folder-drop style plugin with no ownership record: its stage, inline
 // persona and knowledge, and the file beside its runner skill are reads; its
@@ -93,7 +93,7 @@ const PLUGIN_FILES = [
 ];
 const PLUGIN_NODE: GraphNode = {
   slug: "test-pro-integration",
-  phase: "construction",
+  phase: "build",
   mode: "inline",
   plugin: "test-pro",
   lead_agent: "aidlc-architect-agent",

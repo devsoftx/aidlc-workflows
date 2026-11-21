@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { deriveTeamUnitProgressModel } from "../../dist/claude/.claude/tools/aidlc-orchestrate.ts";
 import { seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -38,10 +39,12 @@ describe("t326 pinned team Unit merge: a real clone's own files", () => {
       .toHaveLength(5);
     expect(tree.filter((path) => path.includes("/.aidlc-engine/") && !path.includes("/.aidlc-engine/reviews/")))
       .toEqual([]);
-    expect(tree.filter((path) => /\/construction\/[^/]+\/memory\.md$/.test(path))).toEqual([]);
+    expect(tree.filter((path) => new RegExp(`/${phaseFor("functional-design")}/[^/]+/memory\\.md$`).test(path)))
+      .toEqual([]);
     // The clone keeps its diaries; only the published tree leaves them out.
-    expect(existsSync(join(seededRecordDir(candidate.checkout), "construction", "functional-design", "memory.md")))
-      .toBe(true);
+    expect(
+      existsSync(join(seededRecordDir(candidate.checkout), phaseFor("functional-design"), "functional-design", "memory.md")),
+    ).toBe(true);
 
     const pin = runMergeTool(UNIT, ["pin", "alpha"], seed);
     expect(pin.status, pin.out).toBe(0);

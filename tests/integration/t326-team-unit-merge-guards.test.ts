@@ -27,6 +27,7 @@ import {
   replyAfterPin,
   pushUnprojectedCandidate,
 } from "../harness/team-unit-merge.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The pinned merge cases are split across four files
 // (t326-team-unit-merge*.test.ts) so the integration tier runs them in
@@ -267,7 +268,7 @@ describe("t326 pinned team Unit merge", () => {
     );
     const foreignPath = join(
       seededRecordDir(pinCandidate.checkout),
-      "construction",
+      phaseFor("functional-design"),
       "beta",
       "functional-design",
       "forged.md",
@@ -318,7 +319,7 @@ describe("t326 pinned team Unit merge", () => {
 
     const laterForeignPath = join(
       seededRecordDir(landCandidate.checkout),
-      "construction",
+      phaseFor("nfr-design"),
       "beta",
       "nfr-design",
       "forged.md",

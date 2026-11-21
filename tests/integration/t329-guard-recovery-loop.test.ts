@@ -49,6 +49,7 @@ import {
   seededRecordDir,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -181,7 +182,7 @@ function project(policy?: "off" | "relaxed" | "strict"): Project {
     .replace(/^- \*\*In Progress\*\*:.*$/m, "- **In Progress**: functional-design")
     .replace(/^- \*\*Inception\*\*:.*$/m, "- **Inception**: Verified")
     .replace(/^- \*\*Construction\*\*:.*$/m, "- **Construction**: Active")
-    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: functional-design")
     .replace(/^- \*\*Next Stage\*\*:.*$/m, "- **Next Stage**: nfr-requirements")
     .replace(
@@ -200,13 +201,13 @@ function project(policy?: "off" | "relaxed" | "strict"): Project {
   writeFileSync(statePath, policy ? setGuardPolicyLine(state, `${policy} (set by you)`) : state, "utf-8");
   // One Unit, every produced functional-design artifact present, and NO summary
   // confirmation: the routing-time refusal this scenario is about.
-  const unitsDir = join(record, "inception", "units-generation");
+  const unitsDir = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(unitsDir, { recursive: true });
   writeFileSync(
     join(unitsDir, "unit-of-work-dependency.md"),
     `# Unit Dependencies\n\n\`\`\`yaml\nunits:\n  - name: ${UNIT}\n    depends_on: []\n\`\`\`\n`,
   );
-  const designDir = join(record, "construction", UNIT, "functional-design");
+  const designDir = join(record, phaseFor("functional-design"), UNIT, "functional-design");
   mkdirSync(designDir, { recursive: true });
   writeFileSync(join(designDir, "entities.md"), "# Entities\n\n```yaml\nentities: []\n```\n");
   writeFileSync(join(designDir, "rules.md"), "# Rules\n\n```yaml\nrules: []\n```\n");
@@ -766,7 +767,7 @@ describe("t329 a request typed at the open recovery question keeps the person's 
       expect(p.humanPrompt("1").code).toBe(0);
       expect(p.record("reconfirm-summary").code).toBe(0);
       // The remedy's own step: the summary, shown and logged as its question.
-      const questions = join(seededRecordDir(p.dir), "construction", UNIT, "functional-design",
+      const questions = join(seededRecordDir(p.dir), phaseFor("functional-design"), UNIT, "functional-design",
         "functional-design-questions.md");
       writeFileSync(questions, [
         "# Functional Design Questions", "", "## Q1", "Who can see a saved search?", "", "A) Its owner",

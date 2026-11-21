@@ -105,7 +105,7 @@ describe("t34 stage-protocol.md structure + cross-references (migrated from t34-
   });
 
   test("§1: Ideation/Inception may offer approve-and-add for a skipped stage", () => {
-    expect(protocolHas("IDEATION and INCEPTION stages may offer to add a previously skipped stage")).toBe(true);
+    expect(protocolHas("DISCOVER and DESIGN stages may offer to add a previously skipped stage")).toBe(true);
     expect(protocolHas("label: Approve, and add [Skipped Stage] next")).toBe(true);
   });
 
