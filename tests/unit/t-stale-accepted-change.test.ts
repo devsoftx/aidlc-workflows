@@ -6,6 +6,7 @@
 // changed" on any later step. A document that is gone is still raised, and
 // strict keeps the line.
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -39,7 +40,7 @@ function statePath(proj: string): string {
 }
 
 function practicesDir(proj: string): string {
-  return join(recordDir(proj), "inception", "practices-discovery");
+  return join(recordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
 }
 
 // Classic work with Practices Discovery finished and its completion record

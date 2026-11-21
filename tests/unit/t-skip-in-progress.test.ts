@@ -31,6 +31,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -284,16 +285,16 @@ describe("a stage the person asks to skip at its own approval question is skippe
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none", "- **Depth**: Standard",
       "- **Test Strategy**: Standard", "- **Summary Confirmation**: off (set by you)", "", "## Stage Progress", "",
-      "### CONSTRUCTION PHASE",
+      `### ${phaseFor("functional-design").toUpperCase()} PHASE`,
       "- [?] functional-design \u2014 EXECUTE",
       ...Object.keys(block).slice(1).map((slug) => `- [ ] ${slug} \u2014 EXECUTE`),
-      "- [ ] build-and-test \u2014 EXECUTE", "", "## Current Status", "- **Lifecycle Phase**: CONSTRUCTION",
+      "- [ ] build-and-test \u2014 EXECUTE", "", "## Current Status", `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`,
       "- **Current Stage**: functional-design", "- **Status**: Running", "",
     ].join("\n"));
     seedBoltDag(proj, ["alpha", "beta"]);
     for (const unit of ["alpha", "beta"]) {
       for (const [slug, names] of Object.entries(block)) {
-        const dir = join(seededRecordDir(proj), "construction", unit, slug);
+        const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
         mkdirSync(dir, { recursive: true });
         for (const name of names) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
       }
@@ -302,7 +303,7 @@ describe("a stage the person asks to skip at its own approval question is skippe
     const after = readFileSync(seededStateFile(proj), "utf-8");
     expect(after).toContain("- [S] functional-design \u2014 EXECUTE");
     expect(after).toContain("- **Current Stage**: nfr-requirements");
-    expect(existsSync(join(seededRecordDir(proj), "construction", "alpha", "functional-design", artifactFilename("functional-spec")))).toBe(true);
+    expect(existsSync(join(seededRecordDir(proj), phaseFor("functional-design"), "alpha", "functional-design", artifactFilename("functional-spec")))).toBe(true);
     // The next stage's own question, the same one each time it is asked for.
     for (let turn = 0; turn < 2; turn++) {
       const step = nextStep(proj);

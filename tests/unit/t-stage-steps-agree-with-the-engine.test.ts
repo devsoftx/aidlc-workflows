@@ -19,6 +19,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 type GraphStage = { slug: string; name: string; phase: string; mode: string };
 
@@ -63,11 +64,12 @@ describe("t-stage-steps-agree-with-the-engine", () => {
   test.each(HARNESS_MATRIX.map((harness) => [harness.name, harness] as const))(
     "%s: Requirements Analysis takes its depth from the run, and Reverse Engineering publishes on every path",
     (_name, harness) => {
-      const inception = join(harness.engineRoot, "aidlc-common", "stages", "inception");
-      const requirements = read(join(inception, "requirements-analysis.md"));
+      const stageText = (slug: string): string =>
+        read(join(harness.engineRoot, "aidlc-common", "stages", phaseFor(slug), `${slug}.md`));
+      const requirements = stageText("requirements-analysis");
       expect(requirements).toContain("### Step 3: Determine Depth");
       expect(requirements).not.toContain("Based on complexity assessment");
-      const reverse = read(join(inception, "reverse-engineering.md"));
+      const reverse = stageText("reverse-engineering");
       expect(reverse).not.toContain("The rest of this step is the full-roster path");
       expect(reverse).not.toContain("Run this step only when");
       expect(reverse).toContain("codekb-publish");

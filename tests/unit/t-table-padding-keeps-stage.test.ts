@@ -9,6 +9,7 @@
 // A receipt a release before this one wrote over a padded table still matches,
 // on a CRLF checkout too.
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -80,7 +81,7 @@ function finishedPractices(
   expect(made.status, `${made.stdout}${made.stderr}`).toBe(0);
   const intents = join(proj, "aidlc", "spaces", "default", "intents");
   const record = join(intents, readFileSync(join(intents, "active-intent"), "utf-8").trim());
-  const dir = join(record, "inception", "practices-discovery");
+  const dir = join(record, phaseFor("practices-discovery"), "practices-discovery");
   const stage = loadGraph().find((entry) => entry.slug === "practices-discovery")!;
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n`);

@@ -34,6 +34,7 @@ import {
   seedStateFile,
   withEnvAndFreshCaches,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const STAGE = "requirements-analysis";
 const tempDirs: string[] = [];
@@ -64,7 +65,7 @@ function gateProject(scope = "enterprise", policy = "strict", source = `from sco
   state = setField(state, "Summary Confirmation", `on (${source})`);
   state = setCheckbox(state, STAGE, "awaiting-approval");
   writeFileSync(statePath, state);
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, `${STAGE}-questions.md`), "# Requirements Questions\n\n## Q1\n\nKeep the login flow?\n\n[Answer]: A\n");
   writeFileSync(join(dir, "requirements.md"), "# Requirements\n\n- Keep the login flow.\n");
@@ -207,7 +208,7 @@ describe("a per-Unit stage run at stage level, its gate open when summary confir
     }
     state = setField(state, "Summary Confirmation", "on (set by you)");
     writeFileSync(statePath, state);
-    const dir = join(seededRecordDir(proj), "construction", FD);
+    const dir = join(seededRecordDir(proj), phaseFor(FD), FD);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, `${FD}-questions.md`), "# Functional Design Questions\n\n## Q1\n\nKeep the rule?\n\n[Answer]: A\n");
     appendAuditEntry("STAGE_STARTED", { Stage: FD, Agent: "aidlc-architect-agent" }, proj);

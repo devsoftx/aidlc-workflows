@@ -24,6 +24,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, runOrchestrateNext, seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { auditBlockField, getField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { listMessages } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
@@ -119,7 +120,7 @@ function approveRequirements(proj: string, message?: string): void {
 
 /** The code plan written and the plan question put to the person. */
 function planQuestionShown(proj: string): void {
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "code-generation-plan.md"),

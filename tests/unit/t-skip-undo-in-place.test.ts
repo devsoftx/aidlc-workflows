@@ -16,6 +16,7 @@ import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, seededRecordDir } from "../harness/fixtures.ts";
 import { getField, stateFilePath } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { env, exec, next, projectAt, say, templateProjects, type Exec } from "../harness/aidlc-answers-corpus.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -147,7 +148,7 @@ describe("a stage skipped where it stood, asked back, goes back on the line", ()
     const proj = await projectAt("stage-gate");
     projects.push(proj);
     await skipWhereItStands(proj, "requirements-analysis", "skip the requirements analysis");
-    const plan = join(seededRecordDir(proj), "construction", "code-generation", "code-generation-plan.md");
+    const plan = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
     mkdirSync(join(plan, ".."), { recursive: true });
     writeFileSync(plan, "# Code Generation Plan\n", "utf-8");
     await askBack(proj, "requirements-analysis", "actually, undo that skip");

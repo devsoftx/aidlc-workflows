@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, createTestProject, FIXTURES_DIR, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seededRecordDir, seededStateFile, seedStateFile,
@@ -271,7 +272,7 @@ describe("stage-level review step: an advisory review", () => {
       /^- \*\*Change Control\*\*: .*$/m,
       "- **Guard Policy**: off (set by you)\n- **Review Override**: advisory",
     ));
-    const dir = join(seededRecordDir(p), "inception", RA);
+    const dir = join(seededRecordDir(p), phaseFor(RA), RA);
     mkdirSync(dir, { recursive: true });
     for (const name of ["requirements.md", "requirements-analysis-questions.md"]) writeFileSync(join(dir, name), `# ${name}\n`);
     return p;

@@ -12,6 +12,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const TREES = [
   ["claude", ".claude"], ["codex", ".codex"], ["copilot", ".aidlc"], ["cursor", ".cursor"],
@@ -24,7 +25,7 @@ const words = (path: string) => readFileSync(path, "utf-8").replace(/\s+/g, " ")
 
 describe("t-swarm-unit-own-copy: a Unit's tests pass in its own copy of the project", () => {
   test.each(TREES)("%s: Units Generation draws an edge for every Unit whose code a Unit needs", (harness, dir) => {
-    const path = stageFile(harness, dir, "inception", "units-generation");
+    const path = stageFile(harness, dir, phaseFor("units-generation"), "units-generation");
     expect(existsSync(path), path).toBe(true);
     const text = words(path);
     expect(text).toContain(
@@ -38,7 +39,7 @@ describe("t-swarm-unit-own-copy: a Unit's tests pass in its own copy of the proj
   });
 
   test.each(TREES)("%s: a side-by-side Unit's plan needs nothing from its batch peers", (harness, dir) => {
-    const path = stageFile(harness, dir, "construction", "code-generation");
+    const path = stageFile(harness, dir, phaseFor("code-generation"), "code-generation");
     expect(existsSync(path), path).toBe(true);
     expect(words(path)).toContain(
       "Built side by side, this Unit has its own copy of the project with none of the other Units of its batch in " +
