@@ -19,7 +19,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -37,6 +37,22 @@ import {
 } from "../harness/fixtures.ts";
 import { artifactFilename, auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -80,7 +96,7 @@ function reply(tool: string, args: string[], extra: Record<string, string> = {})
 }
 
 function writeArtifact(name: string): string {
-  const dir = join(seededRecordDir(proj), "ideation", STAGE);
+  const dir = join(seededRecordDir(proj), "discover", STAGE);
   mkdirSync(dir, { recursive: true });
   const path = join(dir, `${name}.md`);
   writeFileSync(path, `# ${name}\n\nContent.\n`);
@@ -338,16 +354,20 @@ describe("t-gate-names-failed-checks: a team's Unit gate names that Unit's outpu
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
 - [ ] nfr-requirements \u2014 EXECUTE
 - [ ] nfr-design \u2014 EXECUTE
 - [ ] infrastructure-design \u2014 EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation \u2014 EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -355,7 +375,7 @@ describe("t-gate-names-failed-checks: a team's Unit gate names that Unit's outpu
   const TEAM_ENV = { AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" };
 
   function unitArtifact(unit: string, name: string): string {
-    const dir = join(seededRecordDir(proj), "construction", unit, UNIT_STAGE);
+    const dir = join(seededRecordDir(proj), "design", unit, UNIT_STAGE);
     mkdirSync(dir, { recursive: true });
     const path = join(dir, artifactFilename(name));
     writeFileSync(path, `# ${name} for ${unit}\n`);
@@ -533,12 +553,14 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z

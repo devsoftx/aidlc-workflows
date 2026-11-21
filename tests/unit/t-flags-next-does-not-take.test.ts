@@ -34,6 +34,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
 import {
   auditBlockField,
@@ -159,7 +160,7 @@ function utility(proj: string, args: string[], extra: NodeJS.ProcessEnv = {}): {
   return { status: result.status ?? -1, out: `${result.stdout ?? ""}${result.stderr ?? ""}` };
 }
 
-const stageDir = (proj: string) => join(seededRecordDir(proj), "construction", "code-generation");
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 
 /** A one-step bug fix at Code Generation, its plan written and not yet approved. */
 function planQuestionProject(): string {
@@ -172,13 +173,13 @@ function planQuestionProject(): string {
     .replace("- [-] requirements-analysis ", "- [x] requirements-analysis ")
     .replace("- [ ] code-generation ", "- [-] code-generation ")
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation")
-    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: BUILD")
     .replace("- **Inception**: Active", "- **Inception**: Verified")
     .replace("- **Construction**: Pending", "- **Construction**: Active");
   writeFileSync(seededStateFile(proj), state, "utf-8");
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "todo.ts"), "export const todo = (title: string) => title;\n", "utf-8");
-  const requirements = join(seededRecordDir(proj), "inception", "requirements-analysis");
+  const requirements = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(requirements, { recursive: true });
   writeFileSync(join(requirements, "requirements.md"), "# Requirements\n\n- FR-1: a blank title is refused.\n", "utf-8");
   const dir = stageDir(proj);

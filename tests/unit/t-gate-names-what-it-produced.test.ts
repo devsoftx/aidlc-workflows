@@ -16,6 +16,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, runOrchestrateNext, seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { artifactFilename, findStageBySlug } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -38,7 +39,7 @@ function project(files: Record<string, string>): string {
   const proj = createOrchestrationTestProject();
   created.push(proj);
   writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8"), "utf-8");
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text, "utf-8");
   appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, proj);
@@ -63,7 +64,7 @@ function next(proj: string, args: string[] = []) {
   return result.directive as { kind: string; gate_only?: boolean; narration?: string; message?: string };
 }
 
-const FOLDER = /, in aidlc\/spaces\/default\/intents\/[^/]+\/inception\/requirements-analysis\/\.$/;
+const FOLDER = /, in aidlc\/spaces\/default\/intents\/[^/]+\/design\/requirements-analysis\/\.$/;
 // The produced sentence is the narration's first line; a check that still fails
 // on an output follows on its own line (t-gate-names-failed-checks pins those).
 const produced = (narration: string | undefined): string => String(narration ?? "").split("\n")[0];
@@ -96,7 +97,7 @@ describe("t-gate-names-what-it-produced: the gate line names what the stage prod
     const proj = project({});
     const reply = report(proj, ["--result", "awaiting-approval"]);
     expect(reply.narration).toStartWith("Requirements Analysis is ready for your review. Its output goes in ");
-    expect(produced(reply.narration)).toMatch(/inception\/requirements-analysis\/\.$/);
+    expect(produced(reply.narration)).toMatch(/design\/requirements-analysis\/\.$/);
   });
 
   // A brownfield workspace with two sibling repos: Reverse Engineering writes

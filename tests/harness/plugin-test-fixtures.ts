@@ -22,7 +22,7 @@ const COLLIDING_STAGE = `---
 slug: build-and-test
 name: Colliding Build and Test
 plugin: test-pro
-phase: construction
+phase: test
 execution: ALWAYS
 condition: always
 lead_agent: aidlc-quality-agent

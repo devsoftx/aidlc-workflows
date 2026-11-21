@@ -8,7 +8,7 @@
 // and on a read-only probe, `next` still names the jump command and changes
 // nothing.
 
-import { afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -27,6 +27,21 @@ import {
 } from "../harness/fixtures.ts";
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process, and a host chat's identity (inherited
+// here) would point that read at the space's shard instead of the record the jump wrote. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "SANDBOX_RUNTIME",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 const TOOL = join(AIDLC_SRC, "tools", "aidlc-orchestrate.ts");
 const CONSTRUCTION = join(FIXTURES_DIR, "state-construction.md");
 const MID_IDEATION = join(FIXTURES_DIR, "state-mid-ideation.md");
@@ -95,17 +110,17 @@ function seedAtCodeGeneration(): void {
 }
 
 describe("t-jump-one-step: the jump is made by the `next` the person's request reaches", () => {
-  test("a phase jump back from Construction returns Intent Capture's step in the same call", () => {
+  test("a phase jump back from Design returns Intent Capture's step in the same call", () => {
     proj = createOrchestrationTestProject();
     seedStateFile(proj, CONSTRUCTION);
     seedAuditFile(proj);
-    const first = nextOnce(["--phase", "ideation"]);
+    const first = nextOnce(["--phase", "discover"]);
     expect(String(first.message ?? ""), JSON.stringify(first)).not.toMatch(JUMP_PRINT);
     expect(["load-steering", "run-stage"]).toContain(String(first.kind));
     expect(first.stage).toBe("intent-capture");
     // That one call made the jump: the state and the record moved with it.
     expect(field(state(), "Current Stage")).toBe("intent-capture");
-    expect(field(state(), "Lifecycle Phase")).toBe("IDEATION");
+    expect(field(state(), "Lifecycle Phase")).toBe("DISCOVER");
     const jumped = events("STAGE_JUMPED");
     expect(jumped).toHaveLength(1);
     expect(jumped[0].block).toContain("**Direction**: BACKWARD");
@@ -115,7 +130,7 @@ describe("t-jump-one-step: the jump is made by the `next` the person's request r
   test("the step it lands on carries the jump's own line, once", () => {
     proj = createOrchestrationTestProject();
     seedStateFile(proj, CONSTRUCTION);
-    const step = nextToStep(["--phase", "ideation"]);
+    const step = nextToStep(["--phase", "discover"]);
     expect(step.kind).toBe("run-stage");
     expect(step.stage).toBe("intent-capture");
     const line = "Moved back to Intent Capture & Framing. You can return to Functional Design any time.";
@@ -130,7 +145,7 @@ describe("t-jump-one-step: the jump is made by the `next` the person's request r
     const health = join(seededRecordDir(proj), ".aidlc-engine", "hooks-health");
     mkdirSync(health, { recursive: true });
     writeFileSync(join(health, "pre-tool-use.last"), new Date().toISOString());
-    const res = runOrchestrateNext(TOOL, proj, ["--phase", "ideation"], { cwd: proj, env: cleanEnv(chat) });
+    const res = runOrchestrateNext(TOOL, proj, ["--phase", "discover"], { cwd: proj, env: cleanEnv(chat) });
     const step = res.directive as Record<string, unknown>;
     expect(step.kind, res.out).toBe("run-stage");
     expect(step.stage).toBe("intent-capture");
@@ -170,7 +185,7 @@ describe("t-jump-one-step: where `next` still names the jump and changes nothing
     proj = createOrchestrationTestProject();
     seedStateFile(proj, CONSTRUCTION);
     const before = state();
-    const print = nextOnce(["--phase", "ideation"], { AIDLC_ROUTE_CHECK: "1" });
+    const print = nextOnce(["--phase", "discover"], { AIDLC_ROUTE_CHECK: "1" });
     expect(print.kind).toBe("print");
     expect(JUMP_PRINT.exec(String(print.message))?.slice(1)).toEqual(["intent-capture", "backward"]);
     expect(state()).toBe(before);

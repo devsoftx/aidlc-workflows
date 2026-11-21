@@ -84,6 +84,22 @@ import {
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 // VS Code's cut, in UTF-16 code units (JavaScript string length).
@@ -142,6 +158,9 @@ function copilotBudget(): number {
 
 const FIXTURE_STATE = readFileSync(STATE_FIXTURE, "utf-8");
 const FIXTURE_STAGES = [...FIXTURE_STATE.matchAll(STAGE_LINE)].map((match) => match[1] ?? "");
+// Every stage line the fixture places, run or skipped for its scope.
+const FIXTURE_PLACED = [...FIXTURE_STATE.matchAll(/^- \[[ xS-]\] ([a-z0-9-]+) — (?:EXECUTE|SKIP)\b/gm)]
+  .map((match) => match[1] ?? "");
 
 function shippedStages(root: string, harnessDir: string): string[] {
   const raw = JSON.parse(
@@ -161,7 +180,11 @@ function stateAt(stage: string): string {
       const index = FIXTURE_STAGES.indexOf(slug);
       const mark = index < at ? "x" : index === at ? "-" : " ";
       return line.replace(/^- \[[ x-]\]/, `- [${mark}]`);
-    });
+    })
+    // A scope skip is written pending with its SKIP suffix (a fresh feature run
+    // does exactly that); `[S]` is a skip by jump, which a run that has not
+    // started never has, and it would count as work already done.
+    .replace(/^- \[S\] (.+ — SKIP \(feature scope\))$/m, "- [ ] $1");
 }
 
 // A team's memory grown past one message: 20 sections of 1,500 characters
@@ -246,6 +269,9 @@ async function runEngine(
         AIDLC_RUNTIME_ROOT: undefined,
         AIDLC_RUNTIME_HARNESS_ROOT: undefined,
         AIDLC_COMPILED_EXECUTABLE: undefined,
+        // A fixture project has no chat running its hooks, so the presence check would stop every step here;
+        // the live checks set it back on themselves (LIVE_GUARDS).
+        AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1",
         ...extraEnv,
       },
       timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
@@ -394,7 +420,7 @@ describe("t-copilot-directive-budget: every Copilot directive fits VS Code's ter
 
   test("the state fixture places every shipped stage", () => {
     expect(FIXTURE_STAGES.length).toBeGreaterThan(0);
-    expect([...FIXTURE_STAGES].sort()).toEqual([...shippedStages(COPILOT_ROOT, ".aidlc")].sort());
+    expect([...FIXTURE_PLACED].sort()).toEqual([...shippedStages(COPILOT_ROOT, ".aidlc")].sort());
   });
 
   test("stock memory: every stage's results fit, and an oversized stage takes one extra continue", async () => {
@@ -552,7 +578,7 @@ describe("t-copilot-directive-budget: every Copilot directive fits VS Code's ter
     // run-stage cannot carry the persona as well.
     const memory = join(proj, "aidlc", "spaces", "default", "memory");
     writeFileSync(join(memory, "org.md"), "# Org-Level Rules\n\nKeep changes small.\n");
-    writeFileSync(join(memory, "phases", "ideation.md"), "# Ideation\n\nAsk before assuming.\n");
+    writeFileSync(join(memory, "phases", "discover.md"), "# Discover\n\nAsk before assuming.\n");
     addKnowledge(proj, ".aidlc", "aidlc-product-agent", 110);
     const delivery = await deliverIn(proj, ".aidlc", "intent-capture");
     expectWholeDeliveries([delivery]);
@@ -798,7 +824,7 @@ function codeGenerationProject(planApproval: "on" | "off"): string {
 }
 
 function codeGenerationDir(proj: string): string {
-  return join(seededRecordDir(proj), "construction", "code-generation");
+  return join(seededRecordDir(proj), "build", "code-generation");
 }
 
 // One of the project's own Copilot tools or hooks, as its hooks run them.
@@ -1037,12 +1063,15 @@ function unitProject(
     "- **Depth**: Standard",
     "- **Test Strategy**: Standard",
     "## Stage Progress",
-    ...(shape === "after-inception" ? ["### INCEPTION PHASE", "- [x] units-generation \u2014 EXECUTE"] : []),
-    "### CONSTRUCTION PHASE",
-    ...construction.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} \u2014 EXECUTE`),
+    "### DESIGN PHASE",
+    ...(shape === "after-inception" ? ["- [x] units-generation \u2014 EXECUTE"] : []),
+    ...construction.slice(0, 4).map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} \u2014 EXECUTE`),
+    "### BUILD PHASE",
+    ...construction.slice(4).map((stage) => `- [ ] ${stage} \u2014 EXECUTE`),
+    "### TEST PHASE",
     "- [ ] build-and-test \u2014 EXECUTE",
     "## Current Status",
-    "- **Lifecycle Phase**: CONSTRUCTION",
+    "- **Lifecycle Phase**: DESIGN",
     "- **Current Stage**: functional-design",
     "- **Status**: Running",
     "",
@@ -1146,7 +1175,7 @@ describe("t-copilot-directive-budget: building the Units in parallel hands them 
     expect(handedOut).toBeLessThan(units.length);
     // The first Unit's question is still blank: the person answered it in a
     // chat that ended before the answer was written.
-    const dir = join(seededRecordDir(proj), "construction", "unit-00", "functional-design");
+    const dir = join(seededRecordDir(proj), "design", "unit-00", "functional-design");
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "functional-design-questions.md"),

@@ -9,7 +9,7 @@
 // past Code Generation. A jump nobody asked for, one another chat's message
 // asked for, and one inside a line the guard cannot read still wait, under
 // every Guard Policy.
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanupTestProject, seededStateFile } from "../harness/fixtures.ts";
@@ -38,6 +38,31 @@ import {
   resolveWorkflowSelection,
   selectedRecordIsFinished,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+// A fixture has no chat running its hooks: the shared harness runs `next` before the person's first reply, and the
+// presence check would stop it there. This file tests the redo, not presence; restored after this file.
+const presenceSkipWas = process.env.AIDLC_SKIP_HUMAN_PRESENCE_GUARD;
+process.env.AIDLC_SKIP_HUMAN_PRESENCE_GUARD = "1";
+afterAll(() => {
+  if (presenceSkipWas === undefined) delete process.env.AIDLC_SKIP_HUMAN_PRESENCE_GUARD;
+  else process.env.AIDLC_SKIP_HUMAN_PRESENCE_GUARD = presenceSkipWas;
+});
+
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(600_000);
 

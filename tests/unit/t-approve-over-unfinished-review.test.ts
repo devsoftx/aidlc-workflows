@@ -32,6 +32,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename, auditBlockField, findStageBySlug, getField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 
@@ -109,7 +110,7 @@ function says(proj: string, prompt: string): string {
 }
 
 function reviewAskedNeverFinished(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), SLUG);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", "requirements-analysis-questions.md"]) {
     const path = join(dir, name);
@@ -125,7 +126,7 @@ function reviewAskedNeverFinished(proj: string): void {
 // Policy, strict here, makes that review stale), and the person asked for it
 // again: that request is the one recovery pass, and it never finished.
 function recoveryAskedNeverFinished(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), SLUG);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", "requirements-analysis-questions.md"]) {
     const path = join(dir, name);
@@ -311,14 +312,15 @@ describe("Code Generation: the person's approval goes over a review of changed s
 - **Depth**: Minimal
 - **Test Strategy**: Minimal
 ## Stage Progress
-### INCEPTION PHASE
+### DESIGN PHASE
 - [x] requirements-analysis ${DASH} EXECUTE
 - [S] units-generation ${DASH} SKIP
-### CONSTRUCTION PHASE
+### BUILD PHASE
 - [-] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);
@@ -346,7 +348,7 @@ describe("Code Generation: the person's approval goes over a review of changed s
   function recoveryOfChangedSource(): void {
     mkdirSync(join(proj, "src"), { recursive: true });
     writeFileSync(join(proj, "src", "app.ts"), "export const total = 1;\n");
-    const dir = join(seededRecordDir(proj), "construction", CG);
+    const dir = join(seededRecordDir(proj), phaseFor(CG), CG);
     mkdirSync(dir, { recursive: true });
     planApproved(dir);
     for (const name of ["code-summary.md", "traceability.json"]) {
@@ -446,15 +448,17 @@ describe("a Unit's recovery review that never finished, at unit complete and at 
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design ${DASH} EXECUTE
 - [S] nfr-requirements ${DASH} EXECUTE
 - [S] nfr-design ${DASH} EXECUTE
 - [S] infrastructure-design ${DASH} EXECUTE
+
+### BUILD PHASE
 - [S] code-generation ${DASH} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-07-30T00:00:00Z
@@ -470,7 +474,7 @@ describe("a Unit's recovery review that never finished, at unit complete and at 
     seedBoltDag(proj, ["unit-a", "unit-b"]);
   }
 
-  const unitDir = (unit: string) => join(seededRecordDir(proj), "construction", unit, FD);
+  const unitDir = (unit: string) => join(seededRecordDir(proj), phaseFor(FD), unit, FD);
   function unitArtifacts(unit: string): string[] {
     const names = (findStageBySlug(FD)?.produces ?? []).map((name) => artifactFilename(name));
     expect(names.length).toBeGreaterThan(1);

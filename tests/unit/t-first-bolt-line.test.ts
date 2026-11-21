@@ -21,13 +21,30 @@ import {
 } from "../harness/test-budget.ts";
 import { cleanupTestProject, runOrchestrateNext, setupIntegrationProject } from "../harness/fixtures.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 const BOLT_LINE = "Starting the first Bolt now: one build pass over the code, tests and checks for a piece of the work.";
 
 // No chat names itself to the tools: the jump's own line then stays in its
 // output, and the step's line is the stage's alone.
-const env: Record<string, string | undefined> = { ...process.env };
+// The fixture project has no chat running its hooks, so the presence check would stop each `next` before the step.
+const env: Record<string, string | undefined> = { ...process.env, AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" };
 for (const key of [
   "AIDLC_SCOPE_MAPPING", "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
   "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
@@ -71,7 +88,7 @@ describe("the first Construction step names a Bolt only where code is built", ()
   test("stock infra builds its IaC without Units: its first Construction step gets the ordinary line", () => {
     const line = firstConstructionLine(["--scope", "infra"], "nfr-requirements");
     expect(line).not.toContain("Bolt");
-    expect(line).toBe("Now working on NFR Requirements (stage 1 of 10), wearing the architect hat.");
+    expect(line).toBe("Now working on NFR Requirements (stage 1 of 13), wearing the architect hat.");
   });
 
   test("a plan made for an analysis, with Code Generation skipped, gets the ordinary line", () => {
@@ -81,30 +98,30 @@ describe("the first Construction step names a Bolt only where code is built", ()
       "--label", "analysis plan",
     ], "nfr-requirements");
     expect(line).not.toContain("Bolt");
-    expect(line).toBe("Now working on NFR Requirements (stage 1 of 1), wearing the architect hat.");
+    expect(line).toBe("Now working on NFR Requirements (stage 1 of 4), wearing the architect hat.");
   });
 
   test("a plan that builds code in Units still starts the first Bolt", () => {
     // Units Generation, done, counts among the stages: Functional Design is the second.
     expect(firstConstructionLine(["--scope", "feature"], "functional-design", true))
-      .toBe(`${BOLT_LINE} First step is Functional Design (stage 2 of 15).`);
+      .toBe(`${BOLT_LINE} First step is Functional Design (stage 2 of 17).`);
   });
 
   test("a jump over a Units Generation that never ran makes no Units: the ordinary line", () => {
     const line = firstConstructionLine(["--scope", "feature"], "functional-design");
     expect(line).not.toContain("Bolt");
-    expect(line).toBe("Now working on Functional Design (stage 1 of 14), wearing the architect hat.");
+    expect(line).toBe("Now working on Functional Design (stage 1 of 16), wearing the architect hat.");
   });
 
   test("a plan that builds code without Units starts no Bolt: security-patch gets the ordinary line", () => {
     const line = firstConstructionLine(["--scope", "security-patch"], "nfr-requirements");
     expect(line).not.toContain("Bolt");
-    expect(line).toBe("Now working on NFR Requirements (stage 1 of 5), wearing the architect hat.");
+    expect(line).toBe("Now working on NFR Requirements (stage 1 of 8), wearing the architect hat.");
   });
 
   test("refactor, Code Generation without Units, gets the ordinary line too", () => {
     const line = firstConstructionLine(["--scope", "refactor"], "functional-design");
     expect(line).not.toContain("Bolt");
-    expect(line).toBe("Now working on Functional Design (stage 1 of 5), wearing the architect hat.");
+    expect(line).toBe("Now working on Functional Design (stage 1 of 7), wearing the architect hat.");
   });
 });

@@ -14,13 +14,29 @@
 // build ships, in both trees. The agent roster check it also makes reads the
 // same tree's agents and is not what this checks.
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { declaration, hash, MARKER, PINNED_FUNCTIONS } from "../fixtures/stage-frontmatter-2.11.0/generate.ts";
 import { parseStageFrontmatter, validateStageFrontmatter } from "../fixtures/stage-frontmatter-2.11.0/stage-frontmatter.ts";
 import { REPO_ROOT } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const FIXTURE = join(REPO_ROOT, "tests", "fixtures", "stage-frontmatter-2.11.0", "stage-frontmatter.ts");
 // sha256 of generate.ts's output from v2.11.0, below its marker line.

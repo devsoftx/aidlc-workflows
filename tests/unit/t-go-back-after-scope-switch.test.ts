@@ -13,6 +13,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, removeWorkspaceRecord } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { env, exec, next, say, type Exec } from "../harness/aidlc-input-corpus.ts";
 import {
   artifactFilename,
@@ -107,7 +108,7 @@ async function atUserStories(): Promise<string> {
 
 /** User Stories' documents on disk and its gate open, as a run leaves it before the person answers. */
 async function userStoriesGate(proj: string): Promise<void> {
-  const dir = join(dirname(stateFilePath(proj)), "inception", "user-stories");
+  const dir = join(dirname(stateFilePath(proj)), phaseFor("user-stories"), "user-stories");
   mkdirSync(dir, { recursive: true });
   for (const name of findStageBySlug("user-stories")?.produces ?? []) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n- As a person, I tag a to-do.\n`, "utf-8");

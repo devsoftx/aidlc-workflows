@@ -29,6 +29,23 @@ import {
   resolveTestingPosture,
 } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { env, exec, projectAt, say, templateProjects } from "../harness/aidlc-answers-corpus.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -42,8 +59,10 @@ afterAll(() => {
   for (const proj of [...projects, ...templateProjects()]) cleanupTestProject(proj);
 });
 
-const questionsFile = (proj: string): string =>
-  join(seededRecordDir(proj), "construction", "code-generation", "code-generation-questions.md");
+// The zero-Unit stage-level record: <record>/<phase>/code-generation, the folder the engine reads its plan from.
+const stageLevelDir = (proj: string): string => join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
+
+const questionsFile = (proj: string): string => join(stageLevelDir(proj), "code-generation-questions.md");
 
 // The code plan question open, under the policy; its marker bound again to the state with the policy line set.
 async function planQuestionAt(policy: Policy): Promise<string> {
@@ -72,7 +91,7 @@ function planApprovalOffAt(policy: Policy): string {
   writeFileSync(seededStateFile(proj), state, "utf-8");
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "base.ts"), "export const base = true;\n", "utf-8");
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = stageLevelDir(proj);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify for titles\n- Touches: src/slugify.ts\n" +
@@ -91,7 +110,7 @@ describe("t-plan-approval-receipt-decides: the engine's receipt, not the file's 
       expect(evaluateCodeGenerationApproval(proj, { unit: null }).approved).toBe(false);
       expect((await say(proj, "I wrote my answer in the file", "claude")).status).toBe(0);
       const recorded = await exec(
-        [process.execPath, LOG, "answer", "--stage", "code-generation", "--checkpoint", "plan-approval",
+        [process.execPath, LOG, "answer", "--stage", "code-generation", "--checkpoint", "plan-approval", "--stage-level",
           "--details", "Approve Plan", "--project-dir", proj],
         { cwd: proj, env: env(proj) },
       );

@@ -12,7 +12,7 @@
 // Mechanism: cli over the answers corpus Requirements Analysis gate (the real report and next), and the compiled
 // scope grid and stage graph every shipped scope compiles to.
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -33,6 +33,23 @@ import {
 } from "../harness/fixtures.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
+
+// No chat names itself to the tools: a run from inside a host's own chat would lend the fixture projects' hooks that
+// chat, and a gate's first write (no chat of its own) would bind to it and miss the record's audit shard. Restored
+// after this file's tests.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "SANDBOX_RUNTIME",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const NO_GIT = "This project has no git, so AI-DLC can't undo the changes it makes to your files; " +
   "to get an undo, run `git init` and commit them.";
@@ -119,14 +136,14 @@ describe("t-no-git-said-once: a project with no git hears once, at its first gat
     const graph = JSON.parse(readFileSync(join(data, "stage-graph.json"), "utf-8")) as Array<{ slug: string; phase: string }>;
     expect(Object.keys(grid).sort()).toEqual(shipped);
     for (const scope of shipped) {
-      // Every planned stage past Initialization opens a gate (computeGate); only the first Construction stage's
+      // Every planned stage past Initialization opens a gate (computeGate); only the first build-phase stage's
       // skeleton gate can be left out, and it is never before Code Generation.
       const gated = graph.filter((stage) => grid[scope].stages[stage.slug] === "EXECUTE" && stage.phase !== "initialization");
-      const build = gated.findIndex((stage) => stage.phase === "construction" || stage.phase === "operation");
+      const build = gated.findIndex((stage) => ["build", "test", "secure", "deploy", "operate"].includes(stage.phase));
       // An empty folder drops Reverse Engineering, so the next gate must come before the build too.
       for (const first of [gated[0], gated.filter((stage) => stage.slug !== "reverse-engineering")[0]]) {
         expect(first, scope).toBeDefined();
-        expect(["ideation", "inception"], `${scope}: ${first?.slug}`).toContain(first?.phase);
+        expect(["discover", "design"], `${scope}: ${first?.slug}`).toContain(first?.phase);
         expect(gated.indexOf(first), scope).toBeLessThan(build === -1 ? gated.length : build);
       }
     }
@@ -236,7 +253,9 @@ describe("t-no-git-said-once: a project with no git hears once, at its first gat
 
   test("the step after creation does not carry it: the gate is its one place", () => {
     const proj = project();
-    const chat = { ...process.env, AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload" };
+    // A fixture has no chat running its hooks: without the presence skip, `next` stops with the hooks-off step, which
+    // names a kept request instead of the question the creation saves.
+    const chat = { ...process.env, AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload", AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" };
     const creation = runOrchestrateNext(ORCHESTRATE, proj, ["--scope", "poc", "build a lunch poll"], { env: chat }).directive;
     expect(creation?.kind, JSON.stringify(creation)).toBe("print");
     const request = /--request ([0-9a-f]{8})/.exec(String(creation?.message))?.[1];

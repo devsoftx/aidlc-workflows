@@ -22,6 +22,7 @@ import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import {
   cleanupTestProject, seedBoltDag, seededRecordDir, seededStateFile, setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
 import {
   auditBlockField, guardRecoveryAskFromRefusalText, readAuditShardEvents,
@@ -80,10 +81,14 @@ const UNIT_WALK_STATE = [
   "## Scope Configuration",
   "- **Stages to Execute**: all", "- **Stages to Skip**: none", "- **Depth**: Standard", "- **Test Strategy**: Standard", "",
   "## Stage Progress", "",
-  "### CONSTRUCTION PHASE",
-  ...CONSTRUCTION_STAGES.map((stage) => `- [ ] ${stage} \u2014 EXECUTE`), "",
+  "### DESIGN PHASE",
+  ...CONSTRUCTION_STAGES.slice(0, 4).map((stage) => `- [ ] ${stage} \u2014 EXECUTE`),
+  "### BUILD PHASE",
+  `- [ ] ${CONSTRUCTION_STAGES[4]} \u2014 EXECUTE`,
+  "### TEST PHASE",
+  `- [ ] ${CONSTRUCTION_STAGES[5]} \u2014 EXECUTE`, "",
   "## Current Status",
-  "- **Lifecycle Phase**: CONSTRUCTION", `- **Current Stage**: ${UNIT_STAGE}`, "- **Status**: Running", "",
+  `- **Lifecycle Phase**: ${phaseFor(UNIT_STAGE).toUpperCase()}`, `- **Current Stage**: ${UNIT_STAGE}`, "- **Status**: Running", "",
 ].join("\n");
 
 const REQUIREMENTS = "# Requirements\n\n## Functional Requirements\n\n- FR-1: Only the owner can read a saved search.\n";
@@ -216,8 +221,8 @@ class Work {
     this.unit = unitWalk ? UNIT : null;
     this.reviewer = unitWalk ? UNIT_REVIEWER : REVIEWER;
     this.stageDir = unitWalk
-      ? join(seededRecordDir(this.dir), "construction", UNIT, UNIT_STAGE)
-      : join(seededRecordDir(this.dir), "inception", STAGE);
+      ? join(seededRecordDir(this.dir), phaseFor(UNIT_STAGE), UNIT, UNIT_STAGE)
+      : join(seededRecordDir(this.dir), phaseFor(STAGE), STAGE);
     this.questions = join(this.stageDir, `${this.stage}-questions.md`);
     this.artifact = join(this.stageDir, unitWalk ? "functional-spec.md" : "requirements.md");
     this.env = {

@@ -10,17 +10,37 @@
 //
 // Mechanism: function - the shipped human-turn hook, `log review` and `report`
 // on a seeded project; no agent runs.
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
-import { auditBlockField, readAuditShardEvents, setGuardPolicyLine } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
-import { cleanupTestProject, seededRecordDir, seededStateFile, setupIntegrationProject } from "../harness/fixtures.ts";
+import { auditBlockField, findStageBySlug, readAuditShardEvents, setGuardPolicyLine } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import {
+  cleanupTestProject, DEFAULT_RECORD_DIR, DEFAULT_SPACE, seededRecordDir, seededStateFile, setupIntegrationProject,
+} from "../harness/fixtures.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 const STAGE = "requirements-analysis";
+// The stage's record folder sits under its graph phase.
+const STAGE_PHASE = findStageBySlug(STAGE)!.phase;
 const REVIEWER = "aidlc-product-lead-agent";
 const SESSION = "t-recovery-review-reply-stands";
 
@@ -57,7 +77,7 @@ async function personSays(proj: string, prompt: string): Promise<string> {
     JSON.stringify({ hook_event_name: "UserPromptSubmit", session_id: SESSION, prompt }));
   expect(r.status, r.out).toBe(0);
   await Bun.sleep(1100);
-  const turn = readAuditShardEvents(proj).filter((row) => row.event === "HUMAN_TURN").at(-1)!;
+  const turn = readAuditShardEvents(proj, DEFAULT_RECORD_DIR, DEFAULT_SPACE).filter((row) => row.event === "HUMAN_TURN").at(-1)!;
   return auditBlockField(turn.block, "Message Id")!;
 }
 
@@ -78,7 +98,7 @@ function review(
   const body = `## Review\n\n**Verdict:** ${verdict}\n**Reviewer:** ${REVIEWER}\n**Iteration:** ${iteration}\n\n### Findings\n\n` +
     `**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n${findings}`;
   const file = requested.reviewFile as string | undefined;
-  const target = file ? (isAbsolute(file) ? file : join(proj, file)) : join(seededRecordDir(proj), "inception", STAGE, "requirements.md");
+  const target = file ? (isAbsolute(file) ? file : join(proj, file)) : join(seededRecordDir(proj), STAGE_PHASE, STAGE, "requirements.md");
   mkdirSync(dirname(target), { recursive: true });
   if (file) writeFileSync(target, body);
   else appendFileSync(target, `\n${body}`);
@@ -94,8 +114,10 @@ async function approvedThenStale(): Promise<{ proj: string; approve: string }> {
   const proj = setupIntegrationProject({ withState: "state-mid-inception.md", stripEnvScope: true });
   projects.push(proj);
   const state = seededStateFile(proj);
-  writeFileSync(state, setGuardPolicyLine(readFileSync(state, "utf-8"), "strict (set by you)"));
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  // The summary confirmation is the person's to switch off here: this test is about the review's reply.
+  writeFileSync(state, setGuardPolicyLine(readFileSync(state, "utf-8"), "strict (set by you)")
+    .replace("- **Summary Confirmation**: on (from scope bugfix)", "- **Summary Confirmation**: off (set by you)"));
+  const dir = join(seededRecordDir(proj), STAGE_PHASE, STAGE);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", `${STAGE}-questions.md`]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), `# ${name}\n\n- FR1 Sign up\n`);
@@ -123,7 +145,7 @@ describe("t-recovery-review-reply-stands: after the recovery review, the person'
     const recorded = last(engine(proj, ["engine", "orchestrate", "report", "--stage", STAGE, "--result", "approved",
       "--user-input", "Approve", "--message", approve]).stdout);
     expect(recorded.kind, JSON.stringify(recorded)).toBe("done");
-    const rows = readAuditShardEvents(proj).filter((row) => row.event === "GATE_APPROVED");
+    const rows = readAuditShardEvents(proj, DEFAULT_RECORD_DIR, DEFAULT_SPACE).filter((row) => row.event === "GATE_APPROVED");
     expect(rows.length).toBe(1);
     expect(auditBlockField(rows[0].block, "Message Id")).toBe(approve);
   });

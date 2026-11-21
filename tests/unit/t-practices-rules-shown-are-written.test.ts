@@ -7,7 +7,7 @@
 // second line or an evidence bullet each became one more. The rules are the
 // list items under `## Mandated` and `## Forbidden`, read once: the gate's
 // line names them and promotion writes them, so the two cannot differ.
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -17,6 +17,22 @@ import {
   seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
 import { extractMarkdownSection } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "SANDBOX_RUNTIME",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 resetAidlcEnv();
@@ -57,14 +73,16 @@ function project(discoveredRules: string): { proj: string; draftDir: string } {
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DISCOVER PHASE
 - [S] reverse-engineering ${STAGE_SEP} SKIP
+
+### DESIGN PHASE
 - [-] practices-discovery ${STAGE_SEP} EXECUTE
 - [ ] requirements-analysis ${STAGE_SEP} EXECUTE
 
 ## Current Status
 - **Current Stage**: practices-discovery
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: DESIGN
 - **Status**: In Progress
 `);
   const shard = seededAuditShard(proj);
@@ -73,7 +91,7 @@ function project(discoveredRules: string): { proj: string; draftDir: string } {
     "", "## STAGE_STARTED", "**Timestamp**: 2026-07-17T14:01:00Z", "**Event**: STAGE_STARTED",
     "**Stage**: practices-discovery", "**Agent**: aidlc-pipeline-deploy-agent", "", "---", "",
   ].join("\n"), { flag: "a" });
-  const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+  const draftDir = join(seededRecordDir(proj), "design", "practices-discovery");
   mkdirSync(draftDir, { recursive: true });
   writeFileSync(
     join(draftDir, "team-practices.md"),
@@ -84,8 +102,11 @@ function project(discoveredRules: string): { proj: string; draftDir: string } {
 }
 
 function openGate(proj: string): { kind?: string; message?: string; narration?: string } {
+  // The gate shows the rules the draft holds; the summary confirmation that Practices Discovery also owes is not what
+  // these cases read, and the fixture writes no questions for it.
   const r = spawnSync(BUN, [ORCH, "report", "--stage", "practices-discovery", "--result", "awaiting-approval", "--project-dir", proj], {
     timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8", cwd: proj,
+    env: { ...process.env, AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD: "1" },
   });
   const line = r.stdout.trim().split("\n").pop() ?? "";
   try {
@@ -181,7 +202,10 @@ No exceptions were discussed.
       "Forbidden: NEVER deploy to production without a manual approval",
     ]);
     // The gate shown again (a resume, a second look) names the same rules.
-    const again = runOrchestrateNext(ORCH, proj, [], { cwd: proj }).directive as { gate_only?: boolean; narration?: string };
+    // A fixture has no chat running its hooks, so the presence check is skipped as the gate above skips the summary.
+    const again = runOrchestrateNext(ORCH, proj, [], {
+      cwd: proj, env: { ...process.env, AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1", AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD: "1" },
+    }).directive as { gate_only?: boolean; narration?: string };
     expect(again?.gate_only, JSON.stringify(again)).toBe(true);
     expect(shownRules(again.narration)).toEqual(shown);
 

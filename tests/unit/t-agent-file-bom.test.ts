@@ -17,6 +17,7 @@ import {
   readVerificationCommandFile,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { cleanupTestProject, createTestProject, seededRecordDir, seedStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BOM = "﻿";
 const projects: string[] = [];
@@ -44,7 +45,7 @@ describe("a file the agent wrote with a byte order mark is read as written", () 
 
   test("a unit's source manifest, its raw-bytes hash still over the bytes on disk", () => {
     const { project, record } = fixture();
-    const dir = join(record, "construction", "alpha", "code-generation");
+    const dir = join(record, phaseFor("code-generation"), "alpha", "code-generation");
     mkdirSync(dir, { recursive: true });
     const bytes = ps51(`${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "app.ts" }] }, null, 2)}\n`);
     writeFileSync(join(dir, "source-manifest.json"), bytes);

@@ -13,11 +13,27 @@
 // It also holds the module's Unit lifecycle receipts paragraph to what receipt
 // mode actually does, in the same trees.
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const MODULE = "aidlc-common/protocols/stage-protocol-construction.md";
 const BLOCK_HEADING = "## Harness construction bindings";
@@ -87,7 +103,7 @@ describe("Construction bindings say the same thing on every tool", () => {
       "(the engine then uses the active scope file's `skeleton:` field)",
       "emit the override row first",
       "See the conductor persona for the full classification rules.",
-      "names a LATER Construction stage (including code-generation, which the unit-major walk covers)",
+      "names a LATER stage (including code-generation, which the unit-major walk covers)",
     ]) {
       expect(body).toContain(sentence);
     }

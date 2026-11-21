@@ -21,7 +21,7 @@
 //      session-start hook brings an edit of a memory file into the copy.
 //   5. Kiro IDE's steering file keeps carrying the memory text (it does not
 //      expand file references), written by the same refresh.
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
   cpSync,
@@ -45,6 +45,22 @@ import {
   kiroIdeSteering,
   refreshActiveMemory,
 } from "../../core/tools/aidlc-includes.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const distSurface = (h: string, ...parts: string[]): string =>

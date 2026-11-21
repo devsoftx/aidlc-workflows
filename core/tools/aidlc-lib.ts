@@ -1,4 +1,4 @@
-import { isUnitLoopStage, PHASE_LABELS, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
+import { isUnitLoopStage, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
 import { lockFolderHeldGiveUpMs, lockFolderHeldLine } from "./aidlc-lock-line.ts";
 import { committedTextBytes, committedTextParts, reviewManifestForms } from "./aidlc-review-manifest.ts";

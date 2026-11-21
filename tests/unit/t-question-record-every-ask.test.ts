@@ -25,6 +25,7 @@ import { join } from "node:path";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { activeDirectiveStorageDir, sessionsDir } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { cleanupTestProject, resetAidlcEnv, seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   A, B, BUN, C, D, built, codeGeneration, engine, field, inception, lastTurn, openIn, reviewedStage, rows, say, shellQuote,
   STAGE, staffing, step, tool,
@@ -248,7 +249,7 @@ describe("the questions file", () => {
     const questionEntryDigests = await digests();
     const proj = inception(projects);
     appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, proj);
-    const file = join(seededRecordDir(proj), "inception", STAGE, `${STAGE}-questions.md`);
+    const file = join(seededRecordDir(proj), phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
     mkdirSync(join(file, ".."), { recursive: true });
     const summary = `${QUESTIONS.replaceAll("[Answer]:", "[Answer]: A")}\n## Consolidated Summary Confirmation\n\n` +
       "- Staff use it daily.\n\nLooks correct\nRequest changes\n\n[Answer]:\n";
@@ -275,14 +276,14 @@ describe("the questions file", () => {
     const proj = inception(projects);
     const run = step(proj, A, ["next"]);
     expect(run.kind, JSON.stringify(run)).toBe("run-stage");
-    const file = join(seededRecordDir(proj), "inception", STAGE, `${STAGE}-questions.md`);
+    const file = join(seededRecordDir(proj), phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
     mkdirSync(join(file, ".."), { recursive: true });
     writeFileSync(file, QUESTIONS);
     say(proj, A, "staff, daily");
     const stamped = JSON.parse(field(lastTurn(proj), "Questions Digest") ?? "{}") as {
       file?: string; entries?: Record<string, string>;
     };
-    expect(stamped.file).toBe(`${seededRecordDir(proj).slice(proj.length + 1).replaceAll("\\", "/")}/inception/${STAGE}/${STAGE}-questions.md`);
+    expect(stamped.file).toBe(`${seededRecordDir(proj).slice(proj.length + 1).replaceAll("\\", "/")}/${phaseFor(STAGE)}/${STAGE}/${STAGE}-questions.md`);
     expect(stamped.entries).toEqual(questionEntryDigests(QUESTIONS));
     writeFileSync(file, QUESTIONS.replace("[Answer]:\n\n## Q2", "[Answer]: A\n\n## Q2").replaceAll("\n", "\r\n"));
     say(proj, A, "and weekly");

@@ -123,16 +123,18 @@ function project(policy: "strict" | "relaxed" = "strict"): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");
@@ -777,16 +779,18 @@ describe("a swarm batch keeps its own continuation rule", () => {
 - **Unit Ownership**: solo
 - **Guard Policy**: strict (set by you)
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
 - **Current Stage**: code-generation
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Status**: Running
 `, "utf-8");
     const group = ["alpha", "beta"];

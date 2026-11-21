@@ -22,7 +22,7 @@
 // not exported, so that branch shares its wording with the agent-broken case
 // above rather than getting a case of its own.
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,7 +35,24 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { findStageBySlug } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(120_000);
 
@@ -76,7 +93,7 @@ function project(): string {
 }
 
 function stageDir(proj: string): string {
-  return join(seededRecordDir(proj), "construction", "code-generation");
+  return join(seededRecordDir(proj), findStageBySlug("code-generation")!.phase, "code-generation");
 }
 
 const planPath = (proj: string) => join(stageDir(proj), "code-generation-plan.md");
@@ -95,7 +112,15 @@ function writePlan(proj: string, extra = ""): void {
 }
 
 function next(proj: string, args: string[] = []): Emitted {
-  const result = runOrchestrateNext(ORCHESTRATE, proj, args, { env: { ...process.env, AIDLC_UNATTENDED: "0" } });
+  // A fixture has no chat running its hooks: the presence check would stop the step before it is handed out.
+  // The host's own session markers stay out, so the fixture's active intent is the one read.
+  const hostEnv: Record<string, string | undefined> = { ...process.env };
+  for (const key of Object.keys(hostEnv)) {
+    if (/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key)) delete hostEnv[key];
+  }
+  const result = runOrchestrateNext(ORCHESTRATE, proj, args, {
+    env: { ...hostEnv, AIDLC_UNATTENDED: "0", AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1", AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload" },
+  });
   expect(result.status, result.out).toBe(0);
   expect(result.directive, result.out).not.toBeNull();
   return result.directive as unknown as Emitted;
@@ -105,7 +130,11 @@ function reply(proj: string, prompt: string): void {
   const result = spawnSync(BUN, [DISPATCHER, "engine", "hook", "record-human-turn"], {
     cwd: proj,
     input: JSON.stringify({ hook_event_name: "UserPromptSubmit", session_id: SESSION, prompt }),
-    env: { ...process.env, CLAUDE_PROJECT_DIR: proj, AIDLC_PROJECT_DIR: proj, AIDLC_UNATTENDED: "0" },
+    env: {
+      ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key))),
+      CLAUDE_PROJECT_DIR: proj, AIDLC_PROJECT_DIR: proj, AIDLC_UNATTENDED: "0",
+      AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload",
+    },
     encoding: "utf-8",
     timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
   });
@@ -118,7 +147,11 @@ function answer(proj: string, details: string, extra: string[] = []): { code: nu
     "--details", details, ...extra, "--project-dir", proj,
   ], {
     cwd: proj,
-    env: { ...process.env, CLAUDE_PROJECT_DIR: proj, AIDLC_PROJECT_DIR: proj, AIDLC_UNATTENDED: "0" },
+    env: {
+      ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key))),
+      CLAUDE_PROJECT_DIR: proj, AIDLC_PROJECT_DIR: proj, AIDLC_UNATTENDED: "0",
+      AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload",
+    },
     encoding: "utf-8",
     timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
   });

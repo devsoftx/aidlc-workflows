@@ -10,7 +10,7 @@
 // added after the work started are not named; a clone that does not hold the
 // listing takes its own (t-run-alone-and-clone-told-brought-files). Nothing
 // changes on screen.
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { cpSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
@@ -26,6 +26,22 @@ import { sourceBaselineAuditFields, workspaceBaselineStageSlugs } from "../../di
 // The stage's checks are not this file's subject, and its fixture documents
 // are not written for them.
 process.env.AIDLC_DISABLE_SENSORS = "1";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(600_000);
 const created: string[] = [];
@@ -216,10 +232,18 @@ function atPlanIn(proj: string, setup: Setup): { proj: string; plan: Record<stri
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "poc", ...sourceBaselineAuditFields(proj, workspaceBaselineStageSlugs()) }, proj);
   write(proj, setup.later ?? {});
   appendAuditEntry("STAGE_STARTED", { Stage: "code-generation", ...sourceBaselineAuditFields(proj, "code-generation") }, proj);
+  hooksRunning(proj);
   const plan = step(proj);
   expect(plan.kind, JSON.stringify(plan).slice(0, 600)).toBe("run-stage");
   expect((plan.plan_approval as { status?: string } | undefined)?.status).toBe("plan");
   return { proj, plan };
+}
+
+// This chat's hooks are running, so `next` does not stop for hooks that never fired.
+function hooksRunning(proj: string): void {
+  const health = join(seededRecordDir(proj), ".aidlc-engine", "hooks-health");
+  mkdirSync(health, { recursive: true });
+  writeFileSync(join(health, "pre-tool-use.last"), new Date().toISOString());
 }
 
 // The build's own outputs, the review READY, and the gate opened as the agent opens it.
@@ -246,7 +270,7 @@ describe("the note's words", () => {
   const runStage = (fields: Record<string, unknown>): Record<string, unknown> => ({
     kind: "run-stage",
     stage: "code-generation",
-    phase: "construction",
+    phase: "build",
     stage_file: ".claude/aidlc-common/stages/build/code-generation.md",
     ceremony: { summary_confirmation: "off" },
     ...fields,
@@ -316,15 +340,20 @@ describe("a Unit's Code Generation", () => {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [S] functional-design — SKIP
 - [S] nfr-requirements — SKIP
 - [S] nfr-design — SKIP
 - [S] infrastructure-design — SKIP
+
+### BUILD PHASE
 - [-] code-generation — EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
+
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);

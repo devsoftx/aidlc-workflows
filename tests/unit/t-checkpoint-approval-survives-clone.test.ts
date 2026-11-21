@@ -20,6 +20,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -72,11 +73,12 @@ function fixture(policy: string) {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${stages.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -172,7 +174,7 @@ function build(p: string, unit: string): string[] {
   const reviews: string[] = [];
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
@@ -191,7 +193,7 @@ function build(p: string, unit: string): string[] {
 }
 
 function writeManifest(p: string, unit: string, paths: string[]): void {
-  writeFileSync(join(seededRecordDir(p), "construction", unit, "code-generation", "source-manifest.json"), JSON.stringify({
+  writeFileSync(join(seededRecordDir(p), phaseFor("code-generation"), unit, "code-generation", "source-manifest.json"), JSON.stringify({
     stage: "code-generation", unit, version: 1, writes: paths.map((path) => ({ path })),
   }));
 }
@@ -226,7 +228,7 @@ describe("t-checkpoint-approval-survives-clone: no checkpoint proof file on this
     build(p, "alpha");
     approve(p, "alpha");
     rmSync(proofDir(p), { recursive: true, force: true });
-    const document = join(seededRecordDir(p), "construction", "alpha", DOCUMENT_STAGE,
+    const document = join(seededRecordDir(p), phaseFor(DOCUMENT_STAGE), "alpha", DOCUMENT_STAGE,
       artifactFilename(findStageBySlug(DOCUMENT_STAGE)!.produces![0]));
     writeFileSync(document, `${readFileSync(document, "utf-8")}\nTests use a temporary notes file.\n`);
     const status = checkpointStatus(p, "alpha");

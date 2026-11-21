@@ -35,7 +35,7 @@ This project uses AI-DLC (AI-Driven Development Life Cycle) for structured devel
 
     hook_permissions_note: `After copying the project shell, approve its hooks when Claude Code prompts or through \`/hooks\`, then fully restart Claude Code; \`/clear\` is not enough. Organization-managed policy can block project hooks, and \`/aidlc --doctor\` detects the supported managed-policy restriction.`,
 
-    agents_note: `Each is a flat \`.md\` file prefixed \`aidlc-<role>-agent.md\`; the \`/aidlc\` session takes on each expert role itself where the stage calls for it, and hands work to a separate agent for the four delegated stages (2.1 pipeline, 2.2 subagent, 2.4 mob, 3.5 subagent), reviewer passes, and composer requests via the \`Task\` tool.`,
+    agents_note: `Each is a flat \`.md\` file prefixed \`aidlc-<role>-agent.md\`; the \`/aidlc\` session takes on each expert role itself where the stage calls for it, and hands work to a separate agent for the four delegated stages (1.4 pipeline, 2.1 subagent, 2.3 mob, 3.1 subagent), reviewer passes, and composer requests via the \`Task\` tool.`,
 
     structure_extra: "",
 

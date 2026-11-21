@@ -13,16 +13,35 @@
 //     each repo's code knowledge base folder and staging folder;
 //   - a route check makes nothing; a file where the folder goes, or a link out
 //     of the record, leaves the step as it was and makes nothing outside.
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import {
-  AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, runOrchestrateNext, seedBoltDag,
-  seededRecordDir, seededStateFile,
+  AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, DEFAULT_RECORD_DIR, DEFAULT_SPACE, FIXTURES_DIR,
+  runOrchestrateNext, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
-import { hooksHealthDir } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { findStageBySlug, hooksHealthDir } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// A stage's record folder sits under its graph phase (design, discover, build...).
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
+const phaseOf = (slug: string): string => findStageBySlug(slug)!.phase;
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 const created: string[] = [];
@@ -41,7 +60,16 @@ interface Step {
 }
 
 function next(proj: string, env: Record<string, string> = {}): Step {
-  const result = runOrchestrateNext(ORCH, proj, [], { env: { ...process.env, AIDLC_UNATTENDED: "0", ...env } });
+  // This chat's hooks are running, so `next` does not stop for hooks that never fired.
+  const health = join(seededRecordDir(proj), ".aidlc-engine", "hooks-health");
+  mkdirSync(health, { recursive: true });
+  writeFileSync(join(health, "pre-tool-use.last"), new Date().toISOString());
+  // The host's own session markers stay out.
+  const hostEnv: Record<string, string | undefined> = { ...process.env };
+  for (const key of Object.keys(hostEnv)) {
+    if (/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key)) delete hostEnv[key];
+  }
+  const result = runOrchestrateNext(ORCH, proj, [], { env: { ...hostEnv, AIDLC_UNATTENDED: "0", ...env } });
   expect(result.status, result.out).toBe(0);
   expect(result.directive, result.out).not.toBeNull();
   return result.directive as unknown as Step;
@@ -62,7 +90,7 @@ function bugfixProject(): string {
 }
 
 function stageFolder(proj: string): string {
-  return join(seededRecordDir(proj), "inception", "requirements-analysis");
+  return join(seededRecordDir(proj), phaseOf("requirements-analysis"), "requirements-analysis");
 }
 
 // A feature workflow at Functional Design, a stage done once per Unit.
@@ -88,16 +116,21 @@ function unitProject(...units: string[]): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design - EXECUTE
 - [ ] nfr-requirements - EXECUTE
 - [ ] nfr-design - EXECUTE
 - [ ] infrastructure-design - EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation - EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test - EXECUTE
 
+
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `, "utf-8");
@@ -129,7 +162,7 @@ describe("each record folder a step names is there before the agent writes into 
     const named = step.wave?.entries.map((entry) => entry.unit) ?? [step.unit];
     expect(named.length).toBeGreaterThan(0);
     for (const unit of ["unit-a", "unit-b"]) {
-      const folder = join(seededRecordDir(proj), "construction", unit, "functional-design");
+      const folder = join(seededRecordDir(proj), phaseOf("functional-design"), unit, "functional-design");
       if (named.includes(unit)) emptyFolder(folder);
       else expect(existsSync(folder), folder).toBe(false);
     }
@@ -151,7 +184,7 @@ describe("each record folder a step names is there before the agent writes into 
     expect(readdirSync(codekb).filter((name) => !before.includes(name)).sort()).toEqual(["repo-a", "repo-b"]);
     for (const repo of ["repo-a", "repo-b"]) emptyFolder(join(codekb, repo));
     // The developer's scan handoff and the architect's candidate for each repo.
-    emptyFolder(join(seededRecordDir(proj), "inception", "reverse-engineering"));
+    emptyFolder(join(seededRecordDir(proj), phaseOf("reverse-engineering"), "reverse-engineering"));
     const engine = join(seededRecordDir(proj), ".aidlc-engine");
     expect(readdirSync(engine).filter((name) => name.startsWith("codekb-stage-")).sort())
       .toEqual(["codekb-stage-repo-a", "codekb-stage-repo-b"]);
@@ -166,7 +199,7 @@ describe("each record folder a step names is there before the agent writes into 
     writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-brownfield-init-done.md"), "utf-8"), "utf-8");
     const step = next(proj);
     expect(step, JSON.stringify(step).slice(0, 300)).toMatchObject({ kind: "run-stage", stage: "reverse-engineering" });
-    emptyFolder(join(seededRecordDir(proj), "inception", "reverse-engineering"));
+    emptyFolder(join(seededRecordDir(proj), phaseOf("reverse-engineering"), "reverse-engineering"));
     const store = (step.produces ?? [])[0]?.split("/")[4];
     expect(store).toBeTruthy();
     const engine = join(seededRecordDir(proj), ".aidlc-engine");
@@ -186,12 +219,12 @@ describe("each record folder a step names is there before the agent writes into 
     mkdirSync(dirname(stageFolder(blocked)), { recursive: true });
     writeFileSync(stageFolder(blocked), "", "utf-8");
     expect(next(blocked)).toMatchObject({ kind: "run-stage", stage: "requirements-analysis" });
-    expect(readFileSync(join(hooksHealthDir(blocked), "record-folders.drops"), "utf-8")).toContain("EEXIST");
+    expect(readFileSync(join(hooksHealthDir(blocked, DEFAULT_RECORD_DIR, DEFAULT_SPACE), "record-folders.drops"), "utf-8")).toContain("EEXIST");
     if (process.platform === "win32") return; // A link needs a privilege Windows does not give by default.
     const linked = bugfixProject();
     const outside = mkdtempSync(join(tmpdir(), "t-record-folder-outside-"));
     try {
-      symlinkSync(outside, join(seededRecordDir(linked), "inception"));
+      symlinkSync(outside, join(seededRecordDir(linked), phaseOf("requirements-analysis")));
       expect(next(linked)).toMatchObject({ kind: "run-stage", stage: "requirements-analysis" });
       expect(readdirSync(outside)).toEqual([]);
     } finally {

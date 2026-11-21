@@ -31,6 +31,7 @@ import {
   argumentIsFlagShaped,
   auditBlockField,
   classifyTerminalCommand,
+  findStageBySlug,
   hooksHealthDir,
   planApprovalRuntimeFile,
   isReadOnlyNextArgv,
@@ -45,6 +46,22 @@ import {
 import { nextArgsAreOnlyWords, parseNextFlags, typedSettingModifiers } from "../../dist/claude/.claude/tools/aidlc-orchestrate.ts";
 import { listMessages } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -61,6 +78,15 @@ const BUN = process.execPath;
 const ORCHESTRATE = join(AIDLC_SRC, "tools", "aidlc-orchestrate.ts");
 const DISPATCHER = join(AIDLC_SRC, "tools", "aidlc.ts");
 const SESSION = "01995000-7a11-7000-8000-00000000d001";
+// The host's own session markers (Claude Code exports its chat id) would bind
+// these chats instead of the fixture's SESSION, so the cases run without them.
+function hostEnvironment(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  for (const key of Object.keys(env)) {
+    if (/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key)) delete env[key];
+  }
+  return env;
+}
 
 /** mulberry32: a seeded generator, so no dependency and no clock. */
 function rng(seed: number): () => number {
@@ -532,7 +558,7 @@ describe("the engine routes a seeded slice of those lines", () => {
 
   function env(proj: string): NodeJS.ProcessEnv {
     return {
-      ...testGuardEnvironment(process.env, "production"),
+      ...testGuardEnvironment(hostEnvironment(), "production"),
       CLAUDE_PROJECT_DIR: proj,
       AIDLC_PROJECT_DIR: proj,
       AIDLC_UNATTENDED: "0",
@@ -617,7 +643,7 @@ describe("a host's human-turn hook keeps the same reading of the line", () => {
         cwd: proj,
         input: JSON.stringify({ hook_event_name: "UserPromptSubmit", session_id: SESSION, cwd: proj, prompt }),
         env: {
-          ...testGuardEnvironment(process.env, "production"),
+          ...testGuardEnvironment(hostEnvironment(), "production"),
           CLAUDE_PROJECT_DIR: proj,
           AIDLC_PROJECT_DIR: proj,
           AIDLC_UNATTENDED: "0",
@@ -675,7 +701,7 @@ describe("a flags-only lowering line before any work is kept by the setter the a
 
   function env(proj: string): NodeJS.ProcessEnv {
     return {
-      ...testGuardEnvironment(process.env, "production"),
+      ...testGuardEnvironment(hostEnvironment(), "production"),
       CLAUDE_PROJECT_DIR: proj,
       AIDLC_PROJECT_DIR: proj,
       AIDLC_UNATTENDED: "0",
@@ -757,7 +783,7 @@ describe("the chain from a bare next ends, and sets each thing once", () => {
 
   function env(proj: string): NodeJS.ProcessEnv {
     return {
-      ...testGuardEnvironment(process.env, "production"),
+      ...testGuardEnvironment(hostEnvironment(), "production"),
       CLAUDE_PROJECT_DIR: proj,
       AIDLC_PROJECT_DIR: proj,
       AIDLC_UNATTENDED: "0",
@@ -845,13 +871,14 @@ describe("a line of settings and words at the open code plan question", () => {
 
   function env(proj: string): NodeJS.ProcessEnv {
     return {
-      ...testGuardEnvironment(process.env, "production"),
+      ...testGuardEnvironment(hostEnvironment(), "production"),
       CLAUDE_PROJECT_DIR: proj,
       AIDLC_PROJECT_DIR: proj,
       AIDLC_UNATTENDED: "0",
       AIDLC_DISABLE_PLAN_APPROVAL_GUARD: "0",
       AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "0",
       AIDLC_SESSION_OVERRIDE: SESSION,
+      AIDLC_SESSION_OVERRIDE_SOURCE: "payload",
     };
   }
 
@@ -871,7 +898,7 @@ describe("a line of settings and words at the open code plan question", () => {
     writeFileSync(join(sessions, ".current-session"), `${SESSION}\n`, "utf-8");
     const stage = join(proj, "aidlc", "spaces", "default", "intents");
     const record = readFileSync(join(stage, "active-intent"), "utf-8").trim();
-    const dir = join(stage, record, "construction", "code-generation");
+    const dir = join(stage, record, findStageBySlug("code-generation")!.phase, "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "code-generation-plan.md"),
       "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify for titles\n- Touches: src/slugify.ts\n- Tests: 3 unit tests\n\n## Steps\n\n- [ ] Step 1: write slugify\n\n" +
@@ -996,7 +1023,7 @@ describe("ways of saying go on over a seeded sweep", () => {
 
   function production(proj: string): NodeJS.ProcessEnv {
     return {
-      ...testGuardEnvironment(process.env, "production"),
+      ...testGuardEnvironment(hostEnvironment(), "production"),
       CLAUDE_PROJECT_DIR: proj,
       AIDLC_PROJECT_DIR: proj,
       AIDLC_UNATTENDED: "0",
@@ -1104,7 +1131,7 @@ describe("the proposal step over a seeded slice of fresh-workspace lines", () =>
       const note = where(testCase);
       const proj = freshWorkspace();
       const env = {
-        ...testGuardEnvironment(process.env, "production"),
+        ...testGuardEnvironment(hostEnvironment(), "production"),
         CLAUDE_PROJECT_DIR: proj,
         AIDLC_PROJECT_DIR: proj,
         AIDLC_UNATTENDED: "0",

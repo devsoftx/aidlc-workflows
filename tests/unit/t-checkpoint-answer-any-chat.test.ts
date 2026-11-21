@@ -40,6 +40,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededAuditShard, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { quoteCommandArgument } from "../../dist/claude/.claude/tools/aidlc-runtime-paths.ts";
 import { recordProtectedHumanResponse } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
@@ -90,11 +91,12 @@ function construction() {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${stages.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -110,7 +112,7 @@ function built() {
   const p = construction();
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", "alpha", slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), "alpha", slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
     if (stage.workspace_requires) {
@@ -142,9 +144,8 @@ function inception(stage: string) {
   const p = construction();
   writeFileSync(seededStateFile(p), readFileSync(seededStateFile(p), "utf-8")
     .replace(`- [-] functional-design ${SEPARATOR}`, `- [ ] functional-design ${SEPARATOR}`)
-    .replace("### CONSTRUCTION PHASE", `### INCEPTION PHASE\n- [-] ${stage} ${SEPARATOR} EXECUTE\n### CONSTRUCTION PHASE`)
-    .replace("- **Current Stage**: functional-design", `- **Current Stage**: ${stage}`)
-    .replace("- **Lifecycle Phase**: CONSTRUCTION", "- **Lifecycle Phase**: INCEPTION"));
+    .replace("### DESIGN PHASE", `### DESIGN PHASE\n- [-] ${stage} ${SEPARATOR} EXECUTE`)
+    .replace("- **Current Stage**: functional-design", `- **Current Stage**: ${stage}`));
   appendAuditEntry("STAGE_STARTED", { Stage: stage }, p);
   return p;
 }
@@ -670,7 +671,7 @@ describe("t-checkpoint-answer-any-chat: a bare /aidlc in a new chat", () => {
     // A guided batch: logged as its question numbers and every option shown, its questions in the file.
     const p = construction();
     appendAuditEntry("STAGE_STARTED", { Stage: "functional-design" }, p);
-    const dir = join(seededRecordDir(p), "construction", "alpha", "functional-design");
+    const dir = join(seededRecordDir(p), phaseFor("functional-design"), "alpha", "functional-design");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "functional-design-questions.md"),
       "# Questions\n\n## Q1\n\nWhich store?\n\nA. Files\nB. A database\n\n[Answer]: \n\n## Q2\n\nWho signs in?\n\nC. Anyone\nD. Members\n\n[Answer]: \n");
@@ -739,7 +740,7 @@ describe("t-checkpoint-answer-any-chat: a bare /aidlc in a new chat", () => {
   // not it: the stage's own step would not ask it.
   test("a Construction policy question comes back while the stage's questions file still has a blank answer", () => {
     const p = askedInOldChat("Construction policy");
-    const dir = join(seededRecordDir(p), "construction", "alpha", "functional-design");
+    const dir = join(seededRecordDir(p), phaseFor("functional-design"), "alpha", "functional-design");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "functional-design-questions.md"), "# Questions\n\n## Q1\n\nWhich store?\n\nA. Files\nB. A database\n\n[Answer]: \n");
     const shown = bare(p, NEW);
@@ -755,7 +756,7 @@ describe("t-checkpoint-answer-any-chat: a bare /aidlc in a new chat", () => {
     const p = unit ? construction() : inception("requirements-analysis");
     if (unit) appendAuditEntry("STAGE_STARTED", { Stage: "functional-design" }, p);
     const stage = unit ? "functional-design" : "requirements-analysis";
-    const dir = unit ? join(seededRecordDir(p), "construction", unit, stage) : join(seededRecordDir(p), "inception", stage);
+    const dir = unit ? join(seededRecordDir(p), phaseFor(stage), unit, stage) : join(seededRecordDir(p), phaseFor(stage), stage);
     mkdirSync(dir, { recursive: true });
     const file = join(dir, `${stage}-questions.md`);
     writeFileSync(file, [

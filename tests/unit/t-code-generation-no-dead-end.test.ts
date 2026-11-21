@@ -23,6 +23,7 @@ import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { cleanupTestProject, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { refusalSignature } from "../harness/scope-run.ts";
 import {
   answer,
@@ -334,9 +335,9 @@ describe("the guard judges only the build: records and engine commands pass, the
       created.push(state.proj);
       const recordDir = join(stageDir(state.proj), "..", "..");
       const passes: ToolCall[] = [
-        { tool: "Write", path: join(recordDir, "inception", "requirements-analysis", "requirements.md") },
+        { tool: "Write", path: join(recordDir, phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md") },
         { tool: "Write", path: join(recordDir, "verification", "inception-construction-verification.md") },
-        { tool: "Write", path: join(recordDir, "construction", "code-generation", "memory.md") },
+        { tool: "Write", path: join(recordDir, phaseFor("code-generation"), "code-generation", "memory.md") },
         { tool: "Bash", command: "bun .claude/tools/aidlc.ts engine log answer --stage requirements-analysis --message 0badc0de --details 'Chat'" },
         { tool: "Bash", command: "bun .claude/tools/aidlc.ts engine sensors findings --stage code-generation" },
         { tool: "Bash", command: "bun .claude/tools/aidlc-utility.ts status" },
@@ -542,7 +543,7 @@ describe("the guard judges only the build: records and engine commands pass, the
     expect(plan.said).toContain("The person is editing the plan files themselves");
     // Another record of the same work is not theirs to edit: it passes.
     const notes = await claude.call(state.proj, state.session, {
-      tool: "Write", path: join(stageDir(state.proj), "..", "..", "inception", "requirements-analysis", "notes.md"),
+      tool: "Write", path: join(stageDir(state.proj), "..", "..", phaseFor("requirements-analysis"), "requirements-analysis", "notes.md"),
     });
     expect(notes.code, notes.said).toBe(0);
   });

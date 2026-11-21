@@ -53,6 +53,8 @@ evidence. List every not-met obligation as a blocker for deployment.
 Present the not-met obligations to the person and let them decide. Do not change
 the requirements in this stage.
 
+Approval gate: strictly 2-option (Approve / Request Changes).
+
 ## Sensors
 
 Required-sections check on `conformance-report.md`.

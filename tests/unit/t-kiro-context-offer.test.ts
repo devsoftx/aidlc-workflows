@@ -21,6 +21,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, createTestProject, FIXTURES_DIR, REPO_ROOT,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, findStageBySlug, latestMainWorkflowStageRunFloorForProject, reviewArtifactFingerprint,
@@ -179,7 +180,7 @@ function project(chat: string): string {
   const proj = createOrchestrationTestProject();
   created.push(proj);
   writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8"), "utf-8");
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "requirements.md"), "# Requirements\n\n## FR-1\nList notes.\n", "utf-8");
   appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, proj);
@@ -539,11 +540,12 @@ describe("t-kiro-context-offer: a Unit's checkpoint", () => {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${STAGES.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -555,7 +557,7 @@ ${STAGES.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stag
     appendAuditEntry("HUMAN_TURN", { Session: chat, Origin: "person", Source: "typed" }, p);
     for (const slug of STAGES) {
       const stage = findStageBySlug(slug)!;
-      const output = join(seededRecordDir(p), "construction", "alpha", slug);
+      const output = join(seededRecordDir(p), phaseFor(slug), "alpha", slug);
       mkdirSync(output, { recursive: true });
       for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
       if (stage.workspace_requires) {

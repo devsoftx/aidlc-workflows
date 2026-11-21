@@ -29,6 +29,7 @@ import {
   seedStateFile,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -135,7 +136,7 @@ function isolatedProject(scope: string, collaboratorsLine: string): string {
 function recordLink(proj: string, link: string, single = true): { rc: number; out: string } {
   const args = [LOG, "link", "--stage", RE_STAGE, "--link", link, ...(single ? ["--single"] : [])];
   if (link === LEAD) {
-    const handoff = join(dirname(seededStateFile(proj)), "inception", RE_STAGE, "developer-scan.md");
+    const handoff = join(dirname(seededStateFile(proj)), phaseFor(RE_STAGE), RE_STAGE, "developer-scan.md");
     mkdirSync(dirname(handoff), { recursive: true });
     writeFileSync(
       handoff,

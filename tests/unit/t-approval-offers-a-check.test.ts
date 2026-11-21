@@ -23,6 +23,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject, MESSAGE_FILL,
@@ -33,6 +34,10 @@ import {
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
 // are not written for them and its subject is not them, so they stay off here.
 process.env.AIDLC_DISABLE_SENSORS = "1";
+// The consolidated summary confirmation is its own subject (its own tests); this
+// file's stages are confirmed in their question files, and the recorded decision
+// behind it is not what is asked here.
+process.env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD = "1";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -54,6 +59,10 @@ function fixture(options: Options = {}) {
   projects.push(p);
   seedAidlcMemory(p);
   const current = options.current ?? "functional-design";
+  // The stage progress groups each stage under its phase heading, as the state file does.
+  const phaseHeadings = [...new Set(STAGES.map((stage) => phaseFor(stage)))]
+    .map((phase) => `### ${phase.toUpperCase()} PHASE\n${STAGES.filter((stage) => phaseFor(stage) === phase)
+      .map((stage) => `- [${stage === current ? "-" : " "}] ${stage} \u2014 EXECUTE`).join("\n")}\n`).join("");
   writeFileSync(seededStateFile(p), `# AI-DLC State Tracking
 ## Project Information
 - **Project**: A changed approach
@@ -73,11 +82,9 @@ ${options.review ? `- **Review Override**: ${options.review}\n` : ""}## Scope Co
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${STAGES.map((stage) => `- [${stage === current ? "-" : " "}] ${stage} \u2014 EXECUTE`).join("\n")}
-- [ ] build-and-test \u2014 EXECUTE
+${phaseHeadings}### TEST PHASE\n- [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `);
@@ -119,13 +126,25 @@ function review(p: string, slug: string, iteration: number, finding?: string, un
   json(tool(p, "log", [...args, "--verdict", verdict]));
 }
 
+// The stage's question file with its consolidated summary confirmed by the person.
+function summaryConfirmed(p: string, slug: string, unit: string) {
+  const dir = join(seededRecordDir(p), phaseFor(slug), unit, slug);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${slug}-questions.md`), [
+    "# Questions", "", "## Consolidated Summary Confirmation", "",
+    "- Looks correct", "- Request changes", "", "[Answer]: Looks correct", "",
+  ].join("\n"));
+}
+
 // One stage of a Unit: its outputs, its reviews with the verdicts given, and
 // `afterReview` run after the last one (the changed approach), then its
 // completion receipt.
 function buildStage(p: string, slug: string, unit: string, verdicts: Array<string | undefined>, afterReview?: () => void) {
   const stage = findStageBySlug(slug)!;
-  const output = join(seededRecordDir(p), "construction", unit, slug);
+  const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
   mkdirSync(output, { recursive: true });
+  // A design stage's question flow is answered and its summary confirmed before its review starts.
+  if (stage.summary_confirmation === "required") summaryConfirmed(p, slug, unit);
   for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
   if (stage.workspace_requires) {
     writeFileSync(join(output, "source-manifest.json"), JSON.stringify({
@@ -150,7 +169,7 @@ function build(p: string, codeVerdicts: Array<string | undefined>, afterReview?:
 
 // A design document edited after its review, as the write hook records it.
 function editDocument(p: string, slug: string, unit: string, words: string) {
-  const document = join(seededRecordDir(p), "construction", unit, slug, artifactFilename(findStageBySlug(slug)!.produces![0]));
+  const document = join(seededRecordDir(p), phaseFor(slug), unit, slug, artifactFilename(findStageBySlug(slug)!.produces![0]));
   writeFileSync(document, `${readFileSync(document, "utf-8")}\n${words}\n`);
   appendAuditEntry("ARTIFACT_UPDATED", { File: relative(p, document).replaceAll("\\", "/"), Stage: slug, Unit: unit }, p);
 }

@@ -33,6 +33,7 @@ import {
   AIDLC_SRC, FIXTURES_DIR, cleanupTestProject, createOrchestrationTestProject, recordArtifactWriteViaHook, seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -54,7 +55,7 @@ const RAW = "--details '<their exact reply>'";
 const REPLY = "fix them first";
 const NO_HOOK = { env: { AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" } };
 
-const requirements = (proj: string) => join(seededRecordDir(proj), "inception", STAGE, "requirements.md");
+const requirements = (proj: string) => join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "requirements.md");
 const answers = (proj: string) => readAuditShardEvents(proj).filter((row) => row.event === "QUESTION_ANSWERED");
 const latestTurnId = (proj: string) =>
   auditBlockField(readAuditShardEvents(proj).filter((row) => row.event === "HUMAN_TURN").at(-1)!.block, "Message Id");
@@ -296,7 +297,7 @@ describe("t-options-answer-reading: after Override blocking sensors, next opens 
     const message = String(first.directive?.message ?? "");
     expect(message).toContain(OVERRIDE_REPORT);
     // The confirmed summary changes before the report: the report refuses on it, not on the override.
-    const questions = join(seededRecordDir(proj), "inception", STAGE, `${STAGE}-questions.md`);
+    const questions = join(seededRecordDir(proj), phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
     writeFileSync(questions, readFileSync(questions, "utf-8").replace("Should a blank title be refused?",
       "Should a blank or whitespace-only title be refused?"), "utf-8");
     recordArtifactWriteViaHook(proj, questions, "Edit");

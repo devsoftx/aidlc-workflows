@@ -22,6 +22,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { cleanupTestProject, FIXTURES_DIR, seededRecordDir, seededStateFile, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
 import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
@@ -66,7 +67,7 @@ class Folder {
   readonly dir: string;
   readonly env: NodeJS.ProcessEnv;
 
-  constructor(state: "code-generation" | "inception") {
+  constructor(state: "code-generation" | "requirements-analysis") {
     this.dir = setupIntegrationProject({ withState: "state-brownfield-feature.md" });
     created.push(this.dir);
     if (state === "code-generation") this.planWaits();
@@ -107,7 +108,7 @@ class Folder {
   }
 
   planDir(): string {
-    return join(seededRecordDir(this.dir), "construction", "code-generation");
+    return join(seededRecordDir(this.dir), phaseFor("code-generation"), "code-generation");
   }
 
   planText(tests: string): string {
@@ -421,9 +422,9 @@ function questionsBody(summaryAnswer: string): string {
 
 // The Requirements gate opened in chat A, the stage's documents written and reviewed READY.
 function gateOpenIn(id: string): { folder: Folder; first: Chat } {
-  const folder = new Folder("inception");
+  const folder = new Folder("requirements-analysis");
   const first = new Chat(folder, id).start();
-  const stageDir = join(seededRecordDir(folder.dir), "inception", GATE_STAGE);
+  const stageDir = join(seededRecordDir(folder.dir), phaseFor(GATE_STAGE), GATE_STAGE);
   const questions = join(stageDir, `${GATE_STAGE}-questions.md`);
   folder.ok(first.tool("jump", ["execute", "--target", GATE_STAGE, "--direction", "redo"]), "start the stage");
   expect(first.next()).toMatchObject({ kind: "run-stage", stage: GATE_STAGE });

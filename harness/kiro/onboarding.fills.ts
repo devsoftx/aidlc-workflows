@@ -21,7 +21,7 @@ This project uses AI-DLC (AI-Driven Development Life Cycle) for structured devel
 
     prereq_bullets_tail: "",
 
-    agents_note: `On Kiro the \`/aidlc\` session runs from \`agents/aidlc.json\`; all 14 expert roles have JSON configs, and the four delegated stages (2.1 pipeline, 2.2 subagent, 2.4 mob, 3.5 subagent), reviewer passes, and composer requests run through the Kiro \`subagent\` tool, while inline-stage personas are adopted in-context.`,
+    agents_note: `On Kiro the \`/aidlc\` session runs from \`agents/aidlc.json\`; all 14 expert roles have JSON configs, and the four delegated stages (1.4 pipeline, 2.1 subagent, 2.3 mob, 3.1 subagent), reviewer passes, and composer requests run through the Kiro \`subagent\` tool, while inline-stage personas are adopted in-context.`,
 
     structure_extra: "",
 

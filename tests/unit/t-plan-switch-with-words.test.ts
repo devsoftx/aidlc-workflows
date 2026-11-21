@@ -15,6 +15,7 @@ import {
   AIDLC_SRC, cleanupTestProject, cleanupWorktreeFixture, createOrchestrationTestProject, FIXTURES_DIR,
   runOrchestrateNext, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 
 const BUN = process.execPath;
@@ -66,7 +67,7 @@ function project(policy: "strict" | "relaxed" | "off" = "relaxed", planApproval:
 }
 
 function stageDir(proj: string, unit: string | null = null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), ...(unit ? [unit] : []), "code-generation");
 }
 
 function writePlan(proj: string, extra = "", unit: string | null = null): void {

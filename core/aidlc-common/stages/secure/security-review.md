@@ -65,6 +65,8 @@ severity, and the items that block deployment. Write each finding to
 Present the blocking findings to the person for a decision. Do not fix code in
 this stage.
 
+Approval gate: strictly 2-option (Approve / Request Changes).
+
 ## Sensors
 
 Required-sections check on `security-review-report.md`.

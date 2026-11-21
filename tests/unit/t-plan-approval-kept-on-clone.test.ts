@@ -21,6 +21,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, runOrchestrateNext, seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   readAuditShardEvents, readIssuedDirectiveMarker, stateDigest, writeActiveDirectiveMarker,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -80,7 +81,7 @@ function alicesCheckout(policy: "strict" | "relaxed" | "off", locked = false): s
   return proj;
 }
 
-const stageDir = (proj: string) => join(seededRecordDir(proj), "construction", "code-generation");
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 
 function writePlan(proj: string, extra = ""): void {
   mkdirSync(stageDir(proj), { recursive: true });

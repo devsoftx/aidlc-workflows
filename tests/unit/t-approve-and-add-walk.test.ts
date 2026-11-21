@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename,
@@ -129,7 +130,7 @@ describe("t-approve-and-add-walk: Approve, and add <Stage> next adds the stage a
       expect(approved.status, approved.stdout + approved.stderr).toBe(0);
       const started = await next(proj, []);
       expect(started.directive?.stage, started.out).toBe("domain-design");
-      const dir = join(seededRecordDir(proj), "inception", "domain-design");
+      const dir = join(seededRecordDir(proj), phaseFor("domain-design"), "domain-design");
       mkdirSync(dir, { recursive: true });
       for (const name of findStageBySlug("domain-design")?.produces ?? []) {
         const file = join(dir, artifactFilename(name));

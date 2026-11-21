@@ -40,6 +40,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { planApprovalRuntimeFile, writeSessionPidEntry } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -89,7 +90,7 @@ function project(policy: "strict" | "relaxed" | "off" = "relaxed"): string {
 }
 
 function writePlan(proj: string): void {
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify for titles\n- Touches: src/slugify.ts\n" +

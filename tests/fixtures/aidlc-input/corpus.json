@@ -13162,9 +13162,9 @@
   {
     "id": "doc-040-w",
     "category": "doc-example",
-    "input": "--phase inception",
+    "input": "--phase discover",
     "state": "work-open",
-    "meaning": "the person means: jump the open work to the Inception phase",
+    "meaning": "the person means: jump the open work to the Discover phase (the seven-phase name for the phase that opens with Reverse Engineering)",
     "source": "docs/guide/04-phases-and-stages.md:69 (+4 more sources)",
     "documented": "\"To move ahead anyway, jump: `/aidlc --stage <name>` or `/aidlc --phase <name>`. The stages you pass over are marked skipped (`[S]`)\".",
     "expected": {
@@ -14145,9 +14145,9 @@
   {
     "id": "doc-061-w",
     "category": "doc-example",
-    "input": "--phase operation",
+    "input": "--phase deploy",
     "state": "work-open",
-    "meaning": "the person means: jump the open work to the Operation phase",
+    "meaning": "the person means: jump the open work to the Deploy phase (the seven-phase name for the phase that opens with the deployment pipeline)",
     "source": "docs/guide/11-session-management.md:179",
     "documented": "\"Jumping further, for example `/aidlc --phase operation` to leave Construction early, skips the steps Units have not finished (their files stay).\"",
     "expected": {
@@ -18414,9 +18414,9 @@
   {
     "id": "doc-173-w",
     "category": "doc-example",
-    "input": "--phase construction --scope bugfix",
+    "input": "--phase build --scope bugfix",
     "state": "work-open",
-    "meaning": "the person means: jump the open work to Construction with the bugfix plan",
+    "meaning": "the person means: jump the open work to Build with the bugfix plan",
     "source": "help output:90",
     "documented": "\"Jump to construction with bugfix scope\".",
     "expected": {

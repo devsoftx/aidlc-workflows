@@ -64,6 +64,8 @@ as a row in `code-review-findings.md` so the approval gate can address it by ID.
 Present the blockers and major findings to the person. They decide whether to
 fix them now or accept them with a recorded reason. Do not fix code in this stage.
 
+Approval gate: strictly 2-option (Approve / Request Changes).
+
 ## Sensors
 
 Required-sections check on `code-review-report.md`.

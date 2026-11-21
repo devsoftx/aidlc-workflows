@@ -25,7 +25,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
 
-const STAGE = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", "construction", "code-generation.md"), "utf-8");
+const STAGE = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", "build", "code-generation.md"), "utf-8");
 const AGENT = readFileSync(join(REPO_ROOT, "core", "agents", "aidlc-developer-agent.md"), "utf-8");
 const GUIDE = readFileSync(join(REPO_ROOT, "core", "knowledge", "aidlc-developer-agent", "code-generation-guide.md"), "utf-8");
 const DOCS = readFileSync(join(REPO_ROOT, "docs", "reference", "04-stages", "construction.md"), "utf-8");

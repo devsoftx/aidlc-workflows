@@ -8,6 +8,23 @@ import { checkRun, cleanupRuns, cleanupStates, fixtureState, play, type Run, ste
 
 setDefaultTimeout(10 * 60_000);
 
+// No chat names itself to the tools: a run from inside a host's own chat would lend the fixture projects' hooks that
+// chat, and a gate's first write (no chat of its own) would bind to it and miss the record's audit shard. Restored
+// after this file's tests.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "SANDBOX_RUNTIME",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 afterAll(() => {
   cleanupRuns();
   cleanupStates();

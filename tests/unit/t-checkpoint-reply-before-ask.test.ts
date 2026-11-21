@@ -26,6 +26,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -81,12 +82,14 @@ function fixture(policy: Policy): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${skipped.map((stage) => `- [S] ${stage} ${DASH} SKIP`).join("\n")}
+### BUILD PHASE
 - [-] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);
@@ -144,7 +147,7 @@ function recordCommand(p: string): void {
 
 function build(p: string): void {
   const stage = findStageBySlug(CG)!;
-  const output = join(seededRecordDir(p), "construction", "alpha", CG);
+  const output = join(seededRecordDir(p), phaseFor(CG), "alpha", CG);
   mkdirSync(output, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
   writeFileSync(join(output, "source-manifest.json"), JSON.stringify({

@@ -15,6 +15,8 @@ import { join } from "node:path";
 import {
   cleanupTestProject,
   createTestProject,
+  DEFAULT_RECORD_DIR,
+  DEFAULT_SPACE,
   FIXTURES_DIR,
   REPO_ROOT,
   removeWorkspaceRecord,
@@ -23,6 +25,22 @@ import {
 } from "../harness/fixtures.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { codekbSourceSize, readAuditShardEvents, readIntentRegistry } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS * 2);
 
@@ -62,6 +80,10 @@ function workspace(count: number, named = false): { proj: string; repos: string[
   rows[0].repos = repos;
   if (named) rows[0].repos_named = true;
   writeFileSync(registry, `${JSON.stringify(rows, null, 2)}\n`);
+  // This chat's hooks are running, so `next` does not stop for hooks that never fired.
+  const health = join(seededRecordDir(proj), ".aidlc-engine", "hooks-health");
+  mkdirSync(health, { recursive: true });
+  writeFileSync(join(health, "pre-tool-use.last"), new Date().toISOString());
   for (const repo of repos) {
     mkdirSync(join(proj, repo, ".git"), { recursive: true });
     writeFileSync(join(proj, repo, "main.py"), "print('hello')\n");
@@ -73,6 +95,10 @@ type Printed = Record<string, unknown> & { kind?: string };
 
 function childEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env };
+  // The host's own session markers would name another chat than this one.
+  for (const key of Object.keys(env)) {
+    if (/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key)) delete env[key];
+  }
   delete env.AWS_AIDLC_DEFAULT_SCOPE;
   delete env.AIDLC_UNATTENDED;
   return { ...env, ...extra };
@@ -184,7 +210,7 @@ describe("the question before Reverse Engineering reads ten or more repositories
     expect(some.stdout.trim()).toBe("This work now covers service-000, service-003 and service-007. The 9 left out can be added back any time.");
     expect(row(proj).repos).toEqual(["service-000", "service-003", "service-007"]);
     expect(row(proj).repos_named).toBe(true);
-    const changes = readAuditShardEvents(proj).filter((event) => event.event === "INTENT_REPOS_CHANGED");
+    const changes = readAuditShardEvents(proj, DEFAULT_RECORD_DIR, DEFAULT_SPACE).filter((event) => event.event === "INTENT_REPOS_CHANGED");
     expect(changes).toHaveLength(1);
     expect(changes[0].block).toContain("**Repos**: service-000, service-003, service-007");
 

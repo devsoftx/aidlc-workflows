@@ -20,6 +20,22 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { readFileSync } from "node:fs";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS * 2);
 
 const UTILITY = join(AIDLC_SRC, "tools", "aidlc-utility.ts");
@@ -93,7 +109,7 @@ async function switchStep(proj: string, reply = REPLY): Promise<string> {
 }
 
 describe("t-approve-and-switch-plan: an approval typed with a plan switch at an open gate is recorded in the same turn", () => {
-  test("approve: the switch runs first, then the gate's approval, and the work on the new plan is done", async () => {
+  test("approve: the switch runs first, then the gate's approval, and the work on the new plan moves on to its next stage", async () => {
     const proj = await expressAtBuildAndTestGate();
     const message = await switchStep(proj);
     expect(message).toContain(ANSWER_STEP);
@@ -108,7 +124,9 @@ describe("t-approve-and-switch-plan: an approval typed with a plan switch at an 
     expect(box(proj, "build-and-test")).toBe("? EXECUTE");
     await ran(proj, named(message, /--result approved/)[0]);
     expect(box(proj, "build-and-test")).toBe("x EXECUTE");
-    expect(getField(state(proj), "Status")).toBe("Completed");
+    // poc runs Code Review and Security Review after Build and Test, so the work is not complete yet.
+    expect(getField(state(proj), "Status")).toBe("Running");
+    expect(getField(state(proj), "Current Stage")).toBe("code-review");
     const log = events(proj);
     expect(log.lastIndexOf("GATE_APPROVED")).toBeGreaterThan(log.lastIndexOf("SCOPE_CHANGED"));
   });
@@ -182,13 +200,8 @@ describe("t-approve-and-switch-plan: an approval typed with a plan switch at an 
   });
 
   test("a switch to a plan that does not run the waiting stage skips it with its own line and names no gate report", async () => {
-    const proj = await expressAtBuildAndTestGate();
-    // poc does not run Deployment Pipeline: the waiting stage here is that one, opened the same way.
-    await say(proj, "Approve", "claude");
-    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage build-and-test --result approved --user-input Approve");
-    expect(getField(state(proj), "Current Stage")).toBe("deployment-pipeline");
-    expect((await next(proj, [])).directive?.stage).toBe("deployment-pipeline");
-    await ran(proj, "bun .claude/tools/aidlc-orchestrate.ts report --stage deployment-pipeline --result awaiting-approval");
+    // poc does not run Deployment Pipeline: the waiting stage here is that one, open at its gate on express.
+    const proj = await atGate("express", "deployment-pipeline");
     const message = await switchStep(proj);
     expect(message).toContain("to change scope, then print its output verbatim and stop.");
     expect(message).not.toContain("--result approved");

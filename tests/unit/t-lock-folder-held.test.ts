@@ -27,7 +27,7 @@
 // The line is Windows-only; the cases below set the Windows text through the
 // line module's test seam and pin today's words without it.
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -63,6 +63,23 @@ import {
   lockFolderHeldLine,
 } from "../../core/tools/aidlc-lock-line.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
+import { findStageBySlug } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(240_000);
 
@@ -396,12 +413,16 @@ function guardProject(policy: "off" | "relaxed" | "strict"): string {
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "base.ts"), "export const base = true;\n", "utf-8");
   cpSync(AIDLC_SRC, join(proj, ".claude"), { recursive: true });
-  const stage = join(seededRecordDir(proj), "construction", "code-generation");
+  const stage = join(seededRecordDir(proj), findStageBySlug("code-generation")!.phase, "code-generation");
   mkdirSync(stage, { recursive: true });
   writeFileSync(join(stage, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify\n- Touches: src/slugify.ts\n- Tests: 3 unit tests\n\n" +
       `## Steps\n\n- [ ] Step 1: write slugify\n\n${renderTestingContract(resolveTestingPosture(proj))}`, "utf-8");
   writeFileSync(join(stage, "unit-test-instructions.md"), "# Unit Test Instructions\n\nRun `bun test`.\n", "utf-8");
+  // This chat's hooks are running: `next` does not stop for hooks that never fired.
+  const health = join(seededRecordDir(proj), ".aidlc-engine", "hooks-health");
+  mkdirSync(health, { recursive: true });
+  writeFileSync(join(health, "pre-tool-use.last"), new Date().toISOString());
   return proj;
 }
 
@@ -410,14 +431,20 @@ const env = (proj: string, extra: Record<string, string> = {}) => ({
 });
 
 function next(proj: string): { kind: string; message?: string } {
-  const result = runOrchestrateNext(join(proj, ".claude", "tools", "aidlc-orchestrate.ts"), proj, [], { cwd: proj, env: env(proj) });
+  // The first `next` of a run comes before any chat turn has been recorded, so the presence check would stop it
+  // here; this file tests the plan-approval guard's lock, not the presence check.
+  const result = runOrchestrateNext(join(proj, ".claude", "tools", "aidlc-orchestrate.ts"), proj, [], {
+    cwd: proj,
+    env: env(proj, { AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload", AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" }),
+  });
   expect(result.status, result.out).toBe(0);
   return result.directive as unknown as { kind: string; message?: string };
 }
 
 function say(proj: string, prompt: string): void {
   const result = spawnSync(BUN, [join(proj, ".claude", "tools", "aidlc.ts"), "engine", "hook", "record-human-turn"], {
-    cwd: proj, env: env(proj), encoding: "utf-8", timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
+    cwd: proj, env: env(proj, { AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload" }),
+    encoding: "utf-8", timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
     input: JSON.stringify({ hook_event_name: "UserPromptSubmit", session_id: SESSION, prompt }),
   });
   expect(result.status, result.stderr).toBe(0);
@@ -457,7 +484,10 @@ function guard(
   if (fault === "held" && !existsSync(lockDirOf(proj))) seedDeadOwner(lockDirOf(proj));
   const result = spawnSync(BUN, ["--preload", preload, join(proj, ".claude", "hooks", "aidlc-plan-approval-guard.ts")], {
     cwd: proj,
-    env: env(proj, { AIDLC_ACTIVE_DIRECTIVE_LOCK_TIMEOUT_MS: "300", ...(harness ? { AIDLC_HARNESS_NAME: harness } : {}) }),
+    env: env(proj, {
+      AIDLC_ACTIVE_DIRECTIVE_LOCK_TIMEOUT_MS: "300", AIDLC_SESSION_OVERRIDE: SESSION, AIDLC_SESSION_OVERRIDE_SOURCE: "payload",
+      ...(harness ? { AIDLC_HARNESS_NAME: harness } : {}),
+    }),
     encoding: "utf-8",
     input: JSON.stringify({
       hook_event_name: "PreToolUse", session_id: SESSION, cwd: proj,
