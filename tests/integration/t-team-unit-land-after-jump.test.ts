@@ -61,15 +61,16 @@ const FD = "functional-design";
 const BT = "build-and-test";
 const REVIEWER = "aidlc-architecture-reviewer-agent";
 const PER_UNIT = ["functional-design", "nfr-requirements", "nfr-design", "infrastructure-design", "code-generation"];
+// The stages feature runs after Build and Test, skipped here so Build and Test is the last stage the plan runs.
 const LATER = [
-  "ci-pipeline", "deployment-pipeline", "environment-provisioning", "deployment-execution",
-  "observability-setup", "incident-response", "performance-validation", "feedback-optimization",
+  "performance-validation", "code-review", "security-review", "ci-pipeline", "deployment-pipeline",
+  "environment-provisioning", "deployment-execution", "observability-setup", "incident-response", "feedback-optimization",
 ];
 const MOVED = "Moved to Build and Test.";
 const BOARD_BROKEN = "could not compose its local board";
 
 // --- The lead's main: Units alpha, beta and gamma; Functional Design the one
-// Unit stage on the plan, Build and Test the last stage. ---
+// Unit stage on the plan, Build and Test the last stage the plan runs. ---
 
 function leadsCheckout(): { lead: string; remote: string } {
   const lead = createTestProject();

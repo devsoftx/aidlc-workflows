@@ -306,7 +306,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     approve(p, "u1", THREE);
     next(p);
     tool(p, "jump", ["reopen", "--target", "code-generation", "--units", "u1"]);
-    expect(line(status(p), WALK_ROW)).toEndWith("Unit 1 of 3: u1 at Code Generation, u2 and u3 not started");
+    expect(line(status(p), rowFor("code-generation"))).toEndWith("Unit 1 of 3: u1 at Code Generation, u2 and u3 not started");
   });
 
   test("with the walking skeleton on, the skeleton's approval counts", () => {
@@ -348,7 +348,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     const p = fixture(SIX, { dag: "malformed" });
     expect(unitProgress(seededRecordDir(p), "unit-major")).toBeNull();
     const row = line(status(p), WALK_ROW);
-    expect(row).toMatch(/ 0\/6$/);
+    expect(row).toMatch(/ 0\/4$/);
     expect(row).not.toContain("Unit");
   });
 

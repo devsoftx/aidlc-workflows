@@ -17,6 +17,7 @@ import { appendFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "
 import { join } from "node:path";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { AIDLC_SRC, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { cleanupTempDirs, clone, git, makeSeed, parallelDependencyBody } from "../harness/team-unit-merge.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -71,7 +72,7 @@ function nextSecond(): void {
   while (isoNow() <= now) Bun.sleepSync(50);
 }
 
-const planDir = (dir: string) => join(seededRecordDir(dir), "construction", "alpha", "code-generation");
+const planDir = (dir: string) => join(seededRecordDir(dir), phaseFor("code-generation"), "alpha", "code-generation");
 const answerLine = (dir: string) =>
   /^\[Answer\]:.*$/m.exec(readFileSync(join(planDir(dir), "code-generation-questions.md"), "utf-8"))?.[0];
 
@@ -104,6 +105,11 @@ function approvedAndPublished(policy: "strict" | "relaxed" | "off"): { remote: s
       `- **Review Override**: adversarial\n- **Guard Policy**: ${policy} (set by you)\n- **Plan Approval**: on (set by you)`);
   writeFileSync(seededStateFile(lead), state);
   says(lead, "carry on", LEAD);
+  // Code Generation is the first per-Unit stage on this plan, so the walking-skeleton stance is read before the
+  // team-handover offer; the lead records "off", as the sibling tests do.
+  expect(next(lead)).toMatchObject({ kind: "run-stage", stage: "code-generation", gate: "unresolved" });
+  const stance = run(lead, "aidlc-orchestrate.ts", ["report", "--skeleton-stance", "off"]);
+  expect(stance.status, stance.out).toBe(0);
   expect(next(lead)).toMatchObject({ kind: "ask", ask_type: "team-handover" });
   expect(next(lead)).toMatchObject({ kind: "run-stage", stage: "code-generation", unit: "alpha" });
   const claimed = run(lead, "aidlc-unit.ts", ["claim", "alpha", "--team", "lead team"]);
