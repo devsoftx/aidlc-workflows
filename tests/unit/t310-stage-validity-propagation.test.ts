@@ -1154,7 +1154,13 @@ describe("read-only inspection", () => {
         produces: [],
         consumes: [{ artifact: "architecture", required: true, conditional_on: "brownfield" }],
       },
-      { slug: "code-generation", phase: phaseFor("code-generation"), produces: [], consumes: [] },
+      {
+        slug: "code-generation",
+        phase: phaseFor("code-generation"),
+        for_each: "unit-of-work",
+        produces: [],
+        consumes: [],
+      },
     ];
     const asNew = basis({ inputs: [], outputs: [] });
     const audit = [

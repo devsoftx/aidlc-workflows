@@ -19,6 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   bundledPluginComposeTemplatePath,
   validatePluginRoot,
@@ -63,7 +64,7 @@ function stageBody(
 slug: ${slug}
 name: ${slug}
 plugin: fixture-plugin
-phase: ${options.phase ?? "construction"}
+phase: ${options.phase ?? "build"}
 execution: ALWAYS
 condition: always
 lead_agent: aidlc-quality-agent
@@ -116,7 +117,7 @@ function fixture(): string {
     join(
       root,
       "stages",
-      "construction",
+      "build",
       "fixture-plugin-stage.md",
     ),
     stageBody("fixture-plugin-stage", {
@@ -169,7 +170,7 @@ function layered(
   const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
   manifest.dependencies = ["core", `${base}@^1.0.0`];
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
-  const stage = join(root, "stages", "construction", "fixture-plugin-stage.md");
+  const stage = join(root, "stages", "build", "fixture-plugin-stage.md");
   writeFileSync(
     stage,
     readFileSync(stage, "utf-8").replace("lead_agent: aidlc-quality-agent", `lead_agent: ${lead}`),
@@ -281,7 +282,7 @@ describe("t314 standalone plugin validator", () => {
     manifest.aidlc.contributes.memory = "memory/";
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
     write(join(root, "memory", "rules.md"), "# Testing\n\n## Habits\n\n- Write the failing test first.\n");
-    write(join(root, "memory", "phases", "inception.md"), "- Every requirement has a checkable criterion.\n");
+    write(join(root, "memory", "phases", `${phaseFor("requirements-analysis")}.md`), "- Every requirement has a checkable criterion.\n");
     const errors = () => validatePluginRoot(root).errors;
     expect(errors()).toContainEqual(expect.objectContaining({ rule: "memory-level", file: ".aidlc-plugin/plugin.json" }));
 
@@ -435,7 +436,7 @@ describe("t314 standalone plugin validator", () => {
     // A core stage and the plugin's own stage are fine.
     const own = withStage((s) => s.replace("requires_stage: []", "requires_stage:\n  - build-and-test\n  - fixture-plugin-other-stage"));
     write(
-      join(own, "stages", "construction", "fixture-plugin-other-stage.md"),
+      join(own, "stages", "build", "fixture-plugin-other-stage.md"),
       stageBody("fixture-plugin-other-stage", { produces: ["fixture-plugin-other-output"] }),
     );
     expect(validatePluginRoot(own).errors).toEqual([]);
@@ -443,7 +444,7 @@ describe("t314 standalone plugin validator", () => {
 
   test("with a base declared, the base's stage in requires_stage is not checked and nothing is said", () => {
     const { root, baseRoot } = layered("zeta-reviewer-agent");
-    const stage = join(root, "stages", "construction", "fixture-plugin-stage.md");
+    const stage = join(root, "stages", "build", "fixture-plugin-stage.md");
     writeFileSync(
       stage,
       readFileSync(stage, "utf-8").replace("requires_stage: []", "requires_stage:\n  - zeta-example-stage"),
@@ -500,7 +501,7 @@ describe("t314 standalone plugin validator", () => {
     };
     const file = "scopes/fixture-plugin-validation.md";
     const { root, baseRoot } = layered("aidlc-quality-agent");
-    write(join(baseRoot, "stages", "inception", "zeta-intake.md"), "---\nslug: zeta-intake\nplugin: zeta\n---\n\n# Intake\n");
+    write(join(baseRoot, "stages", phaseFor("intent-capture"), "zeta-intake.md"), "---\nslug: zeta-intake\nplugin: zeta\n---\n\n# Intake\n");
     includes(root, "[zeta-intake, zeta-renamed]");
     const unchecked = validatePluginRoot(root);
     expect(unchecked.errors).toEqual([]);
@@ -606,7 +607,7 @@ describe("t314 standalone plugin validator", () => {
     expect(validatePluginRoot(longerPlugin.root, { baseRoot: longerPlugin.baseRoot }).errors.map((finding) => finding.message))
       .toEqual(['include_stages names "fixture-plugin-intake", which your fixture checkout has no stage for']);
     write(
-      join(longerPlugin.baseRoot, "stages", "inception", "fixture-plugin-intake.md"),
+      join(longerPlugin.baseRoot, "stages", phaseFor("intent-capture"), "fixture-plugin-intake.md"),
       "---\nslug: fixture-plugin-intake\nplugin: fixture\n---\n\n# Intake\n",
     );
     const checked = validatePluginRoot(longerPlugin.root, { baseRoot: longerPlugin.baseRoot });
@@ -619,18 +620,18 @@ describe("t314 standalone plugin validator", () => {
     const stage = join(
       root,
       "stages",
-      "construction",
+      "build",
       "fixture-plugin-stage.md",
     );
     writeFileSync(
       stage,
       readFileSync(stage, "utf-8").replace(
-        "phase: construction",
+        "phase: build",
         "phase: invalid",
       ),
     );
     write(
-      join(root, "stages", "construction", "fixture-plugin-broken.md"),
+      join(root, "stages", "build", "fixture-plugin-broken.md"),
       "# no frontmatter\n",
     );
     const rules = validatePluginRoot(root).errors.map(
@@ -642,7 +643,7 @@ describe("t314 standalone plugin validator", () => {
 
   test("b: a malformed ars: block is a stage-schema finding naming the field", () => {
     const root = fixture();
-    const stage = join(root, "stages", "construction", "fixture-plugin-stage.md");
+    const stage = join(root, "stages", "build", "fixture-plugin-stage.md");
     writeFileSync(
       stage,
       readFileSync(stage, "utf-8").replace(
@@ -674,7 +675,7 @@ describe("t314 standalone plugin validator", () => {
     const stage = join(
       root,
       "stages",
-      "construction",
+      "build",
       "fixture-plugin-stage.md",
     );
     writeFileSync(
@@ -698,7 +699,7 @@ describe("t314 standalone plugin validator", () => {
   test("contributions enforce core targets and artifact namespaces", () => {
     const root = fixture();
     write(
-      join(root, "contributions", "construction", "bad-target.md"),
+      join(root, "contributions", "build", "bad-target.md"),
       `---
 target: no-such-core-stage
 plugin: fixture-plugin
@@ -839,7 +840,7 @@ never read
       join(
         root,
         "stages",
-        "construction",
+        "build",
         "fixture-plugin-optional-stage.md",
       ),
       stageBody("fixture-plugin-optional-stage", {
@@ -880,7 +881,7 @@ never read
     const linkedStage = join(
       root,
       "stages",
-      "construction",
+      "build",
       "fixture-plugin-linked-stage.md",
     );
     symlinkSync(linkedStageSource, linkedStage, "file");

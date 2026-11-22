@@ -9,6 +9,7 @@ import { guardStandAsideSpeaks, knowledgeDir, parseStageFrontmatter } from "../.
 import { compareVersions } from "../../core/tools/aidlc-channel.ts";
 import { validateStageFrontmatter } from "../../core/tools/aidlc-stage-schema.ts";
 import { harnessIdFromTyped } from "../../core/tools/aidlc-runtime-paths.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { copyChannelOmits, projectionFiles } from "../../core/tools/aidlc-distribution.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
 
@@ -738,7 +739,7 @@ describe("documentation parity derives current behavior from authored implementa
       slug: string;
       phase: string;
     }>;
-    const operation = graph.filter((stage) => stage.phase === "operation").map((stage) => stage.slug);
+    const operation = graph.filter((stage) => stage.phase === phaseFor("observability-setup")).map((stage) => stage.slug);
     const design = [
       "user-stories",
       "refined-mockups",
@@ -1295,7 +1296,7 @@ describe("documentation parity derives current behavior from authored implementa
     // Authors copy these blocks into a stage: each must parse whole, comments
     // included, keep every documented child, and validate.
     const stage = (block: string): string =>
-      `---\nslug: syn-example\nphase: construction\nexecution: ALWAYS\ncondition: x\nlead_agent: aidlc-quality-agent\nmode: inline\n${block}inputs: a\noutputs: b\n---\n`;
+      `---\nslug: syn-example\nphase: ${phaseFor("code-generation")}\nexecution: ALWAYS\ncondition: x\nlead_agent: aidlc-quality-agent\nmode: inline\n${block}inputs: a\noutputs: b\n---\n`;
     for (const doc of ["docs/reference/15-stage-definition.md", "docs/harness-engineering/10-authoring-a-plugin.md"]) {
       const blocks = [...read(doc).matchAll(/```yaml\n(ars:\n[\s\S]*?)```/g)].map((match) => match[1]);
       expect(blocks.length, doc).toBeGreaterThan(0);
@@ -1423,7 +1424,7 @@ describe("documentation parity derives current behavior from authored implementa
   });
 
   test("the stage reference's Refined Mockups condition is the stage's own", () => {
-    const condition = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", "inception", "refined-mockups.md")).condition);
+    const condition = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", phaseFor("refined-mockups"), "refined-mockups.md")).condition);
     const metadata = sliceBetween(read("docs", "reference", "04-stages", "inception.md"), "## Stage 2.5: Refined Mockups", "### Purpose");
     const row = metadata.match(/^\| Condition\s*\| (.*?) \|\r?$/m)?.[1];
     expect(row).toBe(`CONDITIONAL -- ${condition[0].toLowerCase()}${condition.slice(1)}`);
@@ -1472,7 +1473,7 @@ describe("documentation parity derives current behavior from authored implementa
       slug: string;
       phase: string;
     }>;
-    const operation = graph.filter((stage) => stage.phase === "operation").map((stage) => stage.slug);
+    const operation = graph.filter((stage) => stage.phase === phaseFor("observability-setup")).map((stage) => stage.slug);
     const none = Object.keys(scopeGrid)
       .filter((scope) => operation.every((slug) => scopeGrid[scope].stages[slug] !== "EXECUTE"))
       .sort();

@@ -2082,7 +2082,7 @@ describe("t315 each link's exact command, and a held link lands again", () => {
   test("the stage file and the protocols hand no link-command template and say the strict rule as strict", () => {
     const read = (...parts: string[]): string => readFileSync(join(AIDLC_SRC, "aidlc-common", ...parts), "utf-8");
     const ensemble = read("protocols", "stage-protocol-ensemble.md");
-    const stage = read("stages", "inception", "reverse-engineering.md");
+    const stage = read("stages", phaseFor(RE_STAGE), `${RE_STAGE}.md`);
     const collaborators = read("protocols", "stage-protocol-collaborators.md");
     for (const text of [ensemble, stage, collaborators]) {
       expect(text).not.toMatch(/aidlc-log\.ts link/);

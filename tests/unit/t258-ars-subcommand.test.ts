@@ -246,7 +246,9 @@ describe("t258 ars arithmetic pin (in-process)", () => {
   });
 
   test("EV screen: spine always executes, all-zero scores collapse the ideation gate", () => {
-    const zero = computeArs({ iae: 0, csu: 0, ve: 0, r: 0, ua: 0 });
+    // Reverse Engineering sits in the discover phase and, with no project type,
+    // runs by its project-type role; a greenfield project leaves it out.
+    const zero = computeArs({ iae: 0, csu: 0, ve: 0, r: 0, ua: 0 }, { projectType: "greenfield" });
     expect(zero.screenGrid["code-generation"]).toBe("EXECUTE");
     expect(zero.screenGrid["build-and-test"]).toBe("EXECUTE");
     expect(zero.screenGrid["workspace-detection"]).toBe("EXECUTE");
@@ -709,7 +711,8 @@ describe("t258 stage-authored priors (spawn)", () => {
     const dir = mkdtempSync(join(tmpdir(), "t258-stage-priors-"));
     try {
       const gate = clone("approval-handoff", "t258-gate", "1.90", { targets: [], cost: null, role: "phase-gate" });
-      const zeros = ["--iae", "0", "--csu", "0", "--ve", "0", "--r", "0", "--ua", "0"];
+      // Greenfield, so Reverse Engineering (discover, project-type role) is out of the fold.
+      const zeros = ["--iae", "0", "--csu", "0", "--ve", "0", "--r", "0", "--ua", "0", "--project-type", "greenfield"];
       const idle = rows(runArs(zeros, { AIDLC_STAGE_GRAPH: writeGraph(dir, "idle.json", [gate]) }).stdout);
       const ideation = idle.evScreen.filter((x) => String(x.number).startsWith("1."));
       expect(ideation.filter((x) => x.decision !== "SKIP").map((x) => x.stage)).toEqual([]);

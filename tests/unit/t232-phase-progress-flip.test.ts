@@ -222,14 +222,16 @@ describe("t232 Phase Progress - creation seed", () => {
     expect(rowStatus(proj, "Operate")).toBe("Pending");
   });
 
-  test("bugfix scope: excluded Ideation Skipped, first post-init phase Active", () => {
+  test("bugfix scope: excluded Discover and Operate Skipped, first post-init phase Active", () => {
     const proj = createTestProject();
     tempDirs.push(proj);
     expect(runIntentCreate(proj, "bugfix").rc).toBe(0);
     expect(rowStatus(proj, "Initialization")).toBe("Verified");
-    expect(rowStatus(proj, "Ideation")).toBe("Skipped");
-    expect(rowStatus(proj, "Inception")).toBe("Active");
-    expect(rowStatus(proj, "Operation")).toBe("Pending");
+    // Greenfield skips reverse-engineering, bugfix's only Discover stage.
+    expect(rowStatus(proj, "Discover")).toBe("Skipped");
+    expect(rowStatus(proj, "Design")).toBe("Active");
+    expect(rowStatus(proj, "Build")).toBe("Pending");
+    expect(rowStatus(proj, "Operate")).toBe("Skipped");
   });
 });
 
@@ -299,20 +301,26 @@ describe("t232 Phase Progress - jump + complete-workflow", () => {
       "execute", "--target", "deployment-pipeline", "--direction", "forward",
     ]);
     expect(res.rc).toBe(0);
-    expect(rowStatus(proj, "Ideation")).toBe("Verified");
-    expect(rowStatus(proj, "Inception")).toBe("Skipped");
-    expect(rowStatus(proj, "Construction")).toBe("Skipped");
-    expect(rowStatus(proj, "Operation")).toBe("Active");
+    expect(rowStatus(proj, "Discover")).toBe("Verified");
+    expect(rowStatus(proj, "Design")).toBe("Skipped");
+    expect(rowStatus(proj, "Build")).toBe("Skipped");
+    expect(rowStatus(proj, "Test")).toBe("Skipped");
+    expect(rowStatus(proj, "Secure")).toBe("Skipped");
+    expect(rowStatus(proj, "Deploy")).toBe("Active");
+    expect(rowStatus(proj, "Operate")).toBe("Pending");
     // Each whole phase the jump passed over is recorded as skipped by it,
     // between the phase it left and the one it entered.
     expect(phaseRows(proj).slice(before)).toEqual([
-      "PHASE_COMPLETED ideation", "PHASE_VERIFIED",
-      "PHASE_SKIPPED inception", "PHASE_SKIPPED construction",
-      "PHASE_STARTED operation",
+      "PHASE_COMPLETED discover", "PHASE_VERIFIED",
+      "PHASE_SKIPPED design", "PHASE_SKIPPED build",
+      "PHASE_SKIPPED test", "PHASE_SKIPPED secure",
+      "PHASE_STARTED deploy",
     ]);
     expect(phaseSkips(proj)).toEqual([
-      "inception: Skipped by jump to deployment-pipeline (forward)",
-      "construction: Skipped by jump to deployment-pipeline (forward)",
+      "design: Skipped by jump to deployment-pipeline (forward)",
+      "build: Skipped by jump to deployment-pipeline (forward)",
+      "test: Skipped by jump to deployment-pipeline (forward)",
+      "secure: Skipped by jump to deployment-pipeline (forward)",
     ]);
   });
 
@@ -370,25 +378,27 @@ describe("t232 Phase Progress - a forward jump records only the phases it passes
   test("a phase the plan leaves out keeps creation's one row", () => {
     const proj = createTestProject();
     tempDirs.push(proj);
-    const inception = [
-      "reverse-engineering", "practices-discovery", "requirements-analysis",
-      "user-stories", "refined-mockups", "domain-design", "units-generation",
-      "contract-design", "delivery-planning",
+    // Every design-phase stage of the compiled graph (the seven-phase layout).
+    const design = [
+      "practices-discovery", "requirements-analysis", "user-stories",
+      "refined-mockups", "domain-design", "units-generation", "contract-design",
+      "delivery-planning", "functional-design", "nfr-requirements", "nfr-design",
+      "infrastructure-design",
     ];
     expect(
-      runIntentCreate(proj, "feature", ["--skip", inception.join(","), "--plan-name", "no-inception"]).rc,
+      runIntentCreate(proj, "feature", ["--skip", design.join(","), "--plan-name", "no-design"]).rc,
     ).toBe(0);
-    expect(phaseSkips(proj)).toEqual(["inception: this plan excludes inception"]);
+    expect(phaseSkips(proj)).toEqual(["design: this plan excludes design"]);
     const before = phaseRows(proj).length;
     const res = run(JUMP_TOOL, proj, [
-      "execute", "--target", "functional-design", "--direction", "forward",
+      "execute", "--target", "code-generation", "--direction", "forward",
     ]);
     expect(res.rc).toBe(0);
-    expect(rowStatus(proj, "Inception")).toBe("Skipped");
+    expect(rowStatus(proj, "Design")).toBe("Skipped");
     expect(phaseRows(proj).slice(before)).toEqual([
-      "PHASE_COMPLETED ideation", "PHASE_VERIFIED", "PHASE_STARTED construction",
+      "PHASE_COMPLETED discover", "PHASE_VERIFIED", "PHASE_STARTED build",
     ]);
-    expect(phaseSkips(proj)).toEqual(["inception: this plan excludes inception"]);
+    expect(phaseSkips(proj)).toEqual(["design: this plan excludes design"]);
   });
 });
 

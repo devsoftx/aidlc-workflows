@@ -26,6 +26,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pluginBuildLockPath } from "../../dist/claude/.claude/tools/aidlc-plugin-emit.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -117,7 +118,7 @@ function collidingStage(): string {
 slug: build-and-test
 name: Colliding Build and Test
 plugin: test-pro
-phase: construction
+phase: ${phaseFor("build-and-test")}
 execution: ALWAYS
 condition: always
 lead_agent: aidlc-quality-agent
@@ -182,7 +183,7 @@ describe("t316 standalone plugin compose test", () => {
     expect(json.graph.presentStages).toContain("test-pro-full-suite");
     expect(json.graph.presentScopes).toContain("test-pro-validation");
     expect(json.composedFiles).toContain(
-      ".claude/aidlc-common/stages/build/test-pro-integration.md",
+      ".claude/aidlc-common/stages/test/test-pro-integration.md",
     );
     expect(json.idempotent).toBe(true);
     expect(treeDigest(installRoot)).toBe(before);
@@ -256,7 +257,7 @@ describe("t316 standalone plugin compose test", () => {
   // so must the stage that requires it (#2303).
   test("a stage naming a core reviewer composes cleanly in a disposable Kiro IDE candidate", () => {
     const { pluginRoot, installRoot } = copyFixture("kiro-ide-core-reviewer", KIRO_IDE_INSTALL);
-    const stagePath = join(pluginRoot, "stages", "construction", "test-pro-integration.md");
+    const stagePath = join(pluginRoot, "stages", "test", "test-pro-integration.md");
     const stage = readFileSync(stagePath, "utf-8");
     const reviewed = stage.replace(
       /^mode: inline$/m,
@@ -310,7 +311,7 @@ describe("t316 standalone plugin compose test", () => {
     const stage = join(
       pluginRoot,
       "stages",
-      "construction",
+      phaseFor("build-and-test"),
       "build-and-test.md",
     );
     mkdirSync(dirname(stage), { recursive: true });
@@ -596,7 +597,7 @@ describe("t316 standalone plugin compose test", () => {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
     manifest.dependencies = ["core", "zeta@^0.1.0"];
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
-    const stagePath = join(pluginRoot, "stages", "construction", "alpha-example-stage.md");
+    const stagePath = join(pluginRoot, "stages", "build", "alpha-example-stage.md");
     writeFileSync(
       stagePath,
       readFileSync(stagePath, "utf-8")

@@ -33,8 +33,9 @@
 //       current feasibility) -> '"direction":"redo"' -> Test 3: same +
 //       parsed .direction === "redo" (STRONGER).
 //   - .sh Test 4  resolve --phase construction -> '"target_slug":
-//       "functional-design"' -> Test 4: same + parsed .target_slug ===
-//       "functional-design" (STRONGER: pins the first-in-scope-of-phase
+//       "functional-design"' -> Test 4: resolve --phase design (the phase the
+//       migrated graph puts practices-discovery in) -> parsed .target_slug ===
+//       "practices-discovery" (STRONGER: pins the first-in-scope-of-phase
 //       resolution exactly).
 //   - .sh Test 5  resolve --stage intent-capture --scope bugfix (SKIP) ||
 //       true -> "skipped for scope" -> Test 5: res.status === 1 (the .sh
@@ -105,9 +106,12 @@ import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts
 import {
   cleanupTestProject,
   createTestProject,
+  markGreenfieldReverseEngineeringSkipped,
+  seededRecordDir,
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -133,6 +137,15 @@ function proj(stateFixture: string): string {
   const p = createTestProject();
   tempDirs.push(p);
   seedStateFile(p, stateFixture);
+  return p;
+}
+
+// state-mid-ideation.md is Greenfield but still reads reverse-engineering EXECUTE;
+// the engine writes that row SKIP for a Greenfield project, so a forward jump
+// past feasibility starts its STAGE_SKIPPED rows at scope-definition.
+function midIdeationGreenfield(): string {
+  const p = proj("state-mid-ideation.md");
+  markGreenfieldReverseEngineeringSkipped(join(seededRecordDir(p), "aidlc-state.md"));
   return p;
 }
 
@@ -260,15 +273,15 @@ describe("t19 aidlc-jump resolve (migrated from t19-tool-jump.sh, plan 16)", () 
     expect(JSON.parse(r.stdout).direction).toBe("redo");
   });
 
-  test("4: resolve phase construction -> functional-design", () => {
+  test("4: resolve phase design -> practices-discovery", () => {
     const p = proj("state-initialization-done.md");
     const r = jump(
-      ["resolve", "--phase", "construction", "--scope", "feature"],
+      ["resolve", "--phase", phaseFor("practices-discovery"), "--scope", "feature"],
       p,
     );
     expect(r.status).toBe(0);
-    expect(r.stdout).toContain('"target_slug":"functional-design"');
-    expect(JSON.parse(r.stdout).target_slug).toBe("functional-design");
+    expect(r.stdout).toContain('"target_slug":"practices-discovery"');
+    expect(JSON.parse(r.stdout).target_slug).toBe("practices-discovery");
   });
 
   test("5: resolve rejects SKIP stage", () => {
@@ -304,7 +317,7 @@ describe("t19 aidlc-jump resolve (migrated from t19-tool-jump.sh, plan 16)", () 
 
 describe("t19 aidlc-jump execute (migrated from t19-tool-jump.sh, plan 16)", () => {
   test("7: forward marks intermediate [S]", () => {
-    const p = proj("state-mid-ideation.md");
+    const p = midIdeationGreenfield();
     const r = jump(
       [
         "execute",

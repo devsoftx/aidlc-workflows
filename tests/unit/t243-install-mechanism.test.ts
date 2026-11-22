@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmodSync,
+  chownSync,
   cpSync,
   existsSync,
   linkSync,
@@ -98,6 +99,7 @@ import { AIDLC_VERSION } from "../../core/tools/aidlc-version.ts";
 import { writeSessionPidEntry } from "../../core/tools/aidlc-lib.ts";
 import { copyChannelDispatcherCommands } from "../../core/tools/aidlc.ts";
 import { doctorCommandLines, vscodeVisibleOutput } from "../harness/vscode-output-trim.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   recoverWindowsUninstallContinuations,
   scanWindowsUninstallJournals,
@@ -178,6 +180,21 @@ function temp(prefix: string): string {
   const path = mkdtempSync(join(realpathSync(tmpdir()), prefix));
   temporary.push(path);
   return path;
+}
+
+// install.sh refuses a root uid unless the caller opts in, and a runner may be
+// root. A test about the install itself puts an `id` shim first on PATH that
+// reports a non-root uid, as a user's own shell does; the root refusal has its
+// own test, which fakes root the same way.
+const NON_ROOT_UID = 1000;
+function nonRootIdShim(): string {
+  const dir = temp("aidlc-t243-nonroot-id-");
+  writeFileSync(
+    join(dir, "id"),
+    `#!/bin/sh\nif [ "$1" = "-u" ]; then echo ${NON_ROOT_UID}; else exec /usr/bin/id "$@"; fi\n`,
+  );
+  chmodSync(join(dir, "id"), 0o755);
+  return dir;
 }
 
 function run(
@@ -3391,44 +3408,47 @@ describe("t243 project initialization", () => {
       mkdirSync(join(harness, "aidlc-common", "stages", phase), { recursive: true });
       writeFileSync(join(harness, "aidlc-common", "stages", phase, `${slug}.md`), `---\nslug: ${slug}\n---\n`);
     };
-    stage("inception", "requirements-analysis");
-    stage("construction", "nfr-requirements");
-    stage("construction", "build-and-test");
+    stage(phaseFor("requirements-analysis"), "requirements-analysis");
+    stage(phaseFor("nfr-requirements"), "nfr-requirements");
+    stage(phaseFor("build-and-test"), "build-and-test");
     mkdirSync(join(harness, "tools", "data"), { recursive: true });
     const graphPath = join(harness, "tools", "data", "stage-graph.json");
     writeFileSync(graphPath, JSON.stringify([
-      { slug: "requirements-analysis", number: "2.3" },
-      { slug: "nfr-requirements", number: "3.2" },
-      { slug: "build-and-test", number: "3.6" },
+      { slug: "requirements-analysis", number: "2.2" },
+      { slug: "nfr-requirements", number: "2.10" },
+      { slug: "build-and-test", number: "4.1" },
     ]));
     // Earlier phase, and lower number in the same phase: hold.
     expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "requirements-analysis")).toBe(true);
     expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "nfr-requirements")).toBe(true);
-    // Later in the same phase, a removed dependency, a self-edge: dropped.
+    expect(_requiresEdgeHoldsForTests(harness, "nfr-requirements", "requirements-analysis")).toBe(true);
+    // Later phase, a higher number in the same phase, a removed dependency, a
+    // self-edge: dropped.
     expect(_requiresEdgeHoldsForTests(harness, "nfr-requirements", "build-and-test")).toBe(false);
+    expect(_requiresEdgeHoldsForTests(harness, "requirements-analysis", "nfr-requirements")).toBe(false);
     expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "gone-stage")).toBe(false);
     expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "build-and-test")).toBe(false);
     // A pinned row keeps its number when its stage moves phase directory, so
-    // the full number decides: 4.7 in inception still compiles after 3.6.
-    stage("inception", "feedback-optimization");
+    // the full number decides: 7.3 under design still sorts after 4.1.
+    stage(phaseFor("requirements-analysis"), "feedback-optimization");
     // A plugin stage carried over from the project has no row in the staged
     // graph: it seeds past its phase max, after every pinned stage there.
-    stage("construction", "plugin-construction-stage");
-    stage("inception", "plugin-inception-stage");
+    stage(phaseFor("build-and-test"), "plugin-test-stage");
+    stage(phaseFor("requirements-analysis"), "plugin-design-stage");
     writeFileSync(graphPath, JSON.stringify([
-      { slug: "requirements-analysis", number: "2.3" },
-      { slug: "nfr-requirements", number: "3.2" },
-      { slug: "build-and-test", number: "3.6" },
-      { slug: "feedback-optimization", number: "4.7" },
+      { slug: "requirements-analysis", number: "2.2" },
+      { slug: "nfr-requirements", number: "2.10" },
+      { slug: "build-and-test", number: "4.1" },
+      { slug: "feedback-optimization", number: "7.3" },
     ]));
     expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "feedback-optimization")).toBe(false);
-    expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "plugin-construction-stage")).toBe(false);
-    expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "plugin-inception-stage")).toBe(true);
-    expect(_requiresEdgeHoldsForTests(harness, "plugin-construction-stage", "build-and-test")).toBe(true);
+    expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "plugin-test-stage")).toBe(false);
+    expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "plugin-design-stage")).toBe(true);
+    expect(_requiresEdgeHoldsForTests(harness, "plugin-test-stage", "build-and-test")).toBe(true);
     // Without a readable graph a same-phase edge cannot be verified, a
     // cross-phase one still can.
     writeFileSync(graphPath, "not json");
-    expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "nfr-requirements")).toBe(false);
+    expect(_requiresEdgeHoldsForTests(harness, "nfr-requirements", "requirements-analysis")).toBe(false);
     expect(_requiresEdgeHoldsForTests(harness, "build-and-test", "requirements-analysis")).toBe(true);
   });
 
@@ -3751,7 +3771,7 @@ describe("t243 project initialization", () => {
       const project = installedProject();
       const stageRel = ".claude/aidlc-common/stages/build/team-review.md";
       const shipped = readFileSync(
-        join(CLAUDE_RELEASE, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"),
+        join(CLAUDE_RELEASE, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"),
         "utf-8",
       );
       const stage = shipped
@@ -5795,7 +5815,7 @@ describe("t243 project initialization", () => {
     ], project);
     expect(first.status, first.stdout + first.stderr).toBe(0);
 
-    const rel = join(".claude", "aidlc-common", "stages", "construction", "nfr-requirements.md");
+    const rel = join(".claude", "aidlc-common", "stages", phaseFor("nfr-requirements"), "nfr-requirements.md");
     const stagePath = join(project, rel);
     const current = readFileSync(stagePath, "utf-8");
     writeFileSync(stagePath, current.replace(
@@ -5851,7 +5871,7 @@ describe("t243 project initialization", () => {
 
     // As compose writes it: the output, and an entry for the kinds the stage's
     // own required outputs cover.
-    const rel = join(".claude", "aidlc-common", "stages", "construction", "functional-design.md");
+    const rel = join(".claude", "aidlc-common", "stages", phaseFor("functional-design"), "functional-design.md");
     const stagePath = join(project, rel);
     const artifact = "test-pro-kinds-artifact";
     const withOutput = (content: string) =>
@@ -5911,7 +5931,7 @@ describe("t243 project initialization", () => {
     ], project);
     expect(first.status, first.stdout + first.stderr).toBe(0);
 
-    const rel = join(".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const rel = join(".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const stagePath = join(project, rel);
     const current = readFileSync(stagePath, "utf-8");
     const composed = current.replace(
@@ -5968,11 +5988,11 @@ describe("t243 project initialization", () => {
     ], project);
     expect(first.status, first.stdout + first.stderr).toBe(0);
 
-    // Three recorded edges on build-and-test (3.6): nfr-requirements (3.2),
-    // which the newer runtime declares itself; nfr-design (3.3), which stays
+    // Three recorded edges on build-and-test (4.1): nfr-requirements (2.10),
+    // which the newer runtime declares itself; nfr-design (2.11), which stays
     // test-pro's; and syn-gone-stage, which the newer runtime does not ship and
     // is a second plugin's only record.
-    const rel = join(".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const rel = join(".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const stagePath = join(project, rel);
     const edgesOf = (raw: string) => raw.match(/^requires_stage:\n((?: {2}- .+\n)*)/m)?.[1] ?? "";
     writeFileSync(stagePath, readFileSync(stagePath, "utf-8").replace(
@@ -6380,6 +6400,8 @@ describe("t243 release lifecycle", () => {
     );
     chmodSync(join(shims, "id"), 0o755);
     const userHome = temp("aidlc-t243-installer-root-user-home-");
+    // A home a non-root account owns: root may hand the temp home to another uid.
+    if (process.getuid?.() === 0) chownSync(userHome, NON_ROOT_UID, NON_ROOT_UID);
     const run = (args: string[], env: Record<string, string>) => {
       const childEnv: Record<string, string | undefined> = { ...process.env, ...env };
       childEnv.PATH = `${shims}${delimiter}${process.env.PATH ?? ""}`;
@@ -6597,6 +6619,7 @@ describe("t243 release lifecycle", () => {
     const machine = join(temp("aidlc-t243-installer-version-parent-"), "machine");
     const env = {
       ...process.env,
+      PATH: `${nonRootIdShim()}${delimiter}${process.env.PATH ?? ""}`,
       AIDLC_BINARY_SENTINEL: sentinel,
       AIDLC_INSTALL_ROOT: machine,
       AIDLC_BIN_DIR: join(machine, "bin"),
@@ -6729,7 +6752,8 @@ describe("t243 release lifecycle", () => {
         cwd: REPO_ROOT,
         env: {
           ...process.env,
-          PATH: "/usr/bin:/bin:/usr/sbin:/sbin",
+          // The shim leads so `id -u` reports a non-root uid, as nonRootIdShim explains.
+          PATH: `${nonRootIdShim()}:/usr/bin:/bin:/usr/sbin:/sbin`,
           NO_PROXY: "127.0.0.1",
           AIDLC_INSTALL_ROOT: machine,
           AIDLC_BIN_DIR: join(machine, "bin"),
@@ -9310,7 +9334,7 @@ describe("t243 projection channel", () => {
           "sha256:c7843449d549d4226be39169a9c31bf89694cd0b0754cb1ee68bdf61759538ce",
           "sha256:6de1298dfa4c2b6916f66d372b844faf23481c8f258eedd595c1423dab8e106d",
           "sha256:6d3bf5865f1836575715ea93d0042b9d08bcab918cc9a17a142848fe44e88bc7",
-          "sha256:04d7ca868197529d9839b62c902870157743c93a6c7fd134bcebcccc8a1d263f",
+          "sha256:2c9e4eb404e16b573a2891fd6287ff7ee5d928b7566030e6ede6aa9382fd2416",
         ],
       },
       kiro: {
@@ -9343,7 +9367,7 @@ describe("t243 projection channel", () => {
           "sha256:c8777a03505f11dcbb4fb339fef1a8072d9d2500ce401b69a06073b523ea2c67",
           "sha256:6de1298dfa4c2b6916f66d372b844faf23481c8f258eedd595c1423dab8e106d",
           "sha256:6d3bf5865f1836575715ea93d0042b9d08bcab918cc9a17a142848fe44e88bc7",
-          "sha256:04d7ca868197529d9839b62c902870157743c93a6c7fd134bcebcccc8a1d263f",
+          "sha256:2c9e4eb404e16b573a2891fd6287ff7ee5d928b7566030e6ede6aa9382fd2416",
         ],
       },
       "kiro-ide": {
@@ -9377,7 +9401,7 @@ describe("t243 projection channel", () => {
           "sha256:5f6f076a5a9d8a11e1078f568c9dee091f399d9999fae89e9dffa62d8697b797",
           "sha256:6de1298dfa4c2b6916f66d372b844faf23481c8f258eedd595c1423dab8e106d",
           "sha256:6d3bf5865f1836575715ea93d0042b9d08bcab918cc9a17a142848fe44e88bc7",
-          "sha256:04d7ca868197529d9839b62c902870157743c93a6c7fd134bcebcccc8a1d263f",
+          "sha256:2c9e4eb404e16b573a2891fd6287ff7ee5d928b7566030e6ede6aa9382fd2416",
         ],
       },
       cursor: {
@@ -9398,7 +9422,7 @@ describe("t243 projection channel", () => {
           "sha256:eeabf9f9555124da3f5ad34eb3a26b9fcbf3e2ccd65610cb9f0182701cf3ef48",
           "sha256:6de1298dfa4c2b6916f66d372b844faf23481c8f258eedd595c1423dab8e106d",
           "sha256:6d3bf5865f1836575715ea93d0042b9d08bcab918cc9a17a142848fe44e88bc7",
-          "sha256:04d7ca868197529d9839b62c902870157743c93a6c7fd134bcebcccc8a1d263f",
+          "sha256:2c9e4eb404e16b573a2891fd6287ff7ee5d928b7566030e6ede6aa9382fd2416",
         ],
         "install.ts": [
           "sha256:338e1d36257108ce908eb42992e87e5df7cf96003a45e04a72189e4d79110aba",
@@ -9422,7 +9446,7 @@ describe("t243 projection channel", () => {
           "sha256:c5b990429fe6dfa084d58fc592d1d22c1170cc35aa98f9cbb2c82b9924520eda",
           "sha256:6de1298dfa4c2b6916f66d372b844faf23481c8f258eedd595c1423dab8e106d",
           "sha256:6d3bf5865f1836575715ea93d0042b9d08bcab918cc9a17a142848fe44e88bc7",
-          "sha256:04d7ca868197529d9839b62c902870157743c93a6c7fd134bcebcccc8a1d263f",
+          "sha256:2c9e4eb404e16b573a2891fd6287ff7ee5d928b7566030e6ede6aa9382fd2416",
         ],
         "opencode.json": [
           "sha256:3be60b2be72b7a423fdaa90fd7d0d9d19613875c05ad5f1a2b6e20fcb54cd1e5",
@@ -9469,7 +9493,7 @@ describe("t243 projection channel", () => {
           "sha256:b0f5e39317a501be8567bbb0ecbdff651116abc28a500b9c451b732ca8f2e088",
           "sha256:b87a3ec2c39cb24074c6fa37f626e9d150d435d18069fbd0c762fdbd70719c5c",
           "sha256:a885fe6b7137ba16e0c24ce168b30ef5c780fe9991fc2d6bdff10cc15ad83c05",
-          "sha256:7b09e1c003a983ea0c328b7935b2305f35efb8a0927a0bc9f0f7c21c6b3e13d4",
+          "sha256:bfccba53a65513cb112594cf67bfeb64cd443b44af66c7c601b4f3bfd37ceb18",
         ],
       },
     };

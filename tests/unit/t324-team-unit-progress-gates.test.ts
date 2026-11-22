@@ -841,6 +841,11 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
         `- [S] build-and-test — SKIP
 - [S] ci-pipeline — SKIP
 
+### ${phaseFor("code-review").toUpperCase()} PHASE
+- [S] code-review — SKIP
+- [S] security-review — SKIP
+- [S] conformance-review — SKIP
+
 ### ${phaseFor("deployment-pipeline").toUpperCase()} PHASE
 - [S] deployment-pipeline — SKIP
 - [S] environment-provisioning — SKIP

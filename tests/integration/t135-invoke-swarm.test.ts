@@ -195,6 +195,34 @@ function setScope(proj: string, scope: string): void {
   writeFileSync(statePath, state);
 }
 
+/**
+ * The person has already answered who builds the Units ("Just me"), which the
+ * engine records as Unit Ownership, so the staffing question is not asked ahead
+ * of the walking-skeleton stance.
+ */
+function recordSoloUnitOwnership(proj: string): void {
+  const statePath = seededStateFile(proj);
+  const state = readFileSync(statePath, "utf-8").replace(
+    /^(- \*\*Scope\*\*: .*)$/m,
+    "$1\n- **Unit Ownership**: solo",
+  );
+  writeFileSync(statePath, state);
+}
+
+/**
+ * The per-unit design stages the bugfix scope grid skips. setScope rewrites only
+ * the Scope line, but the engine reads each stage's own plan suffix first, so the
+ * plan lines must say SKIP too, as init writes them for a bugfix intent.
+ */
+function skipBugfixDesignStages(proj: string): void {
+  const statePath = seededStateFile(proj);
+  const state = readFileSync(statePath, "utf-8").replace(
+    /^- \[.\] (functional-design|nfr-requirements|nfr-design|infrastructure-design) — EXECUTE$/gm,
+    "- [S] $1 — SKIP (bugfix scope)",
+  );
+  writeFileSync(statePath, state);
+}
+
 interface Directive {
   kind?: string;
   stage?: string;
@@ -726,11 +754,13 @@ describe("t135 engine — invoke-swarm emission gated on autonomy (migrated from
 
   test("7: skeleton-gate stage is never swarmed even under autonomy (structural guard)", () => {
     // bugfix scope: code-generation IS the walking-skeleton gate stage (the
-    // first Construction EXECUTE stage). Even WITH autonomy granted, the engine
+    // first per-unit EXECUTE stage). Even WITH autonomy granted, the engine
     // must NOT swarm it — Bolt 1 is always human-gated. Defense-in-depth that
     // does not rest on conductor ordering (tryEmitSwarm:isSkeletonGateStage).
     const proj = seedCodegenProject("autonomous");
     setScope(proj, "bugfix");
+    skipBugfixDesignStages(proj);
+    recordSoloUnitOwnership(proj);
     const { directive } = runNext(proj);
     expect(directive.kind).toBe("run-stage");
     expect(directive.kind).not.toBe("invoke-swarm");

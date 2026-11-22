@@ -219,7 +219,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
         "core",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("code-generation"),
         "code-generation.md",
       ),
       "utf-8",
@@ -230,7 +230,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
         "core",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       ),
       "utf-8",
@@ -253,7 +253,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
   test("stage prose judges a project-wide coverage floor on the full suite, not a Unit run", () => {
     const stage = (slug: string) =>
       readFileSync(
-        join(REPO_ROOT, "core", "aidlc-common", "stages", "construction", `${slug}.md`),
+        join(REPO_ROOT, "core", "aidlc-common", "stages", phaseFor(slug), `${slug}.md`),
         "utf-8",
       ).replace(/\s+/g, " ");
     const codeGeneration = stage("code-generation");
@@ -365,7 +365,7 @@ ${quotedExecutable} -e 'await Bun.write("${marker}", "passed")'
         "core",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       ),
       "utf-8",

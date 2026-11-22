@@ -2,7 +2,7 @@
 //
 // t207 - unit-kind schema/parse/compile/sensor axis. The units-generation edge
 // block gains an optional `kind:` key per unit (UNIT_KINDS enum) and the four
-// per-unit construction design stages gain a `produces_kinds:` frontmatter map.
+// per-unit design stages gain a `produces_kinds:` frontmatter map.
 // This file pins the STATIC surfaces: the parser learns the key (fail-loud on a
 // bad value), the runtime compile carries it onto bolt_dag.units[], the
 // gate-time edge-block sensor tolerates a valid kind and rejects an invalid one,
@@ -36,6 +36,7 @@ import {
   parseStageFrontmatter,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { applicableUnitKinds, validateStageFrontmatter } from "../../dist/claude/.claude/tools/aidlc-stage-schema.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   addPluginProducesKinds,
   removeOrphanProducesKinds,
@@ -73,7 +74,7 @@ function makeProject(): string {
   let proj = mkdtempSync(join(tmpdir(), "aidlc-t207-"));
   proj = toPortablePath(proj);
   tempDirs.push(proj);
-  mkdirSync(join(recordRoot(proj), "inception", "units-generation"), { recursive: true });
+  mkdirSync(join(recordRoot(proj), phaseFor("units-generation"), "units-generation"), { recursive: true });
   cpSync(STATE_FIXTURE, join(recordRoot(proj), "aidlc-state.md"));
   const shard = auditFilePath(proj);
   mkdirSync(dirname(shard), { recursive: true });
@@ -82,7 +83,7 @@ function makeProject(): string {
 }
 
 function uowdPath(proj: string): string {
-  return join(recordRoot(proj), "inception", "units-generation", "unit-of-work-dependency.md");
+  return join(recordRoot(proj), phaseFor("units-generation"), "units-generation", "unit-of-work-dependency.md");
 }
 
 function graphPath(proj: string): string {
@@ -234,7 +235,7 @@ describe("t207 unit-kind schema/parse/compile/sensor", () => {
   const STAGE_WITH_MAP = [
     "---",
     "slug: demo-stage",
-    "phase: construction",
+    `phase: ${phaseFor("functional-design")}`,
     "execution: CONDITIONAL",
     "condition: demo",
     "lead_agent: aidlc-architect-agent",
@@ -279,7 +280,7 @@ describe("t207 unit-kind schema/parse/compile/sensor", () => {
   function validate(overrides: Record<string, unknown>) {
     const base: Record<string, unknown> = {
       slug: "demo-stage",
-      phase: "construction",
+      phase: phaseFor("functional-design"),
       execution: "CONDITIONAL",
       condition: "demo",
       lead_agent: "aidlc-architect-agent",

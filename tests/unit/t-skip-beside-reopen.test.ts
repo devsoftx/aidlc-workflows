@@ -198,7 +198,7 @@ describe("t-skip-beside-reopen: a skip typed beside a plan switch on finished wo
     const step = next(proj);
     expect(step.kind, JSON.stringify(step)).toBe("run-stage");
     expect(step.stage).toBe("deployment-pipeline");
-    expect(step.narration).toContain("of 11");
+    expect(step.narration).toContain("of 12");
     expect(events(proj).filter((e) => e === "STAGE_STARTED:ci-pipeline")).toEqual([]);
     noDrift(proj);
   });

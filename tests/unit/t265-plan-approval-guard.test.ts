@@ -34,6 +34,7 @@ import {
 import { hostname, tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { renderGuardOperation } from "../../core/tools/aidlc-guard-operation.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   evaluatePlanApprovalDispatch,
   blockReason,
@@ -532,6 +533,16 @@ function scratchProject(): string {
     // decides the refusal's last clause); the setting resolver and what it imports.
     "aidlc-guard-switch.ts",
     "aidlc-question-store.ts",
+    // The hook loads the plan-approval ask lazily when a plan waits; a missing
+    // module makes it fail open with a drop row, so the copy must carry it.
+    "aidlc-plan-approval-ask.ts",
+    // aidlc-lib.ts loads the stage graph and its schemas on demand (the plan helpers live there).
+    "aidlc-graph.ts",
+    "aidlc-plugin-rules.ts",
+    "aidlc-rule-schema.ts",
+    "aidlc-sensor-schema.ts",
+    "aidlc-stage-schema.ts",
+    "aidlc-tiers.ts",
     // The question record the hook stamps turns from, and the tools write.
     "aidlc-questions.ts",
     // What the agent writes before a plan is picked, kept whatever the hook decides.
@@ -604,7 +615,7 @@ function seedState(proj: string, fields: { stage?: string; autonomy?: string; pl
 - **Scope**: poc
 ${planApproval}${autonomy}
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(stage).toUpperCase()}
 - **Current Stage**: ${stage}
 `,
     "utf-8",
@@ -728,8 +739,8 @@ function seedUnit(
 ): void {
   const dir =
     unit === null
-      ? join(proj, RECORD_REL, "construction", "code-generation")
-      : join(proj, RECORD_REL, "construction", unit, "code-generation");
+      ? join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation")
+      : join(proj, RECORD_REL, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   seedActiveDirective(proj, "code-generation", unit ?? undefined);
   const authority = resolveCodeGenerationAuthority(proj, { unit });
@@ -908,13 +919,13 @@ function seedTwoBoundIntents(proj: string): void {
     mkdirSync(join(intents, intent), { recursive: true });
     writeFileSync(
       join(intents, intent, "aidlc-state.md"),
-      `# AI-DLC State Tracking\n\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: ${stage}\n`,
+      `# AI-DLC State Tracking\n\n## Current Status\n- **Lifecycle Phase**: ${phaseFor(stage).toUpperCase()}\n- **Current Stage**: ${stage}\n`,
       "utf-8",
     );
   };
   seed("intent-a", "code-generation");
   seed("intent-b", "functional-design");
-  mkdirSync(join(intents, "intent-a", "construction", "todo-core", "code-generation"), { recursive: true });
+  mkdirSync(join(intents, "intent-a", phaseFor("code-generation"), "todo-core", "code-generation"), { recursive: true });
   setActiveIntentCursor(proj, "intent-a");
   const stateA = readFileSync(join(intents, "intent-a", "aidlc-state.md"), "utf-8");
   writeActiveDirectiveMarker(proj, {
@@ -1293,7 +1304,7 @@ describe("t265b hook lifecycle", () => {
       seedActiveDirective(proj, "code-generation");
       seedUnit(proj, null, { plan: true, answer: null });
       expect(codeGenerationRecordDir(proj, null)).toBe(
-        join(proj, RECORD_REL, "construction", "code-generation"),
+        join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation"),
       );
       expect(evaluateCodeGenerationApproval(proj, { unit: null }).ok).toBe(false);
       const fingerprint = spawnSync(
@@ -1437,7 +1448,7 @@ describe("t265b hook lifecycle", () => {
         }
         // The stage's own record files, read and written by file tool and by a
         // shell the guard reads, pass under every Guard Policy.
-        const record = join(RECORD_REL, "construction", "code-generation");
+        const record = join(RECORD_REL, phaseFor("code-generation"), "code-generation");
         const trace = join(record, "traceability.json");
         writeFileSync(join(proj, trace), "{}\n");
         // A shell line names the file with forward slashes, as an agent writes it
@@ -1723,7 +1734,7 @@ describe("t265b hook lifecycle", () => {
           const result = runHook(proj, BASH(admitted));
           expect(result.code, `[${checkbox}] ${admitted}\n${result.stderr}`).toBe(0);
         }
-        const plan = join(proj, RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+        const plan = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
         // A completion the person did not pick is the engine's to refuse:
         // `report` holds it while the plan waits.
         for (const completion of [
@@ -2368,7 +2379,7 @@ describe("t265b hook lifecycle", () => {
       // Nothing is built for them: the code waits with the person's sentence.
       // The plan file is AI-DLC's record and passes (a changed plan is asked
       // about again).
-      const plan = join(proj, RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+      const plan = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
       expect(runHook(proj, WRITE(plan)).code).toBe(0);
       const result = runHook(proj, WRITE(join(proj, "src", "inline.ts")));
       expect(result.code).toBe(2);
@@ -2412,7 +2423,7 @@ describe("t265b hook lifecycle", () => {
           expect(result.code, `${doc}\n${result.stderr}`).toBe(0);
         }
         // AI-DLC's records pass: the questions file holds no receipt.
-        const record = join(proj, RECORD_REL, "construction", "code-generation");
+        const record = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation");
         const questions = runHook(proj, WRITE(join(record, "code-generation-questions.md")));
         expect(questions.code, questions.stderr).toBe(0);
         // A completion report is the engine's own command: `report` holds it
@@ -2531,7 +2542,7 @@ describe("t265b hook lifecycle", () => {
         }],
         ["the approved plan's Testing Contract was edited", (proj) => {
           seedUnit(proj, "todo-core", { plan: true, answer: "Approve Plan" });
-          const plan = join(proj, RECORD_REL, "construction", "todo-core", "code-generation", "code-generation-plan.md");
+          const plan = join(proj, RECORD_REL, phaseFor("code-generation"), "todo-core", "code-generation", "code-generation-plan.md");
           writeFileSync(plan, readFileSync(plan, "utf-8").replace('"contract_sha256"', '"contractSha256"'), "utf-8");
         }],
       ];
@@ -2903,7 +2914,7 @@ describe("t265b hook lifecycle", () => {
         seedActiveDirective(proj, "code-generation");
         seedUnit(proj, null, { plan: true, answer: null });
         const short = windowsShortSpelling(proj);
-        const plan = join(RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+        const plan = join(RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
         // Every row's exit code beside the one expected, so one run shows them all.
         const expected: Record<string, number> = {};
         const actual: Record<string, number> = {};
@@ -2951,7 +2962,7 @@ describe("t265b hook lifecycle", () => {
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
       seedUnit(proj, null, { plan: true, answer: null });
-      const record = join(RECORD_REL, "construction", "code-generation");
+      const record = join(RECORD_REL, phaseFor("code-generation"), "code-generation");
       const plan = join(record, "code-generation-plan.md");
       // A link inside the project is still a link, whichever spelling reaches it.
       mkdirSync(join(proj, "src"), { recursive: true });
@@ -3008,7 +3019,7 @@ describe("t265b hook lifecycle", () => {
         seedState(proj);
         seedActiveDirective(proj, "code-generation");
         seedUnit(proj, null, { plan: true, answer: null });
-        const plan = join(RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+        const plan = join(RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
         const expected: Record<string, number> = {};
         const actual: Record<string, number> = {};
         const stderr: Record<string, string> = {};
@@ -3232,7 +3243,7 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(edited);
       seedUnit(edited, null, { plan: true, answer: "Approve Plan" });
-      const planPath = join(edited, RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+      const planPath = join(edited, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
       writeFileSync(planPath, `${readFileSync(planPath, "utf-8")}- [ ] Step 2\n`, "utf-8");
       const payload = WRITE(join(edited, "src", "inline.ts"));
       const main = runHook(edited, payload);
@@ -3267,7 +3278,7 @@ describe("t265b hook lifecycle", () => {
       // Approved, then the plan was emptied: a lowered fence has nothing to
       // build from.
       writeFileSync(
-        join(emptied, RECORD_REL, "construction", "code-generation", "code-generation-plan.md"),
+        join(emptied, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md"),
         "  \n",
         "utf-8",
       );
@@ -3295,7 +3306,7 @@ describe("t265b hook lifecycle", () => {
       const questions = join(
         proj,
         RECORD_REL,
-        "construction",
+        phaseFor("code-generation"),
         "code-generation",
         "code-generation-questions.md",
       );
@@ -3578,7 +3589,7 @@ describe("t265b hook lifecycle", () => {
       seedActiveDirective(proj, "code-generation");
       mkdirSync(join(proj, "other"));
       const windows = process.platform === "win32";
-      const rec = join(RECORD_REL, "construction", "code-generation").replaceAll("/", "\\");
+      const rec = join(RECORD_REL, phaseFor("code-generation"), "code-generation").replaceAll("/", "\\");
       const pwsh = (command: string, cwd = proj) =>
         runHook(proj, { ...BASH(command), cwd, aidlc_shell: "powershell" });
       for (const [command, cwd] of [
@@ -3635,7 +3646,7 @@ describe("t265b hook lifecycle", () => {
     writeFileSync(
       join(record, "aidlc-state.md"),
       "# AI-DLC State Tracking\n\n## Project Information\n- **Project**: t265 fixture\n- **Scope**: bugfix\n\n" +
-        "## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: code-generation\n",
+        `## Current Status\n- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}\n- **Current Stage**: code-generation\n`,
       "utf-8",
     );
     writeActiveDirectiveMarker(proj, {
@@ -3643,7 +3654,7 @@ describe("t265b hook lifecycle", () => {
       stage: "code-generation",
       state_sha256: stateDigest(readFileSync(join(record, "aidlc-state.md"), "utf-8")),
     });
-    mkdirSync(join(record, "construction", "code-generation"), { recursive: true });
+    mkdirSync(join(record, phaseFor("code-generation"), "code-generation"), { recursive: true });
     return `aidlc/spaces/default/intents/${intent}/build/code-generation/code-generation-plan.md`;
   };
 
@@ -5063,7 +5074,7 @@ describe("t265b hook lifecycle", () => {
       const instructions = join(
         proj,
         RECORD_REL,
-        "construction",
+        phaseFor("code-generation"),
         "todo-core",
         "code-generation",
         "unit-test-instructions.md",
@@ -5202,7 +5213,7 @@ describe("t265b the stage diary during a per-Unit plan wait", () => {
           writeFileSync(statePath, readFileSync(statePath, "utf-8")
             .replace("- **Scope**: poc\n", `- **Scope**: poc\n- **Guard Policy**: ${policy}\n`), "utf-8");
           seed(proj);
-          const stageDir = join(proj, RECORD_REL, "construction", "code-generation");
+          const stageDir = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation");
           const diary = runHook(proj, WRITE(join(stageDir, "memory.md")));
           expect(diary.code, `${state}\n${diary.stderr}`).toBe(0);
           expect(diary.stderr, state).toBe("");
@@ -5353,7 +5364,7 @@ describe("t265c registrations", () => {
         ".claude",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("code-generation"),
         "code-generation.md",
       ),
       "utf-8",
@@ -5380,7 +5391,7 @@ describe("t265c registrations", () => {
           harness.capabilities.harnessDir,
           "aidlc-common",
           "stages",
-          "construction",
+          phaseFor("code-generation"),
           "code-generation.md",
         ),
         "utf-8",

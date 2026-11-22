@@ -507,11 +507,13 @@ export function seedStateFile(proj: string, fixturePath: string): void {
  * Mark a seeded state file's Reverse Engineering row SKIP, the way the engine
  * writes it for a Greenfield project. state-mid-ideation.md is Greenfield but
  * still reads EXECUTE, so a test that moves past feasibility uses this to match
- * a real Greenfield state. Throws if the row is not in the file.
+ * a real Greenfield state. Throws if the file has neither row.
  */
 export function markGreenfieldReverseEngineeringSkipped(stateFile: string): void {
   const from = "- [ ] reverse-engineering — EXECUTE";
   const body = readFileSync(stateFile, "utf-8");
+  // A fixture that already writes the row SKIP needs no change.
+  if (/^- \[.\] reverse-engineering — SKIP\b/m.test(body)) return;
   if (!body.includes(from)) throw new Error(`no "${from}" row in ${stateFile}`);
   writeFileSync(stateFile, body.replace(from, "- [ ] reverse-engineering — SKIP"));
 }

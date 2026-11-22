@@ -33,7 +33,7 @@ import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts
 import { setDefaultTimeout, afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import {
   AIDLC_SRC, cleanupTestProject, createTestProject,
@@ -61,6 +61,7 @@ import {
   resolveCodeGenerationAuthority,
   resolveTestingPosture,
 } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -84,7 +85,7 @@ afterAll(() => {
   for (const d of tempDirs) cleanupTestProject(d);
 });
 
-/** Check the operation itself: chmod/ACL success does not prove access was denied. */
+/** Check the operation itself: a fault that leaves the operation working proves nothing. */
 function assertFixtureUnavailable(path: string, mode: "create" | "read"): void {
   const probe = mode === "create" ? join(path, `.t166-create-probe-${randomUUID()}`) : path;
   let failure: unknown;
@@ -105,18 +106,19 @@ function assertFixtureUnavailable(path: string, mode: "create" | "read"): void {
   }
 }
 
-/** Force real filesystem unavailability without changing Windows token privileges. */
+/**
+ * Force real filesystem unavailability with a path-kind fault: a file where a
+ * directory must be (create), or a directory where a file must be (read). Unlike
+ * a chmod, this holds for root, whose permission bits are not enforced, and for
+ * Windows, whose elevated token ignores deny ACEs. The original object is moved
+ * within its parent so its contents and ACL survive, and it is put back afterwards.
+ */
 function withUnavailableFixtureAccess<T>(
   paths: string[],
   mode: "create" | "read",
   action: () => T,
 ): T {
   if (paths.length === 0) throw new Error(`t166 ${mode} fixture has no target paths`);
-  const windows = process.platform === "win32";
-  // With an elevated Windows token, deny ACEs and sharing restrictions did not
-  // block Bun reads. Use explicit path-kind faults instead: a file
-  // cannot contain a worktree, and a directory cannot be read as an audit shard.
-  // Move the original object within its parent so its contents and ACL survive.
   const originals: Array<{
     path: string;
     backup: string;
@@ -125,38 +127,30 @@ function withUnavailableFixtureAccess<T>(
     dev: number;
     bytes: Buffer | null;
   }> = [];
-  const chmodded: string[] = [];
   const restoreErrors: unknown[] = [];
   let actionResult: T | undefined;
   let actionFailed = false;
   let actionError: unknown;
   try {
-    if (!windows) {
-      for (const path of paths) {
-        chmodSync(path, mode === "create" ? 0o500 : 0o000);
-        chmodded.push(path);
+    for (const path of paths) {
+      const stat = lstatSync(path);
+      if (mode === "create" ? !stat.isDirectory() : !stat.isFile()) {
+        throw new Error(`t166 ${mode} fixture has the wrong original path kind: ${path}`);
       }
-    } else {
-      for (const path of paths) {
-        const stat = lstatSync(path);
-        if (mode === "create" ? !stat.isDirectory() : !stat.isFile()) {
-          throw new Error(`t166 ${mode} fixture has the wrong original path kind: ${path}`);
-        }
-        // Backups do not end in .md, so audit enumeration cannot read them instead.
-        const original = {
-          path,
-          backup: join(dirname(path), `.t166-saved-${randomUUID()}`),
-          moved: false,
-          ino: stat.ino,
-          dev: stat.dev,
-          bytes: mode === "read" ? readFileSync(path) : null,
-        };
-        originals.push(original);
-        renameSync(path, original.backup);
-        original.moved = true;
-        if (mode === "create") writeFileSync(path, "t166 blocked worktree parent\n", { flag: "wx" });
-        else mkdirSync(path);
-      }
+      // Backups do not end in .md, so audit enumeration cannot read them instead.
+      const original = {
+        path,
+        backup: join(dirname(path), `.t166-saved-${randomUUID()}`),
+        moved: false,
+        ino: stat.ino,
+        dev: stat.dev,
+        bytes: mode === "read" ? readFileSync(path) : null,
+      };
+      originals.push(original);
+      renameSync(path, original.backup);
+      original.moved = true;
+      if (mode === "create") writeFileSync(path, "t166 blocked worktree parent\n", { flag: "wx" });
+      else mkdirSync(path);
     }
     for (const path of paths) assertFixtureUnavailable(path, mode);
     actionResult = action();
@@ -164,13 +158,6 @@ function withUnavailableFixtureAccess<T>(
     actionFailed = true;
     actionError = error;
   } finally {
-    for (const path of chmodded) {
-      try {
-        chmodSync(path, mode === "create" ? 0o700 : 0o600);
-      } catch (error) {
-        restoreErrors.push(error);
-      }
-    }
     for (const original of originals.reverse()) {
       if (!original.moved) continue;
       try {
@@ -301,7 +288,7 @@ function activeRecord(proj: string): string {
 
 function seedOneUnitDag(proj: string, unit: string, kind?: string): void {
   const record = activeRecord(proj);
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(
     join(dag, "unit-of-work-dependency.md"),
@@ -379,7 +366,7 @@ function recordMainReview(
   sourcePath: string,
 ): RunResult {
   const record = activeRecord(proj);
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md"]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), `# ${name}\n`);
@@ -430,7 +417,7 @@ function recordWorktreeReview(
   sourcePath: string,
 ): RunResult {
   const record = activeRecord(wt);
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md"]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), `# ${name}\n`);

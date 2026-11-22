@@ -41,8 +41,14 @@ import { stateDigest, writeActiveDirectiveMarker } from "../../dist/claude/.clau
 import { hookGroupMembers } from "../../core/tools/aidlc-command.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
 import kiroManifest from "../../harness/kiro/manifest.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
+
+// UNIT_PHASE is the folder per-unit records sit in (UNIT_RECORD_PHASES); OTHER_PHASE
+// is a phase whose folders hold no unit work.
+const UNIT_PHASE = phaseFor("functional-design");
+const OTHER_PHASE = phaseFor("intent-capture");
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const AIDLC_SRC = join(REPO_ROOT, "dist", "claude", ".claude");
@@ -54,7 +60,7 @@ const SCOPE_CONTEXT: ScopeContext = {
 };
 const CURRENT_UNIT_CONTEXT: ScopeContext = {
   recordRoot: RECORD_ROOT,
-  cwd: join(RECORD_ROOT, "construction", "U03-scoring"),
+  cwd: join(RECORD_ROOT, UNIT_PHASE, "U03-scoring"),
 };
 
 // ---------------------------------------------------------------------------
@@ -98,7 +104,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
       block: false,
     },
     {
-      name: "shared inception contract allowed (no construction/ component)",
+      name: "shared stage contract allowed (no design/ unit component)",
       tool: "Read",
       input: { file_path: "aidlc/spaces/default/intents/x/design/domain-design/components.md" },
       block: false,
@@ -118,7 +124,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "sibling NotebookRead blocked",
       tool: "NotebookRead",
-      input: { notebook_path: "construction/U05-api/analysis.ipynb" },
+      input: { notebook_path: `${UNIT_PHASE}/U05-api/analysis.ipynb` },
       block: true,
     },
     {
@@ -130,20 +136,20 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "sibling LS blocked",
       tool: "LS",
-      input: { path: "construction/U05-api" },
+      input: { path: `${UNIT_PHASE}/U05-api` },
       block: true,
     },
     {
-      name: "source-tree read outside construction/ allowed",
+      name: "source-tree read outside design/ allowed",
       tool: "Read",
-      input: { file_path: "src/construction-notes/readme.md" },
+      input: { file_path: `src/${UNIT_PHASE}-notes/readme.md` },
       block: false,
     },
     // -- Bash ------------------------------------------------------------------
     {
       name: "cross-unit glob in Bash blocked (the field access pattern)",
       tool: "Bash",
-      input: { command: "grep -rn 'instance_type' construction/*/*/*.md inception/*/*.md" },
+      input: { command: `grep -rn 'instance_type' ${UNIT_PHASE}/*/*/*.md ${OTHER_PHASE}/*/*.md` },
       block: true,
     },
     {
@@ -155,13 +161,13 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "current-unit grep in Bash allowed",
       tool: "Bash",
-      input: { command: "grep -rn latency construction/U03-scoring/" },
+      input: { command: `grep -rn latency ${UNIT_PHASE}/U03-scoring/` },
       block: false,
     },
     {
-      name: "bare construction/ sweep root blocked",
+      name: "bare design/ sweep root blocked",
       tool: "Bash",
-      input: { command: "grep -rn endpoint construction/ -l" },
+      input: { command: `grep -rn endpoint ${UNIT_PHASE}/ -l` },
       block: true,
     },
     {
@@ -177,51 +183,51 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
       block: true,
     },
     {
-      name: "validation tool run with no construction/ tokens allowed",
+      name: "validation tool run with no design/ tokens allowed",
       tool: "Bash",
       input: { command: "bun .claude/tools/aidlc-validate.ts --stage nfr-requirements" },
       block: false,
     },
     {
-      name: "the word construction without a slash is content, not a path",
+      name: "the word design without a slash is content, not a path",
       tool: "Bash",
-      input: { command: "grep -rn 'construction phase' aidlc/spaces/default/intents/x/inception/" },
+      input: { command: `grep -rn '${UNIT_PHASE} phase' aidlc/spaces/default/intents/x/${OTHER_PHASE}/` },
       block: false,
     },
     {
-      name: "ancestor-root recursive grep blocked even without a construction token",
+      name: "ancestor-root recursive grep blocked even without a design token",
       tool: "Bash",
       input: { command: "grep -rn X ." },
       block: true,
     },
     {
-      name: "ancestor-root rg blocked even without a construction token",
+      name: "ancestor-root rg blocked even without a design token",
       tool: "Bash",
       input: { command: "rg Contract aidlc/spaces/default/intents" },
       block: true,
     },
     {
-      name: "ancestor-root find blocked even without a construction token",
+      name: "ancestor-root find blocked even without a design token",
       tool: "Bash",
       input: { command: "find aidlc/spaces/default/intents -name design.md -exec cat {} +" },
       block: true,
     },
     {
-      name: "wildcard inside the construction component blocked",
+      name: "wildcard inside the design component blocked",
       tool: "Bash",
-      input: { command: "cat construction*/U01-infra/functional-design/design.md" },
+      input: { command: `cat ${UNIT_PHASE}*/U01-infra/functional-design/design.md` },
       block: true,
     },
     {
-      name: "quote-split construction component blocked",
+      name: "quote-split design component blocked",
       tool: "Bash",
-      input: { command: 'cat "construction"/U01-infra/functional-design/design2.md' },
+      input: { command: `cat "${UNIT_PHASE}"/U01-infra/functional-design/design2.md` },
       block: true,
     },
     {
       name: "cd into current unit then relative sibling cat blocked",
       tool: "Bash",
-      input: { command: "cd construction/U03-scoring && cat ../U01-infra/functional-design/design2.md" },
+      input: { command: `cd ${UNIT_PHASE}/U03-scoring && cat ../U01-infra/functional-design/design2.md` },
       block: true,
     },
     // -- piped stdin-reading search (no path operand) --------------------------
@@ -231,19 +237,19 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "piped no-operand grep (2nd segment) reads stdin -> allowed",
       tool: "Bash",
-      input: { command: "grep -rn latency construction/U03-scoring/ | grep ml" },
+      input: { command: `grep -rn latency ${UNIT_PHASE}/U03-scoring/ | grep ml` },
       block: false,
     },
     {
       name: "piped no-operand rg (2nd segment) reads stdin -> allowed",
       tool: "Bash",
-      input: { command: "cat construction/U03-scoring/nfr.md | rg endpoint" },
+      input: { command: `cat ${UNIT_PHASE}/U03-scoring/nfr.md | rg endpoint` },
       block: false,
     },
     {
       name: "three-stage pipeline, final no-operand grep reads stdin -> allowed",
       tool: "Bash",
-      input: { command: "grep -rn x construction/U03-scoring/ | sort | grep y" },
+      input: { command: `grep -rn x ${UNIT_PHASE}/U03-scoring/ | sort | grep y` },
       block: false,
     },
     {
@@ -274,7 +280,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "Glob scoped to the current unit allowed",
       tool: "Glob",
-      input: { pattern: "construction/U03-scoring/**/*.md" },
+      input: { pattern: `${UNIT_PHASE}/U03-scoring/**/*.md` },
       block: false,
     },
     {
@@ -286,25 +292,25 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "pathless Glob explicitly constrained to the current unit allowed",
       tool: "Glob",
-      input: { pattern: "construction/U03-scoring/**/*.md" },
+      input: { pattern: `${UNIT_PHASE}/U03-scoring/**/*.md` },
       block: false,
     },
     {
       name: "Grep with a sibling search-root path blocked",
       tool: "Grep",
-      input: { pattern: "publish envelope", path: "construction/U04-events" },
+      input: { pattern: "publish envelope", path: `${UNIT_PHASE}/U04-events` },
       block: true,
     },
     {
       name: "Grep content-regex mentioning a sibling path is NOT a file access",
       tool: "Grep",
-      input: { pattern: "construction/U01-infra", path: "construction/U03-scoring" },
+      input: { pattern: `${UNIT_PHASE}/U01-infra`, path: `${UNIT_PHASE}/U03-scoring` },
       block: false,
     },
     {
-      name: "Grep with the bare construction dir as its search root blocked (sweep root)",
+      name: "Grep with the bare design dir as its search root blocked (sweep root)",
       tool: "Grep",
-      input: { pattern: "endpoint", path: "construction" },
+      input: { pattern: "endpoint", path: UNIT_PHASE },
       block: true,
     },
     {
@@ -317,49 +323,49 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "dot-dot traversal out of the current unit blocked (path tool)",
       tool: "Read",
-      input: { file_path: "construction/U03-scoring/../U01-infra/design.md" },
+      input: { file_path: `${UNIT_PHASE}/U03-scoring/../U01-infra/design.md` },
       block: true,
     },
     {
       name: "dot-dot traversal out of the current unit blocked (Bash)",
       tool: "Bash",
-      input: { command: "cat construction/U03-scoring/../U05-api/design.md" },
+      input: { command: `cat ${UNIT_PHASE}/U03-scoring/../U05-api/design.md` },
       block: true,
     },
     {
-      name: "bare construction search root blocked (grep with no trailing slash)",
+      name: "bare design search root blocked (grep with no trailing slash)",
       tool: "Bash",
-      input: { command: "grep -rn TODO construction" },
+      input: { command: `grep -rn TODO ${UNIT_PHASE}` },
       block: true,
     },
     {
-      name: "bare construction search root blocked (find)",
+      name: "bare design search root blocked (find)",
       tool: "Bash",
-      input: { command: "find construction -type f -name '*.md'" },
+      input: { command: `find ${UNIT_PHASE} -type f -name '*.md'` },
       block: true,
     },
     {
       name: "bare root via ./ blocked",
       tool: "Bash",
-      input: { command: "ls ./construction" },
+      input: { command: `ls ./${UNIT_PHASE}` },
       block: true,
     },
     {
       name: "bare root as a path tail blocked",
       tool: "Bash",
-      input: { command: "ls aidlc/spaces/x/construction" },
+      input: { command: `ls aidlc/spaces/x/${UNIT_PHASE}` },
       block: true,
     },
     {
-      name: "case variant of construction and sibling unit blocked",
+      name: "case variant of the unit folder and sibling unit blocked",
       tool: "Read",
-      input: { file_path: "Construction/U02-api/design.md" },
+      input: { file_path: `${UNIT_PHASE.toUpperCase()}/U02-api/design.md` },
       block: true,
     },
     {
       name: "case variant of current unit allowed",
       tool: "Read",
-      input: { file_path: "construction/u01-infra/design.md" },
+      input: { file_path: `${UNIT_PHASE}/u01-infra/design.md` },
       block: false,
       dispatch: { unit: "U01-infra", exempt: [] },
     },
@@ -373,14 +379,14 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
     {
       name: "the bare word inside a quoted content regex is NOT a search root",
       tool: "Bash",
-      input: { command: "grep -rn 'built in construction phase' inception/" },
+      input: { command: `grep -rn 'built in ${UNIT_PHASE} phase' ${OTHER_PHASE}/` },
       block: false,
     },
     // -- unknown tools pass -----------------------------------------------------
     {
       name: "unknown tool never blocked",
       tool: "WebSearch",
-      input: { query: "construction/*/design" },
+      input: { query: `${UNIT_PHASE}/*/design` },
       block: false,
     },
   ];
@@ -395,9 +401,9 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
 
   test("blockReason names the unit and the offending target", () => {
     const full: ReviewerDispatch = { reviewer: "aidlc-architecture-reviewer-agent", stage: "s", ...DISPATCH };
-    const reason = blockReason("construction/*/*/*.md", full);
+    const reason = blockReason(`${UNIT_PHASE}/*/*/*.md`, full);
     expect(reason).toContain("U03-scoring");
-    expect(reason).toContain("construction/*/*/*.md");
+    expect(reason).toContain(`${UNIT_PHASE}/*/*/*.md`);
     expect(reason).toContain("the files supplied with the review");
   });
 
@@ -415,7 +421,7 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
 
   test("blockReason flags a defaulted target as implicit, not typed", () => {
     const full: ReviewerDispatch = { reviewer: "aidlc-architecture-reviewer-agent", stage: "s", ...DISPATCH };
-    const typed = blockReason("construction/U01-infra/design.md", full, false);
+    const typed = blockReason(`${UNIT_PHASE}/U01-infra/design.md`, full, false);
     expect(typed).not.toContain("implicit recursive search");
     const defaulted = blockReason(".", full, true);
     expect(defaulted).toContain("names no path");
@@ -440,8 +446,8 @@ describe("t221 (a) evaluateReviewerScope decision table", () => {
 // ---------------------------------------------------------------------------
 
 describe("t221 piped search options preserve the reviewer boundary", () => {
-  const own = "construction/U03-scoring/nfr.md";
-  const sibling = "construction/U01-infra/private.md";
+  const own = `${UNIT_PHASE}/U03-scoring/nfr.md`;
+  const sibling = `${UNIT_PHASE}/U01-infra/private.md`;
   const pipe = `cat ${own} |`;
   const judge = (command: string) =>
     evaluateReviewerScope("Bash", { command }, DISPATCH, SCOPE_CONTEXT);
@@ -498,8 +504,8 @@ describe("t221 piped search options preserve the reviewer boundary", () => {
   }
   test("rg filesystem modes preserve a current-unit glob constraint", () => {
     for (const options of ["--files", "-f -"]) {
-      expect(judge(`${pipe} rg ${options} -g 'construction/U03-scoring/**'`).block).toBe(false);
-      expect(judge(`${pipe} rg ${options} --glob='construction/U01-infra/**'`).block).toBe(true);
+      expect(judge(`${pipe} rg ${options} -g '${UNIT_PHASE}/U03-scoring/**'`).block).toBe(false);
+      expect(judge(`${pipe} rg ${options} --glob='${UNIT_PHASE}/U01-infra/**'`).block).toBe(true);
     }
   });
   test("option values are not parsed as more flags", () => {
@@ -710,7 +716,7 @@ function runHook(
 const SIBLING_SWEEP = {
   hook_event_name: "PreToolUse",
   tool_name: "Bash",
-  tool_input: { command: "grep -rn x construction/*/*/*.md" },
+  tool_input: { command: `grep -rn x ${UNIT_PHASE}/*/*/*.md` },
   agent_type: "aidlc-architecture-reviewer-agent",
 };
 
@@ -729,13 +735,13 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     seedRecord(proj);
     const r = runHook(proj, {
       ...SIBLING_SWEEP,
-      tool_input: { command: "grep -rn x construction/U03-scoring/" },
+      tool_input: { command: `grep -rn x ${UNIT_PHASE}/U03-scoring/` },
     });
     expect(r.code).toBe(0);
   });
 
   // The dispatch record lives in the main workspace (§12a), while the swarm
-  // reviewer reads inside its unit worktree. The hook judges construction/<unit>/
+  // reviewer reads inside its unit worktree. The hook judges design/<unit>/
   // tokens in those absolute paths.
   test("fresh record in the main workspace + swarm reviewer reading inside a unit worktree -> sibling blocks, own unit passes", () => {
     const proj = scratchProject();
@@ -745,7 +751,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
       ...SIBLING_SWEEP,
       tool_name: "Read",
       tool_input: {
-        file_path: join(worktree, "aidlc", "spaces", "default", "intents", "construction", "U01-infra", "private.md"),
+        file_path: join(worktree, "aidlc", "spaces", "default", "intents", UNIT_PHASE, "U01-infra", "private.md"),
       },
     });
     expect(sibling.code).toBe(2);
@@ -754,7 +760,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
       ...SIBLING_SWEEP,
       tool_name: "Read",
       tool_input: {
-        file_path: join(worktree, "aidlc", "spaces", "default", "intents", "construction", "U03-scoring", "design.md"),
+        file_path: join(worktree, "aidlc", "spaces", "default", "intents", UNIT_PHASE, "U03-scoring", "design.md"),
       },
     });
     expect(own.code).toBe(0);
@@ -765,7 +771,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     seedRecord(proj);
     const piped = runHook(proj, {
       ...SIBLING_SWEEP,
-      tool_input: { command: "grep -rn x construction/U03-scoring/ | grep y" },
+      tool_input: { command: `grep -rn x ${UNIT_PHASE}/U03-scoring/ | grep y` },
     });
     expect(piped.code).toBe(0);
     const firstSeg = runHook(proj, {
@@ -783,9 +789,9 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
       "echo x | rg --files",
       "echo x | rg -f -",
       "echo x | grep -rn x",
-      "echo x | rg --regexp=x construction/U01-infra/private.md",
-      "echo x | grep -ex construction/U01-infra/private.md",
-      "echo x | grep -f patterns.txt construction/U01-infra/private.md",
+      `echo x | rg --regexp=x ${UNIT_PHASE}/U01-infra/private.md`,
+      `echo x | grep -ex ${UNIT_PHASE}/U01-infra/private.md`,
+      `echo x | grep -f patterns.txt ${UNIT_PHASE}/U01-infra/private.md`,
     ]) {
       const result = runHook(proj, { ...SIBLING_SWEEP, tool_input: { command } });
       expect(result.code, command).toBe(2);
@@ -820,7 +826,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     // stage-protocol-reviewer.md §12a: "Single-stage reviews (no
     // `directive.unit`) write no record." Reporting that absence as a skipped
     // step-1 write is a false advisory, and on a scope that skips
-    // units-generation it would repeat for the whole Construction phase.
+    // units-generation it would repeat for the whole design phase.
     expect(existsSync(dropsPath(proj))).toBe(false);
   });
 
@@ -934,7 +940,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
       "spaces",
       "default",
       "intents",
-      "construction",
+      UNIT_PHASE,
       "U03-scoring",
     );
     const r = runHook(proj, {
@@ -956,18 +962,18 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     const proj = scratchProject();
     seedUnitScope(proj);
     const patch = (path: string) => `*** Begin Patch\n*** Add File: ${path}\n+x\n*** End Patch`;
-    for (const command of [`apply_patch <<'PATCH'\n${patch("Construction/u05-API/result.md")}\nPATCH`, `apply_patch '${patch("Construction/u05-API/result.md")}'`]) {
+    for (const command of [`apply_patch <<'PATCH'\n${patch(UNIT_PHASE.toUpperCase() + "/u05-API/result.md")}\nPATCH`, `apply_patch '${patch(UNIT_PHASE.toUpperCase() + "/u05-API/result.md")}'`]) {
       const r = runHook(proj, { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command } });
       expect(r.code, command).toBe(2);
       expect(r.stderr, command).toContain('This checkout is scoped to Unit "U03-scoring"');
     }
     const bash = (command: string) => runHook(proj, { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command } });
-    expect(bash("touch Construction/u05-API/result.md").stderr).toContain('This checkout is scoped to Unit "U03-scoring"');
+    expect(bash(`touch ${UNIT_PHASE.toUpperCase()}/u05-API/result.md`).stderr).toContain('This checkout is scoped to Unit "U03-scoring"');
     // A patch into this Unit is judged by the file it writes, not by its code,
     // which may name another Unit's folder.
-    const mentions = "*** Begin Patch\n*** Add File: construction/U03-scoring/result.ts\n+import { score } from \"../U05-api/score.ts\"; // construction/U05-api/score.ts\n*** End Patch";
+    const mentions = `*** Begin Patch\n*** Add File: ${UNIT_PHASE}/U03-scoring/result.ts\n+import { score } from \"../U05-api/score.ts\"; // ${UNIT_PHASE}/U05-api/score.ts\n*** End Patch`;
     for (const command of [
-      `apply_patch <<'PATCH'\n${patch("construction/U03-scoring/result.md")}\nPATCH`,
+      `apply_patch <<'PATCH'\n${patch(UNIT_PHASE + "/U03-scoring/result.md")}\nPATCH`,
       `apply_patch <<'PATCH'\n${mentions}\nPATCH`,
       `apply_patch '${mentions.replaceAll('"', "'\\''")}'`,
     ]) {
@@ -976,8 +982,8 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     }
     // The same code written with cat or printf is read by its text, as on main.
     for (const [command, code] of [
-      ["cat > construction/U03-scoring/result.ts <<'EOF'\nimport { score } from \"../U05-api/score.ts\"; // construction/U05-api/score.ts\nEOF", 2],
-      ["printf '// construction/U05-api/score.ts' > construction/U03-scoring/result.ts", 0],
+      [`cat > ${UNIT_PHASE}/U03-scoring/result.ts <<'EOF'\nimport { score } from \"../U05-api/score.ts\"; // ${UNIT_PHASE}/U05-api/score.ts\nEOF`, 2],
+      [`printf '// ${UNIT_PHASE}/U05-api/score.ts' > ${UNIT_PHASE}/U03-scoring/result.ts`, 0],
     ] as const) {
       expect(bash(command).code, command).toBe(code);
     }
@@ -989,15 +995,15 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     const foreign = runHook(proj, {
       hook_event_name: "PreToolUse",
       tool_name: "Bash",
-      tool_input: { command: "touch Construction/u05-API/result.md" },
+      tool_input: { command: `touch ${UNIT_PHASE.toUpperCase()}/u05-API/result.md` },
     });
     expect(foreign.code).toBe(2);
-    expect(foreign.stderr).toContain("Construction/u05-API/result.md");
+    expect(foreign.stderr).toContain(`${UNIT_PHASE.toUpperCase()}/u05-API/result.md`);
 
     const current = runHook(proj, {
       hook_event_name: "PreToolUse",
       tool_name: "Bash",
-      tool_input: { command: "touch construction/u03-SCORING/result.md" },
+      tool_input: { command: `touch ${UNIT_PHASE}/u03-SCORING/result.md` },
     });
     expect(current.code).toBe(0);
   });
@@ -1007,11 +1013,11 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     // and the refusal named no way forward.
     const proj = scratchProject();
     seedUnitScope(proj);
-    for (const command of ["ls", "rg formatPrice", "find . -name '*.md'", "grep -rn formatPrice .", "cat construction/u05-API/design.md"]) {
+    for (const command of ["ls", "rg formatPrice", "find . -name '*.md'", "grep -rn formatPrice .", `cat ${UNIT_PHASE}/u05-API/design.md`]) {
       const r = runHook(proj, { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command } });
       expect(r.code, `${command}: ${r.stderr}`).toBe(0);
     }
-    const write = { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "touch Construction/u05-API/result.md" } };
+    const write = { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: `touch ${UNIT_PHASE.toUpperCase()}/u05-API/result.md` } };
     const refused = runHook(proj, write);
     expect(refused.code).toBe(2);
     expect(refused.stderr).toContain("make that change from the project's main checkout");
@@ -1028,7 +1034,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
       "\n## Unit Progress\n| unit | owner | code-generation | merged |\n| --- | --- | --- | --- |\n" +
         "| U03-scoring | t221 | [x] | [x] |\n",
     );
-    const r = runHook(proj, { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "touch Construction/u05-API/result.md" } });
+    const r = runHook(proj, { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: `touch ${UNIT_PHASE.toUpperCase()}/u05-API/result.md` } });
     expect(r.code).toBe(2);
     expect(r.stderr).toContain('scoped to Unit "U03-scoring"');
   });
@@ -1046,7 +1052,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
       const r = runHook(proj, {
         hook_event_name: "PreToolUse",
         tool_name: "Write",
-        tool_input: { file_path: "construction/U05-api/result.md" },
+        tool_input: { file_path: `${UNIT_PHASE}/U05-api/result.md` },
       }, env);
       expect(r.code).toBe(2);
       expect(r.stderr).toContain('scoped to Unit "U03-scoring"');
@@ -1077,7 +1083,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     expect(r.code).toBe(2);
     const shard = readFileSync(shardPath, "utf-8");
     expect(shard).toContain("REVIEWER_SCOPE_BLOCKED");
-    expect(shard).toContain("construction/*/*/*.md");
+    expect(shard).toContain(`${UNIT_PHASE}/*/*/*.md`);
     expect(shard).toContain("U03-scoring");
   });
 });

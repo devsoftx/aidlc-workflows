@@ -48,7 +48,6 @@ import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
   appendFileSync,
-  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -3233,15 +3232,16 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     walk.unitVerb("start");
     walk.writeArtifacts();
     walk.unitVerb("complete");
+    // A directory named like a shard: the lister still returns it, and opening it
+    // as a regular file fails for every uid, where mode 0o000 does not stop root.
     const unreadable = join(seededAuditDir(walk.dir), "zzzz-unreadable.md");
-    writeFileSync(unreadable, "# AI-DLC Audit Log\n");
-    chmodSync(unreadable, 0o000);
+    mkdirSync(unreadable, { recursive: true });
     try {
       const kept = walk.stop();
       expect(kept.decision).toBe("block");
       expect(kept.reason).toBe(carryingOn("functional-design", "alpha"));
     } finally {
-      chmodSync(unreadable, 0o600);
+      rmSync(unreadable, { recursive: true, force: true });
     }
   });
 
@@ -5988,7 +5988,7 @@ describe("t249 a jump the person asks for starts its step in the claimed next", 
     const dir = orchestrationProject();
     const session = "jump-one-step-owner";
     driveToRunStage(dir, session);
-    let routed = runLifecycle(dir, session, "direct", ["next", "--phase", "ideation"], `${session}-jump`);
+    let routed = runLifecycle(dir, session, "direct", ["next", "--phase", "discover"], `${session}-jump`);
     // No command handed back to type: the claimed `next` made the jump itself.
     expect(String(routed.directive.message ?? ""), JSON.stringify(routed.directive)).not.toContain("to perform the jump");
     expect(readFileSync(seededStateFile(dir), "utf-8")).toContain("- **Current Stage**: intent-capture");

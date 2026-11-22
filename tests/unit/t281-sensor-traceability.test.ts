@@ -17,11 +17,15 @@ import {
 import {
   cleanupTestProject,
   createTestProject,
+  pointAtCompiledData,
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
+// The sensor is spawned from core/ source, which has no compiled stage graph beside it.
+pointAtCompiledData();
 
 const SCRIPT = join(import.meta.dir, "../../core/tools/aidlc-sensor-traceability.ts");
 const STAGES = join(import.meta.dir, "../../core/aidlc-common/stages");
@@ -179,14 +183,14 @@ function seedUnits(proj: string): void {
 describe("t281 traceability artifact contract", () => {
   test("all emitting stages declare traceability.json as a required artifact", () => {
     const emitting = [
-      ["inception", "user-stories"],
-      ["inception", "domain-design"],
-      ["inception", "units-generation"],
-      ["construction", "functional-design"],
-      ["construction", "nfr-requirements"],
-      ["construction", "nfr-design"],
-      ["construction", "infrastructure-design"],
-      ["construction", "code-generation"],
+      [phaseFor("user-stories"), "user-stories"],
+      [phaseFor("domain-design"), "domain-design"],
+      [phaseFor("units-generation"), "units-generation"],
+      [phaseFor("functional-design"), "functional-design"],
+      [phaseFor("nfr-requirements"), "nfr-requirements"],
+      [phaseFor("nfr-design"), "nfr-design"],
+      [phaseFor("infrastructure-design"), "infrastructure-design"],
+      [phaseFor("code-generation"), "code-generation"],
     ];
     expect(artifactFilename("traceability")).toBe("traceability.json");
     expect(
@@ -218,7 +222,7 @@ describe("t281 traceability artifact contract", () => {
   // Stories leave it out), Step 1 reads it, the functional spec names it so the
   // stage's upstream check finds it cited, and the Sensors summary mirrors it.
   test("functional-design declares and reads stories.md, where the criteria it traces are defined", () => {
-    const source = readFileSync(join(STAGES, "construction", "functional-design.md"), "utf-8").replace(/\r\n/g, "\n");
+    const source = readFileSync(join(STAGES, phaseFor("functional-design"), "functional-design.md"), "utf-8").replace(/\r\n/g, "\n");
     const frontmatter = parseStageFrontmatter(source);
     const consumes = frontmatter.consumes as Array<{ artifact: string; required: boolean }>;
     expect(consumes).toContainEqual({ artifact: "stories", required: false });
@@ -488,9 +492,9 @@ describe("t281 upstream and target verification", () => {
     expect(short.result.missing_from_upstream_ids).toEqual(["AC1.1.1"]);
   });
 
-  // The stage guidance names each Unit's construction directory `u{n}-{description}`,
+  // The stage guidance names each Unit's directory `u{n}-{description}`,
   // while the edge block names the Unit without that prefix (the engine names
-  // construction/<unit>/ after the edge block). `U5`, `u5-identity-kyc` and
+  // <phase>/<unit>/ after the edge block). `U5`, `u5-identity-kyc` and
   // `identity-kyc` are one Unit to the sensor: by ID, by directory, or by name.
   test("U5, u5-identity-kyc and identity-kyc name the same Unit", () => {
     const proj = project();
@@ -900,7 +904,7 @@ const UNITS_DECLARED =
   "cannot derive the construction unit from output path while unit-of-work-dependency.md declares Units";
 
 // When the plan has no Units, the engine writes every per-Unit stage under
-// construction/<stage>/ with no Unit segment. The sensor must resolve that
+// its phase folder as <phase>/<stage>/ with no Unit segment. The sensor must resolve that
 // location for each of them, not only code-generation.
 describe("t281 zero-Unit plans: every per-Unit stage", () => {
   test("each per-Unit stage resolves its own stage-level folder, and only that folder", () => {
@@ -916,13 +920,13 @@ describe("t281 zero-Unit plans: every per-Unit stage", () => {
         upstream_ids: ["FR1"],
         coverage: [{ id: "FR1", status: "OK", target: "covered" }],
       };
-      const own = trace(proj, `construction/${stage}/traceability.json`, body);
+      const own = trace(proj, `${phaseFor(stage)}/${stage}/traceability.json`, body);
       let out = run(proj, stage, own);
       expect(out.result.reason ?? "").not.toContain("cannot derive the construction unit");
       expect(out.result.reason ?? "").not.toContain("has no traceability upstream resolver");
 
       const other = stages.find((slug) => slug !== stage)!;
-      const misplaced = trace(proj, `construction/${other}/traceability.json`, body);
+      const misplaced = trace(proj, `${phaseFor(other)}/${other}/traceability.json`, body);
       out = run(proj, stage, misplaced);
       // The reason names the path with forward slashes on every OS.
       expect(out.result.reason).toContain(
@@ -1264,7 +1268,7 @@ describe("t281 skipped earlier NFR stages", () => {
       ["x", "nfr-design", "EXECUTE"],
       ["-", "infrastructure-design", "EXECUTE"],
     ]);
-    rmSync(join(seededRecordDir(proj), "construction", "nfr-requirements"), { recursive: true });
+    rmSync(join(seededRecordDir(proj), phaseFor("nfr-requirements"), "nfr-requirements"), { recursive: true });
     const nfrOnly = trace(proj, "design/infrastructure-design/traceability.json", {
       stage: "infrastructure-design",
       upstream_ids: ["NFR1", "NFR2"],
@@ -1365,7 +1369,7 @@ describe("t281 User Stories skipped: a Unit traces its own story-map rows", () =
   test("code-generation keeps the requirements-wide set when there is no story map", () => {
     const proj = project();
     seedUnitsWithoutStories(proj, true);
-    rmSync(join(seededRecordDir(proj), "inception", "units-generation", "unit-of-work-story-map.md"));
+    rmSync(join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation", "unit-of-work-story-map.md"));
     const out = run(proj, "code-generation", codeTable(proj, "u1-auth", ["FR1", "FR2"]));
     expect(out.result.pass).toBe(false);
     expect(out.result.missing_from_upstream_ids).toEqual(["FR3", "FR4", "NFR1", "NFR2"]);
@@ -1389,7 +1393,7 @@ describe("t281 User Stories skipped: a Unit traces its own story-map rows", () =
     expect(out.result.pass).toBe(false);
     expect(out.result.missing_from_upstream_ids).toEqual(["FR2"]);
 
-    rmSync(join(seededRecordDir(proj), "inception", "units-generation", "unit-of-work-story-map.md"));
+    rmSync(join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation", "unit-of-work-story-map.md"));
     out = run(proj, "functional-design", table(["FR1", "FR2"]));
     expect(out.result.missing_from_upstream_ids).toEqual(["FR3", "FR4"]);
   });
@@ -2162,7 +2166,7 @@ describe("t281 Build and Test: every requirement and criterion is built", () => 
   test("a missing input is said, never read as built", () => {
     const proj = project();
     seedStoryPath(proj, { status: "OK", target: "src/profile/reset.ts" });
-    rmSync(join(seededRecordDir(proj), "inception", "user-stories", "traceability.json"));
+    rmSync(join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories", "traceability.json"));
     const out = runFinal(proj);
     expect(out.pass).toBe(false);
     expect(out.reason).toContain("required upstream artifact is missing");
@@ -2170,7 +2174,7 @@ describe("t281 Build and Test: every requirement and criterion is built", () => 
   });
 
   test("Build and Test's coverage gate runs this check instead of listing the IDs itself", () => {
-    const stage = readFileSync(join(STAGES, "construction", "build-and-test.md"), "utf-8");
+    const stage = readFileSync(join(STAGES, phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(stage).toContain("{{INVOKE}} engine sensor-traceability --stage build-and-test");
     expect(stage).not.toContain("every `FR` and `NFR` from");
   });
@@ -2217,7 +2221,7 @@ describe("t281 the IDs Requirements Analysis records", () => {
     const proj = project();
     seedUserStories(proj);
     write(proj, "design/requirements-analysis/requirements.md", TEAM_FORM);
-    rmSync(join(seededRecordDir(proj), "inception", "requirements-analysis", "traceability.json"));
+    rmSync(join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json"));
     let out = run(proj, "user-stories", usTable(proj, ["FR-1", "FR-2", "NFR-1"]));
     expect(out.result.reason).toBeUndefined();
     expect(out.result.pass).toBe(true);
@@ -2244,7 +2248,7 @@ describe("t281 the IDs Requirements Analysis records", () => {
       upstream_ids: ["FR-1"],
       coverage: [{ id: "FR-1", status: "N/A", target: "a functional requirement" }],
     }));
-    out = run(proj, "nfr-requirements", join(seededRecordDir(proj), "construction", "nfr-requirements", "traceability.json"));
+    out = run(proj, "nfr-requirements", join(seededRecordDir(proj), phaseFor("nfr-requirements"), "nfr-requirements", "traceability.json"));
     expect(out.result.missing_from_upstream_ids).toEqual(["Q-SEC"]);
 
     const domain = trace(proj, "design/domain-design/traceability.json", {
@@ -2310,7 +2314,7 @@ describe("t281 the IDs Requirements Analysis records", () => {
     expect(out.pass).toBe(true);
     expect(out.coverage.map((entry) => entry.id)).toEqual(ids);
 
-    rmSync(join(seededRecordDir(proj), "inception", "requirements-analysis", "traceability.json"));
+    rmSync(join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json"));
     out = final();
     expect(out.reason).toBeUndefined();
     expect(out.pass).toBe(true);
@@ -2340,7 +2344,7 @@ describe("t281 the IDs Requirements Analysis records", () => {
   });
 
   test("Requirements Analysis declares the record and says how to write it; later stages start their table with the tool", () => {
-    const source = readFileSync(join(STAGES, "inception", "requirements-analysis.md"), "utf-8").replace(/\r\n/g, "\n");
+    const source = readFileSync(join(STAGES, phaseFor("requirements-analysis"), "requirements-analysis.md"), "utf-8").replace(/\r\n/g, "\n");
     const frontmatter = parseStageFrontmatter(source);
     // Not a required output: a run with no record still reviews and approves.
     expect(frontmatter.produces).not.toContain("traceability");
@@ -2401,7 +2405,7 @@ describe("t281 the table the tool starts (--write-upstream)", () => {
     const proj = project();
     seedUserStories(proj);
     writeRequirements(proj, GROUPED);
-    const path = join(seededRecordDir(proj), "inception", "user-stories", "traceability.json");
+    const path = join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories", "traceability.json");
     const started = start(proj, "user-stories", path, true);
     expect(started.status).toBe(0);
     expect(started.reply.written).toBe(true);
@@ -2453,7 +2457,7 @@ describe("t281 the table the tool starts (--write-upstream)", () => {
     seedUnits(proj);
     write(proj, "design/u1-auth/functional-design/rules.md", "# Rules\n\n- BR1.1 Validate credentials\n");
     write(proj, "design/u1-auth/nfr-requirements/security-requirements.md", "# Security\n\n- NFR1.1 Hash passwords\n");
-    const path = join(seededRecordDir(proj), "construction", "u1-auth", "code-generation", "traceability.json");
+    const path = join(seededRecordDir(proj), phaseFor("code-generation"), "u1-auth", "code-generation", "traceability.json");
     const started = start(proj, "code-generation", path);
     expect(started.reply.upstream_ids).toEqual(["AC1.1.1", "AC1.1.2", "NFR1.1", "BR1.1"]);
     const table = JSON.parse(readFileSync(path, "utf-8"));
@@ -2466,8 +2470,8 @@ describe("t281 the table the tool starts (--write-upstream)", () => {
     seedUserStories(proj);
     writeRequirements(proj, GROUPED);
     const outside = join(proj, "elsewhere", "user-stories", "traceability.json");
-    const wrongFolder = join(seededRecordDir(proj), "inception", "domain-design", "traceability.json");
-    const wrongName = join(seededRecordDir(proj), "inception", "user-stories", "stories.md");
+    const wrongFolder = join(seededRecordDir(proj), phaseFor("domain-design"), "domain-design", "traceability.json");
+    const wrongName = join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories", "stories.md");
     const before = readFileSync(wrongName, "utf-8");
     for (const path of [outside, wrongFolder, wrongName]) {
       const started = start(proj, "user-stories", path);
@@ -2476,7 +2480,7 @@ describe("t281 the table the tool starts (--write-upstream)", () => {
       expect(started.reply.reason, path).toBeDefined();
     }
     expect(readdirSync(proj)).not.toContain("elsewhere");
-    expect(readdirSync(join(seededRecordDir(proj), "inception"))).not.toContain("domain-design");
+    expect(readdirSync(join(seededRecordDir(proj), phaseFor("domain-design")))).not.toContain("domain-design");
     expect(readFileSync(wrongName, "utf-8")).toBe(before);
 
     const notAnObject = trace(proj, "design/user-stories/traceability.json", "[1, 2]", true);
@@ -2489,8 +2493,8 @@ describe("t281 the table the tool starts (--write-upstream)", () => {
   test("with no record it lists the IDs requirements.md spells as FR1 and NFR1, and says what to list when it finds none", () => {
     const proj = project();
     seedUserStories(proj);
-    rmSync(join(seededRecordDir(proj), "inception", "requirements-analysis", "traceability.json"));
-    const path = join(seededRecordDir(proj), "inception", "user-stories", "traceability.json");
+    rmSync(join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json"));
+    const path = join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories", "traceability.json");
     let started = start(proj, "user-stories", path);
     expect(started.reply.written).toBe(true);
     expect(started.reply.upstream_ids).toEqual(["FR1", "FR2", "NFR1"]);
@@ -2498,16 +2502,16 @@ describe("t281 the table the tool starts (--write-upstream)", () => {
 
     const fresh = project();
     seedUserStories(fresh);
-    rmSync(join(seededRecordDir(fresh), "inception", "requirements-analysis", "traceability.json"));
+    rmSync(join(seededRecordDir(fresh), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json"));
     write(fresh, "design/requirements-analysis/requirements.md", "# Requirements\n\n### FR-1: Sign up\n\n### NFR-1: Security\n");
-    started = start(fresh, "user-stories", join(seededRecordDir(fresh), "inception", "user-stories", "traceability.json"));
+    started = start(fresh, "user-stories", join(seededRecordDir(fresh), phaseFor("user-stories"), "user-stories", "traceability.json"));
     expect(started.reply.written).toBe(false);
     expect(started.reply.upstream_ids).toEqual([]);
-    expect(readdirSync(join(seededRecordDir(fresh), "inception", "user-stories"))).not.toContain("traceability.json");
+    expect(readdirSync(join(seededRecordDir(fresh), phaseFor("user-stories"), "user-stories"))).not.toContain("traceability.json");
     expect(started.reply.reason).toContain("Requirements Analysis recorded no requirement IDs");
     expect(started.reply.reason).toContain("every FR and NFR ID requirements.md defines");
 
-    const nfr = start(fresh, "nfr-requirements", join(seededRecordDir(fresh), "construction", "nfr-requirements", "traceability.json"));
+    const nfr = start(fresh, "nfr-requirements", join(seededRecordDir(fresh), phaseFor("nfr-requirements"), "nfr-requirements", "traceability.json"));
     expect(nfr.reply.reason).toContain("every NFR ID requirements.md defines");
   });
 

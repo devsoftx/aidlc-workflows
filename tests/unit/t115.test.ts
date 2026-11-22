@@ -2077,9 +2077,11 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
       "- **Construction Autonomy Mode**: gated",
       "- **Construction Autonomy Mode**: autonomous",
     );
+    // Units Generation has run: the fixture's Phase Progress says Design is Verified, but its row was
+    // regenerated pending, which makes the Units read as stage-level and lifts the swarm's receipt.
+    replaceStateText(p, "- [ ] units-generation — EXECUTE", "- [x] units-generation — EXECUTE");
     seedBoltDagBatches(p, [["foo"]]);
     const result = state(["finalize", "code-generation"], p);
-    console.log("R18DBG-TEMP", result.status, JSON.stringify(result.out.slice(0, 1500)));
     expect(result.status).not.toBe(0);
     expect(result.out).toContain("do not have a current review");
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);

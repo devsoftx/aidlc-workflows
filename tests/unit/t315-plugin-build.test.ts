@@ -680,7 +680,7 @@ describe("t315 standalone plugin builder", () => {
       encoding: "utf-8",
     });
     expect(created.status, created.stderr).toBe(0);
-    const stagePath = join(pluginRoot, "stages", "construction", "beta-example-stage.md");
+    const stagePath = join(pluginRoot, "stages", "build", "beta-example-stage.md");
     writeFileSync(
       stagePath,
       readFileSync(stagePath, "utf-8").replace("requires_stage: []", "requires_stage:\n  - zeta-example-stage"),
@@ -708,7 +708,7 @@ describe("t315 standalone plugin builder", () => {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
     manifest.dependencies = ["core", "zeta@^0.1.0"];
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
-    const stagePath = join(pluginRoot, "stages", "construction", "alpha-example-stage.md");
+    const stagePath = join(pluginRoot, "stages", "build", "alpha-example-stage.md");
     writeFileSync(
       stagePath,
       readFileSync(stagePath, "utf-8").replace("lead_agent: alpha-example-agent", "lead_agent: zeta-example-agent"),
@@ -721,7 +721,7 @@ describe("t315 standalone plugin builder", () => {
     expect(result.stdout).toContain(
       'WARNING stages/build/alpha-example-stage.md [base-reference]: agent "zeta-example-agent" is not checked: it would come from zeta, the base this plugin builds on',
     );
-    expect(existsSync(join(outDir, "stages", "construction", "alpha-example-stage.md"))).toBe(true);
+    expect(existsSync(join(outDir, "stages", "build", "alpha-example-stage.md"))).toBe(true);
   });
 
   test("non-canonical contribution paths refuse BUILD before output creation", () => {

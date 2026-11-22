@@ -45,7 +45,7 @@
 //             OUT  'Invalid AWS_AIDLC_DEFAULT_SCOPE'   -> t10 (verbatim)
 //   - .sh T11 OUT  'scope change --scope mvp'         -> t11 (print names move)
 //   - .sh T12 OUT  'config set depth comprehensive' -> t12
-//   - .sh T13 OUT  '"stage":"functional-design"'      -> t13 (phase jump)
+//   - .sh T13 OUT  '"stage":"functional-design"'      -> t13 (phase jump; now the design phase's first step)
 //   - .sh T14 OUT  '"kind":"ask"'                     -> t14 (freeform intent)
 //   - .sh T15 OUT  'Cannot jump to initialization stages' -> t15 (--stage init)
 //   - .sh T16 OUT  'Cannot jump to initialization stages' -> t16 (--phase init)
@@ -82,6 +82,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTestProject,
   createTestProject,
@@ -389,18 +390,18 @@ describe("t117 flag-validation, env-scope, scope/config change, phase jump, free
   });
 
   // state-mid-ideation is feature scope, Current Stage=feasibility; --phase
-  // construction resolves (via resolve) to the first EXECUTE stage of
-  // construction (functional-design), forward of feasibility. The person's phase
-  // jump is made by that `next`, which returns the target's step (see the
-  // jump-direction delegation block).
-  test("13: phase jump (construction, feature) -> the functional-design step in the same call", () => {
+  // design (the phase functional-design sits in) resolves (via resolve) to the
+  // first EXECUTE stage of that phase, practices-discovery, forward of feasibility.
+  // The person's phase jump is made by that `next`, which returns the target's
+  // step (see the jump-direction delegation block).
+  test("13: phase jump (design, feature) -> the first design step in the same call", () => {
     const p = proj("state-mid-ideation.md");
-    const r = next(["--phase", "construction"], p);
+    const r = next(["--phase", phaseFor("functional-design")], p);
     const d = directive(r.stdout);
     expect(d.kind).not.toBe("print");
-    expect(d.stage).toBe("functional-design");
+    expect(d.stage).toBe("practices-discovery");
     const state = readFileSync(seededStateFile(p), "utf-8");
-    expect(state).toContain("- **Current Stage**: functional-design");
+    expect(state).toContain("- **Current Stage**: practices-discovery");
   });
 
   test("14: freeform intent with no workflow → ask directive (scope confirmation)", () => {

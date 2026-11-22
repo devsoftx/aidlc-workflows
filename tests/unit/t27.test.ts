@@ -794,6 +794,12 @@ describe("t27 aidlc-utility scope-change", () => {
 
   test("17b: a record made with a per-unit line keeps it through a scope change", () => {
     const p = pocStateAuditProj();
+    // The rebuild keys on the legend line an engine-created state file carries under the heading; the fixture omits it.
+    sedReplaceInFile(
+      statePath(p),
+      "## Stage Progress\n",
+      "## Stage Progress\n<!-- Checkbox states: [ ] not started -->\n",
+    );
     util(["scope-change", "--scope", "mvp"], p);
     expect(readFileSync(statePath(p), "utf-8")).toContain(`### ${phaseFor("practices-discovery").toUpperCase()} PHASE\nPer unit: todo-core\n- [ ] practices-discovery`);
   });

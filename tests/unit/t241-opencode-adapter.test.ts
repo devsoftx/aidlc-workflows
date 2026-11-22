@@ -26,6 +26,7 @@ import { windowsScriptLaunch } from "../../core/tools/aidlc-executable-path.ts";
 
 const createAdapter = adapterPlugin.server;
 import {
+  AIDLC_SRC,
   createTestProject,
   seedAidlcMemory,
   seededAuditDir,
@@ -33,6 +34,7 @@ import {
   seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { NATIVE_STARTUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { phaseFor } from "../harness/stage-phase.ts";
 import {
   auditBlockField,
@@ -142,6 +144,8 @@ function copyCore(root: string, relativePath: string): void {
   copyFileSync(source, destination);
   if (relativePath === "tools/aidlc-lib.ts") {
     for (const dependency of [
+      // aidlc-lib.ts imports the phase vocabulary at load.
+      "aidlc-phases.ts",
       "aidlc-settings.ts",
       "aidlc-markdown.ts",
       "aidlc-locks.ts",
@@ -1031,6 +1035,13 @@ describe("t241 OpenCode adapter reviewer scope", () => {
     copyCore(root, "tools/aidlc-lib.ts");
     copyCore(root, "tools/aidlc-artifact-vocabulary.ts");
     copyCore(root, "tools/aidlc-runtime-paths.ts");
+    // The hook reads the compiled stage graph beside its tools; without it the
+    // hook fails open and a sibling read is not refused.
+    mkdirSync(join(root, ".aidlc", "tools", "data"), { recursive: true });
+    copyFileSync(
+      join(AIDLC_SRC, "tools", "data", "stage-graph.json"),
+      join(root, ".aidlc", "tools", "data", "stage-graph.json"),
+    );
 
     const recordRoot = join(root, "aidlc", "spaces", "default", "intents");
     const current = join(recordRoot, phaseFor("functional-design"), "U01", "design.md");
@@ -1636,7 +1647,7 @@ writeFileSync(${JSON.stringify(stopInput)}, await Bun.stdin.text(), "utf-8");
       artifactRows: [artifactRows("ses_a", file), artifactRows("ses_b", file)],
       currentStages: [currentStage("ses_a"), currentStage("ses_b")],
     }).toEqual({ artifactRows: [1, 0], currentStages: [a.stage, b.stage] });
-  });
+  }, NATIVE_STARTUP_TIMEOUT_MS);
 
   test("idle suppresses its nudge for an open logged question and restores it after the answer", async () => {
     const root = freshInstalledProject();

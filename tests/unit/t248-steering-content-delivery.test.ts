@@ -1756,12 +1756,14 @@ describe("t248 deterministic steering delivery", () => {
   test("a phase rule file the team wrote stays as it is while the missing ones are added", () => {
     const proj = project();
     const teamMemory = oldShapeSpace(proj);
-    const ownRules = "# Inception rules\n\n- TEAM-A-OWN-INCEPTION-RULE\n";
-    writeFileSync(join(teamMemory, "phases", "discover.md"), ownRules, "utf-8");
+    // The stage needs discover.md, so the team's file is one it does not need: a missing
+    // file the stage needs is what makes the framework's copies land.
+    const ownRules = "# Design rules\n\n- TEAM-A-OWN-DESIGN-RULE\n";
+    writeFileSync(join(teamMemory, "phases", "design.md"), ownRules, "utf-8");
 
     expect(drive(proj).final.kind).toBe("run-stage");
-    expect(readFileSync(join(teamMemory, "phases", "discover.md"), "utf-8")).toBe(ownRules);
-    for (const name of ["build.md", "deploy.md", "design.md", "operate.md", "secure.md", "test.md"]) {
+    expect(readFileSync(join(teamMemory, "phases", "design.md"), "utf-8")).toBe(ownRules);
+    for (const name of ["build.md", "deploy.md", "discover.md", "operate.md", "secure.md", "test.md"]) {
       expect(readFileSync(join(teamMemory, "phases", name), "utf-8"))
         .toBe(readFileSync(join(seedPhases(proj), name), "utf-8"));
     }
@@ -1770,13 +1772,13 @@ describe("t248 deterministic steering delivery", () => {
   test("the person hears once which rules files were added, and where", () => {
     const proj = project();
     const teamMemory = oldShapeSpace(proj);
-    writeFileSync(join(teamMemory, "phases", "discover.md"), "# Inception rules\n\n- Own rule\n", "utf-8");
+    writeFileSync(join(teamMemory, "phases", "design.md"), "# Design rules\n\n- Own rule\n", "utf-8");
 
     const first = invoke(proj, "next", ["--scope", "mvp", "--stage", "intent-capture"]).directive as
       WireDirective & { narration?: string; change_notices?: string[] };
     expect(first.kind).toBe("run-stage");
     expect(String(first.change_notices)).toContain(
-      "Space team-a had no rules for the design, build, test, secure, deploy and operate phases, so I added the " +
+      "Space team-a had no rules for the discover, build, test, secure, deploy and operate phases, so I added the " +
         "framework's to aidlc/spaces/team-a/memory/phases/; edit those files to change them.",
     );
     const again = invoke(proj, "next", ["--scope", "mvp", "--stage", "intent-capture"]).directive as

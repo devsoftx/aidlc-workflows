@@ -249,6 +249,17 @@ describe("t120 walking-skeleton classify round-trip (migrated from t120-classify
   // ===========================================================================
   test("backward-compat: a non-skeleton construction stage emits boolean gate:true, never the sentinel", () => {
     const p = projWithState("state-construction.md");
+    // The fixture leaves functional-design in progress ([-]), which would make it
+    // the skeleton-gate stage; this test's premise is that it is already complete.
+    const state = readFileSync(statePath(p), "utf-8");
+    writeFileSync(
+      statePath(p),
+      state.replace(
+        /^- \[-\] functional-design — EXECUTE$/m,
+        "- [x] functional-design — EXECUTE",
+      ),
+      "utf-8",
+    );
     const d = directive(run(ORCHESTRATE, ["next", "--project-dir", p]));
     expect(typeof d.gate).toBe("boolean");
     expect(d.gate).toBe(true);
