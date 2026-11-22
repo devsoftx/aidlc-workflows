@@ -2296,6 +2296,7 @@ To get started:
 
   // Build phase progress bars
   let phaseProgress = "";
+  let lightUnits: ReturnType<typeof unitProgress> | undefined;
   for (const p of PHASES) {
     const phaseStages = graph.filter((s) => s.phase === p);
     const phaseSlugs = new Set(phaseStages.map((s) => s.slug));
@@ -2325,12 +2326,17 @@ To get started:
       (c) => c.state === "completed"
     ).length;
     // Working one Unit at a time, the stage boxes tick only when the last Unit
-    // finishes a stage, so while a Unit is open the count is of Units: the one
-    // the person is on, of those planned, and where each Unit stands. Without
-    // the walk (another record named, or it cannot be read), the light count,
-    // while Current Stage is on the Units' stages.
-    const units = p === currentEntry?.phase && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
-      ? unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "")
+    // finishes a stage, so while a Unit is open a row holding the Units' stages
+    // counts Units: the one the person is on, of those planned, and where each
+    // Unit stands. The Units' stages span Design and Build, so each of those
+    // rows counts Units, or one would read 0/N with every Unit through it.
+    // Without the walk (another record named, or it cannot be read), the light
+    // count, while Current Stage is on the Units' stages.
+    const unitRow = phaseCheckboxes.some((c) => phaseStages.some((s) => s.slug === c.slug && isPerUnitStage(s)));
+    const units = unitRow && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
+      ? lightUnits === undefined
+        ? (lightUnits = unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? ""))
+        : lightUnits
       : null;
     const phaseSkipped = phaseCheckboxes.filter((c) => c.state === "skipped").length;
     // The walk's clause goes on the row of the phase its step is in: Current
@@ -2339,6 +2345,8 @@ To get started:
     const walkRow = walk?.phase ?? currentEntry?.phase;
     const count = p === walkRow && walk !== null
       ? walk.current === null ? walk.clause : `Unit ${walk.current} of ${walk.total}: ${walk.clause}`
+      : unitRow && walk !== null && walk.current !== null
+      ? `Unit ${walk.current} of ${walk.total}`
       : units
       ? `Unit ${units.current} of ${units.total}`
       : phaseSkipped === phaseCheckboxes.length
