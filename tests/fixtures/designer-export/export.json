@@ -2577,10 +2577,6 @@
         {
           "artifact": "scalability-design",
           "required": true
-        },
-        {
-          "artifact": "dashboards",
-          "required": false
         }
       ],
       "requires_stage": [
@@ -2597,7 +2593,7 @@
         "workshop"
       ],
       "summary_confirmation": "required",
-      "inputs": "NFR requirements from nfr-requirements stage, NFR design from nfr-design stage, deployed application, observability data from observability-setup stage",
+      "inputs": "NFR requirements from nfr-requirements stage, NFR design from nfr-design stage, deployed application",
       "outputs": "load-test-plan.md, test-results.md, nfr-validation-matrix.md, performance-validation-questions.md (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {

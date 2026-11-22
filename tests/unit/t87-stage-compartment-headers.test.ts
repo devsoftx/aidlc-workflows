@@ -149,17 +149,17 @@ describe("t87 stage-file compartment headers (migrated from t87-stage-compartmen
     expect(headingOutsideFence("## Sensors", "## Sensors and friends\n")).toBe(false);
   });
 
-  // .sh L10: plan 64. Re-count to pin the plan and guard against a stage being
-  // silently dropped from (or added to) the shipped tree without the suite
-  // noticing (2 compartments × 32 stages = 64 rows).
-  test("covers EXACTLY 33 stages × 2 compartments = 66 assertions (TAP plan parity)", () => {
+  // Re-count to pin the plan and guard against a stage being silently dropped
+  // from (or added to) the shipped tree without the suite noticing: 2
+  // compartments × 36 stages (3 initialization, 33 runnable) = 72 rows.
+  test("covers EXACTLY 36 stages × 2 compartments = 72 assertions (TAP plan parity)", () => {
     const COMPARTMENTS_PER_STAGE = 2;
-    expect(STAGE_FILES.length).toBe(33);
-    expect(STAGE_FILES.length * COMPARTMENTS_PER_STAGE).toBe(66);
-    // Five phases, each with at least one stage (no empty phase dir slipped in).
+    expect(STAGE_FILES.length).toBe(36);
+    expect(STAGE_FILES.length * COMPARTMENTS_PER_STAGE).toBe(72);
+    // Eight phase folders, each with at least one stage (no empty phase dir slipped in).
     const phases = new Set(STAGE_FILES.map((s) => s.phase));
     expect(phases).toEqual(
-      new Set(["construction", "ideation", "inception", "initialization", "operation"]),
+      new Set(["build", "deploy", "design", "discover", "initialization", "operate", "secure", "test"]),
     );
   });
 });

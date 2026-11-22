@@ -708,27 +708,6 @@ function publishActiveDirective(
   });
 }
 
-// Host-session identity variables the harness sets for the session that runs this
-// suite. The hook judges the payload it is given, so they stay out of its
-// environment (the session-identity subset of what tests/harness/gate-fuzz.ts clears).
-const HOST_SESSION_ENV = [
-  "CLAUDECODE",
-  "CLAUDE_CODE_SESSION_ID",
-  "CLAUDE_PID",
-  "CLAUDE_CODE_CHILD_SESSION",
-  "CLAUDE_CODE_ENTRYPOINT",
-  "CODEX_THREAD_ID",
-  "KIRO_SESSION_ID",
-  "AIDLC_SESSION_OVERRIDE",
-  "AIDLC_SESSION_OVERRIDE_SOURCE",
-];
-
-function hookEnv(extra: Record<string, string>): Record<string, string | undefined> {
-  const env: Record<string, string | undefined> = { ...process.env };
-  for (const name of HOST_SESSION_ENV) delete env[name];
-  return { ...env, ...extra };
-}
-
 function runHook(
   proj: string,
   payload: Record<string, unknown>,
@@ -737,7 +716,7 @@ function runHook(
   const r = spawnSync(BUN, [join(proj, ".claude", "hooks", "aidlc-reviewer-scope.ts")], {
     timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
     input: JSON.stringify(payload),
-    env: hookEnv({ CLAUDE_PROJECT_DIR: proj, ...env }),
+    env: { ...process.env, CLAUDE_PROJECT_DIR: proj, ...env },
     encoding: "utf-8",
   });
   return { code: r.status ?? -1, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
@@ -1096,7 +1075,7 @@ describe("t221 (b) dispatch-record lifecycle (shipped hook, subprocess)", () => 
     const r = spawnSync(BUN, [join(proj, ".claude", "hooks", "aidlc-reviewer-scope.ts")], {
       timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
       input: "not json",
-      env: hookEnv({ CLAUDE_PROJECT_DIR: proj }),
+      env: { ...process.env, CLAUDE_PROJECT_DIR: proj },
       encoding: "utf-8",
     });
     expect(r.status).toBe(0);

@@ -16,5 +16,8 @@
   "nfr-design",
   "infrastructure-design",
   "code-generation",
-  "build-and-test"
+  "build-and-test",
+  "code-review",
+  "security-review",
+  "conformance-review"
 ]

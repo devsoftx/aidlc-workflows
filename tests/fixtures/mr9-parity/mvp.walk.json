@@ -4,9 +4,9 @@
   "state-init",
   "intent-capture",
   "feasibility",
+  "reverse-engineering",
   "scope-definition",
   "rough-mockups",
-  "reverse-engineering",
   "practices-discovery",
   "requirements-analysis",
   "user-stories",
@@ -21,5 +21,7 @@
   "infrastructure-design",
   "code-generation",
   "build-and-test",
+  "code-review",
+  "security-review",
   "ci-pipeline"
 ]

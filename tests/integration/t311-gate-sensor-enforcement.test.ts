@@ -126,7 +126,7 @@ function setupFixture(
     "utf-8",
   );
 
-  const phase = laterConstructionStage ? "build" : "inception";
+  const phase = laterConstructionStage ? "build" : "design";
   const graph = join(project, "stage-graph.json");
   const anchor = {
     slug: "anchor",
@@ -1047,7 +1047,7 @@ describe("t311 a blocking check over every repository's files", () => {
     ].join("\n"), "utf-8");
     const graph = join(project, "stage-graph.json");
     writeFileSync(graph, `${JSON.stringify([{
-      slug: "reverse-engineering", number: "2.1", name: "Reverse Engineering", phase: "inception",
+      slug: "reverse-engineering", number: "2.1", name: "Reverse Engineering", phase: "discover",
       execution: "ALWAYS", lead_agent: "aidlc-product-agent", support_agents: [], mode: "inline",
       produces: ["architecture", "dependencies"], optional_produces: [], consumes: [], requires_stage: [],
       sensors: [id], scopes: ["bugfix"], inputs: "", outputs: "", rules_in_context: [],
@@ -1055,7 +1055,7 @@ describe("t311 a blocking check over every repository's files", () => {
     }], null, 2)}\n`, "utf-8");
     writeFileSync(seededStateFile(project), [
       "# AI-DLC State Tracking", "", "- **Workflow**: bugfix", "- **State Version**: 8", "- **Scope**: bugfix",
-      "- **Phase**: inception", "- **Current Stage**: reverse-engineering", "", "- [-] reverse-engineering \u2014 EXECUTE", "",
+      "- **Phase**: discover", "- **Current Stage**: reverse-engineering", "", "- [-] reverse-engineering \u2014 EXECUTE", "",
     ].join("\n"), "utf-8");
     seedAuditFile(project);
     const store = codekbDir(project, codekbRepoName(project));

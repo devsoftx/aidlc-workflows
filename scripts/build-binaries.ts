@@ -31,6 +31,7 @@ import { fileURLToPath } from "node:url";
 import { releaseBuildVersion, VERSION_ID_PATTERN } from "../core/tools/aidlc-channel.ts";
 import { targetTriple } from "../core/tools/aidlc-install-paths.ts";
 import { hooksHealthDir, PHASE_LABELS } from "../core/tools/aidlc-lib.ts";
+import { isRunnableStage } from "../core/tools/aidlc-runner-gen.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS, LONG_SUBPROCESS_TIMEOUT_MS } from "../core/tools/aidlc-runtime-budget.ts";
 
 // The version every built artifact must report: the source version, or the
@@ -477,10 +478,9 @@ function generatedSurfaceGate(
 }
 
 // The runner count `engine gen runners --check` reports for one harness tree: one
-// runner per compiled stage that is enabled and outside the initialization phase,
-// the same rule as loadStageGraph (core/tools/aidlc-lib.ts) and isRunnableStage
-// (core/tools/aidlc-runner-gen.ts). Read from the packaged graph so a stage added
-// to the graph needs no edit here.
+// runner per enabled compiled stage (loadStageGraph's filter in aidlc-lib.ts) that
+// isRunnableStage (aidlc-runner-gen.ts) keeps. Read from the packaged graph so a
+// stage added to the graph needs no edit here.
 function expectedRunnerCount(distribution: string, harnessDir: string): number {
   const graphPath = join(
     REPO_ROOT,
@@ -495,10 +495,7 @@ function expectedRunnerCount(distribution: string, harnessDir: string): number {
     phase: string;
     enabled?: boolean;
   }[];
-  const runnable = stages.filter(
-    (stage) => stage.enabled !== false && stage.phase !== "initialization",
-  );
-  return runnable.length;
+  return stages.filter((stage) => stage.enabled !== false).filter(isRunnableStage).length;
 }
 
 function harnessRuntimeGate(

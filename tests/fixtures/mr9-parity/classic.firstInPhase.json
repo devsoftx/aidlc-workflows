@@ -1,7 +1,10 @@
 {
   "initialization": "workspace-scaffold",
-  "ideation": "none",
-  "inception": "reverse-engineering",
-  "construction": "functional-design",
-  "operation": "none"
+  "discover": "reverse-engineering",
+  "design": "practices-discovery",
+  "build": "code-generation",
+  "test": "build-and-test",
+  "secure": "code-review",
+  "deploy": "none",
+  "operate": "none"
 }

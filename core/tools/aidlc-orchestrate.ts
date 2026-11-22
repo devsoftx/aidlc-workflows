@@ -17641,13 +17641,15 @@ function unitMajorWalkBeat(
 // what comes next: the step in hand while its Unit has not started it, else
 // that Unit's next stop, else the next Unit's first, else the plan's stage
 // after the block. `current` is the place of the walk's Unit in the walk's
-// order (null once every Unit is through the block). Null on
+// order (null once every Unit is through the block). `phase` is the phase the
+// walk is on: its step's stage, or for the Unit checkpoint the block's last
+// stage, which the checkpoint closes; null once covered. Null on
 // unitMajorWalkBeat's conditions. Reads only.
 export function unitWalkStanding(
   projectDir: string,
   scope: string,
   stateContent: string,
-): { clause: string; current: number | null; total: number; next: string | null } | null {
+): { clause: string; current: number | null; total: number; next: string | null; phase: string | null } | null {
   const walk = unitMajorWalkBeat(projectDir, scope, stateContent, (getField(stateContent, "Current Stage") ?? "").trim());
   if (walk === null) return null;
   const { block, step } = walk;
@@ -17718,11 +17720,18 @@ export function unitWalkStanding(
     const second = after.next();
     next = second.done ? nextUnitStop() : walkStepPlace(second.value);
   }
+  const phaseOfSlug = (slug: string): string | null => block.find((k) => k.slug === slug)?.phase ?? null;
+  const phase: string | null =
+    step.kind === "work" || step.kind === "summary" ? step.stage.phase
+    : step.kind === "paused" ? phaseOfSlug(step.stage)
+    : step.kind === "checkpoint" ? (block.at(-1)?.phase ?? null)
+    : null;
   return {
     clause,
     current: walkUnit === null ? null : units.indexOf(walkUnit) + 1,
     total: units.length,
     next,
+    phase,
   };
 }
 

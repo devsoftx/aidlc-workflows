@@ -10075,8 +10075,8 @@
         "reviewFingerprint": "220a2fd1c77ba6e655b5b7225dcaf49b36dc394aa085198c99d821dc87161117"
       }
     },
-    "tests/fixtures/v05-mr7a-rule-resolution/all-four/phases/construction.md#3baaeb009308d9acb88f68b7f1828d288576a4ed646bbf5b3d5f11ccd9a938b2": {
-      "source": "tests/fixtures/v05-mr7a-rule-resolution/all-four/phases/construction.md",
+    "tests/fixtures/v05-mr7a-rule-resolution/all-four/phases/design.md#3baaeb009308d9acb88f68b7f1828d288576a4ed646bbf5b3d5f11ccd9a938b2": {
+      "source": "tests/fixtures/v05-mr7a-rule-resolution/all-four/phases/design.md",
       "sha256": "3baaeb009308d9acb88f68b7f1828d288576a4ed646bbf5b3d5f11ccd9a938b2",
       "content": "---\npaths:\n  - \"aidlc-docs/construction/**\"\n---\n\n# Construction Phase Rule (all-four fixture)\n",
       "expected": {
@@ -10186,8 +10186,8 @@
         "reviewFingerprint": "6cf7b7d7ddc359f1840b7056255fe0990cfd10aa7f62a8a9563bad7ef414ebef"
       }
     },
-    "tests/fixtures/v05-mr7a-rule-resolution/bom-frontmatter/phases/construction.md#2053b249c04eb83f1c7e64032e86ca0062e4d4214f1f8445d9baa7ae0dce68ad": {
-      "source": "tests/fixtures/v05-mr7a-rule-resolution/bom-frontmatter/phases/construction.md",
+    "tests/fixtures/v05-mr7a-rule-resolution/bom-frontmatter/phases/design.md#2053b249c04eb83f1c7e64032e86ca0062e4d4214f1f8445d9baa7ae0dce68ad": {
+      "source": "tests/fixtures/v05-mr7a-rule-resolution/bom-frontmatter/phases/design.md",
       "sha256": "2053b249c04eb83f1c7e64032e86ca0062e4d4214f1f8445d9baa7ae0dce68ad",
       "content": "﻿---\npairing: feedforward-only\n---\n\n# BOM-prefixed phase rule with pairing field\n",
       "expected": {

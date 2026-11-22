@@ -45,9 +45,10 @@ const SIX = ["u1", "u2", "u3", "u4", "u5", "u6"];
 const THREE = ["u1", "u2", "u3"];
 // The status table's row for the phase a stage sits in.
 const rowFor = (stage: string): string => PHASE_LABELS[phaseFor(stage) as keyof typeof PHASE_LABELS];
-// The status view counts the Unit walk on the row of Current Stage's phase. Construction
-// run one Unit at a time keeps Current Stage on the block's first per-unit stage (the
-// reopen subcommand of aidlc-jump.ts), so every walk row here is the Functional Design row.
+// The status view counts the Unit walk on the row of the phase the walk is on (the step's
+// own phase; the Unit checkpoint sits in the block's last stage's phase). Construction run
+// one Unit at a time keeps Current Stage on the block's first per-unit stage, so Current
+// Stage's phase is not the walk's row once the walk reaches Code Generation.
 const WALK_ROW = rowFor("functional-design");
 
 type DagFile = "stage" | "heading" | "crlf" | "malformed" | "none";
@@ -275,7 +276,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "u1", STAGES.slice(0, 4));
     expect(next(p)).toMatchObject({ stage: "code-generation", unit: "u1" });
     const before = status(p);
-    expect(line(before, WALK_ROW)).toEndWith("Unit 1 of 1: u1 at Code Generation");
+    expect(line(before, rowFor("code-generation"))).toEndWith("Unit 1 of 1: u1 at Code Generation");
     expect(line(before, "Next Stage:")).toBe("Next Stage:     Code Generation for u1");
     startStep(p, "u1", "code-generation");
     expect(line(status(p), "Next Stage:")).toBe("Next Stage:     the Unit checkpoint for u1");
@@ -288,7 +289,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "beta");
     expect(next(p).construction_checkpoint?.unit).toBe("beta");
     const out = status(p);
-    expect(line(out, WALK_ROW)).toEndWith("Unit 2 of 2: alpha done, beta at the Unit checkpoint");
+    expect(line(out, rowFor("code-generation"))).toEndWith("Unit 2 of 2: alpha done, beta at the Unit checkpoint");
     expect(line(out, "Next Stage:")).toBe("Next Stage:     Build and Test");
   });
 
@@ -309,7 +310,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     approve(p, "u1", THREE);
     next(p);
     tool(p, "jump", ["reopen", "--target", "code-generation", "--units", "u1"]);
-    expect(line(status(p), WALK_ROW)).toEndWith("Unit 1 of 3: u1 at Code Generation, u2 and u3 not started");
+    expect(line(status(p), rowFor("code-generation"))).toEndWith("Unit 1 of 3: u1 at Code Generation, u2 and u3 not started");
   });
 
   test("with the walking skeleton on, the skeleton's approval counts", () => {

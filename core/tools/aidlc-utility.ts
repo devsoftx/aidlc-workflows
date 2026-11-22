@@ -2047,7 +2047,7 @@ async function soloUnitWalk(
   flags: Record<string, string>,
   scope: string,
   content: string,
-): Promise<{ clause: string; current: number | null; total: number; next: string | null } | null> {
+): Promise<{ clause: string; current: number | null; total: number; next: string | null; phase: string | null } | null> {
   if (flags.intent || flags.space || isTeamUnitOwnership(content) || waitsToBeBroughtUp(content)) return null;
   if ((getField(content, "Construction Iteration") ?? "").trim() !== "unit-major") return null;
   if (!isUnitLoopStage(findStageBySlug((getField(content, "Current Stage") ?? "").trim()))) return null;
@@ -2333,7 +2333,11 @@ To get started:
       ? unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "")
       : null;
     const phaseSkipped = phaseCheckboxes.filter((c) => c.state === "skipped").length;
-    const count = p === currentEntry?.phase && walk !== null
+    // The walk's clause goes on the row of the phase its step is in: Current
+    // Stage stays on a Unit block's first stage for the whole walk, so its own
+    // phase would put a Code Generation step on the Design row.
+    const walkRow = walk?.phase ?? currentEntry?.phase;
+    const count = p === walkRow && walk !== null
       ? walk.current === null ? walk.clause : `Unit ${walk.current} of ${walk.total}: ${walk.clause}`
       : units
       ? `Unit ${units.current} of ${units.total}`

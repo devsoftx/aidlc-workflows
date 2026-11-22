@@ -104,7 +104,7 @@ function runnerDirName(node: Pick<GraphStage, "slug" | "plugin">): string {
 // stage-runner generation and ship ONE `/aidlc-init` runner that starts intent
 // creation instead - initialization is a PHASE, not standalone stages, so the
 // stage-runner set is the runnable (non-init) stages.
-function isRunnableStage(node: GraphStage): boolean {
+export function isRunnableStage(node: Pick<GraphStage, "phase">): boolean {
   return node.phase !== "initialization";
 }
 

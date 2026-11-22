@@ -2,7 +2,7 @@
 slug: units-generation
 phase: design
 execution: ALWAYS
-condition: Always executes when in scope. Produces the dependency DAG that Stage 2.9 Delivery Planning consumes for Bolt sequencing. In the compiled scope grid, 2.7 (Units Generation) and 2.9 (Delivery Planning) travel together — both EXECUTE or both SKIP per scope.
+condition: Always executes when in scope. Produces the dependency DAG that Stage 2.8 Delivery Planning consumes for Bolt sequencing. In the compiled scope grid, 2.6 (Units Generation) and 2.8 (Delivery Planning) travel together — both EXECUTE or both SKIP per scope.
 lead_agent: aidlc-architect-agent
 support_agents:
   - aidlc-delivery-agent
@@ -44,7 +44,7 @@ outputs: unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md,
 
 # Units Generation
 
-NOTE: **Stage 2.7 produces the dependency DAG (topology). Stage 2.9 Delivery Planning chooses the economic path through it (Bolt sequence).** 2.7 MUST NOT recommend an implementation order or identify a critical path — those are 2.9's economic-sequencing decisions. This stage describes what can depend on what; 2.9 decides what to ship first and why.
+NOTE: **Stage 2.6 produces the dependency DAG (topology). Stage 2.8 Delivery Planning chooses the economic path through it (Bolt sequence).** 2.6 MUST NOT recommend an implementation order or identify a critical path — those are 2.8's economic-sequencing decisions. This stage describes what can depend on what; 2.8 decides what to ship first and why.
 
 ---
 
@@ -128,7 +128,7 @@ units:
     depends_on: [<unit-name>]
 ```
 
-NOTE: This artifact describes topology only. It does NOT pick a single "recommended build order" or identify a critical path — those are economic decisions made in 2.9 (Delivery Planning) using this DAG as input.
+NOTE: This artifact describes topology only. It does NOT pick a single "recommended build order" or identify a critical path — those are economic decisions made in 2.8 (Delivery Planning) using this DAG as input.
 
 **unit-of-work-story-map.md:**
 - One row per upstream item, keyed the way the traceability enumeration below is keyed. When `stories.md` is produced, key every row by `USx.y`; only `USx.y` rows are read. Otherwise key rows by `FR`, and optionally add an `NFR` row for any NFR this scope also traces; a requirement with sub-requirements is traced through its `FR{n}.{m}` IDs, so key its rows by those. Each row names the implementing Unit `U{n}` ID and directory name, for example `| US1.1 | U1 | u1-ledger |`; separate several Units in one cell with `;`. Every Unit a row names traces all of that row's acceptance criteria in its Functional Design, so name a Unit on a row only when it implements part of that item

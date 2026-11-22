@@ -23,11 +23,11 @@ Domain-specific guidance for the Delivery Planning stage.
 4. **Test isolation**: Each stream should be independently testable where possible
 5. **Critical path optimization**: Identify the longest dependency chain and prioritize unblocking it
 
-## Economic vs topological sequencing (for Bolt Planning in Stage 2.9)
+## Economic vs topological sequencing (for Bolt Planning in Stage 2.8)
 
-Unit dependency analysis (Stage 2.7) produces the DAG — topological order falls out of it mechanically. That's geometry: what the system is.
+Unit dependency analysis (Stage 2.6) produces the DAG — topological order falls out of it mechanically. That's geometry: what the system is.
 
-Bolt sequencing (Stage 2.9) is different work. It chooses a path through the DAG weighted by human value judgment — which Bolt ships first, which proves what, which surfaces the biggest risk early. AI can topologically sort; it cannot decide what validates the market hypothesis fastest.
+Bolt sequencing (Stage 2.8) is different work. It chooses a path through the DAG weighted by human value judgment — which Bolt ships first, which proves what, which surfaces the biggest risk early. AI can topologically sort; it cannot decide what validates the market hypothesis fastest.
 
 Per the canonical Glossary (`stage-protocol.md` Terminology), a **Bolt** is the planned unit-loop delivery slice from Delivery Planning: one or more Units with a Definition of Done, a confidence hypothesis, and ownership. Bolts are not MMFs and not sprints.
 
