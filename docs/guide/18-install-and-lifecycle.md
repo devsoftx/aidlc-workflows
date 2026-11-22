@@ -1514,6 +1514,23 @@ registered project pin, then prunes older unprotected versions automatically.
 There is no separate rollback or retained-version management command; to go
 back, see [Go Back to an Earlier Version](#go-back-to-an-earlier-version).
 
+### Projects on 2.8.0 to 2.11.0
+
+AI-DLC runs seven phases: Discover, Design, Build, Test, Secure, Deploy and
+Operate. A project whose own AI-DLC tool is 2.8.0 to 2.11.0 cannot refresh
+straight to a seven-phase release: that tool reads the new release's stage
+files with its own rules, does not know the seven phase names, and stops with
+`schema validation failed`. Take one step first:
+
+- **Native install:** run `aidlc update` on that computer, then `aidlc config`
+  in the project. On a team, a teammate whose computer still runs 2.8.0 to
+  2.11.0 runs `aidlc update` before `aidlc config` on a clone pinned to the
+  newer release.
+- **Copied project:** refresh to 2.11.4 first, with
+  `bun <harness dir>/tools/aidlc.ts config --from <the 2.11.4 copy runtime>`,
+  then refresh to the newer release the same way. The 2.11.4 tool takes the
+  seven-phase stage files as they are.
+
 ## Go Back to an Earlier Version
 
 To put this machine back on an earlier release, run `aidlc use <version>`, for
