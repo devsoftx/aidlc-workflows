@@ -427,7 +427,7 @@ and the `bolt_dag` node schema is in
 [Runtime Graph](../reference/13-runtime-graph.md). The conductor's own chapter is
 [Orchestrator](../reference/03-orchestrator.md).
 
-The User Guide's [Construction flow](../guide/04-phases-and-stages.md#phase-3-construction)
+The User Guide's [Construction flow](../guide/04-phases-and-stages.md#phase-3-build)
 shows the eligible source-producing solo path: a real integrated Unit check and
 human skeleton approval, followed by **Continue automatically** / **Review each
 checkpoint** when offered. It also distinguishes legacy first-stage reviews and

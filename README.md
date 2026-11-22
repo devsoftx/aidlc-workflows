@@ -119,7 +119,7 @@ Ad-hoc AI coding loses context as projects grow. AI-DLC keeps requirements,
 decisions, implementation, tests, and operational work connected through one
 audited lifecycle:
 
-- 5 phases and 33 stages from initialization through operation
+- 7 phases and 33 stages, from discover through operate, after a hidden initialization setup
 - 14 agents: 11 domain experts, 2 reviewers, and an adaptive composer
 - 11 workflow profiles for features, bug fixes, infrastructure, security,
   proofs of concept, enterprise delivery, and other common work

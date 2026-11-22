@@ -66,11 +66,11 @@ in mind for your first week.
 
 ### 1. Stages run in order, and never before their inputs exist
 
-The lifecycle is five phases — **Initialization → Ideation → Inception →
-Construction → Operation** — and the stages within them run in a fixed order.
-A stage never runs before its required inputs exist. Construction cannot write
-code until the earlier stages included in your scope have produced their required
-artifacts. This is the enforcement people feel first. It is not
+The lifecycle is seven phases — **Discover → Design → Build → Test → Secure →
+Deploy → Operate** — with a hidden initialization setup before them, and the
+stages within them run in a fixed order. A stage never runs before its required
+inputs exist. Build cannot write code until the earlier stages included in your
+scope have produced their required artifacts. This is the enforcement people feel first. It is not
 bureaucracy: it is the engine refusing to build on inputs that do not exist yet.
 
 If you want *less* ceremony, you don't bypass the engine: you choose a smaller
@@ -82,7 +82,7 @@ front. See rule 3.
 After most stages, the workflow stops at an **approval gate** and waits for you
 to **Approve** or **Request Changes**. It is genuinely blocked — it will not
 advance on its own (except for the automatic initialization stages and, if you
-opt in, ordinary Construction checkpoints).
+opt in, ordinary unit checkpoints).
 
 A gate is your control point. The completion summary shows what was produced and
 any open findings, each with a stable ID so a later re-check can tell you whether
@@ -219,7 +219,7 @@ ls aidlc/spaces/default/intents/
 ```
 
 Read `aidlc-state.md` (run stages marked `[x]`, scope-excluded ones `[S]`) and skim
-the artifacts under the phase folders your scope ran (for example `inception/`).
+the artifacts under the phase folders your scope ran (for example `design/`).
 Open one `audit/` shard and see the decisions logged with timestamps.
 This is rule 4: the record dir is the durable memory that keeps a growing project
 coherent. See [State and Audit](10-state-and-audit.md) and
@@ -253,7 +253,7 @@ designed; the last row is a fault:
 | Symptom | What is really happening | What to do |
 |---|---|---|
 | "It stopped and won't continue." | You are at an approval gate (rule 2). | Read the summary and answer **Approve** or **Request Changes**. |
-| "It won't just write the code." | Construction needs inputs from earlier phases (rule 1). | Let the earlier stages run, or pick a smaller scope. |
+| "It won't just write the code." | Build needs inputs from earlier phases (rule 1). | Let the earlier stages run, or pick a smaller scope. |
 | "This is way too many steps." | Your scope is larger than the task needs (rule 3). | Restart with `express`, `poc`, or `bugfix`. |
 | "It asks too many questions." | Depth sets how many questions each stage asks; your scope picks a default. | Type `/aidlc --depth minimal` (about 2 to 4 questions per stage). |
 | "Which stage am I on?" | The status line / progress line tells you. | On Claude Code read AI-DLC's status line if you turned it on (`/aidlc --statusline on`); elsewhere run `/aidlc --status` (`$aidlc --status` on Codex). |
@@ -284,7 +284,7 @@ predictability, not friction — which is the point.
 
 - [Your First Workflow](02-your-first-workflow.md) — the fully annotated feature run
 - [Workflow Profiles](workflow-profiles.md) — every scope and when to use it
-- [Phases and Stages](04-phases-and-stages.md) — the full 5-phase, 33-stage map
+- [Phases and Stages](04-phases-and-stages.md) — the full 7-phase, 33-stage map
 - [Interaction Modes](07-interaction-modes.md) — Guide Me, Edit File, Chat, and gates
 - [Spaces and Intents](03-spaces-and-intents.md) — how the workspace holds many runs
 - [Glossary](glossary.md) — every term defined

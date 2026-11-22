@@ -15,7 +15,7 @@ fragments:
 
 ### Step (test-pro): Load regression matrix
 
-Cross-reference the construction regression suite (`test-pro-regression-suite`)
+Cross-reference the test-phase regression suite (`test-pro-regression-suite`)
 and coverage summary against the load-test results. Write
 `test-pro-load-regression-matrix.md` under a `## Load Regression` heading,
 flagging any performance regression vs the prior run and any load-path not

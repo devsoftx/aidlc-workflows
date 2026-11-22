@@ -22,7 +22,7 @@ If you are **using** AI-DLC to build software, start with the [User Guide](../gu
 | [Plane Architecture](02-plane-architecture.md) | The control / data / management plane separation and its boundaries |
 | [Orchestrator](03-orchestrator.md) | The SKILL.md conductor: the forwarding loop, the gate ritual, the state machine it drives |
 | [Stage Protocol](04-stage-protocol.md) | Behavioral contract: approval gates, compliance checklist |
-| [Stages](04-stages/) | Per-phase stage documentation (5 files) |
+| [Stages](04-stages/) | Per-phase stage documentation (8 files) |
 | [Agent System](05-agent-system.md) | Agent structure, frontmatter contract, configuration matrix |
 | [Hooks and Tools](06-hooks-and-tools.md) | Hook system, CLI tools, 134-event audit taxonomy |
 | [Sensor System](07-sensor-system.md) | Sensor manifest schema, PULL imports, fire model, default severity |

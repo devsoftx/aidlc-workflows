@@ -289,7 +289,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
     // command whose exit stopped a later step is not exempt. The reference
     // mirrors the stage rule.
     const reference = readFileSync(
-      join(REPO_ROOT, "docs", "reference", "04-stages", "construction.md"),
+      join(REPO_ROOT, "docs", "reference", "04-stages", "test.md"),
       "utf-8",
     ).replace(/\s+/g, " ");
     for (const prose of [buildAndTest, reference]) {

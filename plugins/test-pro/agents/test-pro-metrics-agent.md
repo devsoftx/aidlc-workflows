@@ -25,7 +25,7 @@ path.
 ## Stages Supported
 
 **Supporting:**
-- test-pro-integration — Cross-Unit Integration Testing (Construction)
+- test-pro-integration — Cross-Unit Integration Testing (Test)
 
 ## Memory Focus
 

@@ -49,13 +49,13 @@ aidlc/spaces/<space>/intents/<YYMMDD>-<label>/   # one record dir per intent
   runtime-graph.json                # Execution telemetry view (gitignore)
 
   verification/                     # Phase boundary checks (commit)
-    phase-check-ideation.md         # written by Approval and Handoff
-    phase-check-inception.md        # written by Delivery Planning
-    phase-check-construction.md     # written by CI Pipeline
+    phase-check-discover.md         # written by Approval and Handoff
+    phase-check-design.md           # written by Delivery Planning
+    phase-check-build.md            # written by CI Pipeline
 
   initialization/                   # Phase 0: stays empty (state and audit only)
 
-  ideation/                         # Phase 1 artifacts
+  discover/                         # Phase 1 artifacts
     intent-capture/
     market-research/                (conditional)
     feasibility/                    (conditional)
@@ -64,7 +64,7 @@ aidlc/spaces/<space>/intents/<YYMMDD>-<label>/   # one record dir per intent
     rough-mockups/                  (conditional)
     approval-handoff/
 
-  inception/                        # Phase 2 artifacts
+  design/                           # Phase 2 artifacts
     practices-discovery/            (conditional)
     requirements-analysis/
     user-stories/                   (conditional)
@@ -73,24 +73,34 @@ aidlc/spaces/<space>/intents/<YYMMDD>-<label>/   # one record dir per intent
     units-generation/
     contract-design/           (conditional)
     delivery-planning/
-
-  construction/                     # Phase 3 artifacts
     {unit-name}/                    (per unit of work, repeated)
       functional-design/            (conditional)
       nfr-requirements/             (conditional)
       nfr-design/                   (conditional)
       infrastructure-design/        (conditional)
-      code-generation/
-    build-and-test/
-    ci-pipeline/                    (conditional)
 
-  operation/                        # Phase 4 artifacts
+  build/                            # Phase 3 artifacts
+    {unit-name}/                    (per unit of work, repeated)
+      code-generation/
+
+  test/                             # Phase 4 artifacts
+    build-and-test/
+    performance-validation/         (conditional)
+
+  secure/                           # Phase 5 artifacts
+    code-review/
+    security-review/
+    conformance-review/             (conditional)
+
+  deploy/                           # Phase 6 artifacts
+    ci-pipeline/                    (conditional)
     deployment-pipeline/            (conditional)
     environment-provisioning/       (conditional)
     deployment-execution/           (conditional)
+
+  operate/                          # Phase 7 artifacts
     observability-setup/            (conditional)
     incident-response/              (conditional)
-    performance-validation/         (conditional)
     feedback-optimization/          (conditional)
 
   archive/                          (created on-demand)
@@ -110,8 +120,10 @@ aidlc/spaces/default/intents/261013-inventory-api/
   runtime-graph.json
   audit/
     <host>-<clone>.md
-  construction/
-  ideation/
+  build/
+  deploy/
+  design/
+  discover/
     feasibility/
       feasibility-questions.md
       memory.md
@@ -122,8 +134,9 @@ aidlc/spaces/default/intents/261013-inventory-api/
       reviews/
         review-01.md
       stakeholder-map.md
-  inception/
   initialization/
+  secure/
+  test/
   verification/
 ```
 
@@ -153,7 +166,7 @@ read the newest scan of the repo, not the one
 taken when their own record dir was created. When the learnings ritual is on,
 the record dir gets the stage's own `memory.md` diary — created by the engine
 when it emits the run-stage directive (see **Per-stage memory diary** below) — so an
-`inception/reverse-engineering/`
+`discover/reverse-engineering/`
 directory can appear there, holding the diary and nothing else. Codekb writes
 are audit-logged with a `codekb > <repo> > <name>` breadcrumb, so the
 per-intent trail still records what changed and when.
@@ -167,7 +180,7 @@ under an optional `aidlc-shared/` and per-agent subdirectories. See
 
 **Per-stage memory diary.** When the learnings ritual is on, each executed stage
 also keeps a committed `memory.md` alongside its artifacts (e.g.
-`<record>/inception/requirements-analysis/memory.md`). It is the
+`<record>/design/requirements-analysis/memory.md`). It is the
 stage's observation diary — created by the engine from a template when it emits
 the run-stage directive and maintained by the orchestrator during the stage, as
 the stage's record of the agent's reasoning; nothing in it is offered to you as
@@ -183,7 +196,7 @@ children of the workspace root (each with its own `.git`; a git submodule of a
 project with code of its own is not one, so that project is the single-repo
 case). An intent records the
 repos it touches at creation - auto-discovered, or scoped with `--repos a,b` - in its
-`intents.json` row (`repos: [...]`); Construction anchors each git operation to one
+`intents.json` row (`repos: [...]`); the per-Unit walk anchors each git operation to one
 of them. An intent with no recorded `repos` is the single-repo default. See
 [CLI Commands](12-cli-commands.md).
 
@@ -232,61 +245,79 @@ None of the three writes a document of its own, so `initialization/` stays empty
 
 The welcome message is rendered at session start via `companyAnnouncements` in `settings.json` — it is not a stage and produces no artifact.
 
-### Ideation (stages 1.1-1.7)
+### Discover (stages 1.1-1.8)
 
 | Stage | Key Artifacts | Condition |
 |-------|--------------|-----------|
 | 1.1 Intent Capture | `intent-capture-questions.md` (source register and confirmed answers), `intent-statement.md`, `stakeholder-map.md` (inline source tags and mandatory assumptions sections) | Always |
 | 1.2 Market Research | `competitive-analysis.md`, `build-vs-buy.md` | Conditional |
 | 1.3 Feasibility | `feasibility-assessment.md`, `constraint-register.md`, `raid-log.md` | Conditional |
-| 1.4 Scope Definition | `scope-document.md`, `intent-backlog.md` | Always |
-| 1.5 Team Formation | `team-assessment.md`, `mob-composition.md` | Conditional |
-| 1.6 Rough Mockups | `wireframes.md`, `user-flow.md` | Conditional |
-| 1.7 Approval & Handoff | `initiative-brief.md`, `decision-log.md` | Always |
+| 1.4 Reverse Engineering | 9 files including `architecture.md`, `code-structure.md`, `technology-stack.md` (written to the space-level `aidlc/spaces/<active-space>/codekb/<repo>/` — one shared store per repo, reused when verified current, replaced by a full rescan, or cumulatively extended by a focused scan; only the stage's `memory.md` diary lands in the intent record, when the learnings ritual is on) | Brownfield only |
+| 1.5 Scope Definition | `scope-document.md`, `intent-backlog.md` | Always |
+| 1.6 Team Formation | `team-assessment.md`, `mob-composition.md` | Conditional |
+| 1.7 Rough Mockups | `wireframes.md`, `user-flow.md` | Conditional |
+| 1.8 Approval & Handoff | `initiative-brief.md`, `decision-log.md` | Always |
 
-### Inception (stages 2.1-2.9)
-
-| Stage | Key Artifacts | Condition |
-|-------|--------------|-----------|
-| 2.1 Reverse Engineering | 9 files including `architecture.md`, `code-structure.md`, `technology-stack.md` (written to the space-level `aidlc/spaces/<active-space>/codekb/<repo>/` — one shared store per repo, reused when verified current, replaced by a full rescan, or cumulatively extended by a focused scan; only the stage's `memory.md` diary lands in the intent record, when the learnings ritual is on) | Brownfield only |
-| 2.2 Practices Discovery | `team-practices.md`, `discovered-rules.md`, `evidence.md`, `practices-discovery-timestamp.md`, plus quality/developer/devsecops contribution files (promoted to `aidlc/spaces/<active-space>/memory/team.md` and `project.md` after approval) | Conditional |
-| 2.3 Requirements Analysis | `requirements.md` | Always |
-| 2.4 User Stories | `stories.md`, `personas.md` | User-facing features |
-| 2.5 Refined Mockups | `mockups.md`, `interaction-spec.md`, `accessibility-checklist.md` | UI projects |
-| 2.6 Domain Design | `components.md` (consolidated component catalogue), `decisions.md` (ADR log) | When new components needed |
-| 2.7 Units Generation | `unit-of-work.md`, `unit-of-work-dependency.md`, `unit-of-work-story-map.md` | Always |
-| 2.8 Contract Design | `contract-summary.md` (inter-unit contracts and public or external APIs) | More than one unit, or a unit with an API used outside the system |
-| 2.9 Delivery Planning | `bolt-plan.md`, `team-allocation.md`, `risk-and-sequencing-rationale.md`, `external-dependency-map.md` | Always |
-
-### Construction (stages 3.1-3.7)
-
-Stages 3.1-3.5 repeat per unit of work. Artifacts go in `construction/{unit-name}/{stage-name}/`. Stages 3.6-3.7 run once after all units.
-
-The four design stages (3.1-3.4) prune their artifacts to each unit's **kind** (tagged in 2.7's edge block: `service`, `spec`, `ui`, `packaging`, or `library`). A `spec` unit owes no scalability doc, a `packaging` unit no functional spec; a unit left untagged receives the full matrix below. Which artifact applies to which kind is stage frontmatter data (`produces_kinds`, see [Stage definition](../reference/15-stage-definition.md)). A unit for which none of a stage's artifacts apply is complete for that stage with zero files.
+### Design (stages 2.1-2.12)
 
 | Stage | Key Artifacts | Condition |
 |-------|--------------|-----------|
-| 3.1 Functional Design | `entities.md`, `rules.md`, `functional-spec.md` | Per plan, per unit (by kind) |
-| 3.2 NFR Requirements | `security-requirements.md`, `performance-requirements.md` | Per plan, per unit (by kind) |
-| 3.2 NFR Requirements | `observability-requirements.md` | Per plan, service units only |
-| 3.3 NFR Design | `security-design.md`, `performance-design.md` | Per plan, per unit (by kind) |
-| 3.3 NFR Design | `observability-design.md` | Per plan, service units only |
-| 3.4 Infrastructure Design | `infrastructure-specification.md`, `monitoring-design.md`, `cicd-pipeline.md` | Per plan, per unit (by kind) |
-| 3.5 Code Generation | `code-generation-plan.md`, `code-generation-questions.md`, `unit-test-instructions.md`, `code-summary.md`, `traceability.json`, plus engine-required `source-manifest.json` (code goes to workspace root) | Always, per unit |
-| 3.6 Build and Test | `build-instructions.md`, `test-results.md` | Always, after all units |
-| 3.7 CI Pipeline | `ci-config.md`, `quality-gates.md` | Conditional, after all units |
+| 2.1 Practices Discovery | `team-practices.md`, `discovered-rules.md`, `evidence.md`, `practices-discovery-timestamp.md`, plus quality/developer/devsecops contribution files (promoted to `aidlc/spaces/<active-space>/memory/team.md` and `project.md` after approval) | Conditional |
+| 2.2 Requirements Analysis | `requirements.md` | Always |
+| 2.3 User Stories | `stories.md`, `personas.md` | User-facing features |
+| 2.4 Refined Mockups | `mockups.md`, `interaction-spec.md`, `accessibility-checklist.md` | UI projects |
+| 2.5 Domain Design | `components.md` (consolidated component catalogue), `decisions.md` (ADR log) | When new components needed |
+| 2.6 Units Generation | `unit-of-work.md`, `unit-of-work-dependency.md`, `unit-of-work-story-map.md` | Always |
+| 2.7 Contract Design | `contract-summary.md` (inter-unit contracts and public or external APIs) | More than one unit, or a unit with an API used outside the system |
+| 2.8 Delivery Planning | `bolt-plan.md`, `team-allocation.md`, `risk-and-sequencing-rationale.md`, `external-dependency-map.md` | Always |
+| 2.9 Functional Design | `entities.md`, `rules.md`, `functional-spec.md` | Per plan, per unit (by kind) |
+| 2.10 NFR Requirements | `security-requirements.md`, `performance-requirements.md` | Per plan, per unit (by kind) |
+| 2.10 NFR Requirements | `observability-requirements.md` | Per plan, service units only |
+| 2.11 NFR Design | `security-design.md`, `performance-design.md` | Per plan, per unit (by kind) |
+| 2.11 NFR Design | `observability-design.md` | Per plan, service units only |
+| 2.12 Infrastructure Design | `infrastructure-specification.md`, `monitoring-design.md`, `cicd-pipeline.md` | Per plan, per unit (by kind) |
 
-### Operation (stages 4.1-4.7)
+Stages 2.9-2.12 repeat per unit of work. Artifacts go in `design/{unit-name}/{stage-name}/`. Code Generation (3.1) repeats per unit of work too, in `build/{unit-name}/code-generation/`. Build and Test (4.1) and CI Pipeline (6.1) run once after all units.
+
+The four design stages (2.9-2.12) prune their artifacts to each unit's **kind** (tagged in 2.6's edge block: `service`, `spec`, `ui`, `packaging`, or `library`). A `spec` unit owes no scalability doc, a `packaging` unit no functional spec; a unit left untagged receives the full matrix above. Which artifact applies to which kind is stage frontmatter data (`produces_kinds`, see [Stage definition](../reference/15-stage-definition.md)). A unit for which none of a stage's artifacts apply is complete for that stage with zero files.
+
+### Build (stage 3.1)
 
 | Stage | Key Artifacts | Condition |
 |-------|--------------|-----------|
-| 4.1 Deployment Pipeline | `cd-config.md`, `deployment-strategy.md`, `rollback-runbook.md` | Conditional |
-| 4.2 Environment Provisioning | `environment-inventory.md`, `validation-report.md` | Conditional |
-| 4.3 Deployment Execution | `deployment-log.md`, `smoke-test-results.md` | Conditional |
-| 4.4 Observability Setup | `dashboards.md`, `alarms.md`, `slo-config.md` | Conditional |
-| 4.5 Incident Response | `runbooks.md`, `incident-plan.md`, `escalation-matrix.md` | Conditional |
-| 4.6 Performance Validation | `load-test-plan.md`, `nfr-validation-matrix.md` | Conditional |
-| 4.7 Feedback & Optimization | `slo-report.md`, `cost-analysis.md`, `feedback-loop.md` | Conditional |
+| 3.1 Code Generation | `code-generation-plan.md`, `code-generation-questions.md`, `unit-test-instructions.md`, `code-summary.md`, `traceability.json`, plus engine-required `source-manifest.json` (code goes to workspace root) | Always, per unit |
+
+### Test (stages 4.1-4.2)
+
+| Stage | Key Artifacts | Condition |
+|-------|--------------|-----------|
+| 4.1 Build and Test | `build-instructions.md`, `test-results.md` | Always, after all units |
+| 4.2 Performance Validation | `load-test-plan.md`, `nfr-validation-matrix.md` | Conditional |
+
+### Secure (stages 5.1-5.3)
+
+| Stage | Key Artifacts | Condition |
+|-------|--------------|-----------|
+| 5.1 Code Review | `code-review-report.md`, `code-review-findings.md` | Always |
+| 5.2 Security Review | `security-review-report.md`, `security-findings.md` | Always |
+| 5.3 Conformance Review | `conformance-report.md` | Conditional |
+
+### Deploy (stages 6.1-6.4)
+
+| Stage | Key Artifacts | Condition |
+|-------|--------------|-----------|
+| 6.1 CI Pipeline | `ci-config.md`, `quality-gates.md` | Conditional, after all units |
+| 6.2 Deployment Pipeline | `cd-config.md`, `deployment-strategy.md`, `rollback-runbook.md` | Conditional |
+| 6.3 Environment Provisioning | `environment-inventory.md`, `validation-report.md` | Conditional |
+| 6.4 Deployment Execution | `deployment-log.md`, `smoke-test-results.md` | Conditional |
+
+### Operate (stages 7.1-7.3)
+
+| Stage | Key Artifacts | Condition |
+|-------|--------------|-----------|
+| 7.1 Observability Setup | `dashboards.md`, `alarms.md`, `slo-config.md` | Conditional |
+| 7.2 Incident Response | `runbooks.md`, `incident-plan.md`, `escalation-matrix.md` | Conditional |
+| 7.3 Feedback & Optimization | `slo-report.md`, `cost-analysis.md`, `feedback-loop.md` | Conditional |
 
 ---
 
@@ -332,24 +363,24 @@ settings, and machine-local derived state are ignored.
 Each stage reads artifacts from prior stages as input. Key dependency chains:
 
 - **Intent Capture** artifacts flow into Market Research, Feasibility, Scope Definition, and Rough Mockups
-- **Requirements Analysis** artifacts flow into User Stories, Domain Design, and all Construction stages
-- **Domain Design** and **Units Generation** artifacts flow into all per-unit Construction stages
-- **All Construction artifacts** flow into Build and Test and CI Pipeline
-- **Infrastructure Design** artifacts flow into Operation stages
+- **Requirements Analysis** artifacts flow into User Stories, Domain Design, and all per-unit stages
+- **Domain Design** and **Units Generation** artifacts flow into all per-unit stages
+- **All per-unit artifacts** flow into Build and Test and CI Pipeline
+- **Infrastructure Design** artifacts flow into the Deploy and Operate stages
 
-Each stage's own inputs are listed on its phase page in the Developer Reference: [Initialization](../reference/04-stages/initialization.md), [Ideation](../reference/04-stages/ideation.md), [Inception](../reference/04-stages/inception.md), [Construction](../reference/04-stages/construction.md), and [Operation](../reference/04-stages/operation.md).
+Each stage's own inputs are listed on its phase page in the Developer Reference: [Initialization](../reference/04-stages/initialization.md), [Discover](../reference/04-stages/discover.md), [Design](../reference/04-stages/design.md), [Test](../reference/04-stages/test.md), [Deploy](../reference/04-stages/deploy.md), and [Operate](../reference/04-stages/operate.md).
 
 ---
 
 ## Phase Boundary Verification
 
-Three stages end their phase with a traceability check and write it to `verification/`. A plan that skips the stage gets no check for that phase (`mvp`, for example, skips Approval and Handoff):
+Three stages write a traceability check to `verification/` at a phase boundary. A plan that skips the stage gets no check for that boundary (`mvp`, for example, skips Approval and Handoff):
 
 | Check File | Written by | What it validates |
 |-----------|-----------|-------------------|
-| `phase-check-ideation.md` | 1.7 Approval and Handoff | Intent to scope to intent backlog consistency |
-| `phase-check-inception.md` | 2.9 Delivery Planning | Requirements to stories to architecture alignment |
-| `phase-check-construction.md` | 3.7 CI Pipeline | All units built and tested, CI configured |
+| `phase-check-discover.md` | 1.8 Approval and Handoff | Intent to scope to intent backlog consistency |
+| `phase-check-design.md` | 2.8 Delivery Planning | Requirements to stories to architecture alignment |
+| `phase-check-build.md` | 6.1 CI Pipeline | All units built and tested, CI configured |
 
 ---
 

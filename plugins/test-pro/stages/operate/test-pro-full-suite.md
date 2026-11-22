@@ -33,7 +33,7 @@ ars:
   cost: 5
 when:
   producer-in-plan: test-pro-regression-suite
-inputs: Deployed environment coordinates, the construction regression suite, and integration results
+inputs: Deployed environment coordinates, the regression suite from build-and-test, and integration results
 outputs: test-pro-full-suite-results.md, test-pro-edge-api-report.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -43,7 +43,7 @@ MANDATORY: Follow stage-protocol.md for approval gates, question format, and com
 
 Runs the full regression + edge + API positive/negative suite against the
 DEPLOYED environment — the end-to-end confirmation that the assembled, deployed
-system behaves, beyond the per-unit construction tests.
+system behaves, beyond the per-unit tests.
 
 ## Steps
 

@@ -131,7 +131,7 @@ flowchart TD
     A3["/aidlc"]
     A4["/aidlc --status"]
     A5["/aidlc --stage code-generation"]
-    A6["/aidlc --phase construction"]
+    A6["/aidlc --phase build"]
     A8["/aidlc --doctor"]
 
     START --> Q1
@@ -200,11 +200,11 @@ Describe what you want to build and the agent proposes the plan that fits it; th
 
 **Behavior:** The agent reads your description and proposes the plan that fits it (a bug report usually gets bugfix); the engine asks a one-line confirm naming that plan and its effective ceremony (stage count, approval-gate count, and any per-unit fan-out, all from the compiled grid). Greenfield work excludes reverse engineering, and a per-unit clause appears only when `units-generation` runs and creates a Unit DAG. When no ready-made plan fits, you get the compose offer (see `/aidlc compose` below) instead of a silent default. You confirm or override before the workflow begins. A description that opens with a plan's name keeps every word (`/aidlc classic car rental website` is about a car rental website): the agent reads whether that word names the plan.
 
-**Example** (a new project; on an existing codebase bugfix also runs Reverse Engineering, so the line says 6 stages and 6 approval gates):
+**Example** (a new project; on an existing codebase bugfix also runs Reverse Engineering, so the line says 8 stages and 8 approval gates):
 
 ```
 /aidlc Fix the ProfileSerializer null pointer
-> I'd run the "bugfix" plan for: "Fix the ProfileSerializer null pointer" - 5 stages, 5 approval gates. Do you want me to go ahead with it, use a different plan, or tailor one to this task?
+> I'd run the "bugfix" plan for: "Fix the ProfileSerializer null pointer" - 7 stages, 7 approval gates. Do you want me to go ahead with it, use a different plan, or tailor one to this task?
 ```
 
 **A request no shell can carry.** On Windows, cmd.exe ends a command at a line
@@ -308,13 +308,13 @@ work's repo (a project made only of submodules records them). To scope an intent
 to a specific subset, or to name a submodule as the work's repo,
 the creation tool accepts `--repos a,b` (a comma-separated list of repo directory
 names). These are flags of the deterministic `aidlc-utility intent-create` step the
-engine runs for you — not `/aidlc` flags you type. During Construction, each git
+engine runs for you — not `/aidlc` flags you type. During unit-by-unit work, each git
 operation (worktree, swarm, Bolt) targets one repo; the conductor passes
 `--repo <name>` to anchor it, required only when an intent spans more than one
 repo. An intent with no recorded repos is the single-repo default (git runs in the
 workspace/project dir). Team-owned Units currently require that single-repo
 default: work with recorded sibling repos is not asked who builds its Units, and
-the first Construction step says in one line that this session builds them;
+the first unit-by-unit step says in one line that this session builds them;
 `set-unit-ownership team` refuses with the same line before changing state. See
 [Artifacts Reference](14-artifacts-reference.md).
 
@@ -794,7 +794,7 @@ to a candidate commit that preserves both claim and implementation history.
 AI-DLC's own part of `.gitignore`, `AGENTS.md` and `opencode.json` (written when a
 session starts in a fresh clone) does not count, here or at landing; it stays
 uncommitted, and any other change still stops both.
-A change to a record outside the Unit's `construction/<unit>/` folder (an Inception
+A change to a record outside the Unit's `design/<unit>/` and `build/<unit>/` folders (a Design
 artifact such as `contract-summary.md`, say) is still published, but pin will refuse
 that candidate, so publish names the file and says to take it out of the branch,
 change it on main instead, and publish again. Pin and land refuse it too and
@@ -1189,9 +1189,9 @@ Jump to the first stage of a specific phase.
 **Syntax:**
 
 ```
-/aidlc --phase construction
+/aidlc --phase build
 /aidlc --phase 3
-/aidlc --phase ideation
+/aidlc --phase discover
 /aidlc --phase 1
 ```
 
@@ -2216,7 +2216,7 @@ that message and their words, until the next decision of theirs.
 
 ### `aidlc engine bolt set-autonomy` - change Construction approvals
 
-During Construction, explicitly ask to continue automatically or review each
+During unit-by-unit work, explicitly ask to continue automatically or review each
 checkpoint. The conductor records **Continue automatically** as `autonomous`
 and **Review each checkpoint** as `gated`:
 
@@ -2230,7 +2230,7 @@ autonomy needs `--message <id>`, the id of the person's message that chose it,
 and the grant uses that message up; an approval
 in that same message ("approve the plan, and run Construction on its own from
 here"), or the answer they gave the agent's own question in it, leaves it standing. Revocation needs no message. New checkpoint
-workflows offer the choice at Construction entry with skeleton-off, or after
+workflows offer the choice when unit-by-unit work starts, with skeleton-off, or after
 the first working integrated Unit has passed its skeleton checkpoint with
 skeleton-on. A known choice is not asked again; on-demand changes remain valid.
 
@@ -2285,7 +2285,7 @@ runtime preferences. Generic `state set` refuses `Construction Checkpoints`,
 Command`; use `set-construction-checkpoints`, `set-construction-execution`,
 `set-construction-iteration`, or the receipt-bound
 `set-construction-verification-command`, respectively.
-During Construction you change any of these in your own words ("turn
+During unit-by-unit work you change any of these in your own words ("turn
 checkpoints off", "from here on, build one unit at a time", "run the Units in
 parallel"). The agent does it in that turn, with no question first, and says one
 line with what changed and that you can switch back, for example "Construction
@@ -3104,7 +3104,7 @@ Add `--json` for the structured shape. Always exits 0 with the verdict in the
 output (except usage errors); writes nothing and records no audit event, with
 one exception: when the compared file is the stage's own
 `scope-draft-<repo>.md` for the compared repo in the active intent record's
-`inception/reverse-engineering/`, the compare removes it, whatever the verdict,
+`discover/reverse-engineering/`, the compare removes it, whatever the verdict,
 and says so ("The scope draft has been removed.", or `"draft_removed": true`
 with `--json`). The fingerprint
 is a `git write-tree` over a temporary index restricted to the analyzed paths,
@@ -3332,9 +3332,9 @@ A name is lowercase letters, digits, and single hyphens, starting with a letter,
 
 ### Creating a workflow with its own stage changes (`--skip` / `--add`)
 
-`next --scope <scope> --skip <slug,...> --add <slug,...> -- "<description>"` creates a workflow on `<scope>` with stages dropped or added for this piece of work only; the conductor passes them for a custom composed plan, and you can type them too. Typed with a request that names no plan, they are yours on the plan question: Go ahead creates the proposed plan with them, and so does another plan you pick from its list (a stage a plan already leaves out or runs is left off for that plan), and Tailor a plan hands them to the composer, so the plan it shows has them. Each slug must name a stage; an initialization stage, a stage on both lists, or a change the scope already makes (`--skip` of a stage it skips) is refused before anything is created. The work's state records `Plan: <name>` (`--plan-name <name>`, which the conductor passes with the composer's suggested name; lowercase letters, digits and hyphens; `tailored plan` without it), and no scope file is written. With `--save-as <name>`, which the conductor passes for **Approve and save as scope**, the creation also saves the plan as a scope with that name, the save [`scope save`](#aidlc-engine-scope-save-keep-a-plan-as-a-scope) does; a name that is taken or cannot name a scope is refused before anything is created. On a running workflow, `/aidlc --skip <slug,...>` and `/aidlc --add <slug,...>` change its remaining stages at once through `recompose`, with no approval question (you named the stages), and say in one line what changed and the way back. A scope or setting typed in the same command is applied first. A stage you name that has already started (in progress, being revised after you asked for changes, or waiting at its own approval question) is skipped where it stands, whatever kind of stage it is, and the work goes on, or ends when it was the last stage on the plan (the way back is to run it on its own, `/aidlc --stage <slug> --single`); an approval typed in the same message at an open gate is recorded too, so both happen once (at a question that named several stages, "skip Functional Design and approve the rest" approves the ones you did not skip, together). While Construction runs one Unit at a time, the step a Unit is on is skipped for that Unit only or for every Unit from here, as your words say (a skip that names no Unit is for every Unit from here); for one Unit the way back is `/aidlc --stage <slug> --unit <unit>`, and a Unit whose code step you skipped has no checkpoint. A team's main checkout that works every Unit itself reads a skip the same way. A later step of the Unit walk, or a stage after it such as Build and Test, comes off the plan for every Unit. A stage you add that the work has just passed over ("Approve, and add User Stories next" recorded as the approval first), while nothing after it has started, is put back and runs next, as when the add comes first. A flip the plan cannot take is refused with what you can do instead.
+`next --scope <scope> --skip <slug,...> --add <slug,...> -- "<description>"` creates a workflow on `<scope>` with stages dropped or added for this piece of work only; the conductor passes them for a custom composed plan, and you can type them too. Typed with a request that names no plan, they are yours on the plan question: Go ahead creates the proposed plan with them, and so does another plan you pick from its list (a stage a plan already leaves out or runs is left off for that plan), and Tailor a plan hands them to the composer, so the plan it shows has them. Each slug must name a stage; an initialization stage, a stage on both lists, or a change the scope already makes (`--skip` of a stage it skips) is refused before anything is created. The work's state records `Plan: <name>` (`--plan-name <name>`, which the conductor passes with the composer's suggested name; lowercase letters, digits and hyphens; `tailored plan` without it), and no scope file is written. With `--save-as <name>`, which the conductor passes for **Approve and save as scope**, the creation also saves the plan as a scope with that name, the save [`scope save`](#aidlc-engine-scope-save-keep-a-plan-as-a-scope) does; a name that is taken or cannot name a scope is refused before anything is created. On a running workflow, `/aidlc --skip <slug,...>` and `/aidlc --add <slug,...>` change its remaining stages at once through `recompose`, with no approval question (you named the stages), and say in one line what changed and the way back. A scope or setting typed in the same command is applied first. A stage you name that has already started (in progress, being revised after you asked for changes, or waiting at its own approval question) is skipped where it stands, whatever kind of stage it is, and the work goes on, or ends when it was the last stage on the plan (the way back is to run it on its own, `/aidlc --stage <slug> --single`); an approval typed in the same message at an open gate is recorded too, so both happen once (at a question that named several stages, "skip Functional Design and approve the rest" approves the ones you did not skip, together). While the work runs one Unit at a time, the step a Unit is on is skipped for that Unit only or for every Unit from here, as your words say (a skip that names no Unit is for every Unit from here); for one Unit the way back is `/aidlc --stage <slug> --unit <unit>`, and a Unit whose code step you skipped has no checkpoint. A team's main checkout that works every Unit itself reads a skip the same way. A later step of the Unit walk, or a stage after it such as Build and Test, comes off the plan for every Unit. A stage you add that the work has just passed over ("Approve, and add User Stories next" recorded as the approval first), while nothing after it has started, is put back and runs next, as when the add comes first. A flip the plan cannot take is refused with what you can do instead.
 
-After a skip, the undo that one line names holds until the work moves past the earliest stage the change named (a stage it added: until that stage starts), or, with nothing after it on the plan, until the work is finished, and the line says which. While Construction runs one Unit at a time, a step of the Unit walk taken off the plan for every Unit holds until the first stage after the walk starts, since the work stays on the walk until every Unit is through; Reverse Engineering the work still owes holds until the first Construction stage starts. After that, a skipped stage runs on its own with `/aidlc --stage <slug> --single`. A skip typed at the open gate of the stage just before it names only that way, since approving that gate, which the same reply usually does, moves the work past it at once.
+After a skip, the undo that one line names holds until the work moves past the earliest stage the change named (a stage it added: until that stage starts), or, with nothing after it on the plan, until the work is finished, and the line says which. While the work runs one Unit at a time, a step of the Unit walk taken off the plan for every Unit holds until the first stage after the walk starts, since the work stays on the walk until every Unit is through; Reverse Engineering the work still owes holds until the first Construction stage starts. After that, a skipped stage runs on its own with `/aidlc --stage <slug> --single`. A skip typed at the open gate of the stage just before it names only that way, since approving that gate, which the same reply usually does, moves the work past it at once.
 
 `--depth` and `--test-strategy` take exactly `minimal`, `standard`, or `comprehensive`; `next` refuses any other value before it names a command.
 
@@ -3375,7 +3375,7 @@ bun .claude/tools/aidlc-sensor.ts list
 bun .claude/tools/aidlc-sensor.ts describe required-sections
 bun .claude/tools/aidlc-sensor.ts fire required-sections \
   --stage requirements-analysis \
-  --output-path aidlc/spaces/default/intents/<YYMMDD>-<label>/inception/requirements-analysis/requirements.md
+  --output-path aidlc/spaces/default/intents/<YYMMDD>-<label>/design/requirements-analysis/requirements.md
 ```
 
 ### `aidlc-learnings` — the learning-gate tool

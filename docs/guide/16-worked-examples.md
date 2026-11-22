@@ -12,7 +12,7 @@ Two complete walkthroughs showing AI-DLC in action: a bugfix and a feature. Each
 
 ## Bugfix Walkthrough
 
-This example fixes a null pointer exception in a user profile API. The **bugfix** scope runs 9 stages (3 Initialization + 6 domain) at Minimal depth.
+This example fixes a null pointer exception in a user profile API. The **bugfix** scope runs 11 stages (3 Initialization + 8 domain) at Minimal depth.
 
 ### Invocation
 
@@ -35,12 +35,14 @@ You respond:
 | 0.1 | Workspace Scaffold | Initialization | orchestrator | inline (auto-proceed) |
 | 0.2 | Workspace Detection | Initialization | orchestrator | inline (auto-proceed) |
 | 0.3 | State Init | Initialization | orchestrator | inline (auto-proceed) |
-| 2.1 | Reverse Engineering | Inception | aidlc-developer-agent + aidlc-architect-agent | pipeline |
-| 2.3 | Requirements Analysis | Inception | aidlc-product-agent | inline |
-| 3.5 | Code Generation | Construction | aidlc-developer-agent | subagent |
-| 3.6 | Build and Test | Construction | aidlc-quality-agent | inline |
-| 4.1 | Deployment Pipeline | Operation | aidlc-pipeline-deploy-agent | inline |
-| 4.3 | Deployment Execution | Operation | aidlc-pipeline-deploy-agent + aidlc-developer-agent | inline |
+| 1.4 | Reverse Engineering | Discover | aidlc-developer-agent + aidlc-architect-agent | pipeline |
+| 2.2 | Requirements Analysis | Design | aidlc-product-agent | inline |
+| 3.1 | Code Generation | Build | aidlc-developer-agent | subagent |
+| 4.1 | Build and Test | Test | aidlc-quality-agent | inline |
+| 5.1 | Code Review | Secure | aidlc-quality-agent | inline |
+| 5.2 | Security Review | Secure | aidlc-devsecops-agent | inline |
+| 6.2 | Deployment Pipeline | Deploy | aidlc-pipeline-deploy-agent | inline |
+| 6.4 | Deployment Execution | Deploy | aidlc-pipeline-deploy-agent + aidlc-developer-agent | inline |
 
 ### Initialization (stages 0.1-0.3) — auto-proceed
 
@@ -50,9 +52,9 @@ The 3 Initialization stages run as a single deterministic tool call (`aidlc-util
 - **0.2 Workspace Detection** — Rule-based scan identifies Java 17, Spring Boot 3.2, Maven, brownfield project
 - **0.3 State Init** — Initializes `aidlc-state.md` with scope `bugfix`, depth `Minimal`, and the domain stages marked for execution
 
-> Setting up the bugfix workflow for this: 6 stages, 6 approval gates.
+> Setting up the bugfix workflow for this: 8 stages, 8 approval gates.
 
-### Stage 2.1 — Reverse Engineering
+### Stage 1.4 — Reverse Engineering
 
 A two-link pipeline scans the codebase: first an aidlc-developer-agent code scan, then an aidlc-architect-agent synthesis that writes the artifacts. It produces 9 durable artifacts for the repository in `aidlc/spaces/default/codekb/user-service/`:
 
@@ -78,9 +80,9 @@ Reverse Engineering complete. How would you like to proceed?
 
 You select **Approve**.
 
-### Stage 2.3 — Requirements Analysis
+### Stage 2.2 — Requirements Analysis
 
-The aidlc-product-agent persona loads and creates clarifying questions at `<record>/inception/requirements-analysis/requirements-analysis-questions.md`:
+The aidlc-product-agent persona loads and creates clarifying questions at `<record>/design/requirements-analysis/requirements-analysis-questions.md`:
 
 ```markdown
 ## Q1. [Product owner] Bug Severity Classification
@@ -109,7 +111,7 @@ The conductor generates `requirements.md` with 3 functional requirements (null h
 
 **Approval gate:** You select **Approve**.
 
-### Stage 3.5 — Code Generation
+### Stage 3.1 — Code Generation
 
 The conductor creates a code generation plan, then delegates to a aidlc-developer-agent subagent:
 
@@ -128,7 +130,7 @@ You approve the plan. The subagent implements all 4 steps:
 
 **Approval gate:** You select **Approve**.
 
-### Stage 3.6 — Build and Test
+### Stage 4.1 — Build and Test
 
 The aidlc-quality-agent runs the build and tests:
 
@@ -138,11 +140,15 @@ mvn test                 # 89 tests, 0 failures
 mvn verify               # Integration tests pass
 ```
 
-Results captured in `<record>/construction/build-and-test/test-results.md`: 89 tests passed, 0 failures, coverage increased from 62% to 64%.
+Results captured in `<record>/test/build-and-test/test-results.md`: 89 tests passed, 0 failures, coverage increased from 62% to 64%.
 
 **Approval gate:** You select **Approve**.
 
-### Stages 4.1 and 4.3 — Deploy
+### Stages 5.1 and 5.2 — Review
+
+Code Review and Security Review check the change before it is deployed. Each one ends at its own approval gate, and you select **Approve** at each.
+
+### Stages 6.2 and 6.4 — Deploy
 
 Deployment Pipeline inspects the existing delivery configuration and records
 the deployment strategy, CD configuration, and rollback runbook. Environment
@@ -160,14 +166,18 @@ aidlc/spaces/default/
   codekb/
     user-service/             # 9 space-level RE artifacts
   intents/260624-null-display-fix/
-    aidlc-state.md            # All 9 stages marked [x]
+    aidlc-state.md            # All 11 stages marked [x]
     audit/                    # Full decision trail (per-clone shards)
-    inception/
+    design/
       requirements-analysis/ # requirements.md + questions
-    construction/
+    build/
       code-generation/       # plan + summary
+    test/
       build-and-test/        # instructions + test results
-    operation/
+    secure/
+      code-review/
+      security-review/
+    deploy/
       deployment-pipeline/   # CD config + strategy + rollback runbook
       deployment-execution/  # deployment log + smoke tests + health checks
 ```
@@ -190,7 +200,7 @@ Application code in workspace root:
 
 ## Feature Walkthrough
 
-This example builds a notification service for a task management application. The **feature** scope runs all 33 stages at Standard depth. This walkthrough highlights key stages across all phases. It runs with collaborators on (`/aidlc --collaborators on`), so the Inception ensembles below show their full roster; the feature scope ships them off, and then those stages run with the lead agent only.
+This example builds a notification service for a task management application. The **feature** scope runs 32 of the 33 stages after setup at Standard depth. This walkthrough highlights key stages across all phases. It runs with collaborators on (`/aidlc --collaborators on`), so the Design ensembles below show their full roster; the feature scope ships them off, and then those stages run with the lead agent only.
 
 ### Invocation
 
@@ -206,9 +216,9 @@ This example builds a notification service for a task management application. Th
 
 The 3 Initialization stages run automatically inside `aidlc-utility intent-create`. Workspace Detection identifies: TypeScript, Node.js 20, Express, PostgreSQL, brownfield project with existing task and user services.
 
-> Setting up the feature workflow for this: 30 stages, 30 approval gates, 5 stages repeat per unit of work in Construction.
+> Setting up the feature workflow for this: 32 stages, 32 approval gates, 5 stages repeat per unit of work in Design and Build.
 
-### Ideation Phase (stages 1.1-1.7)
+### Discover Phase (stages 1.1-1.8)
 
 **Stage 1.1 — Intent Capture** (aidlc-product-agent)
 
@@ -255,35 +265,35 @@ Questions`; retained assumptions require your explicit acceptance and stay
 labeled as assumptions. The aidlc-product-lead-agent then reviews source
 grounding before the ordinary approval gate.
 
-**Stage 1.4 — Scope Definition** (aidlc-product-agent)
-
-Defines scope boundaries: in-scope (3 trigger types, user preferences, email digest), out-of-scope (push notifications, SMS, real-time WebSocket). Produces `scope-document.md` and `intent-backlog.md` with prioritized items.
-
-**Stage 1.7 — Approval & Handoff** (aidlc-delivery-agent)
-
-Compiles the initiative brief aggregating all Ideation outputs. Phase boundary verification confirms intent-to-scope traceability.
-
-> Progress: 7 of 30 stages done. Next: Reverse Engineering.
-
-### Inception Phase (stages 2.1-2.9)
-
-**Stage 2.1 — Reverse Engineering** (pipeline)
+**Stage 1.4 — Reverse Engineering** (pipeline)
 
 Two-link scan of the existing codebase. It writes the 9 artifacts to the repository's space-level store at `aidlc/spaces/<active-space>/codekb/<repo>/`, identifying the existing service structure, database schema, and API patterns that the notification service must integrate with.
 
-**Stage 2.2 — Practices Discovery** (aidlc-pipeline-deploy-agent)
+**Stage 1.5 — Scope Definition** (aidlc-product-agent)
+
+Defines scope boundaries: in-scope (3 trigger types, user preferences, email digest), out-of-scope (push notifications, SMS, real-time WebSocket). Produces `scope-document.md` and `intent-backlog.md` with prioritized items.
+
+**Stage 1.8 — Approval & Handoff** (aidlc-delivery-agent)
+
+Compiles the initiative brief aggregating all Discover outputs. Phase boundary verification confirms intent-to-scope traceability.
+
+> Progress: 8 of 32 stages done. Next: Practices Discovery.
+
+### Design Phase (stages 2.1-2.8)
+
+**Stage 2.1 — Practices Discovery** (aidlc-pipeline-deploy-agent)
 
 This is a subagent hub-and-spoke. The aidlc-pipeline-deploy-agent drafts from the Reverse Engineering evidence; aidlc-quality-agent, aidlc-developer-agent, and aidlc-devsecops-agent then inspect that draft in parallel without seeing one another's contributions. The human interview resolves evidence gaps and policy judgments, after which the lead integrates all three contributions into `team-practices.md`, `discovered-rules.md`, and `evidence.md`. The gate offers **Approve** / **Request Changes**. After Approve, `practices-promote` writes `aidlc/spaces/<active-space>/memory/team.md` and `project.md`, then atomically records the affirmed timestamp and matching `PRACTICES_AFFIRMED` receipt; only then does the conductor report the stage approved. A missing, stale, or failed promotion leaves the gate open and the stage incomplete.
 
-**Stage 2.3 — Requirements Analysis** (aidlc-product-agent)
+**Stage 2.2 — Requirements Analysis** (aidlc-product-agent)
 
 Produces 12 functional requirements (notification triggers, preference CRUD, email rendering, digest scheduling) and 5 non-functional requirements (delivery latency < 5s, email retry, preference storage). Questions drill into edge cases: what happens when email delivery fails? How frequently should digests run?
 
-**Stage 2.4 — User Stories** (mob)
+**Stage 2.3 — User Stories** (mob)
 
 The aidlc-product-agent first drafts the personas and stories. The aidlc-design-agent, aidlc-developer-agent, and aidlc-quality-agent then inspect that draft as mutually blind collaborators, each writing an identity-marked contribution file. The aidlc-product-agent lead integrates all three contributions into `personas.md` and `stories.md` before presenting the **Approve** / **Request Changes** gate.
 
-**Stage 2.6 — Domain Design** (aidlc-architect-agent)
+**Stage 2.5 — Domain Design** (aidlc-architect-agent)
 
 The aidlc-architect-agent designs the notification service architecture:
 
@@ -293,7 +303,7 @@ The aidlc-architect-agent designs the notification service architecture:
 
 Produces the consolidated `components.md` (fenced `yaml` catalogue + mermaid diagram, summary, ownership, and rationale tables) plus `decisions.md` (the ADR log).
 
-**Stage 2.7 — Units Generation** (aidlc-architect-agent)
+**Stage 2.6 — Units Generation** (aidlc-architect-agent)
 
 Decomposes into 3 units of work:
 
@@ -303,13 +313,13 @@ Decomposes into 3 units of work:
 
 Produces `unit-of-work.md` and `unit-of-work-dependency.md`: notification-core first, then notification-preferences, then notification-email, whose preference lookup depends on the preferences API.
 
-**Stage 2.8 — Contract Design** (aidlc-architect-agent)
+**Stage 2.7 — Contract Design** (aidlc-architect-agent)
 
 Because the system splits into three integrating units, Contract Design formalises the inter-unit boundaries: the internal event contract notification-core exposes to its callers, and the preference-lookup contract notification-email consumes from notification-preferences. Produces `contract-summary.md` (one row per boundary, each with an inline spec block).
 
-**Stage 2.9 — Delivery Planning** (aidlc-delivery-agent)
+**Stage 2.8 — Delivery Planning** (aidlc-delivery-agent)
 
-Delivery Planning identifies notification-core as the first integrated slice: an event must reach stored notification data and in-app delivery. The later delivery grouping contains preferences and email, while the actual order respects their dependency. Per-Bolt DoDs land in `bolt-plan.md`, rationale in `risk-and-sequencing-rationale.md`, and SES/SQS dependencies in `external-dependency-map.md`. The engine follows the 2.7 DAG and recorded iteration choice. Phase boundary verification confirms requirements-to-architecture alignment.
+Delivery Planning identifies notification-core as the first integrated slice: an event must reach stored notification data and in-app delivery. The later delivery grouping contains preferences and email, while the actual order respects their dependency. Per-Bolt DoDs land in `bolt-plan.md`, rationale in `risk-and-sequencing-rationale.md`, and SES/SQS dependencies in `external-dependency-map.md`. The engine follows the 2.6 DAG and recorded iteration choice. Phase boundary verification confirms requirements-to-architecture alignment.
 
 For this example, the project check is `bun run verify:notifications`: it submits
 an event and verifies storage and in-app delivery. The conductor writes the
@@ -326,12 +336,12 @@ You choose **Approve** (in that chat, or in a new one while it is the newest
 question asked); only after recording that exact answer does the typed setter
 authorize this command for the intent's checkpoints.
 
-> Progress: 16 of 30 stages done. Next: Functional Design.
+> Progress: 16 of 32 stages done. Next: Functional Design.
 
-### Construction Phase (stages 3.1-3.7)
+### Build, Test, and CI (stages 3.1, 4.1, and 6.1)
 
 This new source-producing solo workflow qualifies for the **unit-major, serial
-checkpoint default**. The 2.9 Bolt plan remains planning content; the engine
+checkpoint default**. The 2.8 Bolt plan remains planning content; the engine
 walks the Units from `unit-of-work-dependency.md`.
 
 **First Unit: notification-core — the working integrated slice**
@@ -417,35 +427,35 @@ The already completed preferences Unit stays complete. Any required repair-plan
 approval remains a human decision; an automatic-completion grant never counts
 as verification of a failed check.
 
-**Stage 3.6 — Build and Test** (aidlc-quality-agent, runs once after all Units)
+**Stage 4.1 — Build and Test** (aidlc-quality-agent, runs once after all Units)
 
 Generates build instructions, runs the full test suite across all 3 Units: 47 tests pass, 0 failures, 78% coverage.
 
-**Stage 3.7 — CI Pipeline** (aidlc-pipeline-deploy-agent)
+**Stage 6.1 — CI Pipeline** (aidlc-pipeline-deploy-agent)
 
 Configures CI pipeline with lint, build, test, and security scan stages. Quality gates: coverage >= 75%, no critical vulnerabilities.
 
-> Progress: 23 of 30 stages done. Next: Deployment Pipeline.
+> Progress: 26 of 32 stages done. Next: Deployment Pipeline.
 
-### Operation Phase (stages 4.1-4.7)
+### Deploy and Operate Phases (stages 6.2-7.3)
 
-**Stage 4.1 — Deployment Pipeline** — Blue-green deployment strategy with health check gates
+**Stage 6.2 — Deployment Pipeline** — Blue-green deployment strategy with health check gates
 
-**Stage 4.2 — Environment Provisioning** — SQS queues, SES configuration, DynamoDB table for notification storage
+**Stage 6.3 — Environment Provisioning** — SQS queues, SES configuration, DynamoDB table for notification storage
 
-**Stage 4.4 — Observability Setup** — CloudWatch dashboards for notification delivery latency, email send rate, dead-letter queue depth. Alarms for delivery failures.
+**Stage 7.1 — Observability Setup** — CloudWatch dashboards for notification delivery latency, email send rate, dead-letter queue depth. Alarms for delivery failures.
 
-**Stage 4.7 — Feedback & Optimization** — SLO targets (99.9% in-app delivery, 99% email delivery within 30s), cost analysis, feedback loop document.
+**Stage 7.3 — Feedback & Optimization** — SLO targets (99.9% in-app delivery, 99% email delivery within 30s), cost analysis, feedback loop document.
 
 ### Key differences from bugfix
 
 | Aspect | Bugfix | Feature |
 |--------|--------|---------|
-| Stages executed | 9 | 33 |
+| Stages executed | 11 (8 after setup) | 35 (32 after setup) |
 | Depth | Minimal | Standard |
-| Phases | Initialization + Inception + Construction + Operation | All 5 |
+| Phases | Initialization + Discover, Design, Build, Test, Secure, Deploy | All 7 |
 | Units of work | No Unit DAG; stage-level work | 3 |
-| Construction walk | Existing stage-level flow | New unit-major, serial checkpoint flow (2.9 still plans delivery groupings) |
+| Build walk | Existing stage-level flow | New unit-major, serial checkpoint flow (2.8 still plans delivery groupings) |
 | Conditional stages | Most skipped | Most executed |
 | Approval gates | Ordinary stage approvals | Verified human skeleton checkpoint; later completion follows the recorded choice; Plan Approval, verification command selection, and summaries remain human |
 

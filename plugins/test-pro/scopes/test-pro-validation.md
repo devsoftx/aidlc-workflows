@@ -14,8 +14,8 @@ runner: true
 # test-pro-validation scope
 
 Comprehensive depth for exercising the test-pro plugin's validation path. It
-runs the cross-unit integration stage during construction and the full deployed
-suite during operation, so a project can prove both assembled-unit behavior and
+runs the cross-unit integration stage in the test phase and the full deployed
+suite in the operate phase, so a project can prove both assembled-unit behavior and
 post-deploy regression coverage.
 
 ## Why these stages, why skip those

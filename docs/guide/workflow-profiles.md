@@ -23,11 +23,11 @@ and gate counts; named alone, it first asks what the work is for.
 
 | Workflow profile | Best for | Stages | Depth | Test strategy | Start with |
 |------------------|----------|--------|-------|---------------|------------|
-| **Classic** | V1-style ceremony through Inception and Construction, ending at Build and Test | 18 / 33 | Standard | Standard | `/aidlc classic` |
+| **Classic** | V1-style ceremony through Design, Build, Test, and Secure; Deploy and Operate are left out | 18 / 33 | Standard | Standard | `/aidlc classic` |
 | **Express** | The lightest requirements-to-code-and-test path | 9 / 33 | Minimal | Minimal | `/aidlc express` |
 | **Feature** | A production feature using the complete lifecycle | 32 / 33 | Standard | Standard | `/aidlc feature` |
 | **Enterprise** | Regulated or high-assurance work with full traceability | 33 / 33 | Comprehensive | Comprehensive | `/aidlc enterprise` |
-| **MVP** | A real first product increment without the Operation phase | 22 / 33 | Standard | Standard | `/aidlc mvp` |
+| **MVP** | A real first product increment without the Operate phase | 22 / 33 | Standard | Standard | `/aidlc mvp` |
 | **Proof of concept** | Testing feasibility with the smallest useful implementation path | 7 / 33 | Minimal | Minimal | `/aidlc poc` |
 | **Bugfix** | A known defect that needs a focused fix and regression test | 8 / 33 | Minimal | Minimal | `/aidlc bugfix` |
 | **Refactor** | Improving existing code without changing product behavior | 9 / 33 | Minimal | Minimal | `/aidlc refactor` |
@@ -44,12 +44,12 @@ greenfield project. For the exact stage-by-profile matrix, see
 
 ## `classic`
 
-**Choose Classic when:** you want v1-style ceremony: Inception with one human
-approval per stage, and Construction built Unit by Unit, where you approve each
+**Choose Classic when:** you want v1-style ceremony: Design with one human
+approval per stage, and Build done Unit by Unit, where you approve each
 Unit's code plan and, if you chose **Review each checkpoint**, its checkpoint (a
 Unit's design stages have no stop of their own; team-owned Units keep their own
-per-stage or end-of-Unit gates). It skips Ideation and leaves Operation as a
-placeholder. Stage-declared execution modes and support agents are unchanged.
+per-stage or end-of-Unit gates). It skips most of Discover (Reverse Engineering runs only on existing code)
+and leaves Deploy and Operate out. Stage-declared execution modes and support agents are unchanged.
 
 Classic is the implicit engine default when neither you nor
 `AWS_AIDLC_DEFAULT_SCOPE` names another profile. In the conversational cold-start
@@ -79,7 +79,7 @@ Feature or Enterprise instead.
 the shortest supported path through requirements, implementation, tests, and an
 optional deploy tail.
 
-Express skips Ideation, the design pass, Unit decomposition, Delivery Planning,
+Express skips the Discover stages except Reverse Engineering, the design pass, Unit decomposition, Delivery Planning,
 and CI Pipeline. It disables stage reviewer dispatch and uses Minimal artifacts
 and requirement-driven tests. Reverse Engineering and deployment stages remain
 conditional.
@@ -122,8 +122,8 @@ the additional ceremony.
 **Choose MVP when:** you are shipping a real first product increment, not merely
 testing whether an idea is possible.
 
-MVP keeps the full Inception and Construction design/build path at Standard
-depth. It trims selected Ideation ceremony and skips the Operation phase. Move
+MVP keeps the full Design and Build path at Standard
+depth. It trims selected Discover ceremony and skips the Operate phase. Move
 to Feature or Enterprise when the product needs production operations and the
 full feedback lifecycle.
 
@@ -143,7 +143,7 @@ repair with verification.
 
 Bugfix uses 8 stages at Minimal depth. It preserves workspace understanding,
 requirements, Code Generation, Build and Test, and the deployment path while
-dropping discovery, broad design, and unrelated Operation work.
+dropping discovery, broad design, and unrelated Operate work.
 
 Bugfix also turns learnings and summary confirmation off, so no stage keeps a
 diary or asks "Keep that for next time?" after a correction. Sensors, stage approvals, and plan
@@ -185,8 +185,9 @@ program rather than a focused patch.
 **Choose Workshop when:** a facilitator is leading a training lab or coordinated
 group session.
 
-Workshop skips Ideation because the facilitator supplies the exercise, then runs
-the Inception-through-Operation lifecycle at Standard depth. It deliberately
+Workshop skips the Discover stages except Reverse Engineering because the
+facilitator supplies the exercise, then runs Design through Operate at Standard
+depth. It deliberately
 uses a Minimal test strategy to keep a teaching session moving and caps normal
 reviews at one advisory pass. The multi-participant operating recipe is in
 [Workshop Mode](workshop-mode.md).
@@ -212,7 +213,7 @@ You can force that path with:
 /aidlc compose "harden the deployment pipeline and add observability"
 ```
 
-## Construction approvals and execution
+## Unit approvals and execution
 
 New source-producing solo Unit workflows default to building one Unit at a
 time, serially, with verified completion checkpoints. This requires Unit
@@ -225,9 +226,9 @@ With skeleton-on, the first Unit is planned as the smallest working integrated
 slice. Its applicable design work and Code Generation finish, a real integrated
 check passes, and you approve the skeleton before later Units start. A first
 design document is not a working skeleton. Skeleton-off offers **Continue
-automatically** / **Review each checkpoint** at Construction entry; skeleton-on
+automatically** / **Review each checkpoint** when unit-by-unit work starts; skeleton-on
 offers it after the skeleton checkpoint. A recorded choice is not repeated,
-and you can explicitly grant or revoke autonomy during Construction.
+and you can explicitly grant or revoke autonomy during unit-by-unit work.
 
 Approval policy and execution are separate. To fan out eligible Code Generation
 batches, explicitly choose stage-major order and swarm execution; guided and

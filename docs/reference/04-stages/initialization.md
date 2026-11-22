@@ -2,7 +2,7 @@
 
 ## Phase Overview
 
-The Initialization phase is the first of five phases in the AI-DLC workflow. It runs stages 0.1 through 0.3, **creating the intent**, minting its record dir at `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` (written `<record>/` below) with state files, one directory per in-scope phase, workspace classification, and routing configuration. There is no separate scaffold command: the workspace shell ships pre-built in the installed or versioned `runtime/<harness>/` projection, and the engine creates the intent once the person describes what to build and picks the plan it proposes, or names a scope with a description (`/aidlc --scope <name> "<description>"` or `/aidlc <name> "<description>"`). A bare `/aidlc` in a project with no work asks what to build.
+The Initialization phase is the hidden setup before the seven phases of the AI-DLC workflow. It runs stages 0.1 through 0.3, **creating the intent**, minting its record dir at `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` (written `<record>/` below) with state files, one directory per in-scope phase, workspace classification, and routing configuration. There is no separate scaffold command: the workspace shell ships pre-built in the installed or versioned `runtime/<harness>/` projection, and the engine creates the intent once the person describes what to build and picks the plan it proposes, or names a scope with a description (`/aidlc --scope <name> "<description>"` or `/aidlc <name> "<description>"`). A bare `/aidlc` in a project with no work asks what to build.
 
 All 3 stages in this phase execute for EVERY scope — there are no conditional stages. All stages auto-proceed with no approval gates.
 
@@ -18,7 +18,7 @@ Project type: Greenfield
 Languages: Unknown
 Frameworks: Unknown
 Build System: Unknown
-First post-init stage: intent-capture (IDEATION)
+First post-init stage: intent-capture (DISCOVER)
 ```
 
 The record dir name is the creation date and the label (`<YYMMDD>-<label>`); the full description is kept in `<record>/project-description.json`.
@@ -72,7 +72,7 @@ The record dir name is the creation date and the label (`<YYMMDD>-<label>`); the
 - None (entry point)
 
 ### Outputs
-- one artifact directory per phase the scope runs: `<record>/initialization/`, plus each of `ideation/`, `inception/`, `construction/`, `operation/` holding at least one EXECUTE stage. A phase the scope excludes gets no directory (a bugfix record has no `ideation/`), and per-stage subdirectories are not created here: a stage's directory appears when it first writes an artifact
+- one artifact directory per phase the scope runs: `<record>/initialization/`, plus each of `discover/`, `design/`, `build/`, `test/`, `secure/`, `deploy/` and `operate/` holding at least one EXECUTE stage. A phase the scope excludes gets no directory (an infra record has no `discover/`), and per-stage subdirectories are not created here: a stage's directory appears when it first writes an artifact
 - `<record>/verification/` (created for every scope)
 - the empty space-level `aidlc/spaces/<space>/knowledge/` directory and `aidlc/spaces/<space>/codekb/` parent (siblings of the space's `intents/`)
 - the intent's `audit/` shard (its header, the workflow and phase start rows, and the scaffold rows)
@@ -130,7 +130,7 @@ The record dir name is the creation date and the label (`<YYMMDD>-<label>`); the
 - Never counts files in `.claude/`, `.kiro/`, `.codex/`, `.opencode/`, `.aidlc/`, `.cursor/`, `node_modules/`, `.git/`, `dist/`, `build/`, `.next/`, `target/` or `vendor/`; the `aidlc/` tree is not counted either (the top-level count reads only the project folder's own files, and the container walk skips `aidlc/`)
 - `package.json` with only `devDependencies` is treated as tooling/scaffolding and does not alone cause brownfield classification
 - A parseable `.gitmodules` with at least one submodule path entry is a brownfield signal (repo metadata declares code even when the submodule dirs are uninitialized). When submodule paths are uninitialized, the scan warns and names `git submodule update --init --recursive` - surfaced in the `WORKSPACE_SCANNED` event (`Submodules` field + `Details` remedy) and on creation stdout so the conductor can relay it; languages stay as scanned
-- The person's word wins over the scan: `intent-create --project-type <greenfield|brownfield>` sets `Project Type` and writes `Project Type Source: you` (otherwise `workspace scan`). Later, `workspace reclassify --project-type <t>` rescans and records the type as theirs, and `next` asks once when work the scan set up as greenfield gains code before Construction (see `/aidlc --project-type` in the [CLI guide](../../guide/12-cli-commands.md))
+- The person's word wins over the scan: `intent-create --project-type <greenfield|brownfield>` sets `Project Type` and writes `Project Type Source: you` (otherwise `workspace scan`). Later, `workspace reclassify --project-type <t>` rescans and records the type as theirs, and `next` asks once when work the scan set up as greenfield gains code before Build (see `/aidlc --project-type` in the [CLI guide](../../guide/12-cli-commands.md))
 
 ---
 
@@ -164,7 +164,7 @@ The record dir name is the creation date and the label (`<YYMMDD>-<label>`); the
 - `WORKSPACE_INITIALISED` audit event
 
 ### Notes
-- The first stage after initialization is the first stage, in stage order, that the plan runs, with reverse-engineering set to SKIP on greenfield. A scope that runs Ideation starts at intent-capture on existing code too, and reverse-engineering runs later, in Inception. For the shipped scopes:
+- The first stage after initialization is the first stage, in stage order, that the plan runs, with reverse-engineering set to SKIP on greenfield. A scope that runs intent-capture starts there on existing code too, and reverse-engineering runs later, in Discover. For the shipped scopes:
 
 | Scope | Greenfield starts at | Brownfield starts at |
 |-------|----------------------|----------------------|
@@ -178,12 +178,12 @@ For a bugfix in a folder that already holds an npm project:
 ```text
 $ aidlc engine intent create --scope bugfix --arguments "Prices with an odd number of cents round the wrong way" --label "price rounding"
 Intent created: 261013-price-rounding (space: default)
-State initialized: bugfix scope, 9 stages, Minimal depth
+State initialized: bugfix scope, 8 stages, Minimal depth
 Project type: Brownfield
 Languages: TypeScript
 Frameworks: Unknown
 Build System: npm (package.json)
-First post-init stage: reverse-engineering (INCEPTION)
+First post-init stage: reverse-engineering (DISCOVER)
 ```
 
 - When invoked from `/aidlc-init --scope <name> <description>` (the explicit creation packaging), the orchestrator stops after this stage; `/aidlc-init --scope <name>` alone asks what the work is for first; `/aidlc-init` with only a description shows the plan offer first and then continues as `/aidlc` does
@@ -226,4 +226,4 @@ Intents in space "default":
 - [Architecture](../01-architecture.md) — execution model overview
 - [Orchestrator](../03-orchestrator.md) — routing logic
 - [Stage Protocol](../04-stage-protocol.md) — state tracking rules
-- [Ideation Stages](ideation.md) — next phase
+- [Discover](discover.md) — next phase

@@ -1,6 +1,6 @@
 # Phases and Stages
 
-The AI-DLC lifecycle is organized into 5 phases containing 33 stages. This chapter explains each phase, lists its stages, and shows how they connect.
+The AI-DLC lifecycle is organized into seven phases (Discover, Design, Build, Test, Secure, Deploy, Operate) containing 33 stages, after three hidden Initialization stages. This chapter explains each phase, lists its stages, and shows how they connect.
 
 > **Harness note.** The methodology — the phases, stages, agents, and gates this
 > guide describes — is identical on every harness. Where a mechanic differs by
@@ -17,74 +17,96 @@ The AI-DLC lifecycle is organized into 5 phases containing 33 stages. This chapt
 graph LR
     subgraph INITIALIZATION["INITIALIZATION (0.1-0.3)"]
         Z1["Workspace Scaffold"]
-        Z4["State Init"]
+        Z4["State Initialization"]
         Z1 -.->|"3 stages"| Z4
     end
 
-    subgraph IDEATION["IDEATION (1.1-1.7)"]
+    subgraph DISCOVER["DISCOVER (1.1-1.8)"]
         I1["Intent Capture"]
-        I7["Approval & Handoff"]
-        I1 -.->|"7 stages"| I7
+        I8["Approval & Handoff"]
+        I1 -.->|"8 stages"| I8
     end
 
-    subgraph INCEPTION["INCEPTION (2.1-2.9)"]
-        N1["Reverse Engineering"]
-        N7["Delivery Planning"]
-        N1 -.->|"9 stages"| N7
+    subgraph DESIGN["DESIGN (2.1-2.12)"]
+        D1["Practices Discovery"]
+        D12["Infrastructure Design"]
+        D1 -.->|"12 stages"| D12
     end
 
-    subgraph CONSTRUCTION["CONSTRUCTION (3.1-3.7)"]
-        C1["Functional Design"]
-        C7["CI Pipeline"]
-        C1 -.->|"3.1–3.5 per Unit in the recorded order; 3.6–3.7 once after all Units"| C7
+    subgraph BUILD["BUILD (3.1)"]
+        B1["Code Generation"]
     end
 
-    subgraph OPERATION["OPERATION (4.1-4.7)"]
-        O1["Deployment Pipeline"]
-        O7["Feedback & Optimization"]
-        O1 -.->|"7 stages"| O7
+    subgraph TEST["TEST (4.1-4.2)"]
+        T1["Build and Test"]
+        T2["Performance Validation"]
+        T1 -.->|"2 stages"| T2
+    end
+
+    subgraph SECURE["SECURE (5.1-5.3)"]
+        S1["Code Review"]
+        S3["Conformance Review"]
+        S1 -.->|"3 stages"| S3
+    end
+
+    subgraph DEPLOY["DEPLOY (6.1-6.4)"]
+        P1["CI Pipeline"]
+        P4["Deployment Execution"]
+        P1 -.->|"4 stages"| P4
+    end
+
+    subgraph OPERATE["OPERATE (7.1-7.3)"]
+        O1["Observability Setup"]
+        O3["Feedback & Optimization"]
+        O1 -.->|"3 stages"| O3
     end
 
     Z4 -->|"auto-proceed"| I1
-    I7 -->|"Verification Gate 1"| N1
-    N7 -->|"Verification Gate 2"| C1
-    C7 -->|"Verification Gate 3"| O1
-    O7 -.->|"Feedback Loop"| I1
+    I8 -->|"Verification Gate 1"| D1
+    D12 -->|"Verification Gate 2"| B1
+    B1 --> T1
+    T2 --> S1
+    S3 -->|"Verification Gate 3"| P1
+    P4 --> O1
+    O3 -.->|"Feedback Loop"| I1
 
     style INITIALIZATION fill:#f3e5f5,stroke:#9c27b0,color:#000
-    style IDEATION fill:#e8f5e9,stroke:#4caf50,color:#000
-    style INCEPTION fill:#e3f2fd,stroke:#2196f3,color:#000
-    style CONSTRUCTION fill:#fff3e0,stroke:#ff9800,color:#000
-    style OPERATION fill:#fce4ec,stroke:#e91e63,color:#000
+    style DISCOVER fill:#e8f5e9,stroke:#4caf50,color:#000
+    style DESIGN fill:#e3f2fd,stroke:#2196f3,color:#000
+    style BUILD fill:#fff3e0,stroke:#ff9800,color:#000
+    style TEST fill:#fff8e1,stroke:#ffb300,color:#000
+    style SECURE fill:#efebe9,stroke:#6d4c41,color:#000
+    style DEPLOY fill:#fce4ec,stroke:#e91e63,color:#000
+    style OPERATE fill:#f1f8e9,stroke:#689f38,color:#000
 ```
 
-<!-- Text fallback: Linear flow: INITIALIZATION (0.1-0.3) auto-proceeds to IDEATION (1.1-1.7), which passes through Verification Gate 1 to INCEPTION (2.1-2.9), through Verification Gate 2 to CONSTRUCTION (3.1-3.7), through Verification Gate 3 to OPERATION (4.1-4.7). A feedback loop returns from 4.7 back to 1.1. -->
+<!-- Text fallback: Linear flow: INITIALIZATION (0.1-0.3) auto-proceeds to DISCOVER (1.1-1.8), which passes through Verification Gate 1 to DESIGN (2.1-2.12), through Verification Gate 2 to BUILD (3.1), then TEST (4.1-4.2), SECURE (5.1-5.3), through Verification Gate 3 to DEPLOY (6.1-6.4), and on to OPERATE (7.1-7.3). A feedback loop returns from 7.3 back to 1.1. -->
 
-Phases execute sequentially. At each phase boundary (except Initialization → Ideation), a **verification gate** runs automated traceability checks to catch missing links, orphaned artifacts, or inconsistencies before downstream stages build on them.
+Phases execute sequentially. At each of the three phase boundaries that has a check (Discover → Design, Design → Build, Build → Deploy), a **verification gate** runs automated traceability checks to catch missing links, orphaned artifacts, or inconsistencies before downstream stages build on them.
 
 ### What runs in order, and what runs in parallel
 
-**Stages run one at a time, in order.** When a stage completes, the engine moves to the next stage in lifecycle order that your scope runs and that is not already done or skipped (Construction repeats its stages per Unit, as described below). Within one workflow, a later phase does not start while a stage in an earlier phase is still open.
+**Stages run one at a time, in order.** When a stage completes, the engine moves to the next stage in lifecycle order that your scope runs and that is not already done or skipped (the Unit walk repeats its stages per Unit, as described below). Within one workflow, a later phase does not start while a stage in an earlier phase is still open.
 
 - To move ahead anyway, jump: `/aidlc --stage <name>` or `/aidlc --phase <name>`. The stages you pass over are marked skipped (`[S]`); they are not run later on their own. Jumping back to an earlier stage reopens it and every later stage in your plan. The files stay; a reopened stage that finds its earlier files asks whether to keep them, modify them, or redo the stage from scratch. See [Skipping and Navigating Stages](07-interaction-modes.md#skipping-and-navigating-stages).
 - To run one stage without moving your workflow, use `/aidlc --stage <name> --single`. It writes that stage's artifact and stops with no workflow gate; your workflow stays where it was. When your work already holds files for that stage, it keeps a copy of them in the record's `archive/` folder first, and one line says where.
 
-**Construction repeats its stages for each Unit**, in one of two walks:
+**The Unit walk repeats its stages for each Unit.** The per-Unit stages are Functional Design (2.9), NFR Requirements (2.10), NFR Design (2.11), Infrastructure Design (2.12) and Code Generation (3.1). They run in one of two walks:
 
-- **Unit-major** (the default for new solo work that has Units and produces source): one Unit goes through its design stages and Code Generation, then the next Unit starts again at the first design stage. You approve each Unit at a verified Unit checkpoint; your team's blocking checks run on that Unit's own files at its checkpoint, so a check that fails is put to you there (fix it, or override it for that Unit), before the next Unit is built on it, and is not checked again at the end while that file and the check's settings stay as they were. The stage gates that follow the last Unit are recorded as bookkeeping. Workflows without Unit checkpoints, such as older ones, get one question for those stage approvals instead: one Approve approves them all, and a change request approves none of them. A change for one Unit's stage ("in beta's NFR design, retry failed calls through a queue") redoes that stage and the ones after it for that Unit only, from your words; the other Units are asked nothing, and the one question comes back once. See [Why Construction works the way it does](#why-construction-works-the-way-it-does).
+- **Unit-major** (the default for new solo work that has Units and produces source): one Unit goes through its design stages and Code Generation, then the next Unit starts again at the first design stage. You approve each Unit at a verified Unit checkpoint; your team's blocking checks run on that Unit's own files at its checkpoint, so a check that fails is put to you there (fix it, or override it for that Unit), before the next Unit is built on it, and is not checked again at the end while that file and the check's settings stay as they were. The stage gates that follow the last Unit are recorded as bookkeeping. Workflows without Unit checkpoints, such as older ones, get one question for those stage approvals instead: one Approve approves them all, and a change request approves none of them. A change for one Unit's stage ("in beta's NFR design, retry failed calls through a queue") redoes that stage and the ones after it for that Unit only, from your words; the other Units are asked nothing, and the one question comes back once. See [Why the Unit walk works the way it does](#why-the-unit-walk-works-the-way-it-does).
 - **Stage-major**: every Unit goes through one stage before the next stage starts, and that stage's gate comes once, after the last Unit. With a walking skeleton on, the first Unit still goes through every stage, including Code Generation, before the other Units start.
 
-**What can run in parallel**, within a stage or across Units in Construction:
+**What can run in parallel**, within a stage or across Units in the Unit walk:
 
-- **Units in Construction.** On a stage-major walk with `Construction Execution: swarm`, Units whose dependencies are done build together in one batch, then share one batch checkpoint. Unit-major stays serial. See [Parallel Unit batches](#parallel-unit-batches).
+- **Units in the Unit walk.** On a stage-major walk with `Construction Execution: swarm`, Units whose dependencies are done build together in one batch, then share one batch checkpoint. Unit-major stays serial. See [Parallel Unit batches](#parallel-unit-batches).
 - **Per-Unit design passes.** On a stage-major walk, the design stages can hand you a wave of Units that do not depend on each other. Each Unit's questions are asked in your chat first, one Unit after another; then the Units are designed side by side from your answers.
-- **People, in team mode.** With `Unit Ownership: team`, each person claims a Unit and builds it in their own checkout at the same time as the others. Each checkout keeps its own place, so two people can be at different Construction stages at once. A claim is refused until that Unit's dependencies, and any required walking skeleton, are complete.
-- **Agents within a stage.** User Stories (2.4) is a mob: the design, developer, and quality agents contribute at the same time. Practices Discovery (2.2) has its inspectors look at the draft independently. Agents and design waves run at the same time where the harness can dispatch in parallel; on a harness that cannot, they run one after another with the same briefs. See [Stage Execution Modes Reference](#stage-execution-modes-reference).
+- **People, in team mode.** With `Unit Ownership: team`, each person claims a Unit and builds it in their own checkout at the same time as the others. Each checkout keeps its own place, so two people can be at different stages at once. A claim is refused until that Unit's dependencies, and any required walking skeleton, are complete.
+- **Agents within a stage.** User Stories (2.3) is a mob: the design, developer, and quality agents contribute at the same time. Practices Discovery (2.1) has its inspectors look at the draft independently. Agents and design waves run at the same time where the harness can dispatch in parallel; on a harness that cannot, they run one after another with the same briefs. See [Stage Execution Modes Reference](#stage-execution-modes-reference).
 
 **Which stops you always get, and what settings change.**
 
-- Every stage your scope runs, outside Initialization, ends with an approval gate. Your scope decides which stages run; a stage it skips has no gate. In Construction, the walk above decides whether you approve per Unit or per stage. In team mode, the gate rhythm you choose when claiming (`per-stage` or `unit-end`) sets the review points instead. See [Multi-Team Construction](workshop-mode.md).
-- In Construction, choosing **Continue automatically** waives the ordinary completion checkpoints. You still get Plan Approval (unless plan approval is off for the work), an enabled summary confirmation, the verification command choice, skeleton approval, and every failure.
+- Every stage your scope runs, outside Initialization, ends with an approval gate. Your scope decides which stages run; a stage it skips has no gate. In the Unit walk, the walk above decides whether you approve per Unit or per stage. In team mode, the gate rhythm you choose when claiming (`per-stage` or `unit-end`) sets the review points instead. See [Multi-Team Construction](workshop-mode.md).
+- During the Unit walk, choosing **Continue automatically** waives the ordinary completion checkpoints. You still get Plan Approval (unless plan approval is off for the work), an enabled summary confirmation, the verification command choice, skeleton approval, and every failure.
 - The ceremony switches remove only what they name: sensors, learnings, the summary confirmation, plan approval, and collaborators (the support agents a stage brings in). See [Ceremony Switches](13-customization.md#ceremony-switches). Guard Policy changes how hard the guards hold, not which gates you see.
 - A gate that is put to you needs a real message from you to approve it. Nothing in a scope, a per-work setting, or Guard Policy lowers that; only `AIDLC_SKIP_HUMAN_PRESENCE_GUARD=1` does, set machine-wide or recorded with `aidlc config flags --bypass`, and AI-DLC tells you while it is off. Checkpoints you chose to let run automatically are recorded without asking you.
 
@@ -111,56 +133,62 @@ Initialization stages run **automatically** without approval gates. All three ex
 
 ---
 
-## Phase 1: Ideation
+## Phase 1: Discover
 
-**Purpose:** Validate the initiative — capture intent, assess feasibility, define scope, form the team, and secure approval to proceed.
+**Purpose:** Validate the initiative — capture intent, assess feasibility, understand existing code on brownfield work, define scope, form the team, and secure approval to proceed.
 
 ```mermaid
 flowchart TD
     S11["1.1 Intent Capture & Framing\n(aidlc-product-agent)"]
     S12["1.2 Market Research\n(aidlc-product-agent)"]
     S13["1.3 Feasibility & Constraints\n(aidlc-architect-agent)"]
-    S14["1.4 Scope Definition\n(aidlc-product-agent)"]
-    S15["1.5 Team Formation\n(aidlc-delivery-agent)"]
-    S16["1.6 Rough Mockups\n(aidlc-design-agent)"]
-    S17["1.7 Approval & Handoff\n(aidlc-delivery-agent)"]
-    VG1{{"Verification Gate:\nIdeation → Inception"}}
+    S14["1.4 Reverse Engineering\n(aidlc-developer-agent + aidlc-architect-agent)"]
+    S15["1.5 Scope Definition\n(aidlc-product-agent)"]
+    S16["1.6 Team Formation\n(aidlc-delivery-agent)"]
+    S17["1.7 Rough Mockups\n(aidlc-design-agent)"]
+    S18["1.8 Approval & Handoff\n(aidlc-delivery-agent)"]
+    VG1{{"Verification Gate:\nDiscover → Design"}}
 
     S11 ==>|ALWAYS| S12
     S11 -.->|"mvp: no Market Research"| S13
     S12 -.->|CONDITIONAL| S13
     S12 -.->|"skip if no\nfeasibility needed"| S14
     S13 -.->|CONDITIONAL| S14
-    S14 ==>|ALWAYS| S15
-    S14 -.->|"mvp: no Team Formation"| S16
-    S15 -.->|CONDITIONAL| S16
-    S15 -.->|"skip if no UI"| S17
+    S14 -.->|"CONDITIONAL\n(brownfield only)"| S15
+    S15 ==>|ALWAYS| S16
+    S15 -.->|"mvp: no Team Formation"| S17
     S16 -.->|CONDITIONAL| S17
-    S17 ==>|ALWAYS| VG1
+    S16 -.->|"skip if no UI"| S18
+    S17 -.->|CONDITIONAL| S18
+    S18 ==>|ALWAYS| VG1
 
     style S11 fill:#c8e6c9,stroke:#388e3c,color:#000
-    style S14 fill:#c8e6c9,stroke:#388e3c,color:#000
-    style S17 fill:#c8e6c9,stroke:#388e3c,color:#000
+    style S15 fill:#c8e6c9,stroke:#388e3c,color:#000
+    style S18 fill:#c8e6c9,stroke:#388e3c,color:#000
     style S12 fill:#fff9c4,stroke:#f9a825,color:#000
     style S13 fill:#fff9c4,stroke:#f9a825,color:#000
-    style S15 fill:#fff9c4,stroke:#f9a825,color:#000
+    style S14 fill:#fff9c4,stroke:#f9a825,color:#000
     style S16 fill:#fff9c4,stroke:#f9a825,color:#000
+    style S17 fill:#fff9c4,stroke:#f9a825,color:#000
     style VG1 fill:#ef9a9a,stroke:#c62828,color:#000
 ```
 
-<!-- Text fallback: 1.1 Intent Capture (ALWAYS) flows to 1.2 Market Research (CONDITIONAL); mvp goes from 1.1 to 1.3. 1.2 flows to 1.3 Feasibility (CONDITIONAL) or to 1.4. 1.3 flows to 1.4 Scope Definition (ALWAYS). 1.4 flows to 1.5 Team Formation (CONDITIONAL); mvp goes from 1.4 to 1.6. 1.5 flows to 1.6 Rough Mockups (CONDITIONAL, skip if no UI) or to 1.7. 1.6 flows to 1.7 Approval & Handoff (ALWAYS), then Verification Gate 1. poc leaves Ideation after 1.1, mvp after 1.6, and the other plans except enterprise and feature skip Ideation. -->
+<!-- Text fallback: 1.1 Intent Capture (ALWAYS) flows to 1.2 Market Research (CONDITIONAL); mvp goes from 1.1 to 1.3. 1.2 flows to 1.3 Feasibility (CONDITIONAL) or to 1.4. 1.3 flows to 1.4 Reverse Engineering (CONDITIONAL, brownfield only). 1.4 flows to 1.5 Scope Definition (ALWAYS). 1.5 flows to 1.6 Team Formation (CONDITIONAL); mvp goes from 1.5 to 1.7. 1.6 flows to 1.7 Rough Mockups (CONDITIONAL, skip if no UI) or to 1.8. 1.7 flows to 1.8 Approval & Handoff (ALWAYS), then Verification Gate 1. poc goes from 1.1 to 1.4 and leaves Discover after 1.4. -->
 
 | # | Stage | Lead | Supporting | Key Artifacts | Condition |
 |---|-------|------|-----------|---------------|-----------|
 | 1.1 | Intent Capture & Framing | aidlc-product-agent | aidlc-architect-agent | Intent statement, stakeholder map | ALWAYS |
 | 1.2 | Market Research | aidlc-product-agent | — | Competitive analysis, build-vs-buy | CONDITIONAL |
 | 1.3 | Feasibility & Constraints | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-compliance-agent | Feasibility assessment, constraint register, RAID log | CONDITIONAL |
-| 1.4 | Scope Definition | aidlc-product-agent | aidlc-delivery-agent | Scope definition, intent backlog | ALWAYS |
-| 1.5 | Team Formation | aidlc-delivery-agent | — | Team assessment, mob composition plan | CONDITIONAL |
-| 1.6 | Rough Mockups | aidlc-design-agent | aidlc-product-agent | Wireframes, user flows | CONDITIONAL |
-| 1.7 | Approval & Handoff | aidlc-delivery-agent | aidlc-product-agent | Initiative brief, decision log | ALWAYS |
+| 1.4 | Reverse Engineering | aidlc-developer-agent | aidlc-architect-agent | 9 RE artifacts | Brownfield projects |
+| 1.5 | Scope Definition | aidlc-product-agent | aidlc-delivery-agent | Scope definition, intent backlog | ALWAYS |
+| 1.6 | Team Formation | aidlc-delivery-agent | — | Team assessment, mob composition plan | CONDITIONAL |
+| 1.7 | Rough Mockups | aidlc-design-agent | aidlc-product-agent | Wireframes, user flows | CONDITIONAL |
+| 1.8 | Approval & Handoff | aidlc-delivery-agent | aidlc-product-agent | Initiative brief, decision log | ALWAYS |
 
-Which plans enter Ideation at all: `enterprise` and `feature` run all seven stages, `mvp` runs Intent Capture, Feasibility & Constraints, Scope Definition and Rough Mockups, `poc` runs Intent Capture only, and every other plan skips Ideation.
+Which plans enter Discover, and which stages each runs: `enterprise` and `feature` run all eight stages; `mvp` runs Intent Capture, Feasibility & Constraints, Reverse Engineering, Scope Definition and Rough Mockups; `poc` runs Intent Capture and Reverse Engineering; `infra` runs none of them; and `bugfix`, `classic`, `express`, `refactor`, `security-patch` and `workshop` run Reverse Engineering only.
+
+**Key behavior:** Stage 1.4 runs as a **pipeline**: with collaborators on, a 2-link chain (first an aidlc-developer-agent code scan, then an aidlc-architect-agent synthesis that writes the artifacts); with collaborators off, the developer alone scans and writes them. Each return creates an ordered durable receipt, and multi-repo work requires one complete chain per repo before approval. It only executes for brownfield projects.
 
 **Stage colors:** Green = ALWAYS (runs whenever the selected scope includes it). Yellow = CONDITIONAL (may skip based on scope, project type, or plan). For the exact per-scope stage membership, see the [Stage-by-Scope Matrix](05-scopes-and-depth.md#stage-by-scope-matrix).
 
@@ -172,91 +200,85 @@ the Product Lead reviewer and approval gate run.
 
 ---
 
-## Phase 2: Inception
+## Phase 2: Design
 
-**Purpose:** Elaborate the requirements — analyze the codebase, elicit requirements, design architecture, decompose into units of work, and plan delivery.
+**Purpose:** Elaborate the requirements and the design — discover team practices, elicit requirements, design the architecture, decompose into units of work, plan delivery, and design each Unit's functional, NFR and infrastructure details.
 
 ```mermaid
 flowchart TD
-    S21{{"`**2.1 Reverse Engineering**<br/>    (aidlc-developer-agent + aidlc-architect-agent)<br/>    pipeline: 2-link`"}}
-    S2P["2.2 Practices Discovery\n(aidlc-pipeline-deploy-agent)"]
-    S22["2.3 Requirements Analysis\n(aidlc-product-agent)"]
-    S23["2.4 User Stories\n(aidlc-product-agent)"]
-    S24["2.5 Refined Mockups\n(aidlc-design-agent)"]
-    S25["2.6 Domain Design\n(aidlc-architect-agent)"]
-    S26["2.7 Units Generation\n(aidlc-architect-agent)"]
-    S2C["2.8 Contract Design\n(aidlc-architect-agent)"]
-    S27["2.9 Delivery Planning\n(aidlc-delivery-agent)"]
-    VG2{{"Verification Gate:\nInception → Construction"}}
+    S21["2.1 Practices Discovery\n(aidlc-pipeline-deploy-agent)"]
+    S22["2.2 Requirements Analysis\n(aidlc-product-agent)"]
+    S23["2.3 User Stories\n(aidlc-product-agent)"]
+    S24["2.4 Refined Mockups\n(aidlc-design-agent)"]
+    S25["2.5 Domain Design\n(aidlc-architect-agent)"]
+    S26["2.6 Units Generation\n(aidlc-architect-agent)"]
+    S27["2.7 Contract Design\n(aidlc-architect-agent)"]
+    S28["2.8 Delivery Planning\n(aidlc-delivery-agent)"]
 
-    BF_CHECK{"Brownfield?\n(from Initialization 0.3)"}
-    BF_CHECK -->|Yes| S21
-    BF_CHECK -->|No| S2P
-    S21 -.->|CONDITIONAL| S2P
-    S2P -.->|CONDITIONAL| S22
-
-    subgraph RE_DETAIL["Two-Link RE Pipeline"]
-        direction LR
-        DEV_SCAN["Step 1: Developer\nCode Scan"]
-        ARCH_SYNTH["Step 2: Architect\nSynthesis"]
-        DEV_SCAN --> ARCH_SYNTH
+    subgraph PER_UNIT["Per Unit (repeats for each Unit of Work)"]
+        S29["2.9 Functional Design\n(aidlc-architect-agent)"]
+        S210["2.10 NFR Requirements\n(aidlc-architect-agent)"]
+        S211["2.11 NFR Design\n(aidlc-architect-agent)"]
+        S212["2.12 Infrastructure Design\n(aidlc-aws-platform-agent)"]
+        S29 -.-> S210
+        S210 -.-> S211
+        S211 -.-> S212
     end
 
-    S21 -.-> RE_DETAIL
-
+    S21 -.->|CONDITIONAL| S22
     S22 ==>|ALWAYS| S23
     S22 -.->|"skip if no user-facing\nfeatures"| S25
     S23 -.->|CONDITIONAL| S24
     S23 -.->|"skip if no UI\nor mockups skipped"| S25
     S24 -.->|CONDITIONAL| S25
-    S25 -.->|"if in scope"| S26
-    S22 -.->|"if 2.6 skipped"| S26
-    S26 -.->|CONDITIONAL| S2C
-    S26 -.->|"if 2.8 skipped"| S27
-    S2C ==>|ALWAYS| S27
-    S27 ==>|ALWAYS| VG2
+    S25 -.->|CONDITIONAL| S26
+    S26 -.->|"if multi-unit"| S27
+    S26 -.->|"skip if no contracts"| S28
+    S27 -.->|CONDITIONAL| S28
+    S28 ==>|ALWAYS| PER_UNIT
 
-    style S21 fill:#bbdefb,stroke:#1565c0,color:#000
-    style S2P fill:#fff9c4,stroke:#f9a825,color:#000
+    style S21 fill:#fff9c4,stroke:#f9a825,color:#000
     style S22 fill:#c8e6c9,stroke:#388e3c,color:#000
     style S26 fill:#c8e6c9,stroke:#388e3c,color:#000
-    style S27 fill:#c8e6c9,stroke:#388e3c,color:#000
+    style S28 fill:#c8e6c9,stroke:#388e3c,color:#000
     style S23 fill:#fff9c4,stroke:#f9a825,color:#000
     style S24 fill:#fff9c4,stroke:#f9a825,color:#000
     style S25 fill:#fff9c4,stroke:#f9a825,color:#000
-    style S2C fill:#fff9c4,stroke:#f9a825,color:#000
-    style VG2 fill:#ef9a9a,stroke:#c62828,color:#000
-    style RE_DETAIL fill:#e8eaf6,stroke:#3f51b5,color:#000
+    style S27 fill:#fff9c4,stroke:#f9a825,color:#000
+    style PER_UNIT fill:#e8eaf6,stroke:#3f51b5,color:#000
 ```
 
-<!-- Text fallback: Brownfield check (from stage 0.3). If yes, 2.1 Reverse Engineering runs as a two-link pipeline (developer code scan then architect synthesis-and-write). Then 2.2 Practices Discovery runs as a hub-and-spoke on every included scope (lead draft, mutually blind quality/developer/devsecops spokes, human interview, lead integration) and promotes affirmed work to active-space memory. Next are 2.3 Requirements Analysis (ALWAYS), optional 2.4 User Stories mob, optional 2.5 Refined Mockups, optional 2.6 Domain Design, 2.7 Units Generation (ALWAYS), optional 2.8 Contract Design, and 2.9 Delivery Planning (ALWAYS), followed by Verification Gate 2. -->
+<!-- Text fallback: 2.1 Practices Discovery (CONDITIONAL) runs as a hub-and-spoke on every included scope (lead draft, mutually blind quality/developer/devsecops spokes, human interview, lead integration) and promotes affirmed work to active-space memory. Next are 2.2 Requirements Analysis (ALWAYS), optional 2.3 User Stories mob, optional 2.4 Refined Mockups, optional 2.5 Domain Design, 2.6 Units Generation (ALWAYS), optional 2.7 Contract Design, and 2.8 Delivery Planning (ALWAYS). Delivery Planning writes the Design → Build check. Then the per-Unit stages 2.9 Functional Design, 2.10 NFR Requirements, 2.11 NFR Design and 2.12 Infrastructure Design run for each Unit, each CONDITIONAL. -->
 
 Supporting agents take part when collaborators are on (the `collaborators` setting, shipped on only for `enterprise`; `/aidlc --collaborators on` turns it on for one piece of work); otherwise each stage runs with its lead agent only.
 
 | # | Stage | Lead | Supporting | Key Artifacts | Condition |
 |---|-------|------|-----------|---------------|-----------|
-| 2.1 | Reverse Engineering | aidlc-developer-agent | aidlc-architect-agent | 9 RE artifacts | Brownfield projects |
-| 2.2 | Practices Discovery | aidlc-pipeline-deploy-agent | aidlc-quality-agent, aidlc-developer-agent, aidlc-devsecops-agent | `team-practices.md`, `discovered-rules.md`, `evidence.md` (promoted to `aidlc/spaces/<active-space>/memory/team.md` / `project.md` on affirmation) | CONDITIONAL |
-| 2.3 | Requirements Analysis | aidlc-product-agent | — | `requirements.md` | ALWAYS |
-| 2.4 | User Stories | aidlc-product-agent | aidlc-design-agent, aidlc-developer-agent, aidlc-quality-agent | `stories.md`, `personas.md` | User-facing features |
-| 2.5 | Refined Mockups | aidlc-design-agent | aidlc-product-agent | Hi-fi mockups, interaction spec | UI projects |
-| 2.6 | Domain Design | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-design-agent | `components.md`, `decisions.md` (ADRs) | Per execution plan |
-| 2.7 | Units Generation | aidlc-architect-agent | aidlc-delivery-agent | `unit-of-work.md`, `unit-of-work-dependency.md` (DAG), `unit-of-work-story-map.md` | ALWAYS |
-| 2.8 | Contract Design | aidlc-architect-agent | aidlc-aws-platform-agent | `contract-summary.md` | CONDITIONAL |
-| 2.9 | Delivery Planning | aidlc-delivery-agent | aidlc-architect-agent | `bolt-plan.md`, `team-allocation.md`, `risk-and-sequencing-rationale.md`, `external-dependency-map.md` | ALWAYS |
+| 2.1 | Practices Discovery | aidlc-pipeline-deploy-agent | aidlc-quality-agent, aidlc-developer-agent, aidlc-devsecops-agent | `team-practices.md`, `discovered-rules.md`, `evidence.md` (promoted to `aidlc/spaces/<active-space>/memory/team.md` / `project.md` on affirmation) | CONDITIONAL |
+| 2.2 | Requirements Analysis | aidlc-product-agent | — | `requirements.md` | ALWAYS |
+| 2.3 | User Stories | aidlc-product-agent | aidlc-design-agent, aidlc-developer-agent, aidlc-quality-agent | `stories.md`, `personas.md` | User-facing features |
+| 2.4 | Refined Mockups | aidlc-design-agent | aidlc-product-agent | Hi-fi mockups, interaction spec | UI projects |
+| 2.5 | Domain Design | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-design-agent | `components.md`, `decisions.md` (ADRs) | Per execution plan |
+| 2.6 | Units Generation | aidlc-architect-agent | aidlc-delivery-agent | `unit-of-work.md`, `unit-of-work-dependency.md` (DAG), `unit-of-work-story-map.md` | ALWAYS |
+| 2.7 | Contract Design | aidlc-architect-agent | aidlc-aws-platform-agent | `contract-summary.md` | CONDITIONAL |
+| 2.8 | Delivery Planning | aidlc-delivery-agent | aidlc-architect-agent | `bolt-plan.md`, `team-allocation.md`, `risk-and-sequencing-rationale.md`, `external-dependency-map.md` | ALWAYS |
+| 2.9 | Functional Design | aidlc-architect-agent | aidlc-developer-agent | `entities.md`, `rules.md`, `functional-spec.md` | Per Unit (CONDITIONAL by execution plan) |
+| 2.10 | NFR Requirements | aidlc-architect-agent | aidlc-devsecops-agent, aidlc-compliance-agent, aidlc-quality-agent | Performance, security, scalability, reliability, observability NFRs | Per Unit (CONDITIONAL) |
+| 2.11 | NFR Design | aidlc-architect-agent | aidlc-aws-platform-agent | NFR design specifications | Per Unit (CONDITIONAL) |
+| 2.12 | Infrastructure Design | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | Infrastructure specifications, IaC designs | Per Unit (CONDITIONAL) |
 
-**Key behavior:** Stage 2.1 runs as a **pipeline**: with collaborators on, a 2-link chain (first an aidlc-developer-agent code scan, then an aidlc-architect-agent synthesis that writes the artifacts); with collaborators off, the developer alone scans and writes them. Each return creates an ordered durable receipt, and multi-repo work requires one complete chain per repo before approval. It only executes for brownfield projects. Stage 2.2 runs as a **subagent hub-and-spoke** for greenfield and brownfield work: the lead drafts, quality/developer/devsecops inspect it independently, the human interview resolves gaps, and the lead integrates. Stage 2.4 runs as a **mob**: the lead drafts, and the design, developer, and quality agents contribute in parallel via contribution files.
+**Key behavior:** Stage 2.1 runs as a **subagent hub-and-spoke** on greenfield and brownfield work: the lead drafts, quality/developer/devsecops inspect it independently, the human interview resolves gaps, and the lead integrates. Stage 2.3 runs as a **mob**: the lead drafts, and the design, developer, and quality agents contribute in parallel via contribution files. Delivery Planning (2.8) writes the Design → Build check, `verification/phase-check-design.md`, and the per-Unit stages 2.9–2.12 follow it for each Unit.
 
 ---
 
-## Phase 3: Construction
+## Phase 3: Build
 
-**Purpose:** Build the solution — design, implement, and test — in reviewable slices.
+**Purpose:** Write the code for each Unit of Work, in reviewable slices. The per-Unit design stages come before it in Phase 2; Build and Test, and the phases after it, run once across all Units.
 
-### Why Construction works the way it does
+### Why the Unit walk works the way it does
 
 New solo workflows that include Unit decomposition and a source-producing
-Construction stage default to **unit-major, serial execution with verified Unit
+Code Generation stage default to **unit-major, serial execution with verified Unit
 checkpoints**. Each Unit completes its applicable design stages and Code
 Generation before the next. Runtime order follows `unit-of-work-dependency.md`;
 `bolt-plan.md` records delivery grouping and rationale without replacing that DAG.
@@ -292,7 +314,7 @@ A reply to a different question does not count. A checkpoint whose work changed 
 you chose to let run automatically are recorded without a question.
 
 The autonomy offer is **Continue automatically** / **Review each checkpoint**:
-for eligible checkpoint workflows, skeleton-off offers it at Construction entry,
+for eligible checkpoint workflows, skeleton-off offers it at the start of the Unit walk,
 and skeleton-on offers it after the real skeleton checkpoint. An existing choice
 is not repeated; on-demand grant/revoke requests remain available. Plan Approval,
 enabled summary confirmation, verification command selection, and failures still
@@ -303,7 +325,7 @@ The new default does not convert existing workflows, design-only work, or flows
 without Units. Their existing stage approvals remain. Team-owned Units keep their
 own per-stage or unit-end gate rhythm. Preserve explicit iteration choices.
 
-### Construction flow
+### Unit walk flow
 
 This diagram shows the default path for an eligible solo workflow that produces
 source. Other workflows keep their recorded execution and approval policy.
@@ -321,20 +343,20 @@ flowchart TD
     VERIFY["Verify the completed Unit"]
     CHECKPOINT{{"Ordinary Unit checkpoint<br/>Human if gated; automatic under an explicit grant"}}
     BOOK["Settle completion-only stage bookkeeping"]
-    S36["3.6 Build and Test — once across the solution"]
-    S37["3.7 CI Pipeline — once, if included"]
-    VG3{{"Construction-to-Operation verification"}}
+    S41["4.1 Build and Test — once across the solution"]
+    S61["6.1 CI Pipeline — once, if included"]
+    VG3{{"Build-to-Deploy verification"}}
     START --> STANCE
     STANCE -->|Yes| FIRST --> INTEGRATED --> SKELETON --> OFFER
     STANCE -->|No| OFFER
     OFFER --> MORE
     MORE -->|Yes| UNIT --> VERIFY --> CHECKPOINT --> MORE
-    MORE -->|No| BOOK --> S36
-    S36 --> S37 --> VG3
-    S36 -.->|CI skipped| VG3
+    MORE -->|No| BOOK --> S41
+    S41 --> S61 --> VG3
+    S41 -.->|CI skipped| VG3
 ```
 
-<!-- Text fallback: An eligible solo source-producing workflow completes and verifies the first integrated Unit with human skeleton approval when skeleton-on. When offered, choose Continue automatically or Review each checkpoint unless a choice already exists. Complete remaining Units serially with human Plan Approval and any enabled summary confirmation, verify each, and approve ordinary checkpoints according to the recorded policy. Completion-only stage gates are bookkeeping; Build and Test and optional CI Pipeline run once across the solution. -->
+<!-- Text fallback: An eligible solo source-producing workflow completes and verifies the first integrated Unit with human skeleton approval when skeleton-on. When offered, choose Continue automatically or Review each checkpoint unless a choice already exists. Complete remaining Units serially with human Plan Approval and any enabled summary confirmation, verify each, and approve ordinary checkpoints according to the recorded policy. Completion-only stage gates are bookkeeping; Build and Test (4.1) and optional CI Pipeline (6.1) run once across the solution. -->
 
 ### Parallel Unit batches
 
@@ -380,22 +402,16 @@ path; serial inline Unit work uses its lifecycle and checkpoint receipts.
 
 ### Halt-and-ask on failure
 
-Failures always stop Construction, even in autonomous mode. The Build-and-Test loop-back's rung 4 also stops for the human; required Plan Approvals, summary confirmations, and verification command selection remain separate human decisions.
+Failures always stop the Unit walk, even in autonomous mode. The Build-and-Test loop-back's rung 4 also stops for the human; required Plan Approvals, summary confirmations, and verification command selection remain separate human decisions.
 
-- If a solo Unit's Code Generation fails, Construction halts immediately and offers **retry** (re-run just that Unit), **skip** (mark it `[S]` and continue — dependents will likely also fail), or **abort**.
+- If a solo Unit's Code Generation fails, the walk halts immediately and offers **retry** (re-run just that Unit), **skip** (mark it `[S]` and continue — dependents will likely also fail), or **abort**.
 - If one Unit in a parallel batch fails while others succeed, the conductor waits for the whole batch to finish, preserves the successful Units' artifacts on disk, and presents the same retry / skip / abort choice for the failed Unit only.
 
 ### Stage reference
 
 | # | Stage | Lead | Supporting | Key Artifacts | Runs |
 |---|-------|------|-----------|---------------|------|
-| 3.1 | Functional Design | aidlc-architect-agent | aidlc-developer-agent | `entities.md`, `rules.md`, `functional-spec.md` | Per Unit (CONDITIONAL by execution plan) |
-| 3.2 | NFR Requirements | aidlc-architect-agent | aidlc-devsecops-agent, aidlc-compliance-agent, aidlc-quality-agent | Performance, security, scalability, reliability, observability NFRs | Per Unit (CONDITIONAL) |
-| 3.3 | NFR Design | aidlc-architect-agent | aidlc-aws-platform-agent | NFR design specifications | Per Unit (CONDITIONAL) |
-| 3.4 | Infrastructure Design | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | Infrastructure specifications, IaC designs | Per Unit (CONDITIONAL) |
-| 3.5 | Code Generation | aidlc-developer-agent | — | Application code + code docs | Per Unit (ALWAYS) |
-| 3.6 | Build and Test | aidlc-quality-agent | aidlc-devsecops-agent | Test results, quality report | ALWAYS, once at end |
-| 3.7 | CI Pipeline | aidlc-pipeline-deploy-agent | — | CI config, quality gates | CONDITIONAL, once at end |
+| 3.1 | Code Generation | aidlc-developer-agent | — | Application code + code docs | Per Unit (ALWAYS) |
 
 **Key behaviors:**
 
@@ -404,64 +420,95 @@ Failures always stop Construction, even in autonomous mode. The Build-and-Test l
 - Ordinary completion follows the recorded autonomy policy. `completion_only` stage directives settle existing approvals without repeating bodies, reviewers, or human completion questions.
 - An autonomy answer does not choose swarm or change iteration order. Explicit stage-major/swarm selection supports guided or automatic batch checkpoints.
 - While Plan Approval is on for the work, each Unit's plan is approved; grouping its presentation never removes individual approval receipts. Enabled summary confirmation, verification command selection, and failures still require the human.
-- Build and Test reads every Unit's code. When Code Generation has not finished for some Units (a jump ahead skipped it, say), it says which in one line, with its gate or with your approval when you approve before the gate is shown (also when you ask to stop for now): "Code Generation has not finished for units beta and gamma, so their code may be missing from Build and Test." It never stops the approval.
+- Build and Test (4.1) reads every Unit's code. When Code Generation has not finished for some Units (a jump ahead skipped it, say), it says which in one line, with its gate or with your approval when you approve before the gate is shown (also when you ask to stop for now): "Code Generation has not finished for units beta and gamma, so their code may be missing from Build and Test." It never stops the approval.
 
 ---
 
-## Phase 4: Operation
+## Phase 4: Test
 
-**Purpose:** Deploy and operate — set up deployment pipelines, provision environments, configure observability, and establish feedback loops.
-
-```mermaid
-flowchart TD
-    S41["4.1 Deployment Pipeline\n(aidlc-pipeline-deploy-agent)"]
-    S42["4.2 Environment Provisioning\n(aidlc-aws-platform-agent)"]
-    S43["4.3 Deployment Execution\n(aidlc-pipeline-deploy-agent)"]
-    S44["4.4 Observability Setup\n(aidlc-operations-agent)"]
-    S45["4.5 Incident Response\n(aidlc-operations-agent)"]
-    S46["4.6 Performance Validation\n(aidlc-quality-agent)"]
-    S47["4.7 Feedback & Optimization\n(aidlc-operations-agent)"]
-
-    S41 -.->|CONDITIONAL| S42
-    S42 -.->|CONDITIONAL| S43
-    S43 -.->|CONDITIONAL| S44
-    S44 -.->|CONDITIONAL| S45
-    S45 -.->|CONDITIONAL| S46
-    S46 -.->|CONDITIONAL| S47
-
-    S47 -->|"Approve"| DONE(["Workflow Complete"])
-
-    style S41 fill:#fce4ec,stroke:#c62828,color:#000
-    style S42 fill:#fce4ec,stroke:#c62828,color:#000
-    style S43 fill:#fce4ec,stroke:#c62828,color:#000
-    style S44 fill:#fce4ec,stroke:#c62828,color:#000
-    style S45 fill:#fce4ec,stroke:#c62828,color:#000
-    style S46 fill:#fce4ec,stroke:#c62828,color:#000
-    style S47 fill:#fce4ec,stroke:#c62828,color:#000
-    style DONE fill:#a5d6a7,stroke:#2e7d32,color:#000
-```
-
-<!-- Text fallback: All Operation stages are CONDITIONAL. 4.1 through 4.7 flow sequentially. On approval of Stage 4.7 the workflow is complete. -->
+**Purpose:** Prove the built solution works: build it, run its tests, and validate performance where the plan asks for it.
 
 | # | Stage | Lead | Supporting | Key Artifacts | Condition |
 |---|-------|------|-----------|---------------|-----------|
-| 4.1 | Deployment Pipeline | aidlc-pipeline-deploy-agent | — | CD config, deployment strategy, rollback runbook | CONDITIONAL |
-| 4.2 | Environment Provisioning | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | Environment inventory, validation report | CONDITIONAL |
-| 4.3 | Deployment Execution | aidlc-pipeline-deploy-agent | aidlc-developer-agent | Deployment log, smoke tests, health checks | CONDITIONAL |
-| 4.4 | Observability Setup | aidlc-operations-agent | — | Dashboards, alarms, SLO config | CONDITIONAL |
-| 4.5 | Incident Response | aidlc-operations-agent | — | SSM runbooks, incident plan, escalation matrix | CONDITIONAL |
-| 4.6 | Performance Validation | aidlc-quality-agent | — | Load test results, NFR validation matrix | CONDITIONAL |
-| 4.7 | Feedback & Optimization | aidlc-operations-agent | aidlc-aws-platform-agent | SLO report, cost analysis, feedback loop doc | CONDITIONAL |
+| 4.1 | Build and Test | aidlc-quality-agent | aidlc-devsecops-agent | Test results, quality report | ALWAYS, once across the solution |
+| 4.2 | Performance Validation | aidlc-quality-agent | — | Load test results, NFR validation matrix | CONDITIONAL |
+
+**Key behaviors:**
+- Build and Test (4.1) runs once, after all Units, and reads every Unit's code.
+- Performance Validation (4.2) runs in the scopes that include it (`enterprise`, `feature`, `workshop`).
+
+---
+
+## Phase 5: Secure
+
+**Purpose:** Review the built code for quality, security, and conformance before it is deployed.
+
+| # | Stage | Lead | Supporting | Key Artifacts | Condition |
+|---|-------|------|-----------|---------------|-----------|
+| 5.1 | Code Review | aidlc-quality-agent | — | Code review report, findings | ALWAYS |
+| 5.2 | Security Review | aidlc-devsecops-agent | — | Security review report, findings | ALWAYS |
+| 5.3 | Conformance Review | aidlc-compliance-agent | — | Conformance report | CONDITIONAL |
+
+**Key behaviors:**
+- Code Review (5.1) and Security Review (5.2) run in every scope that includes the Secure phase; Conformance Review (5.3) runs only where the plan includes it.
+
+---
+
+## Phase 6: Deploy
+
+**Purpose:** Ship the solution — set up CI, the deployment pipeline and environments, and run the deployment.
+
+| # | Stage | Lead | Supporting | Key Artifacts | Condition |
+|---|-------|------|-----------|---------------|-----------|
+| 6.1 | CI Pipeline | aidlc-pipeline-deploy-agent | — | CI config, quality gates | CONDITIONAL, once |
+| 6.2 | Deployment Pipeline | aidlc-pipeline-deploy-agent | — | CD config, deployment strategy, rollback runbook | CONDITIONAL |
+| 6.3 | Environment Provisioning | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | Environment inventory, validation report | CONDITIONAL |
+| 6.4 | Deployment Execution | aidlc-pipeline-deploy-agent | aidlc-developer-agent | Deployment log, smoke tests, health checks | CONDITIONAL |
+
+**Key behaviors:**
+- CI Pipeline (6.1) writes the Build → Deploy check, `verification/phase-check-build.md`, when the plan includes it. A plan that skips 6.1 gets no check at that boundary.
+- Every Deploy stage is CONDITIONAL. `classic` and `poc` have no Deploy stage; `mvp` runs CI Pipeline only; `bugfix`, `express`, `refactor` and `security-patch` run Deployment Pipeline and Deployment Execution.
+
+---
+
+## Phase 7: Operate
+
+**Purpose:** Operate the deployed solution — configure observability, respond to incidents, and feed what you learn back into the next Discover cycle.
+
+```mermaid
+flowchart TD
+    S71["7.1 Observability Setup\n(aidlc-operations-agent)"]
+    S72["7.2 Incident Response\n(aidlc-operations-agent)"]
+    S73["7.3 Feedback & Optimization\n(aidlc-operations-agent)"]
+
+    S71 -.->|CONDITIONAL| S72
+    S72 -.->|CONDITIONAL| S73
+
+    S73 -->|"Approve"| DONE(["Workflow Complete"])
+
+    style S71 fill:#f1f8e9,stroke:#689f38,color:#000
+    style S72 fill:#f1f8e9,stroke:#689f38,color:#000
+    style S73 fill:#f1f8e9,stroke:#689f38,color:#000
+    style DONE fill:#a5d6a7,stroke:#2e7d32,color:#000
+```
+
+<!-- Text fallback: All Operate stages are CONDITIONAL. 7.1 through 7.3 flow sequentially. On approval of Stage 7.3 the workflow is complete. -->
+
+| # | Stage | Lead | Supporting | Key Artifacts | Condition |
+|---|-------|------|-----------|---------------|-----------|
+| 7.1 | Observability Setup | aidlc-operations-agent | — | Dashboards, alarms, SLO config | CONDITIONAL |
+| 7.2 | Incident Response | aidlc-operations-agent | — | SSM runbooks, incident plan, escalation matrix | CONDITIONAL |
+| 7.3 | Feedback & Optimization | aidlc-operations-agent | aidlc-aws-platform-agent | SLO report, cost analysis, feedback loop doc | CONDITIONAL |
 
 **Key behaviors:**
 - All 3 stages are **conditional**; `bugfix`, `classic`, `mvp`, `poc`, `refactor` and `security-patch` run none of them
-- Stage 4.7 is the **terminal stage** — on approval, the workflow is complete
+- Stage 7.3 is the **terminal stage** — on approval, the workflow is complete. Its feedback loop feeds insights back into the next Discover cycle when you choose to keep iterating.
 
 ---
 
 ## Phase Transitions and Verification Gates
 
-At each phase boundary (Ideation → Inception, Inception → Construction, Construction → Operation), the framework runs **phase boundary verification**. This automated check validates:
+At the three phase boundaries that have a check (Discover → Design, Design → Build, Build → Deploy), the framework runs **phase boundary verification**. The stage that writes each check is named in its phase above: Approval & Handoff (1.8), Delivery Planning (2.8), and CI Pipeline (6.1). This automated check validates:
 
 - All required artifacts from the completing phase exist
 - Traceability links between artifacts are intact (e.g., every requirement maps to a story)
@@ -477,12 +524,12 @@ If verification fails, the conductor reports the issues and asks whether to proc
 | Mode | Stages | User Interaction | Description |
 |------|--------|-----------------|-------------|
 | Inline (auto-proceed) | 0.1, 0.2, 0.3 | None | Run deterministically inside `aidlc-utility intent-create`, no approval gate |
-| Inline | 26 stages | Full | Agent works in conversation, approval gate at end |
-| Subagent | 2.2, 3.5 | Practices interview + final gate for 2.2; approval gate for 3.5 | Hub-and-spoke Practices Discovery; focused Code Generation |
-| Pipeline | 2.1 | Approval gate only | Developer scan, then architect synthesis-and-write (the developer alone with collaborators off) |
-| Mob | 2.4 | Mid-stage judgment questions + approval gate | Lead drafts; design/developer/quality collaborate in parallel via contribution files |
+| Inline | 29 stages | Full | Agent works in conversation, approval gate at end |
+| Subagent | 2.1, 3.1 | Practices interview + final gate for 2.1; approval gate for 3.1 | Hub-and-spoke Practices Discovery; focused Code Generation |
+| Pipeline | 1.4 | Approval gate only | Developer scan, then architect synthesis-and-write (the developer alone with collaborators off) |
+| Mob | 2.3 | Mid-stage judgment questions + approval gate | Lead drafts; design/developer/quality collaborate in parallel via contribution files |
 
-Across all 33 stages, the topology count is **29 inline / 2 subagent / 1 pipeline / 1 mob**.
+Across the 33 runnable stages, the topology count is **29 inline / 2 subagent / 1 pipeline / 1 mob**; the three Initialization stages are also inline.
 
 ---
 

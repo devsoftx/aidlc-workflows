@@ -730,11 +730,11 @@ describe("documentation parity derives current behavior from authored implementa
     );
     const tree = sliceBetween(walkthrough, "### End state", "\n### ").split(/\r?\n/);
     const indent = (line: string): number => line.length - line.trimStart().length;
-    const construction = tree.findIndex((line) => line.trim() === "construction/");
-    expect(construction, "the end state lists construction/").toBeGreaterThan(-1);
-    const next = tree[construction + 1] ?? "";
-    expect(next.trimStart(), "the first entry under construction/").toMatch(/^code-generation\//);
-    expect(indent(next), "code-generation/ sits right under construction/").toBe(indent(tree[construction]) + 2);
+    const build = tree.findIndex((line) => line.trim() === "build/");
+    expect(build, "the end state lists build/").toBeGreaterThan(-1);
+    const next = tree[build + 1] ?? "";
+    expect(next.trimStart(), "the first entry under build/").toMatch(/^code-generation\//);
+    expect(indent(next), "code-generation/ sits right under build/").toBe(indent(tree[build]) + 2);
   });
 
   test("each scope summary's skipped stages match its compiled plan", () => {
@@ -764,10 +764,10 @@ describe("documentation parity derives current behavior from authored implementa
       const runs = (slug: string): boolean => stages[slug] === "EXECUTE";
       const text = normalized(section);
       const operationRuns = operation.filter(runs).length;
-      if (/\bmost Operation stages\b/.test(text)) {
-        expect(operationRuns > 0 && operationRuns < operation.length, `${scope}: "most Operation stages"`).toBe(true);
+      if (/\bmost Operate stages\b/.test(text)) {
+        expect(operationRuns > 0 && operationRuns < operation.length, `${scope}: "most Operate stages"`).toBe(true);
       }
-      if (/\ball (?:\d+ )?Operation stages\b/i.test(text)) expect(operationRuns, `${scope}: "all Operation stages"`).toBe(0);
+      if (/\ball (?:\d+ )?Operate stages\b/i.test(text)) expect(operationRuns, `${scope}: "all Operate stages"`).toBe(0);
       if (/\bfrom intent capture\b/i.test(text)) expect(runs("intent-capture"), `${scope}: "from intent capture"`).toBe(true);
       if (/\bmost design and architecture stages\b/.test(text)) {
         expect(design.some(runs), `${scope}: "most design and architecture stages"`).toBe(true);
@@ -1443,13 +1443,13 @@ describe("documentation parity derives current behavior from authored implementa
       if (!skipped) expect(next, `${where}: the listing ends where the plan ends`).toBe(plan.length);
     }
     for (const slug of ["code-generation", "build-and-test"]) expect(scopeGrid.infra.stages[slug]).toBe("EXECUTE");
-    const construction = normalized(read("docs", "reference", "04-stages", "construction.md"));
-    expect(/infra (?:runs no Code Generation|has neither)/.test(construction), "construction.md says infra skips them").toBe(false);
+    const build = normalized(read("docs", "reference", "04-stages", "build.md"));
+    expect(/infra (?:runs no Code Generation|has neither)/.test(build), "build.md says infra skips them").toBe(false);
   });
 
   test("the stage reference's Refined Mockups condition is the stage's own", () => {
     const condition = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", phaseFor("refined-mockups"), "refined-mockups.md")).condition);
-    const metadata = sliceBetween(read("docs", "reference", "04-stages", "inception.md"), "## Stage 2.5: Refined Mockups", "### Purpose");
+    const metadata = sliceBetween(read("docs", "reference", "04-stages", "design.md"), "## Stage 2.4: Refined Mockups", "### Purpose");
     const row = metadata.match(/^\| Condition\s*\| (.*?) \|\r?$/m)?.[1];
     expect(row).toBe(`CONDITIONAL -- ${condition[0].toLowerCase()}${condition.slice(1)}`);
   });

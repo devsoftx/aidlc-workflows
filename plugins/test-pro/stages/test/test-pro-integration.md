@@ -51,7 +51,7 @@ the cross-unit seams the per-unit tests structurally cannot see.
 ### Step 1: Read All Per-Unit Outputs
 
 Read every unit's code summary and build-and-test output from the per-unit
-construction record dirs and the cross-unit `build-and-test-summary`. Build
+build record dirs and the cross-unit `build-and-test-summary`. Build
 the cross-unit view: which units call which, the shared contracts, the data that
 crosses unit boundaries.
 

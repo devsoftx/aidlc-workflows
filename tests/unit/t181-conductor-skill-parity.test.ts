@@ -204,8 +204,8 @@ describe("an approved code plan is built as it is", () => {
 
   test("the stage file and its reference skip the plan steps once the plan is approved", () => {
     const stage = flat("core/aidlc-common/stages/build/code-generation.md");
-    const reference = flat("docs/reference/04-stages/construction.md");
-    for (const [rel, body] of [["code-generation.md", stage], ["construction.md", reference]] as const) {
+    const reference = flat("docs/reference/04-stages/build.md");
+    for (const [rel, body] of [["code-generation.md", stage], ["build.md", reference]] as const) {
       expect(body, rel).toContain(
         "When the directive already carries `plan_approval.status: \"approved\"` (a resumed or continued build), " +
           "the plan and test instructions on disk are the approved ones: skip Steps 2 and 3 and build them as they are. " +

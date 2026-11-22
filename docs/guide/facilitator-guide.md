@@ -178,9 +178,9 @@ session. See
 
 ---
 
-## Construction: one Unit at a time
+## Build: one Unit at a time
 
-When Inception splits the work into several Units, Construction can run them
+When Design splits the work into several Units, Build can run them
 two ways:
 
 - `unit-major`: one Unit goes through its design stages and Code Generation
@@ -192,10 +192,10 @@ two ways:
 
 New solo workflows whose scope splits work into Units and writes code record
 `Construction Iteration: unit-major` when they are created. Before
-Construction starts, open the work's `aidlc-state.md` (under
+unit-by-unit work starts, open the work's `aidlc-state.md` (under
 `aidlc/spaces/<space>/intents/`) and check that line. If it says
 `stage-major`, or the line is missing (which also means stage-major), switch
-it during Inception. Ask the agent, or run this in the project folder:
+it during Design. Ask the agent, or run this in the project folder:
 
 ```bash
 aidlc engine state set-construction-iteration unit-major
@@ -205,7 +205,7 @@ If that is refused with `Select Construction Execution: serial`, the work is
 set to build Units in parallel: run
 `aidlc engine state set-construction-execution serial` first, then switch.
 
-Once Construction has started, say it in the chat ("from here on, build one
+Once unit-by-unit work has started, say it in the chat ("from here on, build one
 unit at a time"): the agent switches it at once and says how to undo it, and
 the Units already finished keep their work. See
 [Construction order and execution](12-cli-commands.md#construction-order-and-execution).
