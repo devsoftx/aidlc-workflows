@@ -2079,6 +2079,7 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     );
     seedBoltDagBatches(p, [["foo"]]);
     const result = state(["finalize", "code-generation"], p);
+    console.log("R18DBG-TEMP", result.status, JSON.stringify(result.out.slice(0, 1500)));
     expect(result.status).not.toBe(0);
     expect(result.out).toContain("do not have a current review");
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
