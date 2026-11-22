@@ -17,10 +17,10 @@
 // CONTRACT CONFIRMED: help text is no longer a static constant — renderHelpText()
 // (aidlc-utility.ts) compiles the scope block live from
 // loadScopeMapping() (aidlc-lib.ts) over validScopes() (aidlc-lib.ts),
-// so stage counts ("All 30 stages" / "6 of 30 stages") are derived from the
-// shipped scope-grid, not hardcoded: the stages a scope runs after
-// Initialization, of the stages after Initialization, the count its plan offer
-// gives on existing code. This guards stale counts.
+// so stage counts ("All 33 stages" / "8 of 33 stages") are derived from the
+// shipped scope-grid, not hardcoded: the number of stages a scope runs out of
+// the stages after Initialization, the count its plan offer gives on existing
+// code. This guards stale counts.
 //
 // NO AUDIT / NO STATE / NO PROJECT DIR: `help` is a pure read-only renderer.
 // It emits no audit event, writes no file, and needs no --project-dir / temp
@@ -83,7 +83,7 @@ describe("t31 aidlc-utility help — CLI contract (migrated from t31-help-text-c
     expect(HELP.stdout).not.toContain("\u2192");
   });
 
-  // --- All scope names appear (compiled from scope-mapping.json). ---
+  // --- All scope names appear (compiled from scope-grid.json). ---
   // Keep the compiled help surface pinned to every shipped scope.
   const SCOPES = [
     "enterprise",
@@ -135,16 +135,21 @@ describe("t31 aidlc-utility help — CLI contract (migrated from t31-help-text-c
     });
   }
 
-  // --- Stage-count semantics (compiled from scope-mapping.json EXECUTE/Total). ---
-  test("enterprise/feature shows 'All 30 stages'", () => {
+  // --- Stage-count semantics (compiled from scope-grid.json EXECUTE/Total). ---
+  test("enterprise shows 'All 33 stages'", () => {
     // Every stage after Initialization runs -> "All <total> stages" (aidlc-utility.ts renderHelpText).
-    expect(HELP.stdout).toContain("All 30 stages");
+    expect(HELP.stdout).toContain("All 33 stages");
   });
 
-  test("bugfix shows compiled '6 of 30 stages' count", () => {
-    // Otherwise "<run> of <total> stages": bugfix runs 6 of the 30 stages after
+  test("feature shows '32 of 33 stages' (conformance-review is skipped)", () => {
+    // Otherwise "<run> of <total> stages": feature skips conformance-review, so it runs 32 of 33.
+    expect(HELP.stdout).toContain("32 of 33 stages");
+  });
+
+  test("bugfix shows compiled '8 of 33 stages' count", () => {
+    // Otherwise "<run> of <total> stages": bugfix runs 8 of the 33 stages after
     // Initialization, the count its plan offer gives on existing code.
-    expect(HELP.stdout).toContain("6 of 30 stages");
+    expect(HELP.stdout).toContain("8 of 33 stages");
   });
 
   test("every scope's row counts the stages it runs after Initialization", () => {

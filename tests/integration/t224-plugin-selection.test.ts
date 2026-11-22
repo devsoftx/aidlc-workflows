@@ -399,7 +399,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
         "",
         "## Stage Progress",
         "",
-        "### CONSTRUCTION PHASE",
+        "### BUILD PHASE",
         `- [ ] code-generation ${dash} EXECUTE`,
         ...(extraStageRow ? [extraStageRow] : []),
         "",
@@ -538,7 +538,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
       const composedSidecar = readFileSync(sidecar, "utf-8");
       for (const text of composed) expect(text).toContain("<!-- plugin:test-pro:");
       // test-pro's rules ride the same turn-off, in the team's rule files.
-      const ruleFiles = ["team.md", "phases/inception.md"].map((rel) => join(proj, "aidlc", "spaces", "default", "memory", rel));
+      const ruleFiles = ["team.md", "phases/design.md"].map((rel) => join(proj, "aidlc", "spaces", "default", "memory", rel));
       const composedRules = ruleFiles.map((path) => readFileSync(path, "utf-8"));
       for (const text of composedRules) expect(text).toContain("## Rules from the test-pro plugin");
 
@@ -665,7 +665,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
   test("closure guard names the disabled producer plugin, producer, artifact, and consumer", () => {
     const closureProj = join(tmp, "closure");
     copyHarnessInstall("claude", closureProj);
-    const stageDir = join(closureProj, ".claude", "aidlc-common", "stages", "construction");
+    const stageDir = join(closureProj, ".claude", "aidlc-common", "stages", "design");
     const scopeDir = join(closureProj, ".claude", "scopes");
     mkdirSync(stageDir, { recursive: true });
     mkdirSync(scopeDir, { recursive: true });
@@ -675,7 +675,7 @@ describe("t224 plugin selection - install chooses visible plugin surfaces", () =
         "---",
         "slug: guard-core-consumer",
         "plugin: guard",
-        "phase: construction",
+        "phase: design",
         "execution: ALWAYS",
         "condition: always",
         "lead_agent: aidlc-developer-agent",

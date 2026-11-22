@@ -169,7 +169,7 @@ async function project(
     .replace(/^- \*\*In Progress\*\*:.*$/m, "- **In Progress**: code-generation")
     .replace(/^- \*\*Inception\*\*:.*$/m, "- **Inception**: Verified")
     .replace(/^- \*\*Construction\*\*:.*$/m, "- **Construction**: Active")
-    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: BUILD")
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation");
   state = state.replace(
     /^- \[[ xSR?-]\] code-generation(\s+\S\s+)EXECUTE$/m,

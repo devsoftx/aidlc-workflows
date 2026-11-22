@@ -701,7 +701,10 @@ describe("documentation parity derives current behavior from authored implementa
       expect(stages, `missing compiled grid entry for ${scope}`).toBeDefined();
       expect(count, `${scope} stage count`).toBe(`${runsAfterSetup(stages)} / ${afterSetup.length}`);
     }
-    expect(normalized(onboarding)).toContain(`A full \`feature\` runs all ${runsAfterSetup(scopeGrid.feature.stages)} stages after setup.`);
+    // feature skips one stage the grid marks SKIP, so the sentence counts stages rather than saying all.
+    expect(normalized(onboarding)).toContain(
+      `A full \`feature\` runs ${runsAfterSetup(scopeGrid.feature.stages)} of ${afterSetup.length} stages after setup.`,
+    );
     // The example saves a plan running mvp; the line counts what that scope runs after setup.
     expect(read("docs", "guide", "12-cli-commands.md")).toContain(
       `Saved as scope quick-fix (${runsAfterSetup(scopeGrid.mvp.stages)} stages, `,
@@ -1313,18 +1316,38 @@ describe("documentation parity derives current behavior from authored implementa
   test("documented agent stage-involvement matrix matches stage frontmatter", () => {
     const lead = new Map<string, number>();
     const support = new Map<string, number>();
+    // The phases each agent works in, as the compiled stage graph files each stage.
+    const phasesOf = new Map<string, Set<string>>();
+    const graphPhase = new Map(
+      (JSON.parse(read("dist", "claude", ".claude", "tools", "data", "stage-graph.json")) as Array<{
+        slug: string;
+        phase: string;
+      }>).map((stage) => [stage.slug, stage.phase]),
+    );
     const bump = (map: Map<string, number>, key: string): void => {
       map.set(key, (map.get(key) ?? 0) + 1);
     };
 
     for (const path of filesBelow(at("core", "aidlc-common", "stages"), ".md")) {
       const frontmatter = sliceBetween(readFileSync(path, "utf8"), "---", "\n---");
+      const slug = basename(path, ".md");
+      expect(graphPhase.has(slug), `${slug} is a stage of the compiled graph`).toBe(true);
+      const phase = graphPhase.get(slug) as string;
+      const involve = (agent: string): void => {
+        phasesOf.set(agent, (phasesOf.get(agent) ?? new Set<string>()).add(phase));
+      };
       const leadAgent = frontmatter.match(/^lead_agent:\s*(\S+)$/m)?.[1];
-      if (leadAgent?.startsWith("aidlc-")) bump(lead, leadAgent);
+      if (leadAgent?.startsWith("aidlc-")) {
+        bump(lead, leadAgent);
+        involve(leadAgent);
+      }
       const block = frontmatter.match(/^support_agents:\s*\n((?:[ \t]*-[ \t]*\S+[ \t]*\n?)+)/m)?.[1];
       for (const entry of block?.split("\n") ?? []) {
         const agent = entry.replace(/^[ \t]*-[ \t]*/, "").trim();
-        if (agent.startsWith("aidlc-")) bump(support, agent);
+        if (agent.startsWith("aidlc-")) {
+          bump(support, agent);
+          involve(agent);
+        }
       }
     }
     expect(lead.size, "expected lead_agent frontmatter on the stage set").toBeGreaterThan(0);
@@ -1378,12 +1401,13 @@ describe("documentation parity derives current behavior from authored implementa
         `${path.join("/")} must name a broadest agent with ${broadestTotal} stages`,
       ).toBe(true);
     }
+    const phaseCount = (agent: string): number => phasesOf.get(agent)?.size ?? 0;
     const agentGuide = normalized(read("docs", "guide", "06-agents.md"));
     expect(
       broadest.some(
         (row) =>
           agentGuide.includes(row.agent) &&
-          agentGuide.includes(`(${row.total} stages across 3 phases)`),
+          agentGuide.includes(`(${row.total} stages across ${phaseCount(row.agent)} phases)`),
       ),
       `the guide must name a broadest agent with ${broadestTotal} stages`,
     ).toBe(true);
@@ -1507,7 +1531,13 @@ describe("documentation parity derives current behavior from authored implementa
     expect(read("core", "tools", "aidlc-utility.ts")).toMatch(
       /severity: "warn",\s*label: `Your replies are not being recorded: /,
     );
-    expect(flat).toContain(`\`feature\` runs every stage (${stageCount("feature")})`);
+    const [featureRan, featureTotal] = stageCount("feature").split(" / ");
+    expect(flat).toContain(`\`feature\` runs ${featureRan} of ${featureTotal} stages`);
+    // Every stage the feature grid marks SKIP is named in the guide, so the skip is not hidden.
+    for (const slug of afterSetup.filter((stage) => scopeGrid.feature.stages[stage] !== "EXECUTE")) {
+      const name = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", phaseFor(slug), `${slug}.md`)).name);
+      expect(flat, `the guide names the stage feature skips: ${name}`).toContain(name);
+    }
     const [classicRan, classicTotal] = stageCount("classic").split(" / ");
     expect(flat).toContain(`\`classic\`, the default, runs ${classicRan} of ${classicTotal} stages`);
     expect(flat).toContain(`It is a ${stageCount("workshop").split(" / ")[0]}-stage run`);

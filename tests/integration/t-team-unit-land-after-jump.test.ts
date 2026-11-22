@@ -210,6 +210,9 @@ const status = (checkout: string) => runMergeTool(UTIL, ["status"], checkout);
 const message = (d: Record<string, unknown>) => String(d.message ?? d.question ?? d.error ?? "");
 const lastJump = (checkout: string) => readAuditShardEvents(checkout).filter((row) => row.event === "STAGE_JUMPED").at(-1)!;
 
+// The move runs from Functional Design (design) into Build and Test (test), a forward
+// jump across a phase boundary: the phase events come before STAGE_JUMPED, as the
+// forward-jump contract in t232-phase-progress-flip pins.
 function moveOn(lead: string): { directive: Record<string, unknown>; said: string[]; events: string[] } {
   const from = readAuditShardEvents(lead).length;
   const moved = nextSaying(lead, ["next", "--stage", BT]);
@@ -243,7 +246,7 @@ describe("a lead's main whose team holds a Unit moves on to Build and Test", () 
     const { lead } = gammaClaimed();
     const alphaRow = rowOf(lead, "alpha");
     const moved = moveOn(lead);
-    expect(moved.events).toEqual(["STAGE_JUMPED", "STAGE_STARTED"]);
+    expect(moved.events).toEqual(["PHASE_COMPLETED", "PHASE_VERIFIED", "PHASE_STARTED", "STAGE_JUMPED", "STAGE_STARTED"]);
     expect(stateOf(lead)).toContain("- [-] functional-design");
     expect([moved.directive.kind, moved.directive.stage]).toEqual(["run-stage", BT]);
     expect(moved.said).toEqual([
@@ -367,7 +370,7 @@ describe("moving on where no team holds a Unit of the lead's", () => {
     const teamG = clone(remote, "team-g");
     expect(runMergeTool(UNIT, ["claim", "gamma", "--team", "team-g"], teamG).status).toBe(0);
     const moved = moveOn(lead);
-    expect(moved.events).toEqual(["STAGE_JUMPED", "STAGE_STARTED"]);
+    expect(moved.events).toEqual(["PHASE_COMPLETED", "PHASE_VERIFIED", "PHASE_STARTED", "STAGE_JUMPED", "STAGE_STARTED"]);
     expect([moved.directive.kind, moved.directive.stage]).toEqual(["run-stage", BT]);
     expect(moved.said).toEqual([`${MOVED} Still open on main, and landing as they finish: gamma (team-g).`]);
   });
@@ -401,7 +404,7 @@ describe("moving on where no team holds a Unit of the lead's", () => {
     finish(lead, "alpha");
     nextDirective(lead);
     const moved = moveOn(lead);
-    expect(moved.events).toEqual(["STAGE_SKIPPED", "STAGE_JUMPED", "STAGE_STARTED"]);
+    expect(moved.events).toEqual(["STAGE_SKIPPED", "PHASE_COMPLETED", "PHASE_VERIFIED", "PHASE_STARTED", "STAGE_JUMPED", "STAGE_STARTED"]);
     expect(auditBlockField(lastJump(lead).block, "Unit Work")).toBeNull();
     expect(stateOf(lead)).toContain("- [S] functional-design");
     expect([moved.directive.kind, moved.directive.stage]).toEqual(["run-stage", BT]);

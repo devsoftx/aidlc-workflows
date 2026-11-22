@@ -454,7 +454,7 @@ flowchart TD
 | 4.7 | Feedback & Optimization | aidlc-operations-agent | aidlc-aws-platform-agent | SLO report, cost analysis, feedback loop doc | CONDITIONAL |
 
 **Key behaviors:**
-- All 7 stages are **conditional**; `classic`, `mvp` and `poc` run none of them
+- All 3 stages are **conditional**; `bugfix`, `classic`, `mvp`, `poc`, `refactor` and `security-patch` run none of them
 - Stage 4.7 is the **terminal stage** — on approval, the workflow is complete
 
 ---

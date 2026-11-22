@@ -23,7 +23,7 @@
 **Fire id**: aaaa0001
 **Sensor ID**: required-sections
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 
@@ -33,7 +33,7 @@
 **Fire id**: aaaa0001
 **Sensor ID**: required-sections
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 **Duration ms**: 120
 
 ---
@@ -44,7 +44,7 @@
 **Fire id**: bbbb0002
 **Sensor ID**: linter
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 
@@ -54,7 +54,7 @@
 **Fire id**: bbbb0002
 **Sensor ID**: linter
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 **Detail path**: aidlc-docs/.aidlc-sensors/code-generation/linter-bbbb0002.md
 **Findings count**: 3
 
@@ -66,7 +66,7 @@
 **Fire id**: cccc0003
 **Sensor ID**: type-check
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 
@@ -76,7 +76,7 @@
 **Fire id**: cccc0003
 **Sensor ID**: type-check
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 **Cap layer**: binding
 **Cap value**: 5
 **Observed value**: 7
@@ -89,7 +89,7 @@
 **Fire id**: dddd0004
 **Sensor ID**: upstream-coverage
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 

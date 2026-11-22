@@ -1,6 +1,7 @@
 // covers: function:parseStageFrontmatter, function:emitStageFrontmatter, function:loadAgents
 //
-// t65 - end-to-end stage-file integrity across all 33 shipped stage .md files.
+// t65 - end-to-end stage-file integrity across all 36 shipped stage .md files
+// (3 initialization + 33 runnable).
 // Mechanism: none (pure functions over read-only on-disk stage files + the
 // generated stage-graph.json; zero CLI spawns, zero LLM, zero tokens).
 // Technique: aggregation-then-assert (one beforeAll walk, 22 example-based
@@ -61,7 +62,8 @@ interface Aggregate {
   roundTripMismatches: Array<{ slug: string; phase: string; error?: string }>;
   phaseCounts: Record<string, number>;
   forEachCount: number;
-  forEachNonConstruction: string[];
+  forEachSlugs: string[];
+  forEachOutsideDesignBuild: string[];
   forEachValue: string[];
   usesSubagent: boolean;
   subagentStages: string[];
@@ -260,10 +262,13 @@ beforeAll(() => {
     }));
     const phasePrefix: Record<string, number> = {
       initialization: 0,
-      ideation: 1,
-      inception: 2,
-      construction: 3,
-      operation: 4,
+      discover: 1,
+      design: 2,
+      build: 3,
+      test: 4,
+      secure: 5,
+      deploy: 6,
+      operate: 7,
     };
     const byPhase: Record<string, typeof nodes> = {};
     for (const n of nodes) {
@@ -357,7 +362,10 @@ beforeAll(() => {
     roundTripMismatches,
     phaseCounts,
     forEachCount: forEach.length,
-    forEachNonConstruction: forEach.filter((p) => p.phase !== "construction").map((p) => p.slug),
+    forEachSlugs: forEach.map((p) => p.slug).sort(),
+    forEachOutsideDesignBuild: forEach
+      .filter((p) => p.phase !== "design" && p.phase !== "build")
+      .map((p) => p.slug),
     forEachValue: [...new Set(forEach.map((p) => p.obj.for_each as string))],
     usesSubagent,
     subagentStages,
@@ -386,9 +394,9 @@ beforeAll(() => {
 // Parse + schema validation
 // ============================================================
 describe("t65 parse + schema validation (in-process)", () => {
-  test("all 33 stage files parse via parseStageFrontmatter (total=33, no errors)", () => {
+  test("all 36 stage files parse via parseStageFrontmatter (total=36, no errors)", () => {
     expect(agg.parseErrors).toEqual([]);
-    expect(agg.totalParsed).toBe(33);
+    expect(agg.totalParsed).toBe(36);
   });
 
   test("non-init stages validate against schema with ctx.agents (no validate errors)", () => {
@@ -412,10 +420,13 @@ describe("t65 parse + schema validation (in-process)", () => {
 describe("t65 per-phase stage counts (in-process)", () => {
   const expected: Array<[string, number]> = [
     ["initialization", 3],
-    ["ideation", 7],
-    ["inception", 9],
-    ["construction", 7],
-    ["operation", 7],
+    ["discover", 8],
+    ["design", 12],
+    ["build", 1],
+    ["test", 2],
+    ["secure", 3],
+    ["deploy", 4],
+    ["operate", 3],
   ];
   for (const [phase, count] of expected) {
     test(`${phase} has ${count} stages`, () => {
@@ -428,9 +439,16 @@ describe("t65 per-phase stage counts (in-process)", () => {
 // for_each + mode
 // ============================================================
 describe("t65 for_each + mode (in-process)", () => {
-  test("exactly 5 stages have for_each: unit-of-work, all in construction", () => {
+  test("exactly 5 stages have for_each: unit-of-work, all in design or build", () => {
     expect(agg.forEachCount).toBe(5);
-    expect(agg.forEachNonConstruction).toEqual([]);
+    expect(agg.forEachSlugs).toEqual([
+      "code-generation",
+      "functional-design",
+      "infrastructure-design",
+      "nfr-design",
+      "nfr-requirements",
+    ]);
+    expect(agg.forEachOutsideDesignBuild).toEqual([]);
     expect(agg.forEachValue).toEqual(["unit-of-work"]);
   });
 
@@ -514,7 +532,7 @@ describe("t65 shape guards (in-process)", () => {
     expect(agg.reservedHits).toEqual([]);
   });
 
-  test("round-trip (parse -> emit -> parse) deep-equals original for all 33 stages", () => {
+  test("round-trip (parse -> emit -> parse) deep-equals original for all 36 stages", () => {
     expect(agg.roundTripMismatches).toEqual([]);
   });
 

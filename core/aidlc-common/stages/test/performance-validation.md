@@ -21,8 +21,6 @@ consumes:
     required: true
   - artifact: scalability-design
     required: true
-  - artifact: dashboards
-    required: false
 requires_stage:
   - nfr-requirements
   - nfr-design
@@ -33,7 +31,7 @@ scopes:
   - enterprise
   - feature
   - workshop
-inputs: NFR requirements from nfr-requirements stage, NFR design from nfr-design stage, deployed application, observability data from observability-setup stage
+inputs: NFR requirements from nfr-requirements stage, NFR design from nfr-design stage, deployed application
 outputs: load-test-plan.md, test-results.md, nfr-validation-matrix.md, performance-validation-questions.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -45,7 +43,6 @@ outputs: load-test-plan.md, test-results.md, nfr-validation-matrix.md, performan
 
 - Read NFR requirements from `<record>/design/nfr-requirements/`
 - Read NFR design from `<record>/design/nfr-design/`
-- Read observability configuration from `<record>/operate/observability-setup/`
 
 ### Step 2: Generate Clarifying Questions
 
@@ -83,7 +80,7 @@ This stage's outputs are markdown artefacts under `<record>/test/performance-val
 
 Imports: `required-sections`, `upstream-coverage`.
 
-Upstream targets: `performance-requirements`, `scalability-requirements`, `performance-design`, `scalability-design`, `dashboards`.
+Upstream targets: `performance-requirements`, `scalability-requirements`, `performance-design`, `scalability-design`.
 
 ## Learn
 

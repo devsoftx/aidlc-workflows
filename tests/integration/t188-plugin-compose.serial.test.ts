@@ -54,6 +54,7 @@ import {
   pluginRootIn,
 } from "../harness/plugin-kit.ts";
 import { writeWindowsBunLauncher } from "../harness/windows-native-executable.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "../../core/tools/aidlc-runtime-budget.ts";
 import { readPluginTargets } from "../../core/tools/aidlc-plugin-emit.ts";
 import { typedHarnessName } from "../../core/tools/aidlc-runtime-paths.ts";
@@ -423,10 +424,10 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
           );
         }
       }
-      expect(existsSync(join(root, "stages", "construction", "test-pro-integration.md"))).toBe(
+      expect(existsSync(join(root, "stages", "test", "test-pro-integration.md"))).toBe(
         true,
       );
-      expect(existsSync(join(root, "contributions", "construction", "build-and-test.md"))).toBe(
+      expect(existsSync(join(root, "contributions", phaseFor("build-and-test"), "build-and-test.md"))).toBe(
         true,
       );
       // #550 plugin content buckets: scopes, agents, and knowledge must project
@@ -669,7 +670,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".cursor",
       "aidlc-common",
       "stages",
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis.md",
     );
     const pureCoreBefore = readFileSync(pureCoreStage, "utf-8");
@@ -695,7 +696,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".cursor",
       "aidlc-common",
       "stages",
-      "construction",
+      phaseFor("build-and-test"),
       "build-and-test.md",
     );
     const pluginModifiedBefore = readFileSync(pluginModifiedStage, "utf-8");
@@ -743,19 +744,20 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     );
     // A recorded edge onto an installed PLUGIN stage holds even though the
     // incoming distribution does not ship that stage: test-pro-integration
-    // (construction) stays on disk and compiles before performance-validation
-    // (operation), so the edge must be re-created, not dropped.
+    // stays on disk and is earlier than code-review, so the edge must be
+    // re-created, not dropped. The consumer has to come after the plugin stage
+    // in phase order, or compose refuses the edge.
     const retainedEdgeStage = join(
-      cursorProject, ".cursor", "aidlc-common", "stages", "operation", "performance-validation.md",
+      cursorProject, ".cursor", "aidlc-common", "stages", phaseFor("code-review"), "code-review.md",
     );
-    cursorSidecar["performance-validation"].requires_stage = ["test-pro-integration"];
+    cursorSidecar["code-review"] = { requires_stage: ["test-pro-integration"] };
     writeFileSync(cursorSidecarPath, `${JSON.stringify(cursorSidecar, null, 2)}\n`);
     // A second plugin's sidecar whose only record is an edge the upgrade
     // refuses: retiring it empties the sidecar, which must then be removed
     // rather than left as `{}` (compose and plugin sync refuse an empty one).
     const emptiedSidecarPath = join(cursorProject, ".cursor", "tools", "data", "plugin-contrib-syn-edge-only.json");
     writeFileSync(emptiedSidecarPath, `${JSON.stringify({
-      "performance-validation": { requires_stage: ["syn-gone-stage"] },
+      "code-review": { requires_stage: ["syn-gone-stage"] },
     }, null, 2)}\n`);
     writeFileSync(
       retainedEdgeStage,
@@ -791,7 +793,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // The refused edge leaves the sidecar with the stage file; the kept ones stay.
     const sidecarAfter = JSON.parse(readFileSync(cursorSidecarPath, "utf-8")) as Record<string, { requires_stage?: string[] }>;
     expect(sidecarAfter["build-and-test"].requires_stage).toEqual(["nfr-design"]);
-    expect(sidecarAfter["performance-validation"].requires_stage).toEqual(["test-pro-integration"]);
+    expect(sidecarAfter["code-review"].requires_stage).toEqual(["test-pro-integration"]);
     const graphAfterReinstall = JSON.parse(
       readFileSync(
         join(cursorProject, ".cursor", "tools", "data", "stage-graph.json"),
@@ -802,7 +804,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       graphAfterReinstall.some((item) => item.slug === "test-pro-integration"),
     ).toBe(true);
     expect(
-      graphAfterReinstall.find((item) => item.slug === "performance-validation")?.requires_stage,
+      graphAfterReinstall.find((item) => item.slug === "code-review")?.requires_stage,
     ).toContain("test-pro-integration");
 
     // The upgrade leaves a reinstallable tree: the same installer run again
@@ -995,7 +997,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // test-pro ships rules, so the sync says once where they went.
     expect(invocation.stdout).toBe(
       "plugin sync complete: 1 plugin(s)\n" +
-        "test-pro's rules are in team.md (and phases/inception.md), in a section of their own at the end. " +
+        "test-pro's rules are in team.md (and phases/design.md), in a section of their own at the end. " +
         "To keep them in org.md or project.md instead: /aidlc plugin select --rules-level test-pro=org\n",
     );
     expect(invocation.stderr).toBe("");
@@ -1279,7 +1281,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   // --- Plugin prose gets core's invocation tokens, per install channel ---
   test("composed plugin stages project {{INVOKE}} for the copy channel", () => {
-    const body = stageBody(project, "construction", "test-pro-integration");
+    const body = stageBody(project, "test", "test-pro-integration");
     expect(body).not.toContain("{{INVOKE}}");
     expect(body).toContain("bun .claude/tools/aidlc.ts engine orchestrate report");
   });
@@ -1298,7 +1300,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
     });
     expect(result.status).toBe(0);
-    const body = stageBody(nativeProject, "construction", "test-pro-integration");
+    const body = stageBody(nativeProject, "test", "test-pro-integration");
     expect(body).toContain("`aidlc engine orchestrate report --stage test-pro-integration");
     expect(body).not.toContain("bun ");
     expect(body).not.toContain("{{INVOKE}}");
@@ -1330,7 +1332,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     expect(result.status).toBe(0);
     expect(hookDrops(oldTree)).toBe("");
-    const body = stageBody(oldTree, "construction", "test-pro-integration");
+    const body = stageBody(oldTree, "test", "test-pro-integration");
     expect(body).toContain("bun .claude/tools/aidlc.ts engine orchestrate report");
     expect(body).not.toContain("{{INVOKE}}");
   });
@@ -1340,7 +1342,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const slugs = graph(project).map((s) => s.slug);
     expect(slugs).toContain("test-pro-integration");
     expect(slugs).toContain("test-pro-full-suite");
-    expect(graph(project).length).toBe(35); // 33 core + 2 test-pro
+    expect(graph(project).length).toBe(38); // 36 compiled core + 2 test-pro
   });
 
   test("plugin stages carry their authored ars: prior into the graph and the ars subcommand screens them", () => {
@@ -1580,7 +1582,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
     });
     expect(compose.status).toBe(0);
-    expect(existsSync(join(selectedProj, ".claude", "aidlc-common", "stages", "construction", "test-pro-integration.md"))).toBe(true);
+    expect(existsSync(join(selectedProj, ".claude", "aidlc-common", "stages", "test", "test-pro-integration.md"))).toBe(true);
     expect(stage(selectedProj, "test-pro-integration")?.enabled).toBe(false);
     expect(existsSync(join(selectedProj, ".claude", "skills", "test-pro-integration", "SKILL.md"))).toBe(false);
     expect(hookDrops(selectedProj)).toContain("select-plugins aidlc,test-pro");
@@ -1588,8 +1590,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("composed plugin stage bodies are not empty", () => {
     for (const [phase, slug] of [
-      ["construction", "test-pro-integration"],
-      ["operation", "test-pro-full-suite"],
+      ["test", "test-pro-integration"],
+      ["operate", "test-pro-full-suite"],
     ] as const) {
       assertNonEmptyStageBody(stageSourcePath(project, phase, slug));
     }
@@ -1640,7 +1642,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   test("contribution adds required_sections to the target stage source", () => {
     // build-and-test ships NO required_sections in core, so the merge must ADD
     // the field (as a quoted-string list) to the stage frontmatter.
-    const body = stageBody(project, "construction", "build-and-test");
+    const body = stageBody(project, phaseFor("build-and-test"), "build-and-test");
     const fm = body.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     expect(fm).toMatch(/^required_sections:/m);
     for (const s of ["Branch Coverage", "Edge Cases", "API Positive and Negative", "Requirement Traceability"]) {
@@ -1670,11 +1672,11 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const targets = ["functional-design", "nfr-design", "infrastructure-design"];
     const shipped = new Map(targets.map((slug) => [
       slug,
-      readFileSync(join(CLAUDE_DIST, "aidlc-common", "stages", "construction", `${slug}.md`), "utf-8"),
+      readFileSync(join(CLAUDE_DIST, "aidlc-common", "stages", phaseFor(slug), `${slug}.md`), "utf-8"),
     ]));
     const { drops, proj } = composeSynthetic("syn-kinds", {
       "scopes/syn-kinds.md": scope,
-      ...Object.fromEntries(targets.map((slug) => [`contributions/build/${slug}.md`, contrib(slug)])),
+      ...Object.fromEntries(targets.map((slug) => [`contributions/design/${slug}.md`, contrib(slug)])),
     });
     expect(drops).toBe("");
     expect(stage(proj, "functional-design")?.produces_kinds?.["syn-kinds-notes"])
@@ -1689,7 +1691,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     for (const slug of targets) expect(sidecar[slug]).toEqual({ produces: ["syn-kinds-notes"] });
 
     // The next session's compose finds it all in place and writes nothing.
-    const composed = new Map(targets.map((slug) => [slug, readFileSync(stageSourcePath(proj, "construction", slug), "utf-8")]));
+    const composed = new Map(targets.map((slug) => [slug, readFileSync(stageSourcePath(proj, phaseFor(slug), slug), "utf-8")]));
     const root = join(proj, "_plugin-syn-kinds");
     const again = spawnSync(BUN, [join(root, "hooks", "compose.ts")], {
       cwd: proj, encoding: "utf-8", timeout: remainingOperationTimeoutMs(NATIVE_RUNTIME_CASE_TIMEOUT_MS),
@@ -1698,7 +1700,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     expect(again.status).toBe(0);
     expect(hookDrops(proj)).toBe("");
     for (const slug of targets) {
-      expect(readFileSync(stageSourcePath(proj, "construction", slug), "utf-8"), slug).toBe(composed.get(slug)!);
+      expect(readFileSync(stageSourcePath(proj, phaseFor(slug), slug), "utf-8"), slug).toBe(composed.get(slug)!);
     }
 
     const strip = spawnSync(BUN, [join(proj, ".claude", "tools", "aidlc-utility.ts"), "select-plugins", "aidlc"], {
@@ -1707,7 +1709,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     expect(strip.status, strip.stderr).toBe(0);
     for (const slug of targets) {
-      expect(readFileSync(stageSourcePath(proj, "construction", slug), "utf-8"), slug).toBe(shipped.get(slug)!);
+      expect(readFileSync(stageSourcePath(proj, phaseFor(slug), slug), "utf-8"), slug).toBe(shipped.get(slug)!);
     }
     expect(existsSync(sidecarPath)).toBe(false);
   });
@@ -1817,7 +1819,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         },
         ".claude",
         (_proj, harnessDir) => {
-          const path = join(harnessDir, "aidlc-common", "stages", "construction", "functional-design.md");
+          const path = join(harnessDir, "aidlc-common", "stages", phaseFor("functional-design"), "functional-design.md");
           writeFileSync(path, readFileSync(path, "utf-8")
             .replace("  - frontend-components\n", "  - frontend-components\n  - syn-kinds-local\n  - syn-kinds-wide\n")
             .replace("  frontend-components: [ui]\n", "  frontend-components: [ui]\n  syn-kinds-wide: [packaging]\n"));
@@ -1853,7 +1855,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   });
 
   test("adds.requires_stage set-unions an earlier stage and strips on disable", () => {
-    // nfr-requirements (3.2) is pinned before build-and-test (3.6), so the edge
+    // nfr-requirements sits in an earlier phase than build-and-test, so the edge
     // holds. code-generation is already a core edge: the union must not
     // duplicate it, and the sidecar records only what was actually added.
     const contrib = [
@@ -1875,7 +1877,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md": contrib,
     });
     expect(drops).not.toContain("adds.requires_stage");
-    const stagePath = stageSourcePath(proj, "construction", "build-and-test");
+    const stagePath = stageSourcePath(proj, phaseFor("build-and-test"), "build-and-test");
     const edgesOf = (raw: string) =>
       (raw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "").match(/^requires_stage:\n((?: {2}- .+\n)*)/m)?.[1] ?? "";
     const merged = edgesOf(readFileSync(stagePath, "utf-8"));
@@ -1912,7 +1914,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     ].join("\n");
     const contrib = [
       "---", "target: build-and-test", "plugin: syn-edge-nograph",
-      "adds:", "  requires_stage:", "    - nfr-requirements", "    - domain-design",
+      "adds:", "  requires_stage:", "    - performance-validation", "    - domain-design",
       "---", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-edge-nograph", {
@@ -1921,12 +1923,12 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     }, ".claude", (_proj, harnessDir) => {
       rmSync(join(harnessDir, "tools", "data", "stage-graph.json"));
     });
-    const fm = readFileSync(stageSourcePath(proj, "construction", "build-and-test"), "utf-8")
+    const fm = readFileSync(stageSourcePath(proj, phaseFor("build-and-test"), "build-and-test"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     const edges = fm.match(/^requires_stage:\n((?: {2}- .+\n)*)/m)?.[1] ?? "";
     expect(edges).toContain("- domain-design\n");
-    expect(edges).not.toContain("- nfr-requirements\n");
-    expect(drops).toContain('adds.requires_stage "nfr-requirements" is a same-phase edge and the installed stage graph is unreadable');
+    expect(edges).not.toContain("- performance-validation\n");
+    expect(drops).toContain('adds.requires_stage "performance-validation" is a same-phase edge and the installed stage graph is unreadable');
     expect(drops).not.toContain("compile failed");
     // Compose recompiled the graph it could not read.
     expect(stage(proj, "build-and-test")?.requires_stage).toContain("domain-design");
@@ -1939,7 +1941,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // — RFC #1100), and the target itself. Compose stays fail-open: the new
     // stage still lands and the graph still compiles.
     const newStage = [
-      "---", "slug: syn-edge-discovery", "plugin: syn-edge", "phase: inception",
+      "---", "slug: syn-edge-discovery", "plugin: syn-edge", "phase: design",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", "  - syn-edge-catalogue", "consumes: []", "requires_stage: []",
@@ -1957,7 +1959,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     expect(drops).not.toContain("compile failed");
     expect(drops).not.toContain("adds.requires_stage is not yet an implemented merge surface");
-    const fm = readFileSync(stageSourcePath(proj, "inception", "requirements-analysis"), "utf-8")
+    const fm = readFileSync(stageSourcePath(proj, phaseFor("requirements-analysis"), "requirements-analysis"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     const edges = fm.match(/^requires_stage:\n((?: {2}- .+\n)*)/m)?.[1] ?? "";
     for (const refused of ["no-such-stage", "delivery-planning", "syn-edge-discovery", "requirements-analysis"]) {
@@ -1984,7 +1986,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // out (and out of the sidecar) instead of compiling a graph that rejects
     // it and rolling back on every session start.
     const newStage = [
-      "---", "slug: syn-edge-gone-discovery", "plugin: syn-edge-gone", "phase: inception",
+      "---", "slug: syn-edge-gone-discovery", "plugin: syn-edge-gone", "phase: design",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", "  - syn-edge-gone-catalogue", "consumes: []", "requires_stage: []",
@@ -2000,7 +2002,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md": contrib,
     });
     expect(drops).not.toContain("compile failed");
-    const stagePath = stageSourcePath(proj, "construction", "build-and-test");
+    const stagePath = stageSourcePath(proj, phaseFor("build-and-test"), "build-and-test");
     const edgesOf = () => readFileSync(stagePath, "utf-8").match(/^requires_stage:\n((?: {2}- .+\n)*)/m)?.[1] ?? "";
     expect(edgesOf()).toContain("- syn-edge-gone-discovery\n");
     const sidecarPath = join(proj, ".claude", "tools", "data", "plugin-contrib-syn-edge-gone.json");
@@ -2009,7 +2011,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
     const root = join(proj, "_plugin-syn-edge-gone");
     rmSync(join(root, "stages"), { recursive: true });
-    rmSync(stageSourcePath(proj, "inception", "syn-edge-gone-discovery"));
+    rmSync(stageSourcePath(proj, "design", "syn-edge-gone-discovery"));
     const recompose = () => spawnSync(BUN, [join(root, "hooks", "compose.ts")], {
       cwd: proj, encoding: "utf-8", timeout: TIMEOUT_MS - 5_000,
       env: { ...process.env, CLAUDE_PLUGIN_ROOT: root, CLAUDE_PROJECT_DIR: proj, AIDLC_HARNESS_DIR: ".claude" },
@@ -2034,7 +2036,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // any more, yet the edge a prior compose merged there must still be taken
     // back out before the compile.
     const newStage = [
-      "---", "slug: syn-edge-dropped-discovery", "plugin: syn-edge-dropped", "phase: inception",
+      "---", "slug: syn-edge-dropped-discovery", "plugin: syn-edge-dropped", "phase: design",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", "  - syn-edge-dropped-catalogue", "consumes: []", "requires_stage: []",
@@ -2049,13 +2051,13 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "stages/design/syn-edge-dropped-discovery.md": newStage,
       "contributions/test/build-and-test.md": contrib,
     });
-    const stagePath = stageSourcePath(proj, "construction", "build-and-test");
+    const stagePath = stageSourcePath(proj, phaseFor("build-and-test"), "build-and-test");
     expect(readFileSync(stagePath, "utf-8")).toContain("- syn-edge-dropped-discovery\n");
 
     const root = join(proj, "_plugin-syn-edge-dropped");
     rmSync(join(root, "stages"), { recursive: true });
     rmSync(join(root, "contributions"), { recursive: true });
-    rmSync(stageSourcePath(proj, "inception", "syn-edge-dropped-discovery"));
+    rmSync(stageSourcePath(proj, "design", "syn-edge-dropped-discovery"));
     const recompose = spawnSync(BUN, [join(root, "hooks", "compose.ts")], {
       cwd: proj, encoding: "utf-8", timeout: TIMEOUT_MS - 5_000,
       env: { ...process.env, CLAUDE_PLUGIN_ROOT: root, CLAUDE_PROJECT_DIR: proj, AIDLC_HARNESS_DIR: ".claude" },
@@ -2074,7 +2076,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // contributed edge still merges, and a stale one written inline is still
     // taken back out before the compile.
     const newStage = (slug: string, requires: string) => [
-      "---", `slug: ${slug}`, "plugin: syn-flow", "phase: inception",
+      "---", `slug: ${slug}`, "plugin: syn-flow", "phase: design",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", `  - ${slug}-output`, "consumes: []", `requires_stage: ${requires}`,
@@ -2097,7 +2099,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
     // Reformat the merged edges inline, then take the contributed dependency
     // out of the install.
-    const targetPath = stageSourcePath(proj, "inception", "syn-flow-target");
+    const targetPath = stageSourcePath(proj, "design", "syn-flow-target");
     writeFileSync(
       targetPath,
       readFileSync(targetPath, "utf-8").replace(
@@ -2106,8 +2108,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ),
     );
     const root = join(proj, "_plugin-syn-flow");
-    rmSync(join(root, "stages", "inception", "syn-flow-extra.md"));
-    rmSync(stageSourcePath(proj, "inception", "syn-flow-extra"));
+    rmSync(join(root, "stages", "design", "syn-flow-extra.md"));
+    rmSync(stageSourcePath(proj, "design", "syn-flow-extra"));
     const recompose = spawnSync(BUN, [join(root, "hooks", "compose.ts")], {
       cwd: proj, encoding: "utf-8", timeout: TIMEOUT_MS - 5_000,
       env: { ...process.env, CLAUDE_PLUGIN_ROOT: root, CLAUDE_PROJECT_DIR: proj, AIDLC_HARNESS_DIR: ".claude" },
@@ -2124,7 +2126,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // cycle and roll the whole compose back. syn-cycle-c (new, no edges) is a
     // valid same-phase dependency and still merges.
     const newStage = (slug: string, requires: string[]) => [
-      "---", `slug: ${slug}`, "plugin: syn-cycle", "phase: inception",
+      "---", `slug: ${slug}`, "plugin: syn-cycle", "phase: design",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", `  - ${slug}-output`, "consumes: []",
@@ -2153,10 +2155,11 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("adds.requires_stage compares full pinned numbers when a stage moved phase", () => {
     // The compiler keeps a pinned row's number when its stage moves phase
-    // directory: feedback-optimization moved to inception still compiles as
-    // 4.7, after build-and-test (3.6). The guard must follow the number, not
-    // the directory, so only that edge is refused and the plugin's valid edge
-    // still lands instead of the whole compose rolling back.
+    // directory: feedback-optimization moved to another phase directory keeps
+    // its pinned operate number, which is later than build-and-test's. The
+    // guard must follow the number, not the directory, so only that edge is
+    // refused and the plugin's valid edge still lands instead of the whole
+    // compose rolling back.
     const scope = [
       "---", "name: syn-edge-moved", "plugin: syn-edge-moved",
       "depth: Standard", "keywords:", "  - synthetic",
@@ -2173,17 +2176,17 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md": contrib,
     }, ".claude", (_proj, harnessDir) => {
       const stages = join(harnessDir, "aidlc-common", "stages");
-      const moved = join(stages, "inception", "feedback-optimization.md");
+      const moved = join(stages, "design", "feedback-optimization.md");
       writeFileSync(
         moved,
-        readFileSync(join(stages, "operation", "feedback-optimization.md"), "utf-8")
-          .replace(/^phase: operation$/m, "phase: inception"),
+        readFileSync(join(stages, "operate", "feedback-optimization.md"), "utf-8")
+          .replace(/^phase: operate$/m, "phase: design"),
       );
-      rmSync(join(stages, "operation", "feedback-optimization.md"));
+      rmSync(join(stages, "operate", "feedback-optimization.md"));
     });
     expect(drops).not.toContain("compile failed");
     expect(drops).toContain(
-      'adds.requires_stage "feedback-optimization" (4.7) is not lower-numbered than build-and-test (3.6)',
+      'adds.requires_stage "feedback-optimization" (7.3) is not lower-numbered than build-and-test (4.1)',
     );
     const node = stage(proj, "build-and-test");
     expect(node?.requires_stage).toContain("nfr-requirements");
@@ -2217,7 +2220,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "scopes/syn-scope-extra.md": mkScope("syn-scope-extra"),
       "contributions/test/build-and-test.md": contrib,
     });
-    const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8")
+    const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     const scopesBlock = fm.match(/^scopes:\n((?: {2}- .+\n)*)/m)?.[1] ?? "";
     expect(scopesBlock).toContain("- syn-scope\n");
@@ -2245,7 +2248,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       env: { ...process.env, CLAUDE_PROJECT_DIR: proj, AIDLC_HARNESS_DIR: ".claude" },
     });
     expect(strip.status).toBe(0);
-    const strippedFm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8")
+    const strippedFm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     expect(strippedFm).not.toContain("- syn-scope");
     expect(strippedFm).toContain("- enterprise");
@@ -2268,7 +2271,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md": contribution,
     });
     expect(drops).not.toContain('adds.scopes "syn-quoted"');
-    expect(stageBody(proj, "construction", "build-and-test")).toContain("- syn-quoted");
+    expect(stageBody(proj, phaseFor("build-and-test"), "build-and-test")).toContain("- syn-quoted");
   });
 
   // --- Number seeding: edge-aware, engine-owned (multi-stage plugins) ---
@@ -2280,7 +2283,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     // dedupe requires_stage, and a per-occurrence indegree count would strand
     // the stage and misreport the copy-paste duplicate as a cycle.
     const mk = (slug: string, deps: string[], produces: string, consumes: string[]) => [
-      "---", `slug: ${slug}`, "plugin: syn-order", "phase: ideation",
+      "---", `slug: ${slug}`, "plugin: syn-order", "phase: discover",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", `  - ${produces}`,
@@ -2311,7 +2314,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("a requires_stage cycle rolls back copied stages so a corrected retry can land", () => {
     const mk = (slug: string, dep: string | null, produces: string) => [
-      "---", `slug: ${slug}`, "plugin: syn-cycle", "phase: ideation",
+      "---", `slug: ${slug}`, "plugin: syn-cycle", "phase: discover",
       "execution: ALWAYS", "condition: always",
       "lead_agent: aidlc-product-agent", "support_agents: []", "mode: inline",
       "produces:", `  - ${produces}`, "consumes: []",
@@ -2328,8 +2331,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     expect(drops).toContain("requires_stage cycle among new stages");
     const g = JSON.parse(readFileSync(join(proj, ".claude", "tools", "data", "stage-graph.json"), "utf-8")) as Array<{ slug: string }>;
     expect(g.some((s) => s.slug.startsWith("syn-cycle-"))).toBe(false);
-    const aInstalled = stageSourcePath(proj, "ideation", "syn-cycle-a");
-    const bInstalled = stageSourcePath(proj, "ideation", "syn-cycle-b");
+    const aInstalled = stageSourcePath(proj, "discover", "syn-cycle-a");
+    const bInstalled = stageSourcePath(proj, "discover", "syn-cycle-b");
     expect(existsSync(aInstalled)).toBe(false);
     expect(existsSync(bInstalled)).toBe(false);
     const retryMarker = join(proj, "aidlc", ".plugin-compose-retry-syn-cycle");
@@ -2337,7 +2340,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
     const root = join(proj, "_plugin-syn-cycle");
     writeFileSync(
-      join(root, "stages", "ideation", "syn-cycle-b.md"),
+      join(root, "stages", "discover", "syn-cycle-b.md"),
       mk("syn-cycle-b", null, "syn-cycle-doc-b"),
     );
     const retry = spawnSync(BUN, [join(root, "hooks", "compose.ts")], {
@@ -2378,7 +2381,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     expect(drops).toContain('plugin "attacker" scopes file');
     expect(drops).toContain('declares plugin "victim"');
     expect(drops).toContain('host manifest identity "attacker"');
-    expect(stageBody(proj, "construction", "build-and-test")).not.toContain("- victim-scope");
+    expect(stageBody(proj, phaseFor("build-and-test"), "build-and-test")).not.toContain("- victim-scope");
     expect(existsSync(join(proj, ".claude", "scopes", "victim-scope.md"))).toBe(false);
     expect(existsSync(
       join(proj, ".claude", "tools", "data", "plugin-contrib-attacker.json"),
@@ -2615,13 +2618,13 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         harnessDir,
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       );
       const before = readFileSync(path, "utf-8");
       writeFileSync(path, before.replace(/^scopes:\n/m, `scopes:\n  - "${name}"\n`));
     });
-    const stagePath = stageSourcePath(proj, "construction", "build-and-test");
+    const stagePath = stageSourcePath(proj, phaseFor("build-and-test"), "build-and-test");
     const sidecar = join(
       proj,
       ".claude",
@@ -2686,7 +2689,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     expect(drops).toContain('adds.scopes "syn-prefix-foreign" is not owned by plugin "syn-prefix"');
     expect(drops).toContain('declares plugin "syn-prefix-foreign"');
-    const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8")
+    const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     expect(fm).not.toContain("- syn-prefix-foreign");
     expect(existsSync(join(proj, ".claude", "tools", "data", "plugin-contrib-syn-prefix.json"))).toBe(false);
@@ -2700,7 +2703,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic("syn-scope-guard", {
       "contributions/test/build-and-test.md": contrib,
     });
-    const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8")
+    const fm = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8")
       .match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
     // The foreign core scope is refused (ownership guard)...
     expect(drops).toContain('adds.scopes "enterprise" is not owned by plugin "syn-scope-guard"');
@@ -2745,7 +2748,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
     }));
     expect(await Promise.all(processes.map((proc) => proc.exited))).toEqual([0, 0]);
-    const body = stageBody(proj, "construction", "build-and-test");
+    const body = stageBody(proj, phaseFor("build-and-test"), "build-and-test");
     for (const { name } of roots) {
       expect(body).toContain(`- ${name}`);
       const sidecar = join(proj, ".claude", "tools", "data", `plugin-contrib-${name}.json`);
@@ -2799,7 +2802,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     }
     expect(compose.exitCode, await stderr).toBe(0);
     expect(waitedPastBaseline).toBe(true);
-    expect(stageBody(proj, "construction", "build-and-test")).toContain(`- ${name}`);
+    expect(stageBody(proj, phaseFor("build-and-test"), "build-and-test")).toContain(`- ${name}`);
     expect(hookDrops(proj)).toBe("");
     expect(existsSync(auditLockDir(proj))).toBe(false);
   }, TIMEOUT_MS);
@@ -2922,7 +2925,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
-    expect(stageBody(proj, "construction", "build-and-test")).toContain(`- ${name}`);
+    expect(stageBody(proj, phaseFor("build-and-test"), "build-and-test")).toContain(`- ${name}`);
     // The SPAWNED tools must resolve the same project dir as the hook: a
     // relative CLAUDE_PROJECT_DIR re-resolved against a child's cwd lands on
     // <proj>/<proj> and the compile drop-logs "requires an installed project
@@ -3001,7 +3004,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       readFileSync(join(proj, ".claude", "tools", "data", "harness.json"), "utf-8"),
     );
     expect(harness.plugins).toEqual(["aidlc"]);
-    expect(stageBody(proj, "construction", "build-and-test")).not.toContain(`- ${name}`);
+    expect(stageBody(proj, phaseFor("build-and-test"), "build-and-test")).not.toContain(`- ${name}`);
     expect(existsSync(
       join(proj, ".claude", "tools", "data", `plugin-contrib-${name}.json`),
     )).toBe(false);
@@ -3010,13 +3013,13 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   // --- Contribution seam: prose fragments ---
   test("prose fragments are spliced into the target stage body", () => {
-    const body = stageBody(project, "construction", "build-and-test");
+    const body = stageBody(project, phaseFor("build-and-test"), "build-and-test");
     expect(body).toContain("Step 8a (test-pro)");
     expect(body).toContain("Step 9a (test-pro)");
   });
 
   test("successfully spliced fragments are recorded in the contribution sidecar", () => {
-    const body = stageBody(project, "construction", "build-and-test");
+    const body = stageBody(project, phaseFor("build-and-test"), "build-and-test");
     const sidecar = JSON.parse(
       readFileSync(
         join(project, ".claude", "tools", "data", "plugin-contrib-test-pro.json"),
@@ -3041,14 +3044,14 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   });
 
   test("fragments land in step order (8a before 8b before 8c)", () => {
-    const body = stageBody(project, "construction", "build-and-test");
+    const body = stageBody(project, phaseFor("build-and-test"), "build-and-test");
     expect(body.indexOf("Step 8a")).toBeLessThan(body.indexOf("Step 8b"));
     expect(body.indexOf("Step 8b")).toBeLessThan(body.indexOf("Step 8c"));
   });
 
   // --- Harness-dir token substitution ---
   test("{{HARNESS_DIR}} is substituted in composed stage prose", () => {
-    const body = stageBody(project, "construction", "test-pro-integration");
+    const body = stageBody(project, "test", "test-pro-integration");
     expect(body).not.toContain("{{HARNESS_DIR}}");
     expect(body).toContain(".claude/tools/aidlc.ts engine orchestrate report");
   });
@@ -3229,7 +3232,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const files = [
       join(".codex", "agents", "aidlc-quality-agent.md"),
       join(".codex", "agents", "aidlc-quality-agent.toml"),
-      join(".codex", "aidlc-common", "stages", "construction", "build-and-test.md"),
+      join(".codex", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"),
     ];
     const disabled = (crlf: boolean): Map<string, string> => {
       const projectDir = composePluginFixture({
@@ -3428,10 +3431,10 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     expect(drops).toContain('contribution directory "contributions/agents/weird.md/" is nested too deep');
     expect(readFileSync(join(proj, ".claude", "agents", "aidlc-developer-agent.md"), "utf-8")).toContain("lands");
     expect(drops).toContain('contribution directory "contributions/agents/nested/" is nested too deep');
-    expect(drops).toContain('contribution directory "contributions/build/nested/" is nested too deep');
+    expect(drops).toContain('contribution directory "contributions/design/nested/" is nested too deep');
     expect(drops).toContain('contribution file "contributions/stray.md" sits outside a phase or agents directory');
     expect(readFileSync(join(proj, ".claude", "agents", "aidlc-architect-agent.md"), "utf-8")).not.toContain("must never land");
-    expect(stageBody(proj, "construction", "functional-design")).not.toContain("must never land");
+    expect(stageBody(proj, phaseFor("functional-design"), "functional-design")).not.toContain("must never land");
   });
 
   test("a contribution target that is not a bare slug is refused before any path is built", () => {
@@ -3462,7 +3465,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     expect(drops).toContain('has an invalid target "../aidlc-common/stages/test/build-and-test"');
     expect(drops).toContain('has an invalid target "../../agents/aidlc-architect-agent"');
-    expect(readFileSync(stageSourcePath(proj, "construction", "build-and-test"), "utf-8")).not.toContain("must never land");
+    expect(readFileSync(stageSourcePath(proj, phaseFor("build-and-test"), "build-and-test"), "utf-8")).not.toContain("must never land");
     expect(readFileSync(join(proj, ".claude", "agents", "aidlc-architect-agent.md"), "utf-8")).not.toContain("must never land");
   });
 
@@ -3479,7 +3482,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
     });
     expect(rerun.status).toBe(0);
-    const body = stageBody(project, "construction", "build-and-test");
+    const body = stageBody(project, phaseFor("build-and-test"), "build-and-test");
     const count = (body.match(/Step 8a \(test-pro\)/g) ?? []).length;
     expect(count).toBe(1);
   });
@@ -3611,7 +3614,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   test("a fragment the plugin no longer ships is removed with its record", () => {
     const name = "syn-upgrade-frag";
     const { proj } = composeSynthetic(name, upgradeFiles(name, "v1", "after-step:8"));
-    const stagePath = join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md");
+    const stagePath = join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
     const sidecarPath = join(proj, ".claude", "tools", "data", `plugin-contrib-${name}.json`);
     const fragmentsOf = () =>
       (JSON.parse(readFileSync(sidecarPath, "utf-8"))["build-and-test"]?.fragments ?? []) as Array<{ anchor: string }>;
@@ -3636,7 +3639,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     expect(surfaceRow!.trimStart().startsWith("fail")).toBe(false);
 
     // v3 ships no contribution at all: the block and the record both go.
-    rmSync(join(proj, `_plugin-${name}`, "contributions", "construction", "build-and-test.md"));
+    rmSync(join(proj, `_plugin-${name}`, "contributions", phaseFor("build-and-test"), "build-and-test.md"));
     recomposeSynthetic(proj, name, {
       "tools/aidlc-sensor-syn-upgrade-check.ts": upgradeTool("v3"),
     });
@@ -3714,7 +3717,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const sync = syncSynthetic(proj, name, upgradeFiles(name, "v2", "after-step:9"));
     expect(sync.status, sync.stderr).toBe(0);
     expect(readFileSync(join(proj, ".claude", "tools", "aidlc-sensor-syn-upgrade-check.ts"), "utf-8")).toContain("sensor v2");
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).not.toContain(`plugin:${name}:after-step:8:`);
     expect(body).toContain(`<!-- plugin:${name}:after-step:9:50:`);
   });
@@ -3893,7 +3896,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       pluginBuilt,
     }).projectDir;
     expect(checkOutWithCrlf(crlfProject)).toBeGreaterThan(0);
-    const stagePath = stageSourcePath(crlfProject, "construction", "build-and-test");
+    const stagePath = stageSourcePath(crlfProject, phaseFor("build-and-test"), "build-and-test");
     const before = readFileSync(stagePath);
 
     const rerun = spawnSync(BUN, [join(pluginBuilt, "hooks", "compose.ts")], {
@@ -4021,7 +4024,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   test("compose recompiles when the graph lost the plugin's stages", () => {
     // Simulate a transient compile failure: strip the plugin stages out of the
     // committed graph (as a killed-mid-compile install would leave it). A rerun
-    // must detect the missing slug and recompile, restoring all 34 stages — even
+    // must detect the missing slug and recompile, restoring every stage — even
     // though no stage source changed (changed=false on the rerun).
     const graphPath = join(project, ".claude", "tools", "data", "stage-graph.json");
     const full = JSON.parse(readFileSync(graphPath, "utf-8")) as GraphStage[];
@@ -4065,8 +4068,8 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       });
       if (compose.status !== 0) throw new Error(`compose.ts failed: ${compose.stderr}`);
 
-      expect(existsSync(stageSourcePath(legacyProj, "construction", "test-pro-integration"))).toBe(false);
-      expect(existsSync(stageSourcePath(legacyProj, "operation", "test-pro-full-suite"))).toBe(false);
+      expect(existsSync(stageSourcePath(legacyProj, "test", "test-pro-integration"))).toBe(false);
+      expect(existsSync(stageSourcePath(legacyProj, "operate", "test-pro-full-suite"))).toBe(false);
       expect(existsSync(join(legacyProj, ".claude", "scopes", "test-pro-validation.md"))).toBe(false);
       expect(existsSync(join(legacyProj, ".claude", "agents", "test-pro-metrics-agent.md"))).toBe(false);
 
@@ -4134,7 +4137,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         [
           `${timestamp}\t[degraded] knowledge "test-pro-metrics-agent\\methodology.md" collides`,
           `${timestamp}\t[degraded] plugin "syn-agent-name" agents file "agents\\x-unique-file.md" declares name collision`,
-          `${timestamp}\t[degraded] plugin "syn-stale" stage file "construction\\syn-stale-stage.md" not composed`,
+          `${timestamp}\t[degraded] plugin "syn-stale" stage file "build\\syn-stale-stage.md" not composed`,
         ].join("\n"),
       ),
     ).toEqual([
@@ -4234,7 +4237,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-ensemble",
       "plugin: syn-kiro",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -4279,7 +4282,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".kiro",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-kiro-ensemble.md",
     ))).toBe(false);
     expect(existsSync(join(
@@ -4467,7 +4470,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-untrusted",
       "plugin: syn-kiro-untrusted",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -4504,7 +4507,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".kiro",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-kiro-untrusted.md",
     ))).toBe(false);
     expect(existsSync(join(
@@ -4625,7 +4628,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         "---",
         `slug: ${plugin}-stage`,
         `plugin: ${plugin}`,
-        "phase: inception",
+        "phase: design",
         "execution: ALWAYS",
         "condition: always",
         `lead_agent: ${agent}`,
@@ -4667,7 +4670,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         ".kiro",
         "aidlc-common",
         "stages",
-        "inception",
+        "design",
         `${plugin}-stage.md`,
       );
       expect(existsSync(stagePath), variant.label).toBe(variant.accepted);
@@ -4693,7 +4696,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     "---",
     `slug: ${plugin}-stage`,
     `plugin: ${plugin}`,
-    "phase: inception",
+    "phase: design",
     "execution: ALWAYS",
     "condition: always",
     `lead_agent: ${agent}`,
@@ -4736,7 +4739,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         },
         surface,
       );
-      expect(existsSync(join(proj, ".kiro", "aidlc-common", "stages", "inception", `${plugin}-stage.md`)), surface).toBe(true);
+      expect(existsSync(join(proj, ".kiro", "aidlc-common", "stages", "design", `${plugin}-stage.md`)), surface).toBe(true);
       expect(drops, surface).not.toContain(`agent "${agent}"`);
       const lines = pluginAgentLines(proj);
       expect(lines.join("\n"), surface).toContain("      effect: deny");
@@ -4906,7 +4909,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
       "kiro-ide",
     );
-    expect(existsSync(join(refused.proj, ".kiro", "aidlc-common", "stages", "inception", `${unsupported}-stage.md`))).toBe(false);
+    expect(existsSync(join(refused.proj, ".kiro", "aidlc-common", "stages", "design", `${unsupported}-stage.md`))).toBe(false);
     expect(refused.drops).toContain(`agent "${unsupportedAgent}"`);
 
     const colliding = "syn-own-colliding";
@@ -4923,7 +4926,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
     );
     expect(existsSync(join(collided.proj, ".kiro", "agents", `${collidingAgent}.md`))).toBe(false);
-    expect(existsSync(join(collided.proj, ".kiro", "aidlc-common", "stages", "inception", `${colliding}-stage.md`))).toBe(false);
+    expect(existsSync(join(collided.proj, ".kiro", "aidlc-common", "stages", "design", `${colliding}-stage.md`))).toBe(false);
     expect(collided.drops).toContain(`agent "${collidingAgent}"`);
   });
 
@@ -4953,7 +4956,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
           "---",
           `slug: ${slug}`,
           `plugin: ${plugin}`,
-          "phase: inception",
+          "phase: design",
           "execution: ALWAYS",
           "condition: always",
           "lead_agent: aidlc-product-agent",
@@ -4984,7 +4987,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
           leaf,
           "aidlc-common",
           "stages",
-          "inception",
+          "design",
           `${plugin}-${short}.md`,
         )), `${label} ${reviewer}`).toBe(true);
         expect(drops, `${label} ${reviewer}`).not.toContain(`agent "${reviewer}"`);
@@ -5001,7 +5004,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-oc-missing",
       "plugin: syn-oc",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5028,7 +5031,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".aidlc",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-oc-missing.md",
     ))).toBe(false);
     expect(drops).toContain('agent "syn-oc-ghost-agent"');
@@ -5056,7 +5059,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-oc-colliding",
       "plugin: syn-oc",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5101,7 +5104,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".aidlc",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-oc-colliding.md",
     ))).toBe(false);
     expect(drops).toContain('agent "syn-oc-taken-agent"');
@@ -5152,7 +5155,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-oc-shipped",
       "plugin: syn-oc",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5182,7 +5185,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".aidlc",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-oc-shipped.md",
     ))).toBe(true);
     // The native twin landed, so the dispatch target is real.
@@ -5200,7 +5203,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-agent-team",
       "plugin: syn-kiro-agent-team",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5228,7 +5231,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         harnessLeaf,
         "aidlc-common",
         "stages",
-        "inception",
+        "design",
         "syn-kiro-agent-team.md",
       ))).toBe(false);
       expect(drops).toContain('reserved mode "agent-team"');
@@ -5241,7 +5244,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-agent-team-installed-stage",
       "plugin: syn-kiro-agent-team-installed",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5280,7 +5283,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
           harnessDir,
           "aidlc-common",
           "stages",
-          "inception",
+          "design",
           "syn-kiro-agent-team-installed-stage.md",
         );
         mkdirSync(dirname(installed), { recursive: true });
@@ -5298,7 +5301,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-existing-unsafe",
       "plugin: syn-kiro-existing-unsafe",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5337,7 +5340,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
           harnessDir,
           "aidlc-common",
           "stages",
-          "inception",
+          "design",
           "syn-kiro-existing-unsafe.md",
         );
         mkdirSync(dirname(installed), { recursive: true });
@@ -5350,7 +5353,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".kiro",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-kiro-existing-unsafe.md",
     ))).toBe(true);
     expect(drops).toContain("[degraded]");
@@ -5363,7 +5366,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-subagent-stage",
       "plugin: syn-kiro-subagent",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: syn-kiro-subagent-agent",
@@ -5403,7 +5406,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".kiro",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-kiro-subagent-stage.md",
     ))).toBe(false);
     expect(existsSync(join(
@@ -5428,7 +5431,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-shared-mob",
       "plugin: syn-kiro-shared",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5449,7 +5452,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-shared-inline",
       "plugin: syn-kiro-shared",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: syn-kiro-shared-agent",
@@ -5484,7 +5487,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       },
       ".kiro",
     );
-    const stages = join(proj, ".kiro", "aidlc-common", "stages", "inception");
+    const stages = join(proj, ".kiro", "aidlc-common", "stages", "design");
 
     expect(existsSync(join(stages, "syn-kiro-shared-mob.md"))).toBe(false);
     expect(existsSync(join(stages, "syn-kiro-shared-inline.md"))).toBe(true);
@@ -5514,7 +5517,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-kiro-reviewed",
       "plugin: syn-kiro-rev",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5560,7 +5563,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".kiro",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-kiro-reviewed.md",
     ))).toBe(false);
     expect(drops).toContain('stage "syn-kiro-reviewed"');
@@ -5573,7 +5576,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-codex-ensemble",
       "plugin: syn-codex",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5617,7 +5620,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".codex",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       "syn-codex-ensemble.md",
     ))).toBe(false);
     // Core lead has a shipped TOML; only the plugin persona is undispatchable.
@@ -5636,7 +5639,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-noparse-inline",
       "plugin: syn-noparse",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: syn-noparse-agent",
@@ -5656,7 +5659,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       "slug: syn-noparse-mob",
       "plugin: syn-noparse",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -5739,7 +5742,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
         if (f.startsWith("plugin-compose") && f.endsWith(".drops")) drops += readFileSync(join(hd, f), "utf-8");
       }
     }
-    const stages = join(proj, ".kiro", "aidlc-common", "stages", "inception");
+    const stages = join(proj, ".kiro", "aidlc-common", "stages", "design");
     expect(existsSync(join(stages, "syn-noparse-inline.md"))).toBe(true);
     expect(existsSync(join(stages, "syn-noparse-mob.md"))).toBe(false);
     expect(existsSync(join(proj, ".kiro", "agents", "syn-noparse-agent.md"))).toBe(true);
@@ -5764,7 +5767,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: syn-range\nadds:\n  produces: []\nfragments:\n  - anchor: after-step:6\n    order: 100\n---\n\n## fragment: after-step:6\n\n### Step 6-SYN: lands in range\n\nsyn-range prose\n`,
     });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).toContain("syn-range prose");
     expect(drops).not.toContain("after-step:6");
   });
@@ -5772,10 +5775,10 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   test("stage-slug collision is dropped-with-log, not a silent no-op (R4-4)", () => {
     const { drops, proj } = composeSynthetic("syn-collide", {
       "stages/test/build-and-test.md":
-        `---\nslug: build-and-test\nplugin: syn-collide\nphase: construction\nexecution: ALWAYS\ncondition: always\nlead_agent: aidlc-quality-agent\nsupport_agents: []\nmode: inline\nproduces: []\nconsumes: []\nrequires_stage: []\ninputs: x\noutputs: y\n---\n# SYN-COLLIDE OVERRIDE\n`,
+        `---\nslug: build-and-test\nplugin: syn-collide\nphase: test\nexecution: ALWAYS\ncondition: always\nlead_agent: aidlc-quality-agent\nsupport_agents: []\nmode: inline\nproduces: []\nconsumes: []\nrequires_stage: []\ninputs: x\noutputs: y\n---\n# SYN-COLLIDE OVERRIDE\n`,
     });
     // the core stage must be untouched, AND the collision must be logged
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).not.toContain("SYN-COLLIDE OVERRIDE");
     expect(drops).toContain("collides");
   });
@@ -5925,7 +5928,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "TAIL-MUST-SURVIVE past the fence.", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-fence", { "contributions/test/build-and-test.md": fenced });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).toContain("TAIL-MUST-SURVIVE"); // prose after the fenced marker survived
     expect(drops).not.toContain("after-step:6"); // no phantom block spawned
   });
@@ -5952,7 +5955,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "adds:", "  produces:", "    - syn-bom-artifact", "---", "",
     ].join("\n")}`;
     const { proj } = composeSynthetic("syn-bom", { "contributions/test/build-and-test.md": bom });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).toContain("syn-bom-artifact"); // merged despite the BOM
   });
 
@@ -5976,7 +5979,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     cpSync(join(pluginBuilt, "hooks"), join(root, "hooks"), { recursive: true });
     const mf = join(root, ".claude-plugin", "plugin.json");
     const m = JSON.parse(readFileSync(mf, "utf-8")); m.name = "syn-mark"; writeFileSync(mf, JSON.stringify(m));
-    const contrib = join(root, "contributions", "construction", "build-and-test.md");
+    const contrib = join(root, "contributions", phaseFor("build-and-test"), "build-and-test.md");
     require("node:fs").mkdirSync(dirname(contrib), { recursive: true });
     const env = { ...process.env, CLAUDE_PLUGIN_ROOT: root, CLAUDE_PROJECT_DIR: proj, AIDLC_HARNESS_DIR: ".claude" };
     writeFileSync(contrib, mk("ONE"));
@@ -5984,7 +5987,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     writeFileSync(contrib, mk("TWO")); // upgrade: changed prose
     const up = spawnSync(BUN, [join(root, "hooks", "compose.ts")], { cwd: proj, encoding: "utf-8", timeout: remainingOperationTimeoutMs(NATIVE_RUNTIME_CASE_TIMEOUT_MS), env });
     expect(up.status).toBe(0);
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect((body.match(/UPGRADE-TWO/g) ?? []).length).toBe(1); // new prose present once
     expect(body).not.toContain("UPGRADE-ONE"); // old prose fully replaced, no stranded tail
   });
@@ -6049,7 +6052,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nbundle: syn-alias\nadds:\n  produces:\n    - syn-alias-artifact\n---\n`,
     });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).not.toContain("syn-alias-artifact");
     expect(drops).toContain("renamed bundle: key");
     expect(drops).toContain("write plugin: instead");
@@ -6060,7 +6063,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "contributions/test/build-and-test.md":
         `---\ntarget: build-and-test\nplugin: syn-conflict\nbundle: other-conflict\nadds:\n  produces:\n    - syn-conflict-artifact\n---\n`,
     });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).not.toContain("syn-conflict-artifact");
     expect(drops).toContain("renamed bundle: key");
   });
@@ -6071,7 +6074,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
   // every later compile of the whole install, not just that stage.
   test("a bundle:-keyed plugin stage file is skipped at copy time and the install still compiles", () => {
     const staleStage = [
-      "---", "slug: syn-stale-stage", "phase: construction", "execution: ALWAYS",
+      "---", "slug: syn-stale-stage", "phase: build", "execution: ALWAYS",
       "condition: always", "lead_agent: aidlc-quality-agent", "support_agents: []",
       "mode: inline", "produces: []", "consumes: []", "requires_stage: []",
       "inputs: x", "outputs: y", "bundle: syn-stale", "---", "", "# Stale stage body", "",
@@ -6081,7 +6084,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     });
     // The bad stage never landed, the drop names the file + the schema error,
     // and the install's graph still compiles (self-heal probe unaffected).
-    expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "syn-stale-stage.md"))).toBe(false);
+    expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "build", "syn-stale-stage.md"))).toBe(false);
     expect(parseHookDrops(drops)).toEqual([
       {
         severity: "degraded",
@@ -6100,7 +6103,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "---",
       `slug: ${plugin}-stage`,
       `plugin: ${plugin}`,
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "condition: always",
       "lead_agent: aidlc-product-agent",
@@ -6130,7 +6133,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       `${stalePlugin}-stage.md`,
     ))).toBe(false);
     expect(stale.drops).toContain("reviewer requires review_artifact");
@@ -6145,7 +6148,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       ".claude",
       "aidlc-common",
       "stages",
-      "inception",
+      "design",
       `${migratedPlugin}-stage.md`,
     ))).toBe(true);
     expect(migrated.drops).not.toContain("reviewer requires review_artifact");
@@ -6153,7 +6156,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("an aidlc--prefixed plugin name is refused at compose copy time (runner-path collision)", () => {
     const collidingStage = [
-      "---", "slug: aidlc-pro-check", "phase: construction", "execution: ALWAYS",
+      "---", "slug: aidlc-pro-check", "phase: build", "execution: ALWAYS",
       "condition: always", "lead_agent: aidlc-quality-agent", "support_agents: []",
       "mode: inline", "produces: []", "consumes: []", "requires_stage: []",
       "inputs: x", "outputs: y", "plugin: aidlc-pro", "---", "", "# Colliding stage", "",
@@ -6161,7 +6164,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic("aidlc-pro", {
       "stages/build/aidlc-pro-check.md": collidingStage,
     });
-    expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "aidlc-pro-check.md"))).toBe(false);
+    expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "build", "aidlc-pro-check.md"))).toBe(false);
     expect(drops).toContain('"aidlc-" prefix is reserved for core');
   });
 
@@ -6178,7 +6181,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
 
   test("a frontmatter-only (empty-body) plugin stage file is skipped at copy time", () => {
     const deadStage = [
-      "---", "slug: syn-dead-stage", "phase: construction", "execution: ALWAYS",
+      "---", "slug: syn-dead-stage", "phase: build", "execution: ALWAYS",
       "condition: always", "lead_agent: aidlc-quality-agent", "support_agents: []",
       "mode: inline", "produces: []", "consumes: []", "requires_stage: []",
       "inputs: x", "outputs: y", "plugin: syn-dead", "---", "",
@@ -6186,7 +6189,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
     const { drops, proj } = composeSynthetic("syn-dead", {
       "stages/build/syn-dead-stage.md": deadStage,
     });
-    expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "syn-dead-stage.md"))).toBe(false);
+    expect(existsSync(join(proj, ".claude", "aidlc-common", "stages", "build", "syn-dead-stage.md"))).toBe(false);
     expect(drops).toContain("stage body is empty");
   });
 
@@ -6202,7 +6205,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       cpSync(join(pluginBuilt, "hooks"), join(root, "hooks"), { recursive: true });
       const mf = join(root, ".claude-plugin", "plugin.json");
       const m = JSON.parse(readFileSync(mf, "utf-8")); m.name = name; writeFileSync(mf, JSON.stringify(m));
-      const p = join(root, "contributions", "construction", "c.md");
+      const p = join(root, "contributions", "build", "c.md");
       require("node:fs").mkdirSync(dirname(p), { recursive: true });
       writeFileSync(p, contrib);
       spawnSync(BUN, [join(root, "hooks", "compose.ts")], {
@@ -6226,7 +6229,7 @@ describe("t188 plugin compose — emit + compose the contribution seam", () => {
       "NEST-TAIL-SURVIVES.", "",
     ].join("\n");
     const { drops, proj } = composeSynthetic("syn-nest", { "contributions/test/build-and-test.md": nested });
-    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    const body = readFileSync(join(proj, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
     expect(body).toContain("NEST-TAIL-SURVIVES");
     expect(drops).not.toContain("PHANTOM");
   });

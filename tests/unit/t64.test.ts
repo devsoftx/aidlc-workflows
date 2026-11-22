@@ -60,7 +60,7 @@ function parseCatching(yaml: unknown): string {
 
 const WORKED = `---
 slug: scope-definition
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: Always executes
 lead_agent: aidlc-product-agent
@@ -86,7 +86,7 @@ outputs: aidlc-docs/discover/scope-definition/scope-document.md
 
 const UNCLOSED = `---
 slug: test
-phase: ideation
+phase: discover
 
 # body with no closing delimiter
 `;
@@ -102,7 +102,7 @@ consumes:
 
 const SCALAR_FIX = `---
 slug: test
-phase: ideation
+phase: discover
 condition: unquoted value with spaces
 lead_agent: "aidlc-product-agent"
 inputs: value with trailing space
@@ -118,7 +118,7 @@ mode: inline
 
 const QUOTED_TRUE = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: "true"
 lead_agent: aidlc-product-agent
@@ -134,7 +134,7 @@ outputs: b
 
 const FLOW_EMPTY = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -150,7 +150,7 @@ outputs: b
 
 const POP_LIST = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -169,7 +169,7 @@ outputs: b
 
 const ZERO_ITEMS = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -184,7 +184,7 @@ outputs: b
 
 const SINGLE_CONSUME = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -202,7 +202,7 @@ outputs: b
 
 const MULTI_CONSUME = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -223,7 +223,7 @@ outputs: b
 
 const TRAIL_NO_NL = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -243,7 +243,7 @@ consumes:
 
 const ALL_ABSENT = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -255,7 +255,7 @@ outputs: b
 
 const BOOL_TRUE = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -273,7 +273,7 @@ outputs: b
 
 const BOOL_FALSE = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -291,7 +291,7 @@ outputs: b
 
 const FOR_EACH = `---
 slug: test
-phase: construction
+phase: build
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-developer-agent
@@ -308,7 +308,7 @@ outputs: b
 
 const SUMMARY_CONFIRMATION = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -325,7 +325,7 @@ outputs: b
 
 const FULL = `---
 slug: test
-phase: construction
+phase: build
 execution: CONDITIONAL
 condition: x
 lead_agent: aidlc-developer-agent
@@ -348,7 +348,7 @@ outputs: b
 
 const COLON_SCALAR = `---
 slug: test
-phase: construction
+phase: build
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-developer-agent
@@ -364,7 +364,7 @@ outputs: "aidlc-docs/CONDITIONAL: file.md"
 
 const BAD_SLUG = `---
 slug: Test-Stage
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -380,7 +380,7 @@ outputs: b
 
 const BAD_ARTIFACT = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -399,7 +399,7 @@ outputs: b
 function reservedPassthrough(key: string): string {
   const fix = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -418,7 +418,7 @@ ${key}: some-value
 
 const BLANK_IN_CONSUMES = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -439,7 +439,7 @@ consumes:
 
 const EMPTY_SCALAR = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: ""
 lead_agent: aidlc-product-agent
@@ -459,7 +459,7 @@ outputs: b
 // as an unquoted number.
 const REVIEWER = `---
 slug: test
-phase: inception
+phase: design
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent
@@ -482,7 +482,7 @@ slug: test-pro-integration
 number: 3.85
 name: Cross-Unit Integration Testing
 plugin: test-pro
-phase: construction
+phase: build
 execution: CONDITIONAL
 condition: x
 lead_agent: aidlc-quality-agent
@@ -501,7 +501,7 @@ slug: test-pro-integration
 number: 3.85
 name: Cross-Unit Integration Testing
 bundle: test-pro
-phase: construction
+phase: build
 execution: CONDITIONAL
 condition: x
 lead_agent: aidlc-quality-agent
@@ -525,8 +525,8 @@ describe("worked example parses each field", () => {
     expect(obj.slug).toBe("scope-definition");
   });
 
-  test("phase -> ideation", () => {
-    expect(obj.phase).toBe("ideation");
+  test("phase -> discover", () => {
+    expect(obj.phase).toBe("discover");
   });
 
   test("execution -> ALWAYS", () => {
@@ -890,7 +890,7 @@ describe("optional ars block (composer screening prior)", () => {
   // it like one priors-file entry.
   const ARS_FULL = `---
 slug: test
-phase: ideation
+phase: discover
 execution: ALWAYS
 condition: x
 lead_agent: aidlc-product-agent

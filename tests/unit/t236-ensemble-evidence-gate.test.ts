@@ -1147,11 +1147,14 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expectApprovalCommitted(proj, approved, before, "practices-discovery");
   });
 
-  // The swarm exemption never applies to the scope's FIRST construction stage
-  // (isSkeletonGateStage: the skeleton gate always runs inline, so disk-backed
-  // guards stay correct there). The fixtures below therefore also pivot an
-  // EARLIER stage into construction so the mutated user-stories is not the
-  // skeleton gate - matching the real swarm stage (code-generation, 3.5).
+  // The swarm exemption does not reach the skeleton gate, the first per-unit
+  // EXECUTE stage (isSkeletonGateStage), unless checkpoints are enabled
+  // (isAutonomousSwarmCandidate), so its disk-backed guards stay on there. The
+  // skeleton gate is derived from for_each, not from phase, so the fixture makes
+  // an EARLIER stage per-unit and inline: it becomes the skeleton gate and the
+  // mutated user-stories (a subagent swarm) is a non-skeleton candidate. The
+  // shipped enterprise graph has the same shape: functional-design is the
+  // inline skeleton gate and code-generation the subagent swarm.
   function nonSkeletonSwarmGraph(proj: string): string {
     const path = perUnitEnsembleGraph(proj, (node) => {
       node.mode = "subagent";
@@ -1159,7 +1162,8 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     const graph = JSON.parse(readFileSync(path, "utf-8")) as Array<Record<string, unknown>>;
     const earlier = graph.find((entry) => entry.slug === "requirements-analysis");
     if (!earlier) throw new Error("fixture graph has no requirements-analysis node");
-    earlier.phase = "construction";
+    earlier.for_each = "unit-of-work";
+    earlier.mode = "inline";
     writeFileSync(path, `${JSON.stringify(graph, null, 2)}\n`);
     return path;
   }

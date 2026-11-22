@@ -51,5 +51,7 @@ absent.
 ## Membership
 
 The grid contains the three Initialization stages, Reverse Engineering,
-Requirements Analysis, Code Generation, Build and Test, Deployment Pipeline,
-Deployment Execution, and Observability Setup. Every other stage is SKIP.
+Requirements Analysis, Code Generation, Build and Test, Code Review, Security
+Review, Deployment Pipeline, Deployment Execution, and Observability Setup. Code
+Review and Security Review run as stages with no reviewer pass, because
+`review_cap: none` lowers their reviewer to none. Every other stage is SKIP.

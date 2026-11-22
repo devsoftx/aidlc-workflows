@@ -86,7 +86,7 @@ After executing the build and tests, emit two machine-readable JSON files the
 advisory test-pro sensors read. These are sensor SIDE-INPUTS, not stage
 deliverables — they are not in `produces:` (which resolves to `.md` artifacts);
 write them beside this stage's other outputs, under the engine-resolved record
-dir (`<record>/construction/build-and-test/`, the same dir the stage's `.md`
+dir (`<record>/test/build-and-test/`, the same dir the stage's `.md`
 artifacts land in):
 
 - `test-pro-test-results.json` —

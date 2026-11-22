@@ -3788,8 +3788,11 @@ describe("t314 swarm finalize source-fingerprint check (#646 review P1#3)", () =
     // The fixture ships with a pre-populated `Bolt Refs: [foo]` for its own
     // (unrelated) worktree-lifecycle purpose - clear it so a fresh `prepare` for
     // any unit name here doesn't collide with a stale ref.
+    // units-generation is completed here as in t305's swarmFixture: while it is
+    // pending the engine takes the stage-level artifact path, not the settled-swarm one.
     const seeded = readFileSync(join(FIXTURES_DIR, "state-construction-with-worktree.md"), "utf-8")
-      .replace(/^(- \*\*Bolt Refs\*\*: ).*$/m, "$1");
+      .replace(/^(- \*\*Bolt Refs\*\*: ).*$/m, "$1")
+      .replace("- [ ] units-generation — EXECUTE", "- [x] units-generation — EXECUTE");
     writeFileSync(seededStateFile(proj), seeded);
     mkdirSync(seededAuditDir(proj), { recursive: true });
     writeFileSync(join(seededAuditDir(proj), "fixture.md"), "# AI-DLC Audit Log\n");

@@ -16,7 +16,6 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { stateDigest, toPosix, writeActiveDirectiveMarker } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { codeGenerationRecordDir } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { seededStateFile } from "../harness/fixtures.ts";
-import { phaseFor } from "../harness/stage-phase.ts";
 import {
   CHECK, cleanupCheckpointFixtures, fixture, prepare, reviewRevisedSource, runCheckpointTool, STAGE, swarm, wt,
 } from "../harness/swarm-checkpoint.ts";
@@ -151,8 +150,10 @@ describe("a side-by-side Unit's worker writes its records where AI-DLC reads the
     expect(prepared.code, `${prepared.out}\n${prepared.err}`).toBe(0);
     const child = wt(pd);
     writeFileSync(join(child, "src", "alpha.ts"), "export const alpha = 2;\n");
-    // A worker that put its manifest at the worktree's root instead of in the record folder.
-    const stray = join(child, phaseFor("code-generation"), "alpha", "code-generation");
+    // A worker that put its manifest at the worktree's root instead of in the record folder. Not under
+    // build/: the source boundary leaves an unregistered conditional name out as generated output
+    // (docs/reference/12-state-machine.md), so a manifest there is never counted as a write.
+    const stray = join(child, "code-generation");
     mkdirSync(stray, { recursive: true });
     writeFileSync(join(stray, "source-manifest.json"),
       JSON.stringify({ stage: STAGE, unit: "alpha", version: 1, writes: [{ path: "src/alpha.ts" }] }));
@@ -163,7 +164,7 @@ describe("a side-by-side Unit's worker writes its records where AI-DLC reads the
     const finalized = swarm(pd, ["finalize", "--batch", "1", "--units", "alpha", "--claimed", "alpha"]);
     expect(finalized.code, `${finalized.out}\n${finalized.err}`).toBe(2);
     const { detail } = (JSON.parse(finalized.out) as { units: { detail: string }[] }).units[0];
-    expect(detail).toContain("outside unit \"alpha\"'s source manifest (build/alpha/code-generation/source-manifest.json)");
+    expect(detail).toContain("outside unit \"alpha\"'s source manifest (code-generation/source-manifest.json)");
     expect(detail).toContain(`update ${toPosix(join(codeGenerationRecordDir(child, "alpha"), "source-manifest.json"))},`);
   });
 });

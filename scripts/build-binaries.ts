@@ -476,6 +476,31 @@ function generatedSurfaceGate(
   );
 }
 
+// The runner count `engine gen runners --check` reports for one harness tree: one
+// runner per compiled stage that is enabled and outside the initialization phase,
+// the same rule as loadStageGraph (core/tools/aidlc-lib.ts) and isRunnableStage
+// (core/tools/aidlc-runner-gen.ts). Read from the packaged graph so a stage added
+// to the graph needs no edit here.
+function expectedRunnerCount(distribution: string, harnessDir: string): number {
+  const graphPath = join(
+    REPO_ROOT,
+    "dist-release",
+    distribution,
+    harnessDir,
+    "tools",
+    "data",
+    "stage-graph.json",
+  );
+  const stages = JSON.parse(readFileSync(graphPath, "utf-8")) as {
+    phase: string;
+    enabled?: boolean;
+  }[];
+  const runnable = stages.filter(
+    (stage) => stage.enabled !== false && stage.phase !== "initialization",
+  );
+  return runnable.length;
+}
+
 function harnessRuntimeGate(
   artifact: string,
   distribution: string,
@@ -486,6 +511,7 @@ function harnessRuntimeGate(
     AIDLC_HARNESS_DIR: harnessDir,
     AIDLC_HARNESS_NAME: distribution,
   };
+  const expectedRunners = expectedRunnerCount(distribution, harnessDir);
   const sensors = run(artifact, ["engine", "sensor", "list"], {
     cwd: standaloneGateCwd(),
     env,
@@ -503,10 +529,12 @@ function harnessRuntimeGate(
     sensors.status === 0 &&
       sensors.stdout.includes("required-sections") &&
       runners.status === 0 &&
-      runners.stdout.includes("30 runners") &&
+      runners.stdout.includes(`(${expectedRunners} runners)`) &&
       !runtimeCrash(output),
     {
-      expected: `${distribution} packaged sensors and generated runners resolve`,
+      expected:
+        `${distribution} packaged sensors and generated runners resolve ` +
+        `(${expectedRunners} runners)`,
       actual: output.trim(),
       detail: `runnerStatus=${runners.status}`,
     },

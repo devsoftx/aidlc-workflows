@@ -12,8 +12,8 @@
 - **Practices Affirmed Timestamp**: 2026-11-04T21:49:23Z
 
 ## Scope Configuration
-- **Stages to Execute**: 0.1, 0.2, 0.3, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 3.1, 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3
-- **Stages to Skip**: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 5.3
+- **Stages to Execute**: 0.1, 0.2, 0.3, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
+- **Stages to Skip**: 1.1 (intent-capture), 1.2 (market-research), 1.3 (feasibility), 1.4 (scope-definition), 1.5 (team-formation), 1.6 (rough-mockups), 1.7 (approval-handoff), 2.1 (reverse-engineering — greenfield)
 - **Depth**: Standard
 - **Test Strategy**: Minimal
 
@@ -24,8 +24,8 @@
 - **Build System**: Unknown
 
 ## Execution Plan Summary
-- **Total Stages**: 27
-- **Completed**: 13
+- **Total Stages**: 24
+- **Completed**: 14
 - **In Progress**: code-generation
 
 ## Runtime State
@@ -34,76 +34,62 @@
 
 - **Skeleton Stance**: on
 ## Phase Progress
-
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
 - **Initialization**: Active
-- **Discover**: Skipped
-- **Design**: Pending
-- **Build**: Pending
-- **Test**: Pending
-- **Secure**: Pending
-- **Deploy**: Pending
-- **Operate**: Pending
+- **Ideation**: Skipped
+- **Inception**: Pending
+- **Construction**: Pending
+- **Operation**: Pending
 
 ## Stage Progress
+<!-- Checkbox states: [ ] not started, [-] in progress, [?] awaiting approval (gate open), [R] revising (user rejected gate), [x] completed, [S] skipped via --stage/--phase jump -->
 
 ### INITIALIZATION PHASE
 - [x] workspace-scaffold — EXECUTE
 - [x] workspace-detection — EXECUTE
 - [x] state-init — EXECUTE
 
-### DISCOVER PHASE
+### IDEATION PHASE
 - [ ] intent-capture — SKIP
 - [ ] market-research — SKIP
 - [ ] feasibility — SKIP
-- [ ] reverse-engineering — SKIP
 - [ ] scope-definition — SKIP
 - [ ] team-formation — SKIP
 - [ ] rough-mockups — SKIP
 - [ ] approval-handoff — SKIP
 
-### DESIGN PHASE
+### INCEPTION PHASE
+- [ ] reverse-engineering — SKIP
 - [x] practices-discovery — EXECUTE
 - [x] requirements-analysis — EXECUTE
 - [x] user-stories — EXECUTE
 - [x] refined-mockups — EXECUTE
-- [ ] domain-design — EXECUTE
+- [x] application-design — EXECUTE
 - [x] units-generation — EXECUTE
-- [ ] contract-design — EXECUTE
 - [x] delivery-planning — EXECUTE
-Per unit: [TBD]
 
+### CONSTRUCTION PHASE
+Per unit: [TBD]
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
-
-### BUILD PHASE
 - [-] code-generation — EXECUTE
-
-### TEST PHASE
 - [ ] build-and-test — EXECUTE
-- [ ] performance-validation — EXECUTE
-
-### SECURE PHASE
-- [ ] code-review — EXECUTE
-- [ ] security-review — EXECUTE
-- [S] conformance-review — SKIP (workshop scope)
-
-### DEPLOY PHASE
 - [ ] ci-pipeline — EXECUTE
+
+### OPERATION PHASE
 - [ ] deployment-pipeline — EXECUTE
 - [ ] environment-provisioning — EXECUTE
 - [ ] deployment-execution — EXECUTE
-
-### OPERATE PHASE
 - [ ] observability-setup — EXECUTE
 - [ ] incident-response — EXECUTE
+- [ ] performance-validation — EXECUTE
 - [ ] feedback-optimization — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: BUILD
+- **Lifecycle Phase**: CONSTRUCTION
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running

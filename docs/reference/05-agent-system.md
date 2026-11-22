@@ -150,17 +150,17 @@ access grant.
 | aidlc-delivery-agent | No | No | templated | 3 | 2 | 5 |
 | aidlc-architect-agent | No | No | judgment | 7 | 3 | 10 |
 | aidlc-aws-platform-agent | Yes | No | judgment | 2 | 5 | 7 |
-| aidlc-compliance-agent | No | Yes | judgment | 0 | 4 | 4 |
-| aidlc-devsecops-agent | Yes | No | judgment | 0 | 5 | 5 |
+| aidlc-compliance-agent | No | Yes | judgment | 1 | 4 | 5 |
+| aidlc-devsecops-agent | Yes | No | judgment | 1 | 5 | 6 |
 | aidlc-developer-agent | Yes | No | judgment | 2 | 4 | 6 |
-| aidlc-quality-agent | Yes | No | judgment | 2 | 3 | 5 |
+| aidlc-quality-agent | Yes | No | judgment | 3 | 3 | 6 |
 | aidlc-pipeline-deploy-agent | Yes | No | templated | 4 | 0 | 4 |
 | aidlc-operations-agent | Yes | No | templated | 3 | 0 | 3 |
 
 **Observations:**
-- aidlc-architect-agent has the broadest stage involvement (10 stages across 3 phases).
+- aidlc-architect-agent has the broadest stage involvement (10 stages across 2 phases, Discover and Design).
 - Across the full 14-agent roster, nine agents carry the `judgment` tier, three carry the inheriting `templated` tier, and only the two `balanced` reviewers step down on Claude Code, Codex, and opencode. On Kiro, Cursor, and Copilot all tiers inherit the session model and effort. The matrix above covers the 11 domain-expert agents.
-- aidlc-compliance-agent operates purely in an advisory capacity (4 support stages, no lead stages), so it takes part only when collaborators are on.
+- aidlc-compliance-agent operates as the lead of conformance-review (Secure, planned by classic, enterprise, infra and security-patch) and as a support agent on four stages (Discover, Design and Deploy); those four support stages take part only when collaborators are on.
 - Six of 11 agents are expected to use Bash for CLI interaction.
 - Three agents are expected to use WebSearch for research tasks.
 
@@ -168,21 +168,21 @@ access grant.
 
 ## Phase Participation
 
-| Agent | Init (0) | Ideation (1) | Inception (2) | Construction (3) | Operation (4) |
-|-------|----------|--------------|---------------|-------------------|---------------|
-| aidlc-product-agent | -- | L (intent-capture, market-research, scope-definition), S (rough-mockups, approval-handoff) | L (requirements-analysis, user-stories), S (refined-mockups) | -- | -- |
-| aidlc-design-agent | -- | L (rough-mockups) | L (refined-mockups), S (user-stories, domain-design) | -- | -- |
-| aidlc-delivery-agent | -- | L (team-formation, approval-handoff), S (scope-definition) | L (delivery-planning), S (units-generation) | -- | -- |
-| aidlc-architect-agent | -- | L (feasibility), S (intent-capture) | L (domain-design, units-generation, contract-design), S (reverse-engineering, delivery-planning) | L (functional-design, nfr-requirements, nfr-design) | -- |
-| aidlc-aws-platform-agent | -- | S (feasibility) | S (domain-design, contract-design) | L (infrastructure-design), S (nfr-design) | L (environment-provisioning), S (feedback-optimization) |
-| aidlc-compliance-agent | -- | S (feasibility) | -- | S (nfr-requirements, infrastructure-design) | S (environment-provisioning) |
-| aidlc-devsecops-agent | -- | -- | S (practices-discovery) | S (nfr-requirements, infrastructure-design, build-and-test) | S (environment-provisioning) |
-| aidlc-developer-agent | -- | -- | L (reverse-engineering), S (practices-discovery, user-stories) | L (code-generation), S (functional-design) | S (deployment-execution) |
-| aidlc-quality-agent | -- | -- | S (practices-discovery, user-stories) | L (build-and-test), S (nfr-requirements) | L (performance-validation) |
-| aidlc-pipeline-deploy-agent | -- | -- | L (practices-discovery) | L (ci-pipeline) | L (deployment-pipeline, deployment-execution) |
-| aidlc-operations-agent | -- | -- | -- | -- | L (observability-setup, incident-response, feedback-optimization) |
+| Agent | Discover (1) | Design (2) | Build (3) | Test (4) | Secure (5) | Deploy (6) | Operate (7) |
+|-------|--------------|------------|-----------|----------|------------|------------|-------------|
+| aidlc-product-agent | L (intent-capture, market-research, scope-definition), S (rough-mockups, approval-handoff) | L (requirements-analysis, user-stories), S (refined-mockups) | -- | -- | -- | -- | -- |
+| aidlc-design-agent | L (rough-mockups) | L (refined-mockups), S (user-stories, domain-design) | -- | -- | -- | -- | -- |
+| aidlc-delivery-agent | L (team-formation, approval-handoff), S (scope-definition) | L (delivery-planning), S (units-generation) | -- | -- | -- | -- | -- |
+| aidlc-architect-agent | L (feasibility), S (intent-capture, reverse-engineering) | L (domain-design, units-generation, contract-design, functional-design, nfr-requirements, nfr-design), S (delivery-planning) | -- | -- | -- | -- | -- |
+| aidlc-aws-platform-agent | S (feasibility) | L (infrastructure-design), S (domain-design, contract-design, nfr-design) | -- | -- | -- | L (environment-provisioning) | S (feedback-optimization) |
+| aidlc-compliance-agent | S (feasibility) | S (nfr-requirements, infrastructure-design) | -- | -- | L (conformance-review) | S (environment-provisioning) | -- |
+| aidlc-devsecops-agent | -- | S (practices-discovery, nfr-requirements, infrastructure-design) | -- | S (build-and-test) | L (security-review) | S (environment-provisioning) | -- |
+| aidlc-developer-agent | L (reverse-engineering) | S (practices-discovery, user-stories, functional-design) | L (code-generation) | -- | -- | S (deployment-execution) | -- |
+| aidlc-quality-agent | -- | S (practices-discovery, user-stories, nfr-requirements) | -- | L (build-and-test, performance-validation) | L (code-review) | -- | -- |
+| aidlc-pipeline-deploy-agent | -- | L (practices-discovery) | -- | -- | -- | L (ci-pipeline, deployment-pipeline, deployment-execution) | -- |
+| aidlc-operations-agent | -- | -- | -- | -- | -- | -- | L (observability-setup, incident-response, feedback-optimization) |
 
-L = Lead, S = Support
+L = Lead, S = Support. Initialization (0.1-0.3) is hidden setup, and no agent takes part in it.
 
 ---
 

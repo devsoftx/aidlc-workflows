@@ -79,10 +79,10 @@ interface Fixture {
   scripts: string;
 }
 
-// `laterConstructionStage` places the probe as the second Construction stage,
-// behind a completed anchor, so a Construction autonomy grant makes its gate
-// one the engine approves itself (the first Construction approval is never
-// the grant's).
+// `laterConstructionStage` places the probe as the second unit-loop stage
+// (phase build, for_each unit-of-work), behind a completed anchor of the same
+// kind, so a Construction autonomy grant makes its gate one the engine approves
+// itself (the first Construction approval is never the grant's).
 function setupFixture(
   severity: "advisory" | "blocking",
   matches = "**/*",
@@ -126,13 +126,14 @@ function setupFixture(
     "utf-8",
   );
 
-  const phase = laterConstructionStage ? "construction" : "inception";
+  const phase = laterConstructionStage ? "build" : "inception";
   const graph = join(project, "stage-graph.json");
   const anchor = {
     slug: "anchor",
     number: "0.9",
     name: "Anchor",
     phase,
+    for_each: "unit-of-work",
     execution: "ALWAYS",
     lead_agent: "aidlc-product-agent",
     support_agents: [],

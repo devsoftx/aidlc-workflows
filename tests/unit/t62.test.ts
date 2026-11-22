@@ -28,7 +28,7 @@ import {
 function fixture(): Record<string, unknown> {
   return {
     slug: "scope-definition",
-    phase: "ideation",
+    phase: "discover",
     execution: "ALWAYS",
     condition: "Always executes",
     lead_agent: "aidlc-product-agent",

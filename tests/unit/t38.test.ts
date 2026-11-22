@@ -167,8 +167,8 @@ describe("t38 aidlc-utility status — gate awareness (migrated from t38-utility
     expect(r.out).toContain("Awaiting your approval on Feasibility & Constraints");
     expect(r.out).not.toContain("waiting since");
     // The phase bar shows the waiting stage as in hand, not as an unknown.
-    expect(r.out).toMatch(/^\s+IDEATION\s+\S+ \d+\/\d+$/m);
-    expect(r.out).not.toMatch(/^\s+IDEATION\s+\S*\?/m);
+    expect(r.out).toMatch(/^\s+DISCOVER\s+\S+ \d+\/\d+$/m);
+    expect(r.out).not.toMatch(/^\s+DISCOVER\s+\S*\?/m);
   });
 
   test("1b: organic gate-open renders its ledger timestamp and pending duration", () => {
@@ -599,8 +599,8 @@ describe("t38 aidlc-utility status — gate awareness (migrated from t38-utility
     if (!completion) throw new Error(`no Completion line in:\n${before}`);
     const done = Number(completion[1]);
     const total = Number(completion[2]);
-    const ideation = before.match(/^ {2}IDEATION {9}\S+ (\d+)\/(\d+)\n/m);
-    if (!ideation) throw new Error(`no IDEATION line in:\n${before}`);
+    const discover = before.match(/^ {2}DISCOVER {9}\S+ (\d+)\/(\d+)\n/m);
+    if (!discover) throw new Error(`no DISCOVER line in:\n${before}`);
     // Skipped after it started (the [S] the engine writes for "skip
     // deployment" at a gate): it is not work left to do.
     sedState(p, /^- \[ \] scope-definition/m, "- [S] scope-definition");
@@ -609,7 +609,7 @@ describe("t38 aidlc-utility status — gate awareness (migrated from t38-utility
     const pct = Math.round((done / (total - 1)) * 100);
     expect(skipped.out).toContain(`Completion:     ${done}/${total - 1} stages (${pct}%), skipped: Scope Definition\n`);
     expect(skipped.out).not.toContain("1 skipped");
-    expect(skipped.out).toMatch(new RegExp(`^ {2}IDEATION {9}\\S+ ${ideation[1]}/${Number(ideation[2]) - 1}\\n`, "m"));
+    expect(skipped.out).toMatch(new RegExp(`^ {2}DISCOVER {9}\\S+ ${discover[1]}/${Number(discover[2]) - 1}\\n`, "m"));
     // The work finished with that stage skipped: the state says Completed
     // and the cursor still points at the skipped stage (what the engine
     // leaves after the last stage is skipped). The person reads finished,
@@ -618,12 +618,12 @@ describe("t38 aidlc-utility status — gate awareness (migrated from t38-utility
     sedState(p, /^- \*\*Status\*\*: .*$/m, "- **Status**: Completed");
     const finished = status(p);
     expect(finished.status).toBe(0);
-    expect(finished.out).toContain("Current Stage:  Scope Definition (1.4)\n");
+    expect(finished.out).toContain("Current Stage:  Scope Definition (1.5)\n");
     expect(finished.out).toContain("Status:         Completed (Scope Definition skipped)\n");
     expect(finished.out).not.toContain("Status:         Completed\n");
     // A phase whose every stage was skipped says so instead of 0/0.
-    sedState(p, /^- \[.\] (intent-capture|market-research|feasibility|team-formation|rough-mockups|approval-handoff)/gm, "- [S] $1");
-    expect(status(p).out).toMatch(/^ {2}IDEATION {9}S{7} skipped\n/m);
+    sedState(p, /^- \[.\] (intent-capture|market-research|feasibility|reverse-engineering|team-formation|rough-mockups|approval-handoff)/gm, "- [S] $1");
+    expect(status(p).out).toMatch(/^ {2}DISCOVER {9}S{8} skipped\n/m);
   });
 
   test("10: the reviewers setting is listed with the other settings, as this work's when it was set for it", () => {

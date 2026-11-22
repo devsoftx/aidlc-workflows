@@ -23,7 +23,7 @@
 **Fire id**: old00001
 **Sensor ID**: required-sections
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 
@@ -33,7 +33,7 @@
 **Fire id**: young002
 **Sensor ID**: linter
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 
@@ -43,7 +43,7 @@
 **Fire id**: paired03
 **Sensor ID**: type-check
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 
 ---
 
@@ -53,5 +53,5 @@
 **Fire id**: paired03
 **Sensor ID**: type-check
 **Stage slug**: code-generation
-**Output path**: aidlc-docs/build/code-generation/output.md
+**Output path**: aidlc-docs/construction/code-generation/output.md
 **Duration ms**: 90

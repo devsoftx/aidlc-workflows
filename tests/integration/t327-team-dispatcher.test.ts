@@ -933,10 +933,11 @@ describe("t327 team construction dispatcher", () => {
       {},
       ["--scope", "feature"],
     ).question as string;
-    // Solo work says where each piece stands; Unit-by-Unit stages by their phase.
+    // Solo work says where each piece stands; Unit-by-Unit stages by their phase
+    // (functional-design is design, code-generation is build, per the compiled stage graph).
     expect(soloQuestion).toContain(
-      "`team-work` (record: `team-work-11111111`) (in Construction), " +
-        "`parked-work` (record: `parked-work-22222222`) (in Construction). ",
+      "`team-work` (record: `team-work-11111111`) (in Design), " +
+        "`parked-work` (record: `parked-work-22222222`) (in Build). ",
     );
     expect(soloQuestion).not.toContain("done-work-33333333");
     expect(soloQuestion).toContain("2 pieces of work in progress");
@@ -948,7 +949,8 @@ describe("t327 team construction dispatcher", () => {
       writeFileSync(statePath, readFileSync(statePath, "utf-8").replace("- **Construction Iteration**: unit-major", "- **Construction Iteration**: stage-major"));
     }
     const stageMajor = nextDirective(solo, {}, ["--scope", "feature"]).question as string;
-    expect(stageMajor).not.toContain("(in Construction)");
+    expect(stageMajor).not.toContain("(in Design)");
+    expect(stageMajor).not.toContain("(in Build)");
     expect(stageMajor.match(/\(at [A-Z][^)]*\)/g) ?? []).toHaveLength(2);
 
     const single = pickerFixture(true, 1);

@@ -31,12 +31,12 @@
 //     SKILL.md region against canonicalScopeTableRegion(renderScopeTable()) -
 //     the committed table is provably the transpose of the grid, not merely
 //     "contains the markers / count agrees".
-//   - Section C asserts exact integers (including bugfix's 9) derived from the
-//     grid AND read from the table cell, on the SAME scope row - co-located,
-//     not "the number appears somewhere".
-//   - Section D guards against a vacuous pass: both the ideation slug set and
-//     the operation slug set must be non-empty, or "zero EXECUTE among them"
-//     would be trivially true.
+//   - Section C compares each scope's table cell with the EXECUTE count derived
+//     from the grid, on the SAME scope row - co-located, not "the number
+//     appears somewhere".
+//   - Section D guards against a vacuous pass: both the discover slug set and
+//     the deploy+operate slug set must be non-empty, or the EXECUTE sets over
+//     them would be trivially empty.
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -180,57 +180,60 @@ describe("t30 — committed SKILL.md table is byte-identical to the rendered tra
 });
 
 // =============================================================================
-// Section D - phase-presence semantics (3 asserts)
+// Section D - phase-presence semantics (4 asserts)
 // =============================================================================
 describe("t30 Section D — scope phase-presence semantics (read JSON directly)", () => {
-  test("D1: bugfix executes zero ideation-phase stages [.sh 15]", () => {
+  test("D1: bugfix executes only reverse-engineering from the discover phase [.sh 15]", () => {
     const grid = readGrid();
     const graph = readGraph();
-    const ideationSlugs = graph
-      .filter((s) => s.phase === "ideation")
+    const discoverSlugs = graph
+      .filter((s) => s.phase === "discover")
       .map((s) => s.slug);
-    // VACUOUS-PASS GUARD: the ideation phase must be non-empty, else "zero
-    // EXECUTE among ideation stages" is trivially true.
-    expect(ideationSlugs.length).toBeGreaterThan(0);
-    const execCount = ideationSlugs.filter(
+    // VACUOUS-PASS GUARD: the discover phase must be non-empty, else the
+    // EXECUTE set over it is trivially empty.
+    expect(discoverSlugs.length).toBeGreaterThan(0);
+    const executed = discoverSlugs.filter(
       (s) => grid.bugfix.stages[s] === "EXECUTE",
-    ).length;
-    expect(execCount).toBe(0);
+    );
+    // reverse-engineering is the brownfield entry point and sits in discover;
+    // it is the only discover stage bugfix runs.
+    expect(executed).toEqual(["reverse-engineering"]);
   });
 
-  test("D2: classic executes zero ideation-phase stages [.sh 16]", () => {
+  test("D2: classic executes only reverse-engineering from the discover phase [.sh 16]", () => {
     const grid = readGrid();
     const graph = readGraph();
-    const ideationSlugs = graph
-      .filter((s) => s.phase === "ideation")
+    const discoverSlugs = graph
+      .filter((s) => s.phase === "discover")
       .map((s) => s.slug);
-    expect(ideationSlugs.length).toBeGreaterThan(0);
-    const execCount = ideationSlugs.filter(
+    expect(discoverSlugs.length).toBeGreaterThan(0);
+    const executed = discoverSlugs.filter(
       (s) => grid.classic.stages[s] === "EXECUTE",
-    ).length;
-    expect(execCount).toBe(0);
+    );
+    expect(executed).toEqual(["reverse-engineering"]);
   });
 
-  test("D2b: express executes exactly three operation stages", () => {
+  test("D2b: express executes exactly three deploy or operate stages", () => {
     const grid = readGrid();
     const graph = readGraph();
-    const operationSlugs = graph
-      .filter((s) => s.phase === "operation")
+    const deployOperateSlugs = graph
+      .filter((s) => s.phase === "deploy" || s.phase === "operate")
       .map((s) => s.slug);
-    const execCount = operationSlugs.filter(
+    expect(deployOperateSlugs.length).toBeGreaterThan(0);
+    const execCount = deployOperateSlugs.filter(
       (s) => grid.express.stages[s] === "EXECUTE",
     ).length;
     expect(execCount).toBe(3);
   });
 
-  test("D3: bugfix executes exactly two operation-phase stages [.sh 17]", () => {
+  test("D3: bugfix executes exactly two deploy or operate stages [.sh 17]", () => {
     const grid = readGrid();
     const graph = readGraph();
-    const operationSlugs = graph
-      .filter((s) => s.phase === "operation")
+    const deployOperateSlugs = graph
+      .filter((s) => s.phase === "deploy" || s.phase === "operate")
       .map((s) => s.slug);
-    expect(operationSlugs.length).toBeGreaterThan(0);
-    const execCount = operationSlugs.filter(
+    expect(deployOperateSlugs.length).toBeGreaterThan(0);
+    const execCount = deployOperateSlugs.filter(
       (s) => grid.bugfix.stages[s] === "EXECUTE",
     ).length;
     expect(execCount).toBe(2);

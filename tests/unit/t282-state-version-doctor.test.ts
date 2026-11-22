@@ -364,7 +364,7 @@ describe("t282 a v7 record is brought up in place and resumes", () => {
     // Contract Design has no row until the work moves onto it, as for any stage a newer release adds.
     expect(now).not.toMatch(/^- \[.\] contract-design/m);
     // The approved design is where Units Generation reads it.
-    expect(existsSync(join(record, "inception", "domain-design", "components.md"))).toBe(true);
+    expect(existsSync(join(record, "design", "domain-design", "components.md"))).toBe(true);
     expect(existsSync(join(record, "inception", "application-design"))).toBe(false);
     expect(readFileSync(join(record, "aidlc-state.v7.md"), "utf-8")).toBe(state);
     expect(upgradeRows(proj)).toBe(1);
@@ -424,6 +424,16 @@ describe("t282 a v7 record is brought up in place and resumes", () => {
     expect(existsSync(join(record, "aidlc-state.v7.md"))).toBe(false);
     expect(existsSync(join(record, "inception", "application-design", "components.md"))).toBe(true);
     expect(upgradeRows(proj)).toBe(0);
+  });
+
+  test("a folder already at the new name is kept as it is, and the old folder is never deleted", () => {
+    const { proj, record } = v7Project("aidlc-state-2.3.0-design-approved.md", true);
+    mkdirSync(join(record, "design", "domain-design"), { recursive: true });
+    writeFileSync(join(record, "design", "domain-design", "components.md"), "already here\n", "utf-8");
+    engine(proj, ["next", "--resume"]);
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toMatch(/^- \*\*State Version\*\*: 8$/m);
+    expect(readFileSync(join(record, "design", "domain-design", "components.md"), "utf-8")).toBe("already here\n");
+    expect(existsSync(join(record, "inception", "application-design", "components.md"))).toBe(true);
   });
 
   test("after the step, doctor and status say when it was brought up", () => {

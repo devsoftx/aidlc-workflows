@@ -19,7 +19,11 @@
 // code-generation, and to the three doors to the person's code: the
 // developer-agent dispatch, a file-tool or shell write to a path inside the
 // project outside AI-DLC's own folders, and a shell command whose writes cannot
-// be seen. All three wait until the same approval evidence is current.
+// be seen. All three wait until the same approval evidence is current, with one
+// exception while the plan is written and not yet approved: a file-tool or shell
+// write to a project file the plan does not name passes beside the build (a named
+// folder covers what is under it). When the plans name no path, only a document
+// does (isPlanWaitSideWrite).
 // AI-DLC's own bookkeeping never meets this guard: a write whose every target is
 // a stage's record output under aidlc/spaces (not the engine's own files there)
 // passes, and so does a direct, unwrapped invocation of the installed engine,

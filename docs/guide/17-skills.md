@@ -17,7 +17,7 @@ Every command this implementation ships is a skill under `.claude/skills/`. They
 
 - **`/aidlc`** - the full orchestrator. No flags baked in: you describe what you want, the agent proposes a plan for it and you confirm it, then it drives every stage in the plan to completion. This is the one you reach for most.
 - **Scope-runners** - `/aidlc-bugfix`, `/aidlc-express`, `/aidlc-feature`, `/aidlc-mvp`, `/aidlc-security-patch`. Same full workflow, with a scope fixed and no plan to propose.
-- **Stage-runners** - `/aidlc-domain-design`, `/aidlc-code-generation`, and 28 more. Run one stage in isolation, never touching your main workflow. Plugin-owned stages use their bare plugin-prefixed command name, such as `/test-pro-integration`.
+- **Stage-runners** - `/aidlc-domain-design`, `/aidlc-code-generation`, and 31 more. Run one stage in isolation, never touching your main workflow. Plugin-owned stages use their bare plugin-prefixed command name, such as `/test-pro-integration`.
 - **`/aidlc-init`** - start a piece of work. With `--scope <name>` and a description it creates the intent (runs the whole Initialization phase) in one step and stops. With `--scope <name>` alone it creates nothing yet: it asks what the work is for, and your answer starts it. With only a description it first shows the same plan offer as `/aidlc`, then continues like `/aidlc`. Unlike `/aidlc`, a description that starts with a scope name ("feature flags for billing") is still read as a description. Work already in progress is left as it is, and the new work starts beside it.
 - **Session skills** — `/aidlc-session-cost`, `/aidlc-replay`, `/aidlc-outcomes-pack`. Read-only views over a workflow; covered in [Session Management](11-session-management.md).
 - **`/aidlc-compose`** - the adaptive composer: it reads your task, proposes the stages that fit it, and after you approve runs it as a plan of its own. Same as `/aidlc compose`; see [The Adaptive Composer](05-scopes-and-depth.md#the-adaptive-composer).
@@ -118,7 +118,7 @@ The three bootstrap **initialization** stages ship no stage-runner - creating ha
 |---|---|---|---|
 | Orchestrator | `/aidlc` | Full workflow, the plan proposed for you to confirm | - |
 | Scope-runner | `/aidlc-bugfix`, `/aidlc-express`, `/aidlc-feature`, `/aidlc-mvp`, `/aidlc-security-patch` | Full workflow, scope fixed, no plan to confirm | `/aidlc --scope <name>` |
-| Stage-runner | `/aidlc-domain-design`, `/aidlc-code-generation`, ... (30 total) | One stage in isolation, never advances your workflow | `/aidlc --stage <slug> --single` |
+| Stage-runner | `/aidlc-domain-design`, `/aidlc-code-generation`, ... (33 total) | One stage in isolation, never advances your workflow | `/aidlc --stage <slug> --single` |
 | Init wrapper | `/aidlc-init` | Start a piece of work: with `--scope` and a description, create it in one step; with `--scope` alone, ask what it is for first; with only a description, the plan offer first | `/aidlc --scope <name>`, or `/aidlc <description>` on a fresh workspace (except a leading scope name) |
 | Session views | `/aidlc-session-cost`, `/aidlc-replay`, `/aidlc-outcomes-pack` | Read-only workflow reports | see [Session Management](11-session-management.md) |
 | Composer | `/aidlc-compose` | Propose a plan made for your task, then run it after you approve | `/aidlc compose` |
@@ -143,7 +143,7 @@ aidlc-units-generation
 aidlc-user-stories
 ```
 
-That is 43 entries: `/aidlc`, the 30 stage-runners, the 5 scope-runners, `/aidlc-init`, `/aidlc-compose`, `/aidlc-knowledge`, `/aidlc-issue-report` and the 3 session skills.
+That is 46 entries: `/aidlc`, the 33 stage-runners, the 5 scope-runners, `/aidlc-init`, `/aidlc-compose`, `/aidlc-knowledge`, `/aidlc-issue-report` and the 3 session skills.
 
 ---
 
@@ -174,7 +174,7 @@ In a project where nothing has drifted, the stage-runner check prints:
 
 ```text
 $ aidlc engine gen runners --check
-stage-runner set is in sync with the compiled stage graph (30 runners).
+stage-runner set is in sync with the compiled stage graph (33 runners).
 ```
 
 A stage added to the graph without a regenerated runner — or an orphan runner for a stage that's gone — fails loudly with a diff. Adding a stage file and regenerating is the whole authoring path; the runner follows as a consequence the generator maintains for you.

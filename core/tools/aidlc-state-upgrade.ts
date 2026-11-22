@@ -7,7 +7,7 @@
 // A record a newer AI-DLC wrote is never brought down: newerStateStep names
 // the release it needs and the person's step, for next, report, doctor and the
 // unit commands alike.
-import { existsSync, renameSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { appendAuditEntryUnlocked } from "./aidlc-audit.ts";
 import { classifyStateVersion, findStageBySlug, nextInScopeStage } from "./aidlc-lib.ts";
@@ -26,6 +26,9 @@ interface StageRename {
   // The names the person read, for the one field that holds a name (Next Action).
   fromName: string;
   toName: string;
+  // The phase folder the record kept the stage's files in: the one the release
+  // that wrote the record used, not the phase the current graph gives the stage.
+  fromPhase: string;
 }
 
 interface StateUpgrade {
@@ -44,7 +47,9 @@ interface StateUpgrade {
 const STATE_UPGRADES: Readonly<Record<string, StateUpgrade>> = {
   "7": {
     to: "8",
-    renamed: [{ from: "application-design", to: "domain-design", fromName: "Application Design", toName: "Domain Design" }],
+    renamed: [
+      { from: "application-design", to: "domain-design", fromName: "Application Design", toName: "Domain Design", fromPhase: "inception" },
+    ],
     added: ["contract-design"],
   },
 };
@@ -78,11 +83,25 @@ export function waitsToBeBroughtUp(content: string): boolean {
   return verdict.kind === "past" && hasStateUpgrade(verdict.version);
 }
 
+// Moves one record folder to its new path. Nothing moves when the source is
+// absent or the target already exists, so a repeated step is a no-op and no
+// folder is overwritten or deleted; the target's parent folders are created.
+// Returns the audit label for the move, or null when nothing moved.
+function moveRecordFolder(recordDir: string, from: string, to: string): string | null {
+  const source = join(recordDir, ...from.split("/"));
+  const target = join(recordDir, ...to.split("/"));
+  if (!existsSync(source) || existsSync(target)) return null;
+  mkdirSync(dirname(target), { recursive: true });
+  renameSync(source, target);
+  return `${from} to ${to}`;
+}
+
 // The content as the current State Version reads it. When the version is one
 // a step brings up, the state as it was is kept beside it first
 // (aidlc-state.v<N>.md), each renamed stage's record folders move to the new
-// name, the state is written and one audit row says what changed. A read-only
-// engine probe gets the brought-up text and writes nothing. A write that fails
+// name and phase folder, the state is written and one audit row says what
+// changed. A read-only engine probe gets the brought-up text and writes
+// nothing. A write that fails
 // leaves the original whole (the copy comes first, the state by rename) and
 // this step carries on with the brought-up text; the next one tries again.
 export function bringStateUpToDate(
@@ -117,14 +136,12 @@ export function bringStateUpToDate(
     if (!existsSync(kept)) writeFileAtomic(kept, content);
     const moved: string[] = [];
     for (const r of renamed) {
-      const phase = findStageBySlug(r.to)?.phase;
-      for (const parent of [phase, ".aidlc-sensors"]) {
-        if (!parent) continue;
-        const from = join(recordDir, parent, r.from);
-        const to = join(recordDir, parent, r.to);
-        if (!existsSync(from) || existsSync(to)) continue;
-        renameSync(from, to);
-        moved.push(`${parent}/${r.from} to ${parent}/${r.to}`);
+      const toPhase = findStageBySlug(r.to)?.phase;
+      const folders: [string, string][] = [[`.aidlc-sensors/${r.from}`, `.aidlc-sensors/${r.to}`]];
+      if (toPhase) folders.unshift([`${r.fromPhase}/${r.from}`, `${toPhase}/${r.to}`]);
+      for (const [from, to] of folders) {
+        const label = moveRecordFolder(recordDir, from, to);
+        if (label) moved.push(label);
       }
     }
     withAuditLock(projectDir, () => {

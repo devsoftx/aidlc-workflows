@@ -12,11 +12,11 @@ Rather than dozens of narrow specialists (which recreates waterfall handoff chai
 
 In human software teams, a mob of 3-5 people covers an entire feature from requirements through deployment. Each person brings a broad skill set spanning several specialties. AI-DLC mirrors this model:
 
-- **Each agent covers a whole domain across many tasks.** The aidlc-architect-agent handles feasibility, domain design, units generation, contract design, functional design, NFR requirements, and NFR design — seven stages across three phases. A narrow specialist model would require seven separate agents with nearly identical knowledge bases.
+- **Each agent covers a whole domain across many tasks.** The aidlc-architect-agent handles feasibility, domain design, units generation, contract design, functional design, NFR requirements, and NFR design — seven stages across two phases (Discover and Design). A narrow specialist model would require seven separate agents with nearly identical knowledge bases.
 
 - **Fewer agents means fewer handoffs.** Every agent boundary is a potential information loss point. When the same aidlc-architect-agent leads both Domain Design and Functional Design, it retains context naturally instead of requiring an explicit handoff artifact.
 
-- **Support roles enable collaboration without proliferation.** Rather than creating a "security-reviewer-agent" and a "compliance-reviewer-agent" and a "cost-reviewer-agent," the aidlc-devsecops-agent and aidlc-compliance-agent participate as support agents in stages led by others. HOW they participate is the stage's `mode` — its communication topology: on an `inline` stage the conductor adopts each support agent as a persona in its own context; on `subagent` (hub-and-spoke) and `mob` (mesh) stages each support agent is dispatched as a real, independent collaborator that writes its own contribution file for the lead to integrate (everyone writes, the lead owns the final artifacts; user-stories ships as the mob showcase), and on `pipeline` (chain) stages the links advance the artifacts directly in sequence and each return is recorded as ordered completion evidence (reverse-engineering is the shipped chain). On every topology the conductor performs every delegation — agents never invoke each other.
+- **Support roles enable collaboration without proliferation.** Rather than creating a "security-reviewer-agent" and a "compliance-reviewer-agent" and a "cost-reviewer-agent," the aidlc-devsecops-agent and aidlc-compliance-agent participate as support agents in stages led by others (each also leads one Secure-phase review). HOW they participate is the stage's `mode` — its communication topology: on an `inline` stage the conductor adopts each support agent as a persona in its own context; on `subagent` (hub-and-spoke) and `mob` (mesh) stages each support agent is dispatched as a real, independent collaborator that writes its own contribution file for the lead to integrate (everyone writes, the lead owns the final artifacts; user-stories ships as the mob showcase), and on `pipeline` (chain) stages the links advance the artifacts directly in sequence and each return is recorded as ordered completion evidence (reverse-engineering is the shipped chain). On every topology the conductor performs every delegation — agents never invoke each other.
 
 - **Knowledge loading is per-agent.** Each agent loads methodology knowledge from `.claude/knowledge/<agent-name>/` and team knowledge from the space-level `aidlc/spaces/<space>/knowledge/<agent-name>/` (if the team created it). Fewer agents means fewer knowledge directories to manage and fewer opportunities for contradictory guidance.
 
@@ -93,7 +93,7 @@ Each agent below has a **deep-dive page** — its full responsibilities, the sta
 
 **Domain:** Requirements, user stories, scope, market research
 
-The aidlc-product-agent acts as the product manager and business analyst. It captures intent, conducts market research, defines scope, elicits requirements, and produces user stories. It is the most active agent in the Ideation and Inception phases.
+The aidlc-product-agent acts as the product manager and business analyst. It captures intent, conducts market research, defines scope, elicits requirements, and produces user stories. It is the most active agent in the Discover and Design phases.
 
 - **Leads:** intent-capture, market-research, scope-definition, requirements-analysis, user-stories
 - **Supports:** rough-mockups, approval-handoff, refined-mockups
@@ -123,7 +123,7 @@ The aidlc-delivery-agent acts as the engineering manager. It assesses team capac
 
 **Domain:** Domain design, domain modelling, NFRs, component decomposition
 
-The aidlc-architect-agent is the central design authority. It has the broadest stage involvement (10 stages across 3 phases) and carries the `judgment` tier, alongside seven other high-judgment agents (product, design, developer, quality, devsecops, compliance, aws-platform). With no recorded model policy, judgment agents inherit your session's model and effort. Delivery, pipeline-deploy, and operations carry the `templated` tier because their output is dominantly planning, CI/CD YAML, and runbook scaffolding; their shipped baseline also inherits. The reviewer tier uses Sonnet at medium effort on Claude Code; on Codex and opencode it inherits the session model and applies medium reasoning effort. The wizard-default `balanced` preset is an explicit effort override for all three groups, setting each to medium without changing models. On Kiro CLI it sets one effort for the whole interactive session; Kiro IDE, Cursor, and Copilot cannot express those group effort dials, so the wizard records no preset there. See [Model Policy](18-install-and-lifecycle.md#model-policy).
+The aidlc-architect-agent is the central design authority. It has the broadest stage involvement (10 stages across 2 phases) and carries the `judgment` tier, alongside seven other high-judgment agents (product, design, developer, quality, devsecops, compliance, aws-platform). With no recorded model policy, judgment agents inherit your session's model and effort. Delivery, pipeline-deploy, and operations carry the `templated` tier because their output is dominantly planning, CI/CD YAML, and runbook scaffolding; their shipped baseline also inherits. The reviewer tier uses Sonnet at medium effort on Claude Code; on Codex and opencode it inherits the session model and applies medium reasoning effort. The wizard-default `balanced` preset is an explicit effort override for all three groups, setting each to medium without changing models. On Kiro CLI it sets one effort for the whole interactive session; Kiro IDE, Cursor, and Copilot cannot express those group effort dials, so the wizard records no preset there. See [Model Policy](18-install-and-lifecycle.md#model-policy).
 
 - **Leads:** feasibility, domain-design, units-generation, contract-design, functional-design, nfr-requirements, nfr-design
 - **Supports:** intent-capture, reverse-engineering (synthesis), delivery-planning
@@ -142,9 +142,9 @@ The aidlc-aws-platform-agent designs infrastructure, provisions environments, an
 
 **Domain:** Regulatory scanning, data classification, risk assessment
 
-The aidlc-compliance-agent operates purely in an advisory capacity — it has no lead stages. It feeds regulatory constraints into stages led by other agents, particularly the aidlc-architect-agent and aidlc-devsecops-agent.
+The aidlc-compliance-agent leads conformance-review, the Secure-phase check that the delivered code meets written requirements, standards and regulatory obligations. The scopes that plan it are classic, enterprise, infra and security-patch. It also feeds regulatory constraints into stages led by other agents, particularly the aidlc-architect-agent and aidlc-devsecops-agent.
 
-- **Leads:** None (support only)
+- **Leads:** conformance-review
 - **Supports:** feasibility, nfr-requirements, infrastructure-design, environment-provisioning
 - **Special tools:** WebSearch (for regulatory research)
 
@@ -152,9 +152,9 @@ The aidlc-compliance-agent operates purely in an advisory capacity — it has no
 
 **Domain:** Threat modelling, security scanning, DevSecOps pipelines
 
-The aidlc-devsecops-agent reviews designs for security, defines security requirements, and integrates security into CI/CD pipelines. Like the aidlc-compliance-agent, it operates in a support role.
+The aidlc-devsecops-agent reviews designs for security, defines security requirements, and integrates security into CI/CD pipelines. It leads security-review and supports stages led by others.
 
-- **Leads:** None (support only)
+- **Leads:** security-review
 - **Supports:** practices-discovery, nfr-requirements, infrastructure-design, build-and-test, environment-provisioning
 - **Special tools:** Bash (for security scanning)
 
@@ -162,7 +162,7 @@ The aidlc-devsecops-agent reviews designs for security, defines security require
 
 **Domain:** Code implementation, code analysis, data modelling
 
-The aidlc-developer-agent spans three phases — from reverse engineering in Inception through deployment support in Operation. It runs code scans of existing codebases and generates implementation code.
+The aidlc-developer-agent spans four phases — from reverse engineering in Discover through code generation in Build and deployment support in Deploy. It runs code scans of existing codebases and generates implementation code.
 
 - **Leads:** reverse-engineering (code scan), code-generation
 - **Supports:** practices-discovery, user-stories, functional-design, deployment-execution
@@ -176,7 +176,7 @@ Workspace detection (workspace-detection) used to be a subagent of the aidlc-dev
 
 The aidlc-quality-agent defines test strategy, generates test suites, validates quality gates, and runs performance testing.
 
-- **Leads:** build-and-test, performance-validation
+- **Leads:** build-and-test, performance-validation, code-review
 - **Supports:** practices-discovery, user-stories, nfr-requirements
 - **Special tools:** Bash (for test execution)
 
@@ -206,25 +206,27 @@ The aidlc-operations-agent sets up monitoring, defines incident response procedu
 
 This table shows which agents are active in which phases, and whether they serve as lead (L) or support (S).
 
-| Agent | Phase 0 | Phase 1 | Phase 2 | Phase 3 | Phase 4 |
-|-------|---------|---------|---------|---------|---------|
-| aidlc-product-agent | — | L (intent-capture, market-research, scope-definition), S (rough-mockups, approval-handoff) | L (requirements-analysis, user-stories), S (refined-mockups) | — | — |
-| aidlc-design-agent | — | L (rough-mockups) | L (refined-mockups), S (user-stories, domain-design) | — | — |
-| aidlc-delivery-agent | — | L (team-formation, approval-handoff), S (scope-definition) | L (delivery-planning), S (units-generation) | — | — |
-| aidlc-architect-agent | — | L (feasibility), S (intent-capture) | L (domain-design, units-generation, contract-design), S (reverse-engineering, delivery-planning) | L (functional-design, nfr-requirements, nfr-design) | — |
-| aidlc-aws-platform-agent | — | S (feasibility) | S (domain-design, contract-design) | L (infrastructure-design), S (nfr-design) | L (environment-provisioning), S (feedback-optimization) |
-| aidlc-compliance-agent | — | S (feasibility) | — | S (nfr-requirements, infrastructure-design) | S (environment-provisioning) |
-| aidlc-devsecops-agent | — | — | S (practices-discovery) | S (nfr-requirements, infrastructure-design, build-and-test) | S (environment-provisioning) |
-| aidlc-developer-agent | — | — | L (reverse-engineering), S (practices-discovery, user-stories) | L (code-generation), S (functional-design) | S (deployment-execution) |
-| aidlc-quality-agent | — | — | S (practices-discovery, user-stories) | L (build-and-test), S (nfr-requirements) | L (performance-validation) |
-| aidlc-pipeline-deploy-agent | — | — | L (practices-discovery) | L (ci-pipeline) | L (deployment-pipeline, deployment-execution) |
-| aidlc-operations-agent | — | — | — | — | L (observability-setup, incident-response, feedback-optimization) |
+| Agent | Discover (1) | Design (2) | Build (3) | Test (4) | Secure (5) | Deploy (6) | Operate (7) |
+|-------|--------------|------------|-----------|----------|------------|------------|-------------|
+| aidlc-product-agent | L (intent-capture, market-research, scope-definition), S (rough-mockups, approval-handoff) | L (requirements-analysis, user-stories), S (refined-mockups) | — | — | — | — | — |
+| aidlc-design-agent | L (rough-mockups) | L (refined-mockups), S (user-stories, domain-design) | — | — | — | — | — |
+| aidlc-delivery-agent | L (team-formation, approval-handoff), S (scope-definition) | L (delivery-planning), S (units-generation) | — | — | — | — | — |
+| aidlc-architect-agent | L (feasibility), S (intent-capture, reverse-engineering) | L (domain-design, units-generation, contract-design, functional-design, nfr-requirements, nfr-design), S (delivery-planning) | — | — | — | — | — |
+| aidlc-aws-platform-agent | S (feasibility) | L (infrastructure-design), S (domain-design, contract-design, nfr-design) | — | — | — | L (environment-provisioning) | S (feedback-optimization) |
+| aidlc-compliance-agent | S (feasibility) | S (nfr-requirements, infrastructure-design) | — | — | L (conformance-review) | S (environment-provisioning) | — |
+| aidlc-devsecops-agent | — | S (practices-discovery, nfr-requirements, infrastructure-design) | — | S (build-and-test) | L (security-review) | S (environment-provisioning) | — |
+| aidlc-developer-agent | L (reverse-engineering) | S (practices-discovery, user-stories, functional-design) | L (code-generation) | — | — | S (deployment-execution) | — |
+| aidlc-quality-agent | — | S (practices-discovery, user-stories, nfr-requirements) | — | L (build-and-test, performance-validation) | L (code-review) | — | — |
+| aidlc-pipeline-deploy-agent | — | L (practices-discovery) | — | — | — | L (ci-pipeline, deployment-pipeline, deployment-execution) | — |
+| aidlc-operations-agent | — | — | — | — | — | — | L (observability-setup, incident-response, feedback-optimization) |
+
+Initialization (0.1-0.3) is hidden setup, and no agent takes part in it.
 
 ### Observations
 
-- The **aidlc-architect-agent** has the broadest involvement (10 stages across 3 phases). It carries the `judgment` tier (inherits your session's model and effort), as do seven other high-judgment agents; only **aidlc-delivery-agent**, **aidlc-pipeline-deploy-agent**, and **aidlc-operations-agent** carry the `templated` tier
-- The **aidlc-developer-agent** spans 3 phases: Inception, Construction, and Operation
-- The **aidlc-compliance-agent** and **aidlc-devsecops-agent** operate purely in support roles, participating in stages led by others
+- The **aidlc-architect-agent** has the broadest involvement (10 stages across 2 phases). It carries the `judgment` tier (inherits your session's model and effort), as do seven other high-judgment agents; only **aidlc-delivery-agent**, **aidlc-pipeline-deploy-agent**, and **aidlc-operations-agent** carry the `templated` tier
+- The **aidlc-developer-agent** spans 4 phases: Discover, Design, Build, and Deploy
+- The **aidlc-compliance-agent** and **aidlc-devsecops-agent** each lead one Secure-phase review (conformance-review and security-review) and support stages led by others
 - The **aidlc-operations-agent** closes the lifecycle loop by feeding insights back to the aidlc-product-agent
 
 ---
@@ -286,13 +288,13 @@ with the full findings list as of that review for people at
 `<stage dir>/reviews/review-NN.md` beside the reviewed
 artifact, and refuses a verdict whose artifacts changed. How the verdict is handled depends on the stage's review class:
 
-- **Advisory** (the human-gated ideation/inception prose stages): one normal-flow
+- **Advisory** (the human-gated Discover and Design prose stages that declare it, such as Intent Capture and Requirements Analysis): one normal-flow
   review pass, whatever the verdict. The engine's findings list is shown at the
   approval gate as decision support: you triage it, and a
   Request Changes at the gate is how a finding becomes a revision. If a later
   output write invalidates the terminal receipt, one bounded recovery request
   runs at the next ordinal.
-- **Adversarial** (the Construction design/build stages): on NOT-READY the
+- **Adversarial** (the default, for the reviewed stages that do not declare advisory, such as Functional Design and Code Generation): on NOT-READY the
   builder re-runs to address the findings and the reviewer re-checks, looping
   up to `reviewer_max_iterations` times (default 2, engine-enforced). If
   findings remain after the cap, the workflow proceeds to the approval gate

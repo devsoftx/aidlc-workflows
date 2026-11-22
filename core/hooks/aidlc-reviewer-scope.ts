@@ -275,6 +275,9 @@ interface PreparedScope {
   recordRoot?: string;
   unitPhaseRoots: ReadonlyArray<{ phase: string; root: string }>;
   bases: string[];
+  // The current unit's own folders (design/<unit>, build/<unit>) as bases. They
+  // catch sibling paths, but a pattern is not named by them (see patternLimitsToCurrentUnit).
+  unitBases: ReadonlySet<string>;
 }
 
 function normalizeForCompare(p: string): string {
@@ -305,6 +308,27 @@ function isExactExempt(path: string, suffixComps: string[], scope: PreparedScope
   return scope.exemptPaths.has(path) || scope.exemptSuffixes.has(canonicalSuffix(suffixComps));
 }
 
+// The unit-phase folder(s) a resolved path enters, with the components after it.
+// A literal phase root names its folder. Under the record root, a wildcard
+// component that matches a phase (design*/U01-infra/...) enters each phase
+// folder it matches. `head` keeps the component as written, so a wildcard never
+// matches an exempt suffix: an exempt file is named exactly, not by a glob.
+function unitPhaseEntries(path: string, scope: PreparedScope): Array<{ head: string; rest: string[] }> {
+  const entries: Array<{ head: string; rest: string[] }> = [];
+  for (const { phase, root } of scope.unitPhaseRoots) {
+    if (containsPath(root, path)) {
+      entries.push({ head: phase, rest: path === root ? [] : path.slice(root.length + 1).split("/") });
+    }
+  }
+  if (scope.recordRoot !== undefined && path !== scope.recordRoot && containsPath(scope.recordRoot, path)) {
+    const [first, ...rest] = path.slice(scope.recordRoot.length + 1).split("/");
+    if (WILDCARD_RE.test(first) && UNIT_RECORD_PHASES.some((phase) => globComponentMatchesPhase(first, phase))) {
+      entries.push({ head: first, rest });
+    }
+  }
+  return entries;
+}
+
 function prepareScope(
   dispatch: Pick<ReviewerDispatch, "unit" | "exempt">,
   context: ScopeContext | undefined,
@@ -333,6 +357,7 @@ function prepareScope(
     recordRoot: recordRoot ? normalizeForCompare(recordRoot) : undefined,
     unitPhaseRoots: unitPhaseRoots.map(({ phase, root }) => ({ phase, root: normalizeForCompare(root) })),
     bases,
+    unitBases: new Set(unitRoots),
   };
 }
 
@@ -368,10 +393,8 @@ function judgeResolvedPath(
   if (scope.unitPhaseRoots.length === 0) return null;
 
   for (const path of normalizeResolved(text, bases)) {
-    for (const { phase, root } of scope.unitPhaseRoots) {
-      if (!containsPath(root, path)) continue;
-      const rest = path === root ? [] : path.slice(root.length + 1).split("/");
-      const suffixComps = [phase, ...rest];
+    for (const { head, rest } of unitPhaseEntries(path, scope)) {
+      const suffixComps = [head, ...rest];
       if (isExactExempt(path, suffixComps, scope)) continue;
       if (isStageFolder(rest[0])) continue;
       if (judgeOccurrence(suffixComps, scope.unitFolded, scope.exemptSuffixes)) {
@@ -397,7 +420,17 @@ function judgePathAccess(
   return judgeLexicalPath(text, scope) ?? judgeResolvedPath(text, mode, scope, bases);
 }
 
-function patternLimitsToCurrentUnit(text: string, scope: PreparedScope): boolean {
+// Whether a Glob or rg -g pattern limits the search to the current unit: it names
+// at least one unit folder, and every folder it names is this unit (or an exempt
+// file). Besides the anchored spelling, the pattern is resolved against the
+// judgePathAccess bases minus the unit's own folders. A pattern relative to
+// design/<unit> is not named by the unit, and `**/*.md` resolved there would look
+// constrained while it sweeps the record.
+function patternLimitsToCurrentUnit(
+  text: string,
+  scope: PreparedScope,
+  bases: readonly string[] = scope.bases,
+): boolean {
   const comps = normalizedComps(text);
   let sawUnitPhase = false;
   for (let i = 0; i < comps.length; i++) {
@@ -408,6 +441,15 @@ function patternLimitsToCurrentUnit(text: string, scope: PreparedScope): boolean
     if (seg === undefined || WILDCARD_RE.test(seg)) return false;
     if (fold(seg) !== scope.unitFolded && !scope.exemptSuffixes.has(canonicalSuffix(suffix))) {
       return false;
+    }
+  }
+  const namingBases = bases.filter((base) => !scope.unitBases.has(base));
+  for (const path of normalizeResolved(text, namingBases)) {
+    for (const { head, rest } of unitPhaseEntries(path, scope)) {
+      sawUnitPhase = true;
+      const seg = rest[0];
+      if (seg === undefined || WILDCARD_RE.test(seg)) return false;
+      if (fold(seg) !== scope.unitFolded && !isExactExempt(path, [head, ...rest], scope)) return false;
     }
   }
   return sawUnitPhase;
@@ -642,7 +684,7 @@ function judgeRipgrep(
     if (glob.length === 0) continue;
     const v = judgePathAccess(glob, "target", scope, bases);
     if (v !== null) return v;
-    constrainedToCurrent ||= patternLimitsToCurrentUnit(glob, scope);
+    constrainedToCurrent ||= patternLimitsToCurrentUnit(glob, scope, bases);
   }
   for (const path of args.paths) {
     if (path === "-") continue;

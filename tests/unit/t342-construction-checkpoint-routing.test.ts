@@ -1247,9 +1247,11 @@ describe("t342 Construction checkpoint routing", () => {
     expect(policyCli(p, "state", ["set-construction-checkpoints", "disabled"]).status).not.toBe(0);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
-  test("Inception policy setters keep their receipt-free behavior", () => {
+  test("policy setters before Construction keep their receipt-free behavior", () => {
     const p = fixture();
-    writeFileSync(seededStateFile(p), setField(readFileSync(seededStateFile(p), "utf-8"), "Lifecycle Phase", "INCEPTION"));
+    // The setters' refusal is decided by Current Stage, so the stage is set too: requirements-analysis is in design.
+    const inDesign = setField(readFileSync(seededStateFile(p), "utf-8"), "Lifecycle Phase", "DESIGN");
+    writeFileSync(seededStateFile(p), setField(inDesign, "Current Stage", "requirements-analysis"));
     for (const args of [
       ["set-construction-iteration", "stage-major"],
       ["set-construction-execution", "swarm"],
@@ -1569,7 +1571,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   // line names the steps units have not finished, and the way back (#3530);
   // there is no confirmation question and no refusal.
   test("leaving Construction early goes through and names the steps it skips", () => {
-    for (const args of [["--stage", "build-and-test"], ["--phase", "operation"]]) {
+    for (const args of [["--stage", "build-and-test"], ["--phase", "operate"]]) {
       const p = betaBuilding();
       const before = readFileSync(seededStateFile(p), "utf-8");
       const jump = JSON.parse(tool(p, "orchestrate", ["next", ...args]).stdout);
@@ -4318,9 +4320,10 @@ describe("t342 status names the Unit's step and a typed switch says where the wo
     const out = status(p);
     expect(out).toContain("Current Stage:  Functional Design");
     expect(out).toContain("Current Step:   code-generation for unit beta");
-    const construction = out.split("\n").find((line) => line.trimStart().startsWith("CONSTRUCTION")) ?? "";
-    expect(construction).toContain("Unit 2 of 2");
-    expect(construction).not.toMatch(/\b0\/\d+\b/);
+    // The Unit count sits on the phase row of Current Stage (functional-design is DESIGN).
+    const design = out.split("\n").find((line) => line.trimStart().startsWith("DESIGN")) ?? "";
+    expect(design).toContain("Unit 2 of 2");
+    expect(design).not.toMatch(/\b0\/\d+\b/);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
   test("a typed setting says where the work picks up", () => {
