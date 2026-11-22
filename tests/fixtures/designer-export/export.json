@@ -1568,7 +1568,7 @@
       "name": "Delivery Planning",
       "phase": "design",
       "execution": "ALWAYS",
-      "condition": "Always executes — capstone Design stage, produces the detailed execution plan for Build and Operate",
+      "condition": "Always executes — capstone Design stage, produces the detailed execution plan for Build through Operate",
       "lead_agent": "aidlc-delivery-agent",
       "support_agents": [
         "aidlc-architect-agent"

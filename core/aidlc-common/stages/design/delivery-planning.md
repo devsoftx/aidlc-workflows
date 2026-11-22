@@ -2,7 +2,7 @@
 slug: delivery-planning
 phase: design
 execution: ALWAYS
-condition: Always executes — capstone Design stage, produces the detailed execution plan for Build and Operate
+condition: Always executes — capstone Design stage, produces the detailed execution plan for Build through Operate
 lead_agent: aidlc-delivery-agent
 support_agents:
   - aidlc-architect-agent
@@ -75,10 +75,10 @@ active space's `memory/org.md` defaults.
 
 ### Step 2: Generate Clarifying Questions
 
-This stage plans the Bolt sequence — the order in which Units of Work are executed through Build. 2.7 produces the dependency DAG (topology); this stage (2.9) chooses a path through it. Economic value cannot be derived from the DAG — that's a human value judgment.
+This stage plans the Bolt sequence — the order in which Units of Work are executed through Build. 2.6 produces the dependency DAG (topology); this stage (2.8) chooses a path through it. Economic value cannot be derived from the DAG — that's a human value judgment.
 
 **Definitions for this stage:**
-- **Bolt** — per `stage-protocol.md` Glossary: the planned Build delivery slice from this stage (2.9): one or more Units with a Definition of Done, a confidence hypothesis, and ownership. The engine does not consume `bolt-plan.md` for Unit grouping or walk order; runtime batches come from `unit-of-work-dependency.md`. A **Batch** is the group of Units that build concurrently (runtime; from that 2.7 artifact).
+- **Bolt** — per `stage-protocol.md` Glossary: the planned Build delivery slice from this stage (2.8): one or more Units with a Definition of Done, a confidence hypothesis, and ownership. The engine does not consume `bolt-plan.md` for Unit grouping or walk order; runtime batches come from `unit-of-work-dependency.md`. A **Batch** is the group of Units that build concurrently (runtime; from that 2.6 artifact).
 
 These definitions are for YOU. They are not written to be read out, and the user
 has not seen them. Every one of them names something that is about to appear in
@@ -110,7 +110,7 @@ Per-Bolt questions (the aidlc-delivery-agent loops these during artifact generat
 - Is this Bolt the thin end-to-end slice (the walking skeleton)? If yes, which parts of the architecture does it prove out?
 - What has to be true for this Bolt to count as done?
 - What will shipping this Bolt tell us that we do not know yet?
-- Which mob is planned to build this Bolt? (References teams from 1.5 when 1.5 ran; when 1.5 was SKIP — mvp, classic — plan aidlc-developer-agent for all Bolts.) Who builds the Units is not this stage's question.
+- Which mob is planned to build this Bolt? (References teams from 1.6 when 1.6 ran; when 1.6 was SKIP — mvp, classic, workshop — plan aidlc-developer-agent for all Bolts.) Who builds the Units is not this stage's question.
 
 NOTE: Bolt sequencing records the economic rationale, while the engine consumes
 the actual Unit DAG and iteration choice. When skeleton-on applies, confirm that
@@ -127,7 +127,7 @@ Follow stage-protocol.md question flow.
 
 ### Step 3: Collect and Analyze Answers
 
-Validate the chosen Bolt sequence respects 2.7's dependency DAG (with aidlc-architect-agent input). Flag any deviation from topological order so it can be justified in the rationale artifact.
+Validate the chosen Bolt sequence respects 2.6's dependency DAG (with aidlc-architect-agent input). Flag any deviation from topological order so it can be justified in the rationale artifact.
 
 ### Step 4: Generate Artifacts
 
@@ -141,7 +141,7 @@ initials all qualify. Gloss and move on; do not restructure the artifact around
 the explanation.
 
 - `bolt-plan.md` — the ordered sequence of Bolts. Each Bolt entry: included Unit(s) of Work, walking-skeleton marker if applicable, Definition of Done for that Bolt, confidence hypothesis ("what will shipping this Bolt prove?"), expected demo.
-- `team-allocation.md` — the planned Bolt-to-mob assignment. References teams from 1.5 when 1.5 ran (enterprise, feature). When 1.5 is SKIP (mvp, classic), plans aidlc-developer-agent (AI) for every Bolt. When team count > 1, this is the Program Board analog.
+- `team-allocation.md` — the planned Bolt-to-mob assignment. References teams from 1.6 when 1.6 ran (enterprise, feature). When 1.6 is SKIP (mvp, classic, workshop), plans aidlc-developer-agent (AI) for every Bolt. When team count > 1, this is the Program Board analog.
 - `risk-and-sequencing-rationale.md` — the why behind the Bolt ordering: WSJF-style scoring, risk-first argument, walking-skeleton-first argument, or value-first argument. References the heuristic used (Cohn, Reinertsen CD3, or SAFe WSJF).
 - `external-dependency-map.md` — gated items (external APIs, data availability windows, approval lead times, external-team hand-offs) mapped to the Bolts that consume them. Lightweight or empty when fully AI-contained.
 
