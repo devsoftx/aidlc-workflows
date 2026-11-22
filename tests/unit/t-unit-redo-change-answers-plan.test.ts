@@ -34,6 +34,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -89,6 +90,7 @@ function fixture(checkpoints: "enabled" | "disabled", policy: "strict" | "off"):
 - **Construction Checkpoints**: ${checkpoints}
 - **Construction Execution**: serial
 - **Construction Autonomy Mode**: gated
+- **Unit Ownership**: solo
 - **Guard Policy**: ${policy} (set by you)
 - **Plan Approval**: on (set by you)
 ## Scope Configuration
@@ -97,12 +99,14 @@ function fixture(checkpoints: "enabled" | "disabled", policy: "strict" | "off"):
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${skipped.map((stage) => `- [S] ${stage} ${DASH} SKIP`).join("\n")}
+### BUILD PHASE
 - [-] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);
@@ -164,7 +168,7 @@ function next(p: string, args: string[] = []): Directive {
   return result.directive as Directive;
 }
 
-const stageDir = (p: string): string => join(seededRecordDir(p), "construction", UNIT, CG);
+const stageDir = (p: string): string => join(seededRecordDir(p), phaseFor(CG), UNIT, CG);
 
 function writePlan(p: string, extra = ""): void {
   mkdirSync(stageDir(p), { recursive: true });

@@ -85,6 +85,7 @@ import {
   DEFAULT_RECORD_DIR,
   FIXTURES_DIR,
   followProposal,
+  markGreenfieldReverseEngineeringSkipped,
   REPO_ROOT,
   resetAidlcEnv,
   runOrchestrateNext,
@@ -198,6 +199,7 @@ describe("t114 happy path: in-flight current stage -> run-stage", () => {
     proj = createOrchestrationTestProject();
     seedStateFile(proj, MID_IDEATION);
     const statePath = seededStateFile(proj);
+    markGreenfieldReverseEngineeringSkipped(statePath);
     const state = readFileSync(statePath, "utf-8")
       .replace("- [-] feasibility — EXECUTE", "- [x] feasibility — EXECUTE")
       .replace("- [ ] scope-definition — EXECUTE", "- [-] scope-definition — EXECUTE")
@@ -854,14 +856,14 @@ describe("t114 knowledge (DocumentKB) terminal routing", () => {
 describe("t114 with-state jump -> the target's step", () => {
   test("12: with-state --phase jump -> the jump is made and the target's step comes back", () => {
     // state-mid-ideation is feature scope, Current Stage=feasibility; --phase
-    // construction resolves forward to functional-design. The person asked for
+    // design resolves forward to the design phase's first stage. The person asked for
     // the jump, so `next` runs `aidlc-jump.ts execute` with the tool-resolved
     // target + direction itself and routes on from the state it wrote.
     proj = createOrchestrationTestProject();
     seedStateFile(proj, MID_IDEATION);
-    const out = runNext(proj, ["--phase", "construction"]).out;
+    const out = runNext(proj, ["--phase", "design"]).out;
     expect(out).toContain('"kind":"run-stage"');
-    expect(out).toContain('"stage":"functional-design"');
+    expect(out).toContain('"stage":"practices-discovery"');
     expect(out).not.toContain("aidlc-jump.ts execute");
   });
 });
@@ -1074,6 +1076,7 @@ describe("t114 parked branch (#367)", () => {
   test("stale parked (Current Stage advanced past Parked At Stage) is ignored", () => {
     proj = createOrchestrationTestProject();
     seedStateFile(proj, MID_IDEATION);
+    markGreenfieldReverseEngineeringSkipped(seededStateFile(proj));
     park(proj);
     // Advance Current Stage past the parked slug - the marker is now stale.
     spawnSync(BUN, [STATE, "set", "Current Stage=scope-definition", "--project-dir", proj], {

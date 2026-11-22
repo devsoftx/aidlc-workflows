@@ -22,12 +22,12 @@
 //
 // PARITY NOTES (every .sh assert/ok line maps to an expect() below; several
 // are STRONGER than the original `jq -r` projection — noted Sx):
-//   Case A (mix: 2 approved + 1 pending across ideation):
+//   Case A (mix: 2 approved + 1 pending across discover):
 //     - .sh `.stages.total` == 3            -> Test A1: summary.stages.total === 3
 //     - .sh `.stages.approved` == 2         -> Test A2: ...approved === 2
 //     - .sh `.stages.pending` == 1          -> Test A3: ...pending === 1
 //     - .sh `.stages.failed` == 0           -> Test A4: ...failed === 0
-//     - .sh `.by_phase.ideation.total` == 3 -> Test A5: by_phase.ideation.total === 3
+//     - .sh `.by_phase.ideation.total` == 3 -> Test A5: by_phase[discover].total === 3
 //         (S1 STRONGER: also asserts approved/pending split on the phase rollup)
 //     - .sh `.memory.total` == 3            -> Test A6: memory.total === 3
 //     - .sh `.memory.interpretations` == 2  -> Test A7: memory.interpretations === 2
@@ -161,7 +161,7 @@ const STATE_FEATURE = [
 
 // AUDIT_MIX: two approved (intent-capture 10:00->10:10, feasibility
 // 10:11->10:40) + one pending (scope-definition started 10:41, never
-// completed). All three slugs are phase=ideation per stage-graph.json.
+// completed). All three slugs are phase=discover per stage-graph.json.
 // Duration spans first start (10:00) to latest completed (10:40) = 40 min.
 const AUDIT_MIX = `## Workflow Start
 **Timestamp**: 2026-05-27T10:00:00Z
@@ -315,8 +315,8 @@ function compileAndSummarize(proj: string): { summary: Summary; raw: string } {
 }
 
 describe("t106 aidlc-runtime summary — CLI contract (migrated from t106-runtime-summary.sh, plan 13)", () => {
-  // --- Case A: two approved + one pending across ideation ------------------
-  describe("Case A: 2 approved + 1 pending across ideation", () => {
+  // --- Case A: two approved + one pending across discover ------------------
+  describe("Case A: 2 approved + 1 pending across discover", () => {
     function caseAProject(): string {
       const proj = makeProject(AUDIT_MIX, STATE_FEATURE);
       writeMemory(proj, "intent-capture", MEMORY_INTENT);
@@ -343,12 +343,13 @@ describe("t106 aidlc-runtime summary — CLI contract (migrated from t106-runtim
       expect(summary.stages.failed).toBe(0);
     });
 
-    test("A5: ideation phase rollup totals 3 (+ approved/pending split, S1)", () => {
+    test("A5: discover phase rollup totals 3 (+ approved/pending split, S1)", () => {
       const { summary } = compileAndSummarize(caseAProject());
-      expect(summary.by_phase.ideation.total).toBe(3);
-      expect(summary.by_phase.ideation.approved).toBe(2);
-      expect(summary.by_phase.ideation.pending).toBe(1);
-      expect(summary.by_phase.ideation.failed).toBe(0);
+      const phase = summary.by_phase[phaseFor("intent-capture")];
+      expect(phase.total).toBe(3);
+      expect(phase.approved).toBe(2);
+      expect(phase.pending).toBe(1);
+      expect(phase.failed).toBe(0);
     });
 
     test("A6: memory total = 3 (2 interp + 1 tradeoff)", () => {
@@ -417,16 +418,17 @@ describe("t106 aidlc-runtime summary — CLI contract (migrated from t106-runtim
     expect(summary.stages.total).toBe(3);
     expect(summary.stages.approved).toBe(3);
     expect(summary.stages.pending).toBe(0);
-    expect(summary.by_phase.ideation.total).toBe(3);
-    expect(summary.by_phase.ideation.approved).toBe(3);
-    expect(summary.by_phase.ideation.pending).toBe(0);
+    const phase = summary.by_phase[phaseFor("intent-capture")];
+    expect(phase.total).toBe(3);
+    expect(phase.approved).toBe(3);
+    expect(phase.pending).toBe(0);
   });
 
   // --- Case E: --single synthetic pair does not inflate summary counts -----
   // The synthetic `Workflow: single-stage:<slug>` pair must be excluded at
   // compile-time pairing, so summary (which does not re-walk audit)
   // sees the same Case-A numbers with or without the pair appended. Without
-  // the exclusion, the inception phase appears in by_phase and stages.total/
+  // the exclusion, the design phase appears in by_phase and stages.total/
   // approved each over-count by one.
   test("E1: synthetic single-stage pair appended to Case A leaves all counts unchanged", () => {
     const proj = makeProject(AUDIT_MIX + SINGLE_STAGE_PAIR, STATE_FEATURE);
@@ -435,9 +437,9 @@ describe("t106 aidlc-runtime summary — CLI contract (migrated from t106-runtim
     expect(summary.stages.total).toBe(3);
     expect(summary.stages.approved).toBe(2);
     expect(summary.stages.pending).toBe(1);
-    expect(summary.by_phase.ideation.total).toBe(3);
-    // domain-design is inception — its phase must not appear at all.
-    expect(summary.by_phase.inception).toBeUndefined();
+    expect(summary.by_phase[phaseFor("intent-capture")].total).toBe(3);
+    // domain-design is design — its phase must not appear at all.
+    expect(summary.by_phase[phaseFor("domain-design")]).toBeUndefined();
     // Duration still spans first start -> latest MAIN completed (10:40), not
     // the synthetic pair's 10:45.
     expect(summary.duration_minutes).toBe(40);
