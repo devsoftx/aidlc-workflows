@@ -6,7 +6,7 @@ import { isUnitLoopStage, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 // require).
 //
 // Architectural model (see docs/reference/15-stage-definition.md):
-//   - The graph is structural truth: 31 stage definitions + every
+//   - The graph is structural truth: 36 stage definitions + every
 //     requires_stage / produces / consumes edge they declare = the
 //     complete DAG. Compiled from YAML into stage-graph.json.
 //   - A scope is a sub-DAG: scope-mapping.json's EXECUTE slice +
@@ -1078,7 +1078,7 @@ const FIELD_ORDER = [
 //
 // Per-stage chain: org → team → project → phase. Pull authoring puts
 // the phase→stage relationship on the stage's existing `phase:`
-// declaration; the resolver attaches the matching aidlc-phase-<name>.md
+// declaration; the resolver attaches the matching phases/<name>.md
 // file with no rule-side glob filter. A confirmed learning is a PRACTICE
 // (vision §6): the §13 gate appends it under a topical heading in
 // team.md / project.md directly — there is no parallel `*-learnings.md`
@@ -2769,7 +2769,7 @@ export function compileStageGraph(): {
 
       // Wrap parse in filename context — parseStageFrontmatter's default
       // error messages don't include the file path, which makes debugging
-      // a bad YAML edit across 31 stage files painful.
+      // a bad YAML edit across 36 stage files painful.
       let parsed: Record<string, unknown>;
       try {
         parsed = parseStageFrontmatter(raw) as Record<string, unknown>;
@@ -2863,9 +2863,9 @@ export function compileStageGraph(): {
       // invariant, so the batch is ordered by its edges first.
       const prefix = PHASES.indexOf(phase as Phase);
       if (prefix < 0) {
-        // A stage directory whose name is not one of the five canonical
-        // phases can't be placed on the numeric spine, fail loud rather
-        // than invent a prefix.
+        // A stage directory whose name is not one of PHASES (Initialization
+        // and the seven delivery phases) can't be placed on the numeric
+        // spine, fail loud rather than invent a prefix.
         throw new Error(
           `Stage "${slug}" (${filePath}) is in an unknown phase directory ` +
             `"${phase}". Stage phase directories must be one of: ${PHASES.join(", ")}.`

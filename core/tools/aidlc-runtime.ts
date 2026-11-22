@@ -306,7 +306,7 @@ function readMemory(
 // Read units-generation's unit-of-work-dependency.md and compute the
 // Bolt/unit batch DAG. Returns undefined (node omitted) when the artifact
 // is absent, or when its edge block is absent / malformed / cyclic — those
-// failures are surfaced at the 2.7 gate by the required-sections sensor, not
+// failures are surfaced at the 2.6 gate by the required-sections sensor, not
 // silently encoded into a wrong-but-valid DAG. The parse is pure data (no
 // model call), so a re-compile is byte-identical.
 function computeBoltDag(projectDir: string): BoltDag | undefined {

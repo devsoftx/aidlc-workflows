@@ -92,7 +92,7 @@ Encodes dependency edges. Two roles:
    produces" → add `Y` to `requires_stage`.
 2. **Presentation-order edge.** Two stages in the same phase with no
    semantic dependency but a fixed ordering (e.g., `market-research` before
-   `feasibility` in Ideation). Add the weak edge so the computed stage
+   `feasibility` in Discover). Add the weak edge so the computed stage
    `number` lands stably.
 
 The compile step's slug-alphabetical tiebreak is a safety net. For stages
@@ -126,11 +126,11 @@ its first per-Unit stage stands. Each Unit walks the whole block, every block
 approval comes before the first once-per-intent stage after it, and the next
 stage, the team's move on after the last Unit and the gate's "Continue to"
 all follow that order. Compile writes `stage-graph.json` in run order. A
-plugin's new stage is numbered past its phase's highest number, so a plugin
-stage that runs per Unit after Code Generation is numbered after Build and Test
-and CI Pipeline, and still runs with its Unit. A per-Unit stage cannot require
-a stage that runs once per intent after the block starts; the compile refuses
-that edge.
+plugin's new stage is numbered past its phase's highest number: a per-Unit
+plugin stage in Design still runs with the other per-Unit design stages, even
+when a once-per-intent plugin stage there holds a lower number. A per-Unit
+stage cannot require a stage that runs once per intent after the block starts;
+the compile refuses that edge.
 
 ### `summary_confirmation`
 
@@ -276,7 +276,7 @@ agent's own `advance`, `finalize` and `complete-workflow`, the refusal stays. Ea
 recorded once per stage attempt as a `SOURCE_WORK_NOT_FOUND` row.
 
 Today only `code-generation` declares it. Its per-unit reviews additionally
-require `<record>/construction/<unit>/code-generation/source-manifest.json`:
+require `<record>/build/<unit>/code-generation/source-manifest.json`:
 a strict attribution index of every created, modified, or deleted application-
 source path. The engine binds manifest bytes and claimed content into the unit
 receipt, compares every fresh unit against a content-addressed stage-entry
@@ -324,7 +324,7 @@ produces_kinds:
   observability-requirements: [service]
 ```
 
-Why it exists: the four construction design stages ran with a fixed produces
+Why it exists: the four per-Unit design stages ran with a fixed produces
 list applied identically to every Unit, so a spec Unit owed a scalability doc
 and a packaging Unit a business-logic model - N/A stubs the human had to write.
 `produces_kinds` lets the engine prune the matrix per Unit: when a Unit carries
@@ -418,7 +418,7 @@ deliverables to cite every required consume that exists; it leaves an optional
 one (`required: false`) unchecked, because an optional input may not have
 informed the output, unless the consume is marked `cited: true`. Requirements
 Analysis marks `intent-statement` and `scope-document`: both are optional
-there, because scopes without Ideation produce neither, and when they exist the
+there, because scopes without Discover produce neither, and when they exist the
 requirements build on them.
 
 The compile lists the marked consumes as the stage's `cites` in
@@ -486,7 +486,7 @@ runs. Five values, four active:
   are perspectives it adopts (voices). Zero dispatches. Short stages, fast to
   execute, no context pressure.
 - `subagent` — hub-and-spoke. The lead is dispatched to a fresh subagent
-  context (long stages, e.g. Construction code generation, that would blow
+  context (long stages, e.g. Code Generation, that would blow
   out the conductor's context). When the stage also declares
   `support_agents`, each one is dispatched as a real spoke against the
   lead's returned draft (mutually blind briefs carrying artifacts by path,
@@ -586,8 +586,8 @@ loop above — the default when a `reviewer` is declared without a class) or
 from the engine-owned findings list, no repair loop; the effective iteration budget is 1). A later
 write that invalidates its terminal receipt permits one bounded recovery request
 at the next ordinal, and a review the person asks for is never refused. The shipped split:
-the 8 human-gated ideation/inception prose stages declare `advisory`; the 5
-Construction design/build stages default `adversarial`. `none` is deliberately
+the 8 human-gated Discover and Design prose stages declare `advisory`; the 5
+per-Unit design and build stages default `adversarial`. `none` is deliberately
 not a stage value — a stage that wants no review deletes its `reviewer:` line;
 `none` exists on the scope `review_cap` and the per-run `--review` override,
 which can silence a declared reviewer without editing stages. The effective
@@ -696,7 +696,7 @@ there rather than duplicating here.
 The example encodes, in structured form, what today's prose describes:
 
 - `requires_stage: [intent-capture]` encodes the prose instruction "Read
-  intent statement from the intent's `ideation/intent-capture/` (under its record dir)". The parser
+  intent statement from the intent's `discover/intent-capture/` (under its record dir)". The parser
   does not care about the prose — it just sees the graph edge — but human
   readers should keep them in sync.
 - `consumes: [{artifact: intent-statement, required: true}]` says this
@@ -727,7 +727,7 @@ System](07-sensor-system.md) for the `## Sensors` binding semantics and
 the pull-import model. Shared sensor behavior is defined once in
 `stage-protocol-sensors.md`, while `stage-protocol-learnings.md` section 13 defines the diary and ritual only when `directive.protocol_modules` lists `learnings`; otherwise skip both.
 The `## Sensors` and `## Learn` headings are checked by
-`t87-stage-compartment-headers` across all 33 stages; `## Steps` is in every
+`t87-stage-compartment-headers` across all 36 stages; `## Steps` is in every
 stage but has no test of its own.
 
 ---
@@ -745,8 +745,9 @@ the source-tree gate.
 
 ## Known limits
 
-- **`for_each` is used by Construction only.** The five per-Unit Construction
-  stages declare `for_each: unit-of-work`; the other 28 stages omit the field.
+- **`for_each` is used by the per-Unit stages only.** The five per-Unit stages
+  (four in Design, Code Generation in Build) declare `for_each: unit-of-work`;
+  the other 31 stages omit the field.
 - **`when:` is accepted but not evaluated.** See the field note above.
 - **Only the frontmatter is validated at compile.** The body prose is not
   parsed; its `## Sensors` and `## Learn` headings are checked by the test suite, and the

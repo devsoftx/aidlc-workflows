@@ -15,8 +15,9 @@
 
 ### Lead Stages
 
-This agent has no lead stages. It operates exclusively in a support and
-advisory capacity across the lifecycle.
+| Stage | Name | What This Agent Does |
+|-------|------|----------------------|
+| conformance-review | Conformance Review | Checks the delivered code, tests and deployment settings against the requirements, rules and regulatory obligations; each obligation not met is a blocker for deployment |
 
 ### Support Stages
 

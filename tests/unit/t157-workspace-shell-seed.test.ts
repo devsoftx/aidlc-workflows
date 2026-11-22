@@ -228,7 +228,7 @@ describe("t157 seeded workspace shell + re-rooted .gitignore (SEED)", () => {
         .map((r) => r.scope)
         .sort();
       // org/team/project are always present in the shipped defaults; phase rules
-      // attach the four phase files — so the resolved set spans all four layers.
+      // attach the seven phase files — so the resolved set spans all four layers.
       expect(scopes, `${h}: resolved layers on a fresh copy`).toContain("org");
       expect(scopes, `${h}: resolved layers on a fresh copy`).toContain("team");
       expect(scopes, `${h}: resolved layers on a fresh copy`).toContain("project");

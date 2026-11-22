@@ -2,9 +2,9 @@
 
 Load this module when the engine lists `loopback` in `directive.protocol_modules`: on every Code Generation and Build and Test step, and every `invoke-swarm`.
 
-### Build-and-Test failure loop-back (3.6 → 3.5)
+### Build-and-Test failure loop-back (4.1 → 3.1)
 
-When Build and Test (3.6) diagnoses a failure whose ROOT CAUSE lies in the
+When Build and Test (4.1) diagnoses a failure whose ROOT CAUSE lies in the
 generated code or an approach chosen at code-generation (not in this stage's
 own test/build scaffolding), the workflow may return to code-generation and
 repair it rather than writing the approach off or dead-ending at the gate.

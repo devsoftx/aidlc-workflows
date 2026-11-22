@@ -2,12 +2,12 @@
 //
 // Under Unit Ownership: team a Unit's per-Unit stage runs in that Unit's own
 // claimed checkout, which commits only the Unit's record tree
-// (`construction/<unit>/`; publish leaves the record's shared files out). The
+// (`<phase>/<unit>/`; publish leaves the record's shared files out). The
 // run-stage directive still named the stage-level
-// `construction/<stage>/memory.md` as the diary, so
+// `<phase>/<stage>/memory.md` as the diary, so
 // the agent was told to keep its notes in a file its checkout cannot land, and
 // the learnings step at the Unit's gate counted that same file's entries. The diary is now
-// the Unit's own `construction/<unit>/<stage>/memory.md`, the path a per-Unit
+// the Unit's own `<phase>/<unit>/<stage>/memory.md`, the path a per-Unit
 // wave entry already uses, and the learnings step counts it there. A directive
 // that names no Unit (the skeleton-stance ask before the Unit's first stage)
 // takes the claimed checkout's Unit too, and never creates the stage-level

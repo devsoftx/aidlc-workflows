@@ -19,7 +19,7 @@ When a stage gathers your input, the agent writes its questions to a file and of
 ```text
  Answer mode
  I've created 8 questions at
- aidlc/spaces/default/intents/261013-inventory-rest-api/ideation/intent-capture/intent-capture-questions.md.
+ aidlc/spaces/default/intents/261013-inventory-rest-api/discover/intent-capture/intent-capture-questions.md.
  How would you like to answer them?
  > 1. Guide me
       Walk through each question interactively here
@@ -190,7 +190,7 @@ flowchart TD
     APPROVE["Approve"]
     CHANGES["Request Changes"]
     ACCEPT["Accept as-is\n(escape hatch)"]
-    ADD_STAGE["Approve, and add\nskipped stage next\n(Ideation/Inception only)"]
+    ADD_STAGE["Approve, and add\nskipped stage next\n(Discover/Design only)"]
 
     REVISION_COUNT{"Revision\ncycle >= 3?"}
     NOTE_2ND["After 2nd revision:\nnote that escape hatch\nactivates next cycle"]
@@ -233,7 +233,7 @@ flowchart TD
     style NEXT_STAGE fill:#c8e6c9,stroke:#388e3c,color:#000
 ```
 
-<!-- Text fallback: Stage work completes, report awaiting-approval opens the gate (the engine records STAGE_AWAITING_APPROVAL), and AskUserQuestion presents the approval gate. Approve: report approved with the exact choice so the engine records GATE_APPROVED, completes, and routes; show progress; proceed. Request Changes: report rejected with the exact Request Changes choice and separate feedback (the engine records GATE_REJECTED), check revision count (if <3, note escape hatch coming, revise, report revised to re-open the gate, and re-present; if >=3, Accept-as-is becomes available). Accept as-is: report approved with that exact label. Approve, and add a skipped stage next (Ideation/Inception only): recompose the plan, report approved, and the added stage runs next. The report calls own the gate's audit trail; no separate log entries are added for the gate prompt or choice. -->
+<!-- Text fallback: Stage work completes, report awaiting-approval opens the gate (the engine records STAGE_AWAITING_APPROVAL), and AskUserQuestion presents the approval gate. Approve: report approved with the exact choice so the engine records GATE_APPROVED, completes, and routes; show progress; proceed. Request Changes: report rejected with the exact Request Changes choice and separate feedback (the engine records GATE_REJECTED), check revision count (if <3, note escape hatch coming, revise, report revised to re-open the gate, and re-present; if >=3, Accept-as-is becomes available). Accept as-is: report approved with that exact label. Approve, and add a skipped stage next (Discover/Design only): recompose the plan, report approved, and the added stage runs next. The report calls own the gate's audit trail; no separate log entries are added for the gate prompt or choice. -->
 
 ---
 
@@ -259,7 +259,7 @@ The revision count resets when you move to the next stage. AI-DLC keeps it in it
 
 ## Add Skipped Stage Option
 
-During **Ideation** and **Inception** phases, the approval gate may include a conditional option to add a previously skipped stage back into the workflow:
+During the **Discover** and **Design** phases, the approval gate may include a conditional option to add a previously skipped stage back into the workflow:
 
 ```
 ▸ How would you like to proceed?
@@ -269,7 +269,7 @@ During **Ideation** and **Inception** phases, the approval gate may include a co
 ```
 
 This option appears only when:
-- The current stage is in Ideation or Inception
+- The current stage is in Discover or Design
 - A stage ahead was skipped during scope routing
 - The skipped stage is relevant to the current context
 
@@ -319,7 +319,7 @@ An edit to a finished stage's files is not reviewed or approved again unless you
 After an approval that moves on to another stage, a progress line appears. From the same run:
 
 ```text
-Progress: 1 of 19 stages done. Next: Feasibility & Constraints.
+Progress: 1 of 21 stages done. Next: Feasibility & Constraints.
 ```
 
 This shows:

@@ -349,7 +349,7 @@ Strictly 2-option: Approve / Request Changes.
 - **Cross-unit scope**: Unlike stages 2.9-3.1 which are per-unit, Build and
   Test runs once across all code produced by all units. It validates the
   integrated codebase, not individual units.
-- **Phase completion**: This stage (along with 6.1 if applicable) marks the
-  end of the Build and Test work. The final approved report makes the engine
-  mark that work complete and route on to the next phase atomically.
+- **Phase completion**: This stage (along with 4.2 if applicable) marks the
+  end of the Test phase. The final approved report makes the engine
+  mark Test complete and route on to the next phase atomically.
 

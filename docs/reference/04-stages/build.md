@@ -116,7 +116,8 @@ Existing, design-only, no-Unit, or team-owned workflow:
   Preserve its recorded path and applicable stage or Unit-gate policy
 
 After the per-unit work:
-  Build and Test, then CI Pipeline if included, run once across the solution
+  Build and Test, the Secure reviews, then CI Pipeline if included, run once
+  across the solution
 ```
 
 **Route checkpoints before bodies.** A `construction_checkpoint` directive
@@ -233,7 +234,7 @@ and lands the candidate through `aidlc unit land`. Git content lands before the
 Unit row is folded; main-owned state/runtime markers are retained, the team's
 new audit shard transports its attempt-keyed receipts, and `UNIT_MERGED` marks
 the row. Source conflicts abort before state mutation. After the final merged
-row, Build and Test and CI Pipeline route once on main.
+row, Build and Test, the Secure reviews and CI Pipeline route once on main.
 
 **Per-unit batch waves (optional, stage-major only).** On a recorded
 stage-major path, the engine MAY emit `directive.wave` for one of the four

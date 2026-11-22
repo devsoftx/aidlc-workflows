@@ -5,8 +5,9 @@
 // reached Construction with nobody asked, because the question lived in one
 // paragraph of Delivery Planning prose and nothing in the engine asked it. Here
 // a plan with Delivery Planning and one without it both put the question to the
-// person once, after Inception's last approval and before the first Unit is
-// built, and never again for the rest of the run.
+// person once, after the last planning stage's approval (Units Generation or
+// Delivery Planning) and before the first Unit is built, and never again for
+// the rest of the run.
 
 import { afterAll, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -47,7 +48,7 @@ function asksOnceBeforeTheBuild(run: ScopeRun): void {
     .toEqual(["solo"]);
 }
 
-describe("who builds the Units is asked once, as Inception ends", () => {
+describe("who builds the Units is asked once, as the Unit walk starts", () => {
   test("a plan with Delivery Planning", () => {
     const run = runScope("classic", {
       units: ["alpha", "beta"],

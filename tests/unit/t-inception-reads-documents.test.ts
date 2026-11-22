@@ -1,9 +1,9 @@
 // covers: file:tools/aidlc-knowledge.ts, function:documentsCard, function:inlineContextEntries, subcommand:aidlc-utility:document-input
 //
 // A team that brought a vision document and a technical environment document
-// still got Inception questions those documents answered: no stage read the
-// knowledge base's index. An Inception stage's reading list now carries the
-// team's documents from the index (this work's first, then the space's), each
+// still got questions those documents answered: no stage read the knowledge
+// base's index. The reading list of a Design stage that runs once for the work
+// now carries the team's documents from the index (this work's first, then the space's), each
 // with its summary or the opening of its text and where its full text is, so
 // the agent checks a question against them before asking it. A document named
 // during the work is filed for that work.
@@ -120,7 +120,7 @@ function cardPath(directive: Record<string, unknown>): string | undefined {
   return ((directive.inline_context_paths as string[] | undefined) ?? []).find((path) => path.endsWith(CARD));
 }
 
-describe("t-inception-reads-documents: an Inception stage reads the team's documents from the knowledge base", () => {
+describe("t-inception-reads-documents: a Design stage reads the team's documents from the knowledge base", () => {
   test("an added document is on the stage's reading list, after the team's knowledge and before the shipped knowledge", () => {
     const proj = project("requirements-analysis");
     put(proj, "vision.md", VISION);

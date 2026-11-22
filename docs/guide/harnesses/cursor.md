@@ -20,7 +20,7 @@ Cursor is the most "native" port so far - it consumes the standard core
 projection directly (no `emit.ts`, no split dot-dir). The distribution is:
 
 - **`.cursor/`** - the framework tree. Cursor reads only a few subdirs as
-  native meaning: `rules/` (always-applied onboarding, one standing and four phase method pointers),
+  native meaning: `rules/` (always-applied onboarding, one standing and seven phase method pointers),
   `agents/` (the 14 personas as native subagents), `skills/` (the orchestrator,
   utility shortcuts, and generated stage runners), `hooks.json` + `hooks/`
   (the hook wiring and adapter), `cli.json` (permissions), and `mcp.json` (MCP
@@ -197,12 +197,12 @@ utility shortcuts are `/aidlc-status`, `/aidlc-jump --stage <slug>` (or
   not shipped.
 - **Method rules are read instructions, not imports.** Cursor rules do not
   expand `@`-import lines. `.cursor/rules/aidlc.mdc` is always applied and
-  points to the active space's org/team/project files; four
+  points to the active space's org/team/project files; seven
   `.cursor/rules/aidlc-phase-*.mdc` rules are agent-decided and point to the
   matching phase file only when relevant (live-verified on cursor-agent: a
   phase-framed prompt loads exactly the matching phase rule, an unrelated
   prompt loads none). The `sessionStart` hook separately
-  injects live workflow context. All five rule files read
+  injects live workflow context. All eight rule files read
   `aidlc/active-memory/`, the engine's git-ignored copy of the active
   space's method; `/aidlc space <name>` rewrites the copy, never the rules.
 - **Construction swarm runs as task-tool fan-out only** (`AIDLC_USE_SWARM=1` is
@@ -250,7 +250,7 @@ agent -p "/aidlc --status" --output-format text --trust   # /aidlc --status thro
 
 The doctor's Cursor-specific checks: the hook wiring at `.cursor/hooks.json`,
 the permission pre-approval for AI-DLC's commands at `.cursor/cli.json`, the standing
-rule at `.cursor/rules/aidlc.mdc`, all four phase-rule pointers, and whether
+rule at `.cursor/rules/aidlc.mdc`, all seven phase-rule pointers, and whether
 the project is in a git repository.
 
 > **Scripting trap: Cursor CLI always exits 0.** Headless `agent -p "<prompt>"
@@ -264,7 +264,7 @@ Installed and verified? The methodology is the same on every harness - keep
 going with the neutral chapters:
 
 - [Your First Workflow](../02-your-first-workflow.md) - an annotated end-to-end run.
-- [Phases and Stages](../04-phases-and-stages.md) - the 5 phases and 33 stages.
+- [Phases and Stages](../04-phases-and-stages.md) - the 7 phases and 33 stages.
 - [Scopes, Depth, and Test Strategy](../05-scopes-and-depth.md) - right-sizing a run.
 - [Glossary](../glossary.md) - every term defined.
 

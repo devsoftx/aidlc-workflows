@@ -4,16 +4,16 @@
 
 The aidlc-pipeline-deploy-agent is your CI/CD engineer and release manager. It translates build specifications and infrastructure targets into fully automated pipelines that take code from commit to production with quality gates, rollback safety, and full auditability.
 
-The aidlc-pipeline-deploy-agent leads four stages spanning Inception, Construction, and Operation. It has Bash access for running pipeline tools, deployment scripts, and smoke test commands.
+The aidlc-pipeline-deploy-agent leads four stages spanning Design and Deploy. It has Bash access for running pipeline tools, deployment scripts, and smoke test commands.
 
 ## Stages Led
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 2.2 Practices Discovery | Inception | Draft, interview, and integrate the hub-and-spoke findings; promote approved practices to active-space team/project memory |
-| 3.7 CI Pipeline | Construction | CI pipeline configuration with quality gates |
-| 4.1 Deployment Pipeline | Operation | CD pipeline with deployment strategy and rollback procedures |
-| 4.3 Deployment Execution | Operation | Execute deployments, run smoke tests, monitor health |
+| 2.1 Practices Discovery | Design | Draft, interview, and integrate the hub-and-spoke findings; promote approved practices to active-space team/project memory |
+| 6.1 CI Pipeline | Deploy | CI pipeline configuration with quality gates |
+| 6.2 Deployment Pipeline | Deploy | CD pipeline with deployment strategy and rollback procedures |
+| 6.4 Deployment Execution | Deploy | Execute deployments, run smoke tests, monitor health |
 
 ## Stages Supported
 

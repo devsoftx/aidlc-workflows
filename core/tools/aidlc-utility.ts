@@ -913,7 +913,7 @@ Utilities:
   knowledge rebind <id> --to <path>  Repair a row whose original moved AND changed
   --doctor          Run health check on hooks, settings, and directory structure
   --doctor --export Write a redacted diagnostic report (timeline + findings, no work product); --output <dir> to relocate
-  --stage <id>      Jump to a specific stage (by slug or number, e.g., code-generation or 3.5)
+  --stage <id>      Jump to a specific stage (by slug or number, e.g., code-generation or 3.1)
   --phase <name>    Jump to the first in-scope stage of a phase (e.g., build or 3)
   --scope <scope>   Set or change scope (standalone or with --stage/--phase)
   --depth <level>   Override depth (minimal, standard, comprehensive)
@@ -2297,6 +2297,10 @@ To get started:
   // Build phase progress bars
   let phaseProgress = "";
   let lightUnits: ReturnType<typeof unitProgress> | undefined;
+  const lightUnitCount = (): ReturnType<typeof unitProgress> => {
+    if (lightUnits === undefined) lightUnits = unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "");
+    return lightUnits;
+  };
   for (const p of PHASES) {
     const phaseStages = graph.filter((s) => s.phase === p);
     const phaseSlugs = new Set(phaseStages.map((s) => s.slug));
@@ -2334,9 +2338,7 @@ To get started:
     // count, while Current Stage is on the Units' stages.
     const unitRow = phaseCheckboxes.some((c) => phaseStages.some((s) => s.slug === c.slug && isPerUnitStage(s)));
     const units = unitRow && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
-      ? lightUnits === undefined
-        ? (lightUnits = unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? ""))
-        : lightUnits
+      ? lightUnitCount()
       : null;
     const phaseSkipped = phaseCheckboxes.filter((c) => c.state === "skipped").length;
     // The walk's clause goes on the row of the phase its step is in: Current
@@ -6630,7 +6632,7 @@ export async function collectDoctorReport(
           results.push({
             pass: false,
             label: "Practices staleness: timestamp unreadable",
-            fix: `Practices Affirmed Timestamp value "${value}" is not a valid ISO 8601 datetime. Re-run practices-discovery (stage 2.2) to re-affirm.`,
+            fix: `Practices Affirmed Timestamp value "${value}" is not a valid ISO 8601 datetime. Re-run practices-discovery (stage 2.1) to re-affirm.`,
           });
         } else {
           const ageDays = Math.floor((Date.now() - affirmed) / (1000 * 60 * 60 * 24));

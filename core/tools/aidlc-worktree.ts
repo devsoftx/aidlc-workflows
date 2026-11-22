@@ -1,4 +1,4 @@
-// aidlc-worktree.ts — Construction-phase worktree primitive.
+// aidlc-worktree.ts — Construction worktree primitive.
 //
 // Subcommands: create, merge, discard, restore, purge, list, verify, info.
 // Discard parks source before audit-first removal (audit-of-intent — see

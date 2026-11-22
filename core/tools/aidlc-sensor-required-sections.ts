@@ -10,9 +10,9 @@ interface Result {
 	headings: string[];
 	findings_count: number;
 	// Populated only when the output is unit-of-work-dependency.md: the
-	// machine-readable edge block units-generation (2.7) must carry beside its
+	// machine-readable edge block units-generation (2.6) must carry beside its
 	// prose. "ok" once a valid acyclic block parses; the failure reasons mirror
-	// parseBoltDag so a malformed or cyclic DAG fails loud at the 2.7 gate,
+	// parseBoltDag so a malformed or cyclic DAG fails loud at the 2.6 gate,
 	// upstream of the runtime compiler that reads the same block.
 	edge_block?: "ok" | "absent" | "malformed" | "cyclic";
 	// Populated only when a team/framework template resolves for this output
@@ -296,7 +296,7 @@ function evaluate(outputPath: string, flags: Flags, named = basename(outputPath)
 		}
 	}
 
-	// Filename-gated extension (units-generation 2.7): unit-of-work-dependency.md
+	// Filename-gated extension (units-generation 2.6): unit-of-work-dependency.md
 	// must carry the required fenced ```yaml units: edge block beside its prose.
 	// A malformed or cyclic block fails loud here, at the gate, rather than the
 	// runtime compiler silently mis-reading or omitting it downstream. Every

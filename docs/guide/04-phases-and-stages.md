@@ -344,6 +344,7 @@ flowchart TD
     CHECKPOINT{{"Ordinary Unit checkpoint<br/>Human if gated; automatic under an explicit grant"}}
     BOOK["Settle completion-only stage bookkeeping"]
     S41["4.1 Build and Test — once across the solution"]
+    SEC["5.1–5.3 Code, Security and Conformance Review — once"]
     S61["6.1 CI Pipeline — once, if included"]
     VG3{{"Build-to-Deploy verification"}}
     START --> STANCE
@@ -352,11 +353,11 @@ flowchart TD
     OFFER --> MORE
     MORE -->|Yes| UNIT --> VERIFY --> CHECKPOINT --> MORE
     MORE -->|No| BOOK --> S41
-    S41 --> S61 --> VG3
-    S41 -.->|CI skipped| VG3
+    S41 --> SEC --> S61 --> VG3
+    SEC -.->|CI skipped| VG3
 ```
 
-<!-- Text fallback: An eligible solo source-producing workflow completes and verifies the first integrated Unit with human skeleton approval when skeleton-on. When offered, choose Continue automatically or Review each checkpoint unless a choice already exists. Complete remaining Units serially with human Plan Approval and any enabled summary confirmation, verify each, and approve ordinary checkpoints according to the recorded policy. Completion-only stage gates are bookkeeping; Build and Test (4.1) and optional CI Pipeline (6.1) run once across the solution. -->
+<!-- Text fallback: An eligible solo source-producing workflow completes and verifies the first integrated Unit with human skeleton approval when skeleton-on. When offered, choose Continue automatically or Review each checkpoint unless a choice already exists. Complete remaining Units serially with human Plan Approval and any enabled summary confirmation, verify each, and approve ordinary checkpoints according to the recorded policy. Completion-only stage gates are bookkeeping; Build and Test (4.1), the Secure reviews (5.1-5.3) and optional CI Pipeline (6.1) run once across the solution. -->
 
 ### Parallel Unit batches
 

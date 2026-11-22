@@ -11926,11 +11926,11 @@
   {
     "id": "doc-005-w",
     "category": "doc-example",
-    "input": "--phase ideation",
+    "input": "--phase operate",
     "state": "work-open",
-    "meaning": "the person means: go to Ideation; the open work's bugfix plan has no Ideation, so they hear that in plain words and what they can do instead",
-    "source": "core/hooks/aidlc-session-start.ts:647 (printed into the session-start context)",
-    "documented": "\"take everything the user typed after `/aidlc` and append it to the first `next` call UNCHANGED. The flags ARE the user's intent ... `/aidlc --phase ideation` -> you MUST run `next --phase ideation`, never bare `next`.\"",
+    "meaning": "the person means: go to Operate; the open work's bugfix plan has no Operate phase, so they hear that in plain words and what they can do instead",
+    "source": "core/hooks/aidlc-session-start.ts:678 (printed into the session-start context)",
+    "documented": "\"take everything the user typed after `/aidlc` and append it to the first `next` call UNCHANGED. The flags ARE the user's intent ... `/aidlc --phase operate` -> you MUST run `next --phase operate`, never bare `next`.\"",
     "expected": {
       "engine": {
         "kinds": [
@@ -11949,7 +11949,7 @@
       }
     },
     "after": "pending",
-    "documented_differs": "error: Phase \"ideation\" has no executable stages for scope \"bugfix\"."
+    "documented_differs": "error: Phase \"operate\" has no executable stages for scope \"bugfix\"."
   },
   {
     "id": "doc-006-p",
@@ -13136,9 +13136,9 @@
   {
     "id": "doc-040-f",
     "category": "doc-example",
-    "input": "--phase inception",
+    "input": "--phase discover",
     "state": "fresh",
-    "meaning": "the person means: start new work at Inception; the agent asks once what they want built",
+    "meaning": "the person means: start new work at Discover; the agent asks once what they want built",
     "source": "docs/guide/04-phases-and-stages.md:69 (+4 more sources)",
     "documented": "\"To move ahead anyway, jump: `/aidlc --stage <name>` or `/aidlc --phase <name>`. The stages you pass over are marked skipped (`[S]`)\".",
     "expected": {
@@ -14149,7 +14149,7 @@
     "state": "work-open",
     "meaning": "the person means: jump the open work to the Deploy phase (the seven-phase name for the phase that opens with the deployment pipeline)",
     "source": "docs/guide/11-session-management.md:179",
-    "documented": "\"Jumping further, for example `/aidlc --phase operation` to leave Construction early, skips the steps Units have not finished (their files stay).\"",
+    "documented": "\"Jumping further, for example `/aidlc --phase deploy` to leave Construction early, skips the steps Units have not finished (their files stay).\"",
     "expected": {
       "engine": {
         "kinds": [
@@ -17293,8 +17293,8 @@
     "input": "bugfix auth",
     "state": "fresh",
     "meaning": "the person means: start bugfix work on auth",
-    "source": "docs/guide/facilitator-guide.md:128",
-    "documented": "\"Name the scope as the first word\": a known bug with a known fix, 9 of 33 stages.",
+    "source": "docs/guide/facilitator-guide.md:127",
+    "documented": "\"Name the scope as the first word\": a known bug with a known fix, 8 of 33 stages.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17323,8 +17323,8 @@
     "input": "express auth",
     "state": "fresh",
     "meaning": "the person means: start express work on auth",
-    "source": "docs/guide/facilitator-guide.md:129",
-    "documented": "A small change or a quick end-to-end try, 10 of 33 stages.",
+    "source": "docs/guide/facilitator-guide.md:128",
+    "documented": "A small change or a quick end-to-end try, 9 of 33 stages.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17443,8 +17443,8 @@
     "input": "classic",
     "state": "fresh",
     "meaning": "the person means: start classic work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:24",
-    "documented": "Quick chooser \"Start with\": \"V1-style ceremony through Inception and Construction, ending at Build and Test\", 18 of 33 stages.",
+    "source": "docs/guide/workflow-profiles.md:26",
+    "documented": "Quick chooser \"Start with\": \"V1-style ceremony through Design, Build, Test, and Secure; Deploy and Operate are left out\", 18 of 33 stages.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17472,8 +17472,8 @@
     "input": "express",
     "state": "fresh",
     "meaning": "the person means: start express work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:25",
-    "documented": "\"The lightest requirements-to-code-and-test path\", 10 of 33.",
+    "source": "docs/guide/workflow-profiles.md:27",
+    "documented": "\"The lightest requirements-to-code-and-test path\", 9 of 33.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17501,7 +17501,7 @@
     "input": "enterprise",
     "state": "fresh",
     "meaning": "the person means: start enterprise work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:27",
+    "source": "docs/guide/workflow-profiles.md:29",
     "documented": "\"Regulated or high-assurance work with full traceability\", 33 of 33, Comprehensive.",
     "expected": {
       "engine": {
@@ -17530,8 +17530,8 @@
     "input": "mvp",
     "state": "fresh",
     "meaning": "the person means: start mvp work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:28",
-    "documented": "\"A real first product increment without the Operation phase\", 23 of 33.",
+    "source": "docs/guide/workflow-profiles.md:30",
+    "documented": "\"A real first product increment without the Operate phase\", 22 of 33.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17559,8 +17559,8 @@
     "input": "poc",
     "state": "fresh",
     "meaning": "the person means: start proof-of-concept work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:29",
-    "documented": "\"Testing feasibility with the smallest useful implementation path\", 8 of 33.",
+    "source": "docs/guide/workflow-profiles.md:31",
+    "documented": "\"Testing feasibility with the smallest useful implementation path\", 7 of 33.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17588,8 +17588,8 @@
     "input": "refactor",
     "state": "fresh",
     "meaning": "the person means: start refactor work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:31",
-    "documented": "\"Improving existing code without changing product behavior\", 10 of 33.",
+    "source": "docs/guide/workflow-profiles.md:33",
+    "documented": "\"Improving existing code without changing product behavior\", 9 of 33.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17617,8 +17617,8 @@
     "input": "infra",
     "state": "fresh",
     "meaning": "the person means: start infrastructure work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:32",
-    "documented": "\"Environments, IaC, deployment foundations, or cost work\", 13 of 33.",
+    "source": "docs/guide/workflow-profiles.md:34",
+    "documented": "\"Environments, IaC, deployment foundations, or cost work\", 15 of 33.",
     "expected": {
       "engine": {
         "kinds": [
@@ -17646,7 +17646,7 @@
     "input": "security-patch",
     "state": "fresh",
     "meaning": "the person means: start security-patch work (they will describe it next)",
-    "source": "docs/guide/workflow-profiles.md:33",
+    "source": "docs/guide/workflow-profiles.md:35",
     "documented": "\"A CVE or focused vulnerability response\", 10 of 33.",
     "expected": {
       "engine": {
@@ -18388,11 +18388,11 @@
   {
     "id": "doc-173-f",
     "category": "doc-example",
-    "input": "--phase construction --scope bugfix",
+    "input": "--phase build --scope bugfix",
     "state": "fresh",
-    "meaning": "the person means: start bugfix work at Construction; the agent asks once what they want built",
+    "meaning": "the person means: start bugfix work at Build; the agent asks once what they want built",
     "source": "help output:90",
-    "documented": "\"Jump to construction with bugfix scope\".",
+    "documented": "\"Jump to build with bugfix scope\".",
     "expected": {
       "engine": {
         "kinds": [
@@ -18418,7 +18418,7 @@
     "state": "work-open",
     "meaning": "the person means: jump the open work to Build with the bugfix plan",
     "source": "help output:90",
-    "documented": "\"Jump to construction with bugfix scope\".",
+    "documented": "\"Jump to build with bugfix scope\".",
     "expected": {
       "engine": {
         "kinds": [

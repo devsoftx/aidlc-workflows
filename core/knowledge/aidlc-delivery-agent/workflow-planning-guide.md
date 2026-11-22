@@ -38,7 +38,7 @@ Heuristics for Bolt sequencing:
 - **Risk-first** (Boehm, Spiral Model) — sequence the highest-uncertainty Bolts early so decisions are calibrated before dependent work commits.
 - **Value-first** — ship Bolts in value order when risk is low and value delivery is the dominant constraint.
 
-The chosen heuristic is captured in `risk-and-sequencing-rationale.md`, alongside any deviation from 2.7's topological order.
+The chosen heuristic is captured in `risk-and-sequencing-rationale.md`, alongside any deviation from 2.6's topological order.
 
 ## Execution Plan Structure
 

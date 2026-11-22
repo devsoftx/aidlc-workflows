@@ -14,41 +14,63 @@ graph LR
         Z1 -.->|"3 stages"| Z4
     end
 
-    subgraph IDEATION["IDEATION (1.1-1.7)"]
+    subgraph DISCOVER["DISCOVER (1.1-1.8)"]
         I1["Intent Capture"]
-        I7["Approval & Handoff"]
-        I1 -.->|"7 stages"| I7
+        I8["Approval & Handoff"]
+        I1 -.->|"8 stages"| I8
     end
 
-    subgraph INCEPTION["INCEPTION (2.1-2.9)"]
-        N1["Reverse Engineering"]
-        N7["Delivery Planning"]
-        N1 -.->|"9 stages"| N7
+    subgraph DESIGN["DESIGN (2.1-2.12)"]
+        D1["Practices Discovery"]
+        D12["Infrastructure Design"]
+        D1 -.->|"8 stages once, then 4 per unit"| D12
     end
 
-    subgraph CONSTRUCTION["CONSTRUCTION (3.1-3.7)"]
-        C1["Functional Design"]
-        C7["CI Pipeline"]
-        C1 -.->|"5 stages per unit, then 2 once"| C7
+    subgraph BUILD["BUILD (3.1)"]
+        B1["Code Generation"]
     end
 
-    subgraph OPERATION["OPERATION (4.1-4.7)"]
-        O1["Deployment Pipeline"]
-        O7["Feedback & Optimization"]
-        O1 -.->|"7 stages"| O7
+    subgraph TEST["TEST (4.1-4.2)"]
+        T1["Build and Test"]
+        T2["Performance Validation"]
+        T1 -.->|"2 stages"| T2
+    end
+
+    subgraph SECURE["SECURE (5.1-5.3)"]
+        S1["Code Review"]
+        S3["Conformance Review"]
+        S1 -.->|"3 stages"| S3
+    end
+
+    subgraph DEPLOY["DEPLOY (6.1-6.4)"]
+        P1["CI Pipeline"]
+        P4["Deployment Execution"]
+        P1 -.->|"4 stages"| P4
+    end
+
+    subgraph OPERATE["OPERATE (7.1-7.3)"]
+        O1["Observability Setup"]
+        O3["Feedback & Optimization"]
+        O1 -.->|"3 stages"| O3
     end
 
     Z4 -->|"auto-proceed"| I1
-    I7 -->|"Verification Gate 1"| N1
-    N7 -->|"Verification Gate 2"| C1
-    C7 -->|"Verification Gate 3"| O1
-    O7 -.->|"Feedback Loop"| I1
+    I8 -->|"Verification Gate 1"| D1
+    D12 -->|"Verification Gate 2"| B1
+    B1 --> T1
+    T2 --> S1
+    S3 -->|"Verification Gate 3"| P1
+    P4 --> O1
+    O3 -.->|"Feedback Loop"| I1
 
     style INITIALIZATION fill:#f3e5f5,stroke:#9c27b0,color:#000
-    style IDEATION fill:#e8f5e9,stroke:#4caf50,color:#000
-    style INCEPTION fill:#e3f2fd,stroke:#2196f3,color:#000
-    style CONSTRUCTION fill:#fff3e0,stroke:#ff9800,color:#000
-    style OPERATION fill:#fce4ec,stroke:#e91e63,color:#000
+    style DISCOVER fill:#e8f5e9,stroke:#4caf50,color:#000
+    style DESIGN fill:#e3f2fd,stroke:#2196f3,color:#000
+    style BUILD fill:#fff3e0,stroke:#ff9800,color:#000
+    style TEST fill:#fff8e1,stroke:#ffb300,color:#000
+    style SECURE fill:#efebe9,stroke:#6d4c41,color:#000
+    style DEPLOY fill:#fce4ec,stroke:#e91e63,color:#000
+    style OPERATE fill:#f1f8e9,stroke:#689f38,color:#000
 ```
 
 ## Five Layers
@@ -61,7 +83,7 @@ graph LR
 - `aidlc-shared/` -- Principles, verification, brownfield safeguards, **audit event taxonomy** (canonical event registry), state template
 - `aidlc-<agent>-agent/` -- Per-agent methodology files (architecture patterns, testing strategies, etc.)
 
-**Skills** (`skills/aidlc/`) -- The orchestrator entry point (`SKILL.md`, with its `composer.md` annex read only when a workflow plan is composed), the static/recovery/governance protocol files plus five conditionally loaded reviewer/ensemble/Construction/swarm/learnings modules under `aidlc-common/protocols/`, and 33 stage files across 5 phase directories under `aidlc-common/stages/` (`initialization/`, `ideation/`, `inception/`, `construction/`, `operation/`).
+**Skills** (`skills/aidlc/`) -- The orchestrator entry point (`SKILL.md`, with its `composer.md` annex read only when a workflow plan is composed), the static/recovery/governance protocol files plus five conditionally loaded reviewer/ensemble/Construction/swarm/learnings modules under `aidlc-common/protocols/`, and 36 stage files across 8 phase directories under `aidlc-common/stages/` (`initialization/` for the 3 hidden setup stages, then `discover/`, `design/`, `build/`, `test/`, `secure/`, `deploy/`, `operate/`).
 
 **Hooks** (`hooks/`) -- Framework hooks for audit emission (PostToolUse on Write/Edit), session lifecycle (SessionStart, SessionEnd), state sync (PostToolUse on TaskUpdate), state validation (PreCompact), subagent tracking (SubagentStop), and statusline rendering. All framework files prefixed `aidlc-*.ts`.
 
@@ -108,7 +130,7 @@ Worked examples:
 - *"ALWAYS use Result<T,E> in service layer; NEVER throw"* — project-specific and loaded continuously (agents read it on every code-gen). Goes to `aidlc/spaces/<active-space>/memory/project.md`.
 - *"Trunk-based development is the recommended branching strategy"* — same for every project (framework opinion) and loaded continuously (read at delivery-planning). Goes to `aidlc/spaces/<active-space>/memory/org.md`.
 - *"The 5 common branching strategies and their trade-offs"* — same for every project (framework reference) and loaded continuously (aidlc-pipeline-deploy-agent reads when discovering branching strategy). Goes to `.claude/knowledge/aidlc-pipeline-deploy-agent/branching-strategies.md`.
-- *"This run's requirements analysis"* — project-specific and per-workflow (each run produces fresh analysis). Goes to `<record>/inception/requirements-analysis/`.
+- *"This run's requirements analysis"* — project-specific and per-workflow (each run produces fresh analysis). Goes to `<record>/design/requirements-analysis/`.
 - *"State in the worktree hosting the payments Unit mid-Construction"* — project-specific and per-workflow (regenerated for each swarm-mode Bolt). Goes to that worktree's copy of the record dir, `.aidlc/worktrees/bolt-7c31e9a0_payments/<record>/aidlc-state.md`. The [Bolt identity](../../core/knowledge/aidlc-shared/worktree-info-schema.md#bolt-identity) uses the same intent UUID suffix as Unit claims.
 
 ### Sub-categories of harness config (top row)
@@ -131,9 +153,9 @@ Two cases that look like configuration but aren't:
 
 ### Cross-row promotion — the practices-discovery exception
 
-Most stages write to one row. A few stages write to both, with the cross-row write gated by team affirmation. **Practices-discovery (Inception 2.2) is the only stage that does this.** Its outputs are:
+Most stages write to one row. A few stages write to both, with the cross-row write gated by team affirmation. **Practices-discovery (Design 2.1) is the only stage that does this.** Its outputs are:
 
-- `<record>/inception/practices-discovery/team-practices.md` — per-workflow audit trail (bottom row).
+- `<record>/design/practices-discovery/team-practices.md` — per-workflow audit trail (bottom row).
 - On affirmation, content is copied to the space memory layer — `aidlc/spaces/<active-space>/memory/team.md` AND `memory/project.md` — team-authored harness config (top-right cell).
 
 The audit-trail copy proves what was affirmed in this run; the space memory copy becomes the team's standing configuration that every future workflow loads.
@@ -160,11 +182,11 @@ If any of the three is false, default to per-workflow-only.
 
 **Inline stages** -- The conductor reads the lead agent's flat file (e.g., `agents/aidlc-architect-agent.md`) and knowledge from `knowledge/[agent]/` for persona framing, then executes the stage directly in conversation. This allows real-time user interaction: asking questions, resolving ambiguity, and iterating on artifacts before approval.
 
-Twenty-nine stages use inline execution, including all three Initialization stages (Workspace Scaffold, Workspace Detection, State Init — all run deterministically inside `aidlc-utility intent-create`), all Ideation stages, six Inception stages (Requirements Analysis, Refined Mockups, Domain Design, Units Generation, Contract Design, Delivery Planning), six Construction stages (Functional Design, NFR Requirements, NFR Design, Infrastructure Design, Build and Test, CI Pipeline), and all Operation stages. Note: Build and Test (3.6) runs once after all units are complete, not per-unit.
+Thirty-two stages use inline execution, including all three Initialization stages (Workspace Scaffold, Workspace Detection, State Init — all run deterministically inside `aidlc-utility intent-create`), seven Discover stages (all but Reverse Engineering), ten Design stages (Requirements Analysis, Refined Mockups, Domain Design, Units Generation, Contract Design, Delivery Planning, and the per-Unit Functional Design, NFR Requirements, NFR Design, Infrastructure Design), and every Test, Secure, Deploy and Operate stage. Note: Build and Test (4.1) runs once after all units are complete, not per-unit.
 
 **Subagent stages** -- The conductor prepares context (prior artifacts, project description, workspace findings) and delegates to a Claude Code Task tool subagent. The subagent executes autonomously and returns a structured summary. This is used for stages that benefit from focused, independent work without user interaction during execution. If a subagent call fails, the conductor retries once with a reduced-context prompt, then offers the user inline execution or skip-and-revisit as fallback options.
 
-Four stages use dispatched execution: Reverse Engineering (2.1, `mode: pipeline` — developer scan then architect synthesis-and-write), Practices Discovery (2.2, `mode: subagent` — pipeline-deploy lead draft, mutually blind quality/developer/devsecops spokes, human interview, lead integration), User Stories (2.4, `mode: mob` — product lead draft plus design/developer/quality contribution rounds), and Code Generation (3.5, focused developer subagent for the build; the plan step before the person's approval runs inline, in the conductor's own context, and the step says so). With collaborators off (every shipped scope except `enterprise`), the first three run their lead agent alone. The complete topology is 29 inline / 2 subagent / 1 pipeline / 1 mob. Workspace Detection (0.2) runs deterministically inside `aidlc-utility intent-create`, not as a subagent.
+Four stages use dispatched execution: Reverse Engineering (1.4, `mode: pipeline` — developer scan then architect synthesis-and-write), Practices Discovery (2.1, `mode: subagent` — pipeline-deploy lead draft, mutually blind quality/developer/devsecops spokes, human interview, lead integration), User Stories (2.3, `mode: mob` — product lead draft plus design/developer/quality contribution rounds), and Code Generation (3.1, focused developer subagent for the build; the plan step before the person's approval runs inline, in the conductor's own context, and the step says so). With collaborators off (every shipped scope except `enterprise`), the first three run their lead agent alone. The complete topology is 32 inline (the three Initialization stages among them) / 2 subagent / 1 pipeline / 1 mob. Workspace Detection (0.2) runs deterministically inside `aidlc-utility intent-create`, not as a subagent.
 
 ```mermaid
 flowchart LR
@@ -830,16 +852,16 @@ dist/claude/.claude/
         |   +-- workspace-scaffold.md
         |   +-- workspace-detection.md
         |   +-- state-init.md
-        +-- ideation/
+        +-- discover/
         |   +-- intent-capture.md
         |   +-- market-research.md
         |   +-- feasibility.md
+        |   +-- reverse-engineering.md
         |   +-- scope-definition.md
         |   +-- team-formation.md
         |   +-- rough-mockups.md
         |   +-- approval-handoff.md
-        +-- inception/
-        |   +-- reverse-engineering.md
+        +-- design/
         |   +-- practices-discovery.md
         |   +-- requirements-analysis.md
         |   +-- user-stories.md
@@ -848,21 +870,27 @@ dist/claude/.claude/
         |   +-- units-generation.md
         |   +-- contract-design.md
         |   +-- delivery-planning.md
-        +-- construction/
         |   +-- functional-design.md
         |   +-- nfr-requirements.md
         |   +-- nfr-design.md
         |   +-- infrastructure-design.md
+        +-- build/
         |   +-- code-generation.md
+        +-- test/
         |   +-- build-and-test.md
+        |   +-- performance-validation.md
+        +-- secure/
+        |   +-- code-review.md
+        |   +-- security-review.md
+        |   +-- conformance-review.md
+        +-- deploy/
         |   +-- ci-pipeline.md
-        +-- operation/
-            +-- deployment-pipeline.md
-            +-- environment-provisioning.md
-            +-- deployment-execution.md
+        |   +-- deployment-pipeline.md
+        |   +-- environment-provisioning.md
+        |   +-- deployment-execution.md
+        +-- operate/
             +-- observability-setup.md
             +-- incident-response.md
-            +-- performance-validation.md
             +-- feedback-optimization.md
 ```
 
@@ -1061,9 +1089,9 @@ readers read the rows they share once (`copiedAuditBlocks` in
 
 3. **Two-link Reverse Engineering pipeline** -- Reverse Engineering (`mode: pipeline`) uses a developer subagent for code scanning, then an architect subagent for synthesis and the artifact writes. The conductor acts as the bus (subagents cannot spawn subagents in Claude Code), passing the developer's code scan results to the architect - the chain topology working as designed.
 
-4. **State tracking via aidlc-state.md** -- A single markdown state file tracks stage completion, current status, workspace context, scope configuration, execution plan, and runtime state (revision counts and Construction settings, including the receipt-bound `Construction Verification Command`). Stages report outcomes to the orchestration engine; its internal state transition updates the file, emits lifecycle audit rows, and routes atomically. Stage prose never edits lifecycle checkboxes directly. The PreCompact hook validates the state file structure before context compaction. Stage-level task IDs are resolved at runtime via `TaskList` (matching by subject like "Inception - Requirements Analysis") rather than stored in the state file -- this is more robust after context compaction since it reflects actual task system state.
+4. **State tracking via aidlc-state.md** -- A single markdown state file tracks stage completion, current status, workspace context, scope configuration, execution plan, and runtime state (revision counts and Construction settings, including the receipt-bound `Construction Verification Command`). Stages report outcomes to the orchestration engine; its internal state transition updates the file, emits lifecycle audit rows, and routes atomically. Stage prose never edits lifecycle checkboxes directly. The PreCompact hook validates the state file structure before context compaction. Stage-level task IDs are resolved at runtime via `TaskList` (matching by subject like "Design - Requirements Analysis") rather than stored in the state file -- this is more robust after context compaction since it reflects actual task system state.
 
-5. **Stage protocol as shared contract** -- All 33 stages load `stage-protocol.md` for approval gates, question format (tri-mode: Guide Me / Edit File / Chat), completion messages, and state tracking. Recovery and phase governance remain conditional files; reviewer, ensemble, Construction, swarm, and §13 learnings machinery live in five additional conditional modules selected by `directive.protocol_modules`. The learnings module owns the diary and ritual; when absent, neither runs. This preserves consistent behavior without paying the rare-path context cost on every stage.
+5. **Stage protocol as shared contract** -- All 36 stages load `stage-protocol.md` for approval gates, question format (tri-mode: Guide Me / Edit File / Chat), completion messages, and state tracking. Recovery and phase governance remain conditional files; reviewer, ensemble, Construction, swarm, and §13 learnings machinery live in five additional conditional modules selected by `directive.protocol_modules`. The learnings module owns the diary and ritual; when absent, neither runs. This preserves consistent behavior without paying the rare-path context cost on every stage.
 
 6. **Two-tier knowledge architecture** -- Methodology knowledge ships with the framework in `knowledge/` (shared principles + per-agent methodology). User-managed team knowledge lives at the space level in `aidlc/spaces/<space>/knowledge/` (a sibling of the space's `intents/`), created empty by the engine and populated by the team. This separates framework upgrades from team customization.
 
@@ -1075,7 +1103,7 @@ readers read the rows they share once (`copiedAuditBlocks` in
 
 10. **Self-learning loop** -- When a human corrects agent behavior, the correction can become a persistent Rule. The §13 Learnings Ritual (tool-as-actor: `aidlc-learnings.ts` surfaces and persists; the user confirms) writes each confirmed learning as a practice into the active space memory layer — `aidlc/spaces/<active-space>/memory/project.md` (default), one-click promote to `memory/team.md` — applying from the next stage delivery of the in-flight workflow — or scaffolds a Sensor, which binds at the next stage-graph compile. See [Rule System](08-rule-system.md).
 
-11. **Phase boundary verification** -- Traceability checks run at the end of Ideation, Inception and Construction (the Initialization->Ideation transition has none), written by the phase's last stage to `<record>/verification/`. This catches missing requirements-to-design links, orphaned artifacts, and inconsistencies before downstream stages build on incomplete foundations.
+11. **Phase boundary verification** -- Traceability checks run at three phase boundaries (Discover->Design, Design->Build and Build->Deploy; the Initialization->Discover transition has none), written to `<record>/verification/` by Approval and Handoff, Delivery Planning and CI Pipeline. This catches missing requirements-to-design links, orphaned artifacts, and inconsistencies before downstream stages build on incomplete foundations.
 
 12. **Hook-based audit logging** -- A PostToolUse hook on Write/Edit operations automatically logs artifact creation and modification to the intent's `audit/` shards. A PreCompact hook validates state file structure before context compaction. A SubagentStop hook logs subagent completions. The 134-event taxonomy (defined in `knowledge/aidlc-shared/audit-format.md`; see [State Machine](12-state-machine.md) for the emitter registry) enables post-hoc analysis -- key events include `STAGE_STARTED`, `STAGE_COMPLETED`, `DECISION_RECORDED`, `SCOPE_CHANGED`, and `RULE_LEARNED`.
 

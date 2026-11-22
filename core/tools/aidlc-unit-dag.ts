@@ -36,7 +36,7 @@ export function validateUnitName(name: string): string | null {
 // The unit-kind enum: what a Unit of Work IS, so the engine can prune the
 // per-unit construction design matrix to the artifacts that actually apply.
 // A spec unit owes no scalability doc, a packaging unit no business-logic
-// model. Authored once at the 2.7 gate on the units-generation edge block and
+// model. Authored once at the 2.6 gate on the units-generation edge block and
 // confirmed by the human; consumed by the stage-schema validator (which shares
 // this constant) and the engine's produces filter. Missing kind = full matrix
 // (conservative default, zero behaviour change for untagged units).
@@ -252,7 +252,7 @@ function computeBatches(edges: UnitDependencyEdge[]): string[][] | null {
 // Parse the required fenced ```yaml edge block out of a
 // unit-of-work-dependency.md body and compute the topological batch DAG.
 //
-// The block shape, authored once at the 2.7 gate (knowledge work by the
+// The block shape, authored once at the 2.6 gate (knowledge work by the
 // LLM, behind a human approval gate):
 //
 //   ```yaml

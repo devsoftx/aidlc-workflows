@@ -14,10 +14,13 @@ aidlc/spaces/<active-space>/memory/
 ├── team.md
 ├── project.md
 └── phases/
-    ├── ideation.md
-    ├── inception.md
-    ├── construction.md
-    └── operation.md
+    ├── discover.md
+    ├── design.md
+    ├── build.md
+    ├── test.md
+    ├── secure.md
+    ├── deploy.md
+    └── operate.md
 ```
 
 The layout consolidates team-authored harness config (formerly in a separate practices namespace) and self-learning guardrails (formerly two-deep) into a single active space memory directory at `aidlc/spaces/<active-space>/memory/`.

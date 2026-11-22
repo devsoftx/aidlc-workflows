@@ -23,6 +23,6 @@ imports them as the matching phase rule.
 
 ## Traceability
 
-- Do not introduce new requirements in inception without documenting their origin
+- Do not introduce new requirements during Design without documenting their origin
 
 ## Corrections

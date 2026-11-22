@@ -66,7 +66,7 @@ my-project/
 │       │       └── 260624-export-bug/           ◷ an in-flight intent
 │       │           ├── aidlc-state.md             where this intent is in the lifecycle
 │       │           ├── audit/                     the decision trail
-│       │           └── inception/requirements-analysis/requirements.md   …artifacts
+│       │           └── design/requirements-analysis/requirements.md   …artifacts
 │       │
 │       └── payments-team/        another SPACE (another team) — identical shape
 │           └── memory/  knowledge/  codekb/  intents/
@@ -154,7 +154,7 @@ before starting a second intent alongside the first:
  > 1. Part of the active work
       Continue the current workflow
    2. Separate new piece of work
-      Set it up alongside the current one as "bugfix" work (6 stages, 6 approval gates) without changing it
+      Set it up alongside the current one as "bugfix" work (7 stages, 7 approval gates) without changing it
    3. Reshape the active work
       Change how the remaining plan is shaped
    4. Type something.
@@ -440,7 +440,7 @@ directory (the bar and the separator dot shown in plain text; the line is cut at
 the window's edge):
 
 ```text
-[AIDLC] default - inventory-rest-api - IDEATION [##--------] 1/4 > Feasibility -- Architect Age...
+[AIDLC] default - inventory-rest-api - DISCOVER [##--------] 1/4 > Feasibility -- Architect Age...
 ```
 
 A single-team user, having only `default`, sees no space name at all. On any

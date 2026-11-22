@@ -128,7 +128,7 @@ view throughout every workflow.
 | **Rules** (prose, prescriptive) | Mutable; framework PR or learning-loop writes | `aidlc/spaces/<space>/memory/<scope>.md` (filename-derived; org/team/project attach to every stage; compiled paths name `default`, delivery reads the active space) | `stage-graph.json` per-node `rules_in_context` | Orchestrator (resolved view); Claude Code auto-load reads source for in-context prose |
 | **Sensors** (manifests, verification checks) | Mutable; framework PR or learning-loop writes (manifest authored once; stages import by id) | `.claude/sensors/aidlc-<id>.md` | `stage-graph.json` per-node `sensors_applicable` | Dispatcher reads resolved list at stage entry; PostToolUse fires from it |
 | Workflow execution telemetry | Per-workflow, accumulating | `audit/` shards · `memory.md` · Bolt forks | `<record>/runtime-graph.json` | Doctor, gate ritual, future cross-workflow observer |
-| Per-stage observation log | Per-stage-run | `<record>/<phase>/<stage>/memory.md` (a per-Unit stage: `<record>/construction/<unit>/<stage>/memory.md`) | (no compile — read directly) | Gate ritual at this stage's gate |
+| Per-stage observation log | Per-stage-run | `<record>/<phase>/<stage>/memory.md` (a per-Unit stage: `<record>/<phase>/<unit>/<stage>/memory.md`) | (no compile — read directly) | Gate ritual at this stage's gate |
 
 Two compiled artefacts with different homes. `stage-graph.json`, in the
 harness's `tools/data/`, serves every workflow in the project and carries
@@ -231,13 +231,13 @@ also carries its manifest's `matches` glob):
 ```json
 {
   "slug": "requirements-analysis",
-  "phase": "inception",
+  "phase": "design",
   "sensors": ["required-sections", "upstream-coverage"],
   "rules_in_context": [
     {"path": "aidlc/spaces/default/memory/org.md", "scope": "org"},
     {"path": "aidlc/spaces/default/memory/team.md", "scope": "team"},
     {"path": "aidlc/spaces/default/memory/project.md", "scope": "project"},
-    {"path": "aidlc/spaces/default/memory/phases/inception.md", "scope": "phase"}
+    {"path": "aidlc/spaces/default/memory/phases/design.md", "scope": "phase"}
   ],
   "sensors_applicable": [
     {"id": "required-sections", "path": ".claude/sensors/aidlc-required-sections.md",

@@ -2,24 +2,24 @@
 
 > **Agent deep dive** · [User Guide](../00-introduction.md) › [Agents](../06-agents.md) › [deep dives](README.md) · Technical reference: [delivery-agent](../../reference/agents/delivery-agent.md)
 
-The aidlc-delivery-agent is your engineering manager and delivery planner. It translates scope definitions and architectural designs into actionable delivery plans with team assignments, build ordering, and sequencing. It owns the initiative brief that bridges Ideation into Construction and ensures smooth phase handoffs with full traceability.
+The aidlc-delivery-agent is your engineering manager and delivery planner. It translates scope definitions and architectural designs into actionable delivery plans with team assignments, build ordering, and sequencing. It owns the initiative brief that bridges Discover into Design and ensures smooth phase handoffs with full traceability.
 
-The aidlc-delivery-agent leads three stages spanning Ideation and Inception. It is the agent responsible for ensuring that what has been designed can actually be delivered, and in what order.
+The aidlc-delivery-agent leads three stages spanning Discover and Design. It is the agent responsible for ensuring that what has been designed can actually be delivered, and in what order.
 
 ## Stages Led
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 1.5 Team Formation | Ideation | Assesses required skills and composes team structure |
-| 1.7 Approval & Handoff | Ideation | Compiles initiative brief for phase gate approval |
-| 2.9 Delivery Planning | Inception | Plans the Bolt sequence (economic ordering through 2.7's DAG), with team allocation, risk/sequencing rationale, and external dependency map |
+| 1.6 Team Formation | Discover | Assesses required skills and composes team structure |
+| 1.8 Approval & Handoff | Discover | Compiles initiative brief for phase gate approval |
+| 2.8 Delivery Planning | Design | Plans the Bolt sequence (economic ordering through 2.6's DAG), with team allocation, risk/sequencing rationale, and external dependency map |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 1.4 Scope Definition | Ideation | Validates scope against delivery feasibility |
-| 2.7 Units Generation | Inception | Aligns unit granularity with planning needs |
+| 1.5 Scope Definition | Discover | Validates scope against delivery feasibility |
+| 2.6 Units Generation | Design | Aligns unit granularity with planning needs |
 
 ## What to Expect
 

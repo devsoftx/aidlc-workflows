@@ -11,7 +11,7 @@ designs that Build works from.
 The phase has twelve stages, numbered 2.1 through 2.12. Requirements Analysis
 (2.2), Units Generation (2.6) and Delivery Planning (2.8) are ALWAYS stages; the
 other nine are CONDITIONAL. Delivery Planning is the phase's capstone: it
-produces the detailed execution plan for Build and Operate.
+produces the detailed execution plan for Build through Operate.
 
 Reviews: the Product Lead reviews Requirements Analysis, User Stories and
 Refined Mockups, and the Architecture Reviewer reviews Domain Design, Units
@@ -591,12 +591,12 @@ checklists.
 For non-UI initiatives (API-only, backend), the stage refines interaction
 diagrams into an API developer experience specification.
 
-When Stage 1.6 (Rough Mockups) did not run, as in classic and workshop, it
+When Stage 1.7 (Rough Mockups) did not run, as in classic and workshop, it
 designs the refined mockups from the stories and requirements.
 
 ### Inputs
 
-- Rough mockups from Stage 1.6 (`<record>/discover/rough-mockups/`), if
+- Rough mockups from Stage 1.7 (`<record>/discover/rough-mockups/`), if
   exists
 - User stories from Stage 2.3 (`<record>/design/user-stories/`)
 - Requirements from Stage 2.2
@@ -1033,7 +1033,7 @@ All Design phase artifacts:
 - Units from Stage 2.6 (`<record>/design/units-generation/`)
 - Contract summary from Stage 2.7, if produced
   (`<record>/design/contract-design/contract-summary.md`)
-- Team formation from Stage 1.5
+- Team formation from Stage 1.6
   (`<record>/discover/team-formation/`), if exists
 
 ### Steps
@@ -1054,7 +1054,7 @@ All Design phase artifacts:
    - Bundling of Units of Work into Bolts
    - Definition of Done for each Bolt
    - Confidence hypothesis per Bolt — what will shipping it prove
-   - Mob-to-Bolt assignment (references teams from 1.5 when available;
+   - Mob-to-Bolt assignment (references teams from 1.6 when available;
      AI-only when it did not run)
    - External dependencies (APIs, data, approvals) that gate specific Bolts
    - Key risk items to tackle earliest
@@ -1131,7 +1131,7 @@ All artifacts written to `<record>/design/delivery-planning/`:
 | File                                  | Contents                                                    |
 |---------------------------------------|-------------------------------------------------------------|
 | `bolt-plan.md`                        | Ordered Bolt sequence; per-Bolt Units of Work, walking-skeleton marker, Definition of Done, confidence hypothesis, expected demo |
-| `team-allocation.md`                  | Bolt-to-mob assignment; Program Board analog when team count > 1; AI-only assignment when 1.5 did not run |
+| `team-allocation.md`                  | Bolt-to-mob assignment; Program Board analog when team count > 1; AI-only assignment when 1.6 did not run |
 | `risk-and-sequencing-rationale.md`    | WSJF / risk-first / walking-skeleton-first / value-first justification for the Bolt ordering |
 | `external-dependency-map.md`          | Gated items (external APIs, data availability, approval lead times, external-team hand-offs) mapped to consuming Bolts |
 | `delivery-planning-questions.md`      | Clarifying questions with `[Answer]:` tags (input artifact) |
@@ -1150,7 +1150,7 @@ Changes**. The user can override stage inclusion/exclusion at this gate.
 ### Notes
 
 - **Phase boundary stage.** This is the second of three phase boundary stages
-  (after 1.7 and before 6.1). The verification check validates
+  (after 1.8 and before 6.1). The verification check validates
   Requirements-to-Stories-to-Architecture alignment.
 - **Economic vs topological sequencing.** Stage 2.6 produces the dependency
   DAG (topological order falls out as descriptive geometry). Stage 2.8
@@ -1174,8 +1174,8 @@ Changes**. The user can override stage inclusion/exclusion at this gate.
 - The aidlc-architect-agent validates that the proposed Bolt sequence respects
   dependencies defined in the component catalogue (`components.md`) and the
   unit-of-work-dependency artifact.
-- Team allocation draws from the Team Formation artifacts (Stage 1.5) if
-  they exist; when 1.5 is SKIP (mvp, classic, workshop), every Bolt is planned
+- Team allocation draws from the Team Formation artifacts (Stage 1.6) if
+  they exist; when 1.6 is SKIP (mvp, classic, workshop), every Bolt is planned
   for aidlc-developer-agent (AI). The allocation is a plan, not the decision.
 
 
@@ -1699,10 +1699,10 @@ later phases:
 
 ### Handoff to Build
 
-Upon approval at Stage 2.8, the framework transitions to the Build
-phase. `bolt-plan.md` stays the approved planning artifact — economic
-sequence, multi-Unit Bolt grouping, Definition of Done, confidence
-hypothesis, and ownership. The engine does **not** consume it for Unit
+Upon approval at Stage 2.8, the framework moves on to the Unit walk: the
+per-Unit design stages (2.9–2.12) and Build. `bolt-plan.md` stays the
+approved planning artifact — economic sequence, multi-Unit Bolt grouping,
+Definition of Done, confidence hypothesis, and ownership. The engine does **not** consume it for Unit
 grouping or walk order. Runtime batches are computed from
 `unit-of-work-dependency.md` (2.6).
 
@@ -1730,8 +1730,8 @@ completion approval.
 
 Existing workflows without checkpoints, design-only work, no-Unit flows, and
 team-owned gates retain their existing behavior. Preserve explicit iteration
-choices. After all applicable Unit work, Build and Test and optional CI Pipeline
-run once across the solution. See the Construction protocol for metadata routing
+choices. After all applicable Unit work, Build and Test, the Secure reviews and
+optional CI Pipeline run once across the solution. See the Construction protocol for metadata routing
 and completion-only bookkeeping.
 
 See the [Unit Walk](build.md#unit-walk) for the per-unit flow.

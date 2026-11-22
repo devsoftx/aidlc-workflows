@@ -28,7 +28,7 @@ conductor based on workflow context:
 |------|----------|-------------|
 | `stage-protocol.md` | Core protocol: approval gates, completion messages, question flow, state tracking, agent persona loading, depth guidance, terminology, content validation, and the conditional §13 module pointer | Every stage (mandatory) |
 | `stage-protocol-recovery.md` | Error Recovery + Change Handling | On session resume, or when a change event is detected mid-stage |
-| `stage-protocol-governance.md` | Phase Boundary Verification (§13) | At phase boundaries (1.7->2.1, 2.9->3.1, 3.7->4.1) |
+| `stage-protocol-governance.md` | Phase Boundary Verification (§13) | At the phase boundary checks (Approval & Handoff 1.8, Delivery Planning 2.8, CI Pipeline 6.1) |
 | `stage-protocol-learnings.md` | §13 diary, surfacing, human learning question, admission check, and persistence | Only when `directive.protocol_modules` lists `learnings` |
 | `stage-protocol-reviewer.md` | Reviewer dispatch, receipts, and terminal ordering | When the directive names an effective reviewer |
 | `stage-protocol-reviewer-unit.md` | A Unit's review: membership, per-Unit inputs and source, read scope, dispatch record | When `directive.protocol_modules` lists `reviewer-unit`: a Unit's review and every invoke-swarm |
@@ -52,8 +52,8 @@ The conductor's Routing section defines the loading rules:
 - **`stage-protocol-recovery.md`**: load on session resume or when a change
   event is detected mid-stage. This keeps error recovery and change handling
   out of context for normal forward-progress stages.
-- **`stage-protocol-governance.md`**: load at phase boundaries
-  (1.7->2.1, 2.9->3.1, 3.7->4.1).
+- **`stage-protocol-governance.md`**: load at the phase boundary checks
+  (Approval & Handoff 1.8, Delivery Planning 2.8, CI Pipeline 6.1).
 - **`stage-protocol-learnings.md`**: load only when `protocol_modules` includes `learnings`. With `ceremony.learnings: off`, keep no diary and skip the entire ritual.
 - **`stage-protocol-reviewer.md`**: load when `protocol_modules` includes
   `reviewer`, or when the directive carries a reviewer. **`stage-protocol-reviewer-unit.md`**
@@ -86,11 +86,12 @@ is handled by the conditional §13 Learnings Ritual in `stage-protocol-learnings
 ## Overview
 
 The stage protocol is the mandatory behavioral contract governing how every
-stage in the AI-DLC workflow executes. All 33 stages across five phases
-(Initialization, Ideation, Inception, Construction, Operation) follow this protocol without
-exception. The conductor (`SKILL.md`) hands stage execution to agent
-personas; the protocol stays independent of phase and agent, defining
-the structural rules that wrap around any stage's domain-specific work.
+stage in the AI-DLC workflow executes. All 36 stages (the three Initialization
+setup stages and the 33 runnable stages across seven phases: Discover, Design,
+Build, Test, Secure, Deploy, Operate) follow this protocol without exception.
+The conductor (`SKILL.md`) hands stage execution to agent personas; the
+protocol stays independent of phase and agent, defining the structural rules
+that wrap around any stage's domain-specific work.
 
 The protocol covers: approval gates, completion messages, question flow, state
 tracking, agent persona loading, conditional reviewer/ensemble/Construction/
@@ -209,7 +210,7 @@ turn for that reply.
 
 **Build-and-Test failure loop-back:** the loop-back protocol module
 (`aidlc-common/protocols/stage-protocol-loopback.md`, "Build-and-Test failure
-loop-back") holds the bounded 3.6 to 3.5 repair loop with its
+loop-back") holds the bounded 4.1 to 3.1 repair loop with its
 impact-estimated halt-and-ask question. The loop-back reopens Code Generation for the Unit(s) the diagnosis names;
 every other Unit keeps its finished work, reviews and approvals, and only a
 cause that spans every Unit reopens it for all of them. It has two
@@ -232,7 +233,7 @@ the plan content.
 
 ### Conditional Approve-and-Add Option
 
-Ideation and Inception stages (phases 1-2) may offer to add a previously
+Discover and Design stages (phases 1-2) may offer to add a previously
 skipped stage together with the approval, as one answer:
 
 ```
@@ -281,7 +282,7 @@ flowchart TD
     APPROVE["Approve"]
     CHANGES["Request Changes"]
     ACCEPT["Accept as-is\n(escape hatch)"]
-    ADD_STAGE["Add Skipped Stage\n(Ideation/Inception only)"]
+    ADD_STAGE["Add Skipped Stage\n(Discover/Design only)"]
 
     REVISION_COUNT{"Revision\ncycle >= 3?"}
     NOTE_2ND["After 2nd revision:\nnote that escape hatch\nactivates next cycle"]
@@ -388,7 +389,7 @@ Progress: [done] of [planned] stages done. Next: [Next Stage Name].
 
 The engine counts completed stages only; a skipped stage leaves the plan rather
 than counting as done. Example from a Claude Code run on the `mvp` plan, after
-Intent Capture: `Progress: 1 of 19 stages done. Next: Feasibility & Constraints.`
+Intent Capture: `Progress: 1 of 21 stages done. Next: Feasibility & Constraints.`
 
 ---
 
@@ -635,7 +636,7 @@ ask targeted follow-up. Do NOT proceed until resolved.
 ### Plan and Question File Location
 
 Files are co-located with stage artifacts, not centralized. Example:
-`<record>/inception/user-stories/user-stories-questions.md`. All inputs,
+`<record>/design/user-stories/user-stories-questions.md`. All inputs,
 questions, and outputs for a stage live in the same directory.
 
 ---
@@ -682,7 +683,7 @@ Only when `TaskCreate`/`TaskUpdate`, or the plan or todo tool the harness's
 skill maps them to, is in the agent's tool list; otherwise the agent skips
 task transitions silently. Rules: task must be `in_progress`
 for spinner to display. Update BEFORE
-reading stage file. Applies to all 33 stages. If task IDs lost (compaction),
+reading stage file. Applies to every stage. If task IDs lost (compaction),
 use `TaskList` to find by subject. For skipped stages:
 `TaskUpdate({ taskId: [ID], status: "completed", description: "[original] -- Skipped: [reason]" })`
 
@@ -891,16 +892,17 @@ existence, then carries on from the last incomplete stage with no resume menu.
 | Phase/Stage Group | Context to Load |
 |-------------------|----------------|
 | **Initialization (0.1-0.3)** | Workspace filesystem; `aidlc-state.md` |
-| **Ideation (1.1-1.7)** | `<record>/ideation/` artifacts; guardrails |
-| **Inception -- RE** | Per-repo RE artifacts at `aidlc/spaces/<active-space>/codekb/<repo>/`; ideation scope/feasibility |
-| **Inception -- Practices Discovery** | Preserve the lead draft and existing contribution files; dispatch only missing quality/developer/devsecops spokes, then continue with the human interview and lead integration |
-| **Inception -- Requirements** | Per-repo `codekb/` artifacts (if performed); requirements-analysis docs |
-| **Inception -- Design** | Requirements; user stories; domain-design docs |
-| **Inception -- Delivery Planning** | All inception artifacts; delivery-planning if partial |
-| **Construction -- Code Gen** | Current unit's design artifacts, story design, acceptance criteria, prior code |
-| **Construction -- Build/Test** | Current unit's code, test plans, acceptance criteria, build config |
-| **Construction -- CI/Infra** | Infrastructure design; code generation outputs |
-| **Operation (4.1-4.7)** | Construction outputs; operation artifacts so far; for 4.4+, deployment outputs from 4.1-4.3 |
+| **Discover (1.1-1.8)** | `<record>/discover/` artifacts; guardrails |
+| **Discover -- RE** | Per-repo RE artifacts at `aidlc/spaces/<active-space>/codekb/<repo>/`; the discover artifacts before it (intent, feasibility) |
+| **Design -- Practices Discovery** | Preserve the lead draft and existing contribution files; dispatch only missing quality/developer/devsecops spokes, then continue with the human interview and lead integration |
+| **Design -- Requirements** | Per-repo `codekb/` artifacts (if performed); requirements-analysis docs |
+| **Design -- Design stages** | Requirements; user stories; domain-design docs |
+| **Design -- Delivery Planning** | All design artifacts; delivery-planning if partial |
+| **Build -- Code Gen** | Current unit's design artifacts, story design, acceptance criteria, prior code |
+| **Test -- Build/Test** | Current unit's code, test plans, acceptance criteria, build config |
+| **Secure (5.1-5.3)** | Every unit's code summary and build-and-test results; secure artifacts so far |
+| **Deploy -- CI/Infra** | Infrastructure design; code generation outputs |
+| **Deploy and Operate (6.2-7.3)** | Built code, infrastructure design and CI pipeline outputs; deploy and operate artifacts so far; for 7.1+, deployment outputs from 6.2-6.4 |
 
 ### Re-run Behavior
 
@@ -985,7 +987,7 @@ Affect prior stages:
 
 New requirements or scope-level modifications:
 1. Record the request with `aidlc engine audit append-raw 'Change Request: <brief>' '<body>'`
-2. Return to Requirements Analysis (2.3) or Delivery Planning (2.9)
+2. Return to Requirements Analysis (2.2) or Delivery Planning (2.8)
 3. Re-plan from that point
 4. If change affects stage selection (e.g., `poc` -> `feature`), use the
    scope/recompose command so the engine updates the plan atomically
@@ -1028,17 +1030,20 @@ and problem complexity.
 
 | Scope | Default Depth | Test Strategy | Typical Stages | Notes |
 |-------|--------------|---------------|---------------:|-------|
-| enterprise | Comprehensive | Comprehensive | 33 | All stages |
-| feature | Standard | Standard | 33 | All stages |
-| mvp | Standard | Standard | 23 | Skip all Operation |
-| poc | Minimal | Minimal | ~8 | Initialization + Ideation + core Inception |
-| bugfix | Minimal | Minimal | 9 | Targeted |
-| refactor | Minimal | Minimal | 10 | Targeted |
-| infra | Standard | Standard | ~15 | Infra-focused |
-| security-patch | Minimal | Minimal | ~10 | Security-focused |
-| classic | Standard | Standard | 18 | The implicit default: no Ideation, Inception and Construction through Build and Test, no CI Pipeline or Operation |
-| workshop | Standard | Minimal | 26 | Facilitated lifecycle with teaching test floor |
-| express | Minimal | Minimal | 10 | Requirements to conditional deploy, reviewers disabled |
+| enterprise | Comprehensive | Comprehensive | 36 | All stages |
+| feature | Standard | Standard | 35 | All stages but Conformance Review |
+| mvp | Standard | Standard | 25 | Through CI Pipeline; no deployment or Operate |
+| poc | Minimal | Minimal | 10 | Intent Capture, Requirements, then build, test and review |
+| bugfix | Minimal | Minimal | 11 | Targeted |
+| refactor | Minimal | Minimal | 12 | Targeted |
+| infra | Standard | Standard | 18 | Infra-focused |
+| security-patch | Minimal | Minimal | 13 | Security-focused |
+| classic | Standard | Standard | 21 | The implicit default: Reverse Engineering, then Design through Secure without Performance Validation; no other Discover stage, no Deploy or Operate |
+| workshop | Standard | Minimal | 28 | Facilitated lifecycle with teaching test floor |
+| express | Minimal | Minimal | 12 | Requirements to conditional deploy, reviewers disabled |
+
+The counts include the three Initialization stages, as the compiled scope grid
+lists them (`aidlc engine gen scope-table`).
 
 User can override depth or test strategy at any approval gate.
 
@@ -1074,11 +1079,11 @@ brief analysis, skip optional stages:
 | Term | Definition |
 |------|-----------|
 | **AI-DLC** | AI-Driven Development Life Cycle -- the methodology this system implements |
-| **Phase** | Top-level grouping: Initialization, Ideation, Inception, Construction, Operation |
+| **Phase** | Top-level grouping: Initialization (setup), then Discover, Design, Build, Test, Secure, Deploy, Operate |
 | **Stage** | A discrete step within a phase (e.g., Intent Capture, Code Generation) |
 | **Scope** | Controls which stages execute and at what depth (enterprise, feature, mvp, poc, bugfix, refactor, infra, security-patch, classic, workshop, express) |
 | **Depth** | Artifact detail scale: Minimal, Standard, or Comprehensive |
-| **Unit of Work** | An independently implementable package of features; the Construction iteration unit. Each Unit runs the per-Unit stages 3.1-3.5; Build and Test (3.6) and CI Pipeline (3.7) then run once across all Units. |
+| **Unit of Work** | An independently implementable package of features; the Construction iteration unit. Each Unit runs the per-Unit stages 2.9-2.12 and 3.1; Build and Test (4.1) and the stages after it then run once across all Units. |
 | **Service** | A deployable process or container (API server, worker, frontend app) |
 | **Module** | Code-level organizational boundary within a service (package, namespace) |
 | **Component** | Logical building block within a module (class, function group, UI component) |
@@ -1168,13 +1173,13 @@ investigation before marking complete.
 | Rule | Detail |
 |------|--------|
 | Current-unit only | Pass only current unit's design artifacts |
-| Summarize inception | 1-2 line summary per inception artifact with path; subagent Reads if needed |
+| Summarize design | 1-2 line summary per design artifact with path; subagent Reads if needed |
 | Always include | Specific task instructions and relevant state/artifact paths; the harness agent config loads persona and knowledge |
 | Large knowledge sets | Name especially relevant file paths; do not paste persona or knowledge prose into the prompt |
 
 ### Failure Recovery
 
-1. **Retry once** with reduced context (summarize inception, current unit only)
+1. **Retry once** with reduced context (summarize design artifacts, current unit only)
 2. If retry fails, offer user: "Run inline" (execute in orchestrator) or
    "Skip and revisit" (mark incomplete, continue)
 3. Record the failure with `aidlc engine audit append-raw 'Error: <brief>' '<body>'`
@@ -1553,8 +1558,9 @@ rules feed into.
 
 ## Phase Boundary Verification
 
-At each phase transition, traceability verification ensures completed-phase
-outputs are sufficient and consistent for the next phase.
+At each of the three phase boundaries that carry a check, traceability
+verification ensures completed-phase outputs are sufficient and consistent for
+the next phase.
 
 *(`stage-protocol-governance.md` Section 13 — distinct from the Learnings
 Ritual, which is `stage-protocol-learnings.md` Section 13)*
@@ -1565,9 +1571,9 @@ Ritual, which is `stage-protocol-learnings.md` Section 13)*
 
 | Boundary | Verified |
 |----------|---------|
-| **Ideation -> Inception** | Intent captured, scope defined, feasibility confirmed, initiative approved |
-| **Inception -> Construction** | All requirements traced to designs, units defined, delivery plan approved |
-| **Construction -> Operation** | All units built/tested, CI pipeline configured, infrastructure designed |
+| **Discover -> Design** | Intent captured, scope defined, feasibility confirmed, initiative approved |
+| **Design -> Build** | All requirements traced to designs, units defined, delivery plan approved |
+| **Build -> Deploy** | All units built/tested, CI pipeline configured, infrastructure designed |
 
 ### Traceability Matrix
 

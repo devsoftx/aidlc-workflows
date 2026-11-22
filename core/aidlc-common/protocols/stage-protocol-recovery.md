@@ -97,7 +97,7 @@ When resuming, load context appropriate to the current phase and stage type:
 
 **DISCOVER — RE (Reverse Engineering) stages:**
 - Load `aidlc/spaces/<active-space>/codekb/<repo>/` artifacts (codebase analysis, component inventory)
-- Load discover artifacts (scope, feasibility) for context
+- Load the discover artifacts before it (intent capture, feasibility) for context
 
 **DESIGN — Practices Discovery:**
 - Load `aidlc/spaces/<active-space>/codekb/<repo>/` artifacts (brownfield evidence inputs)
@@ -140,6 +140,10 @@ When resuming, load context appropriate to the current phase and stage type:
 - Load all code outputs for the current unit
 - Load test plans and acceptance criteria
 - Load build configuration artifacts
+
+**SECURE — Code Review, Security Review, Conformance Review:**
+- Load the code summaries and build-and-test results for every unit
+- Load `<record>/secure/` artifacts completed so far
 
 **DEPLOY — CI Pipeline / Infrastructure:**
 - Load infrastructure design artifacts
@@ -250,7 +254,7 @@ instruction**. Supplying material is not a request to advance.
 
 Where the material is foundational to an existing codebase (not just an
 example), the designed home for studying it is the Reverse Engineering stage
-(2.1), reached via the normal scope/jump flow — not a fast-forward to Code
+(1.4), reached via the normal scope/jump flow — not a fast-forward to Code
 Generation.
 
 ### Minor changes (within current stage):

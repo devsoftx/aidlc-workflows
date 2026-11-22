@@ -32,7 +32,7 @@ headings. When a template applies (below), its `##` headings are required.
 A failed result carries `message`, one plain sentence saying what is
 missing, which the detail file keeps for the agent to correct from.
 
-For `unit-of-work-dependency.md` (units-generation 2.7), additionally
+For `unit-of-work-dependency.md` (units-generation 2.6), additionally
 requires the fenced `yaml` `units:` edge block to be present, well-formed,
 and cycle-free — the machine-readable DAG the runtime compiler parses into
 the batch fan-out. The check reports `edge_block` as `ok`, `absent`,

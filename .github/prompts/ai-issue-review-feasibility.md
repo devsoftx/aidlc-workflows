@@ -25,7 +25,7 @@ Review:
   expose credentials, execute code, or misuse tools.
 
 Do not design the implementation. Do not require low-level choices that are
-appropriately left to inception or construction. Report only omissions that
+appropriately left to design or build. Report only omissions that
 change feasibility, compatibility, cost, ownership, or the definition of done.
 
 Write concise candidate findings for the final judge. End with exactly the

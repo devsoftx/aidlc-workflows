@@ -10,7 +10,8 @@
 | Disallowed Claude Code Tools | Task |
 
 The aidlc-architect-agent is the central design authority, handling the most
-architecturally complex reasoning tasks across three phases of the lifecycle.
+architecturally complex reasoning tasks across two phases of the lifecycle,
+Discover and Design.
 It carries the `judgment` tier alongside the other seven high-judgment
 agents — the three `templated` agents (delivery, pipeline-deploy, operations)
 produce dominantly templated planning, CI/CD, and runbook output.

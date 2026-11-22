@@ -4,24 +4,26 @@
 
 The aidlc-compliance-agent is your GRC (Governance, Risk, and Compliance) analyst. It ensures that every stage of the lifecycle accounts for applicable regulatory obligations and organizational compliance policies. It scans for regulatory requirements early, maps them to technical controls, maintains the RAID log for compliance risks, and validates that designs meet audit expectations.
 
-The aidlc-compliance-agent operates exclusively in a support role — it does not lead any stages. Instead, it contributes compliance expertise across four stages spanning Ideation, Construction, and Operation.
+The aidlc-compliance-agent leads one stage, Conformance Review in the Secure phase, where it checks the delivered code against the project's written obligations. It also contributes compliance expertise to four stages spanning Discover, Design, and Deploy.
 
 ## Stages Led
 
-The aidlc-compliance-agent does not lead any stages.
+| Stage | Phase | Description |
+|-------|-------|-------------|
+| 5.3 Conformance Review | Secure | Checks the delivered code, tests and deployment settings against the requirements, rules and regulatory obligations; each obligation not met is a blocker for deployment |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 1.3 Feasibility & Constraints | Ideation | Regulatory constraint identification, compliance feasibility, RAID log initialization |
-| 3.2 NFR Requirements | Construction | Regulatory NFR mapping, compliance control requirements, data classification |
-| 3.4 Infrastructure Design | Construction | Data residency validation, encryption requirements, IAM compliance controls |
-| 4.2 Environment Provisioning | Operation | Compliance controls validation, audit logging, regulatory configuration checks |
+| 1.3 Feasibility & Constraints | Discover | Regulatory constraint identification, compliance feasibility, RAID log initialization |
+| 2.10 NFR Requirements | Design | Regulatory NFR mapping, compliance control requirements, data classification |
+| 2.12 Infrastructure Design | Design | Data residency validation, encryption requirements, IAM compliance controls |
+| 6.3 Environment Provisioning | Deploy | Compliance controls validation, audit logging, regulatory configuration checks |
 
 ## What to Expect
 
-When the aidlc-compliance-agent is active (as a supporting agent alongside the lead), it focuses on regulatory frameworks, data classification, and control mapping. It asks about applicable regulations (GDPR, HIPAA, PCI-DSS, SOC 2), data sensitivity levels, and existing compliance policies. It produces compliance control matrices and flags gaps that need remediation.
+When the aidlc-compliance-agent is active (leading Conformance Review, or as a supporting agent alongside another stage's lead), it focuses on regulatory frameworks, data classification, and control mapping. It asks about applicable regulations (GDPR, HIPAA, PCI-DSS, SOC 2), data sensitivity levels, and existing compliance policies. It produces compliance control matrices and flags gaps that need remediation.
 
 ## How It Collaborates
 

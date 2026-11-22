@@ -197,8 +197,8 @@ checkpoint** at the start of the Unit walk; skeleton-on offers it after the real
 checkpoint, unless a choice already exists. This approval preference does not
 choose swarm execution. Plan Approval and enabled summary confirmation remain
 human stops; summary confirmation applies only when
-`directive.ceremony.summary_confirmation === "on"`. Build and Test (4.1) and optional
-CI Pipeline (6.1) run once across the result.
+`directive.ceremony.summary_confirmation === "on"`. Build and Test (4.1), the Secure
+reviews (5.1–5.3) and optional CI Pipeline (6.1) run once across the result.
 
 ```mermaid
 flowchart TD
@@ -222,16 +222,17 @@ flowchart TD
     MORE{"More Units?"}
     BOOK["Completion-only stage bookkeeping"]
     S41["4.1 Build and Test — once"]
+    SEC["5.1–5.3 Code, Security and Conformance Review — once"]
     S61["6.1 CI Pipeline — conditional, once"]
     VG3{{"Build-to-Deploy verification"}}
     START --> NEXT --> PER_UNIT --> VERIFY --> CHECKPOINT --> MORE
     MORE -->|Yes| NEXT
     MORE -->|No| BOOK --> S41
-    S41 --> S61 --> VG3
-    S41 -.->|CI skipped| VG3
+    S41 --> SEC --> S61 --> VG3
+    SEC -.->|CI skipped| VG3
 ```
 
-<!-- Text fallback: For an eligible new solo workflow, complete each Unit's applicable design and Code Generation stages in DAG order, preserving human Plan Approval and any enabled summary confirmation. Verify the working result and approve its checkpoint: always human for the skeleton, according to recorded policy for ordinary Units. After all Units, settle bookkeeping and run Build and Test plus optional CI Pipeline. Other workflow paths retain their existing policy. -->
+<!-- Text fallback: For an eligible new solo workflow, complete each Unit's applicable design and Code Generation stages in DAG order, preserving human Plan Approval and any enabled summary confirmation. Verify the working result and approve its checkpoint: always human for the skeleton, according to recorded policy for ordinary Units. After all Units, settle bookkeeping and run Build and Test, the Secure reviews and optional CI Pipeline. Other workflow paths retain their existing policy. -->
 
 ---
 

@@ -6,8 +6,8 @@ examples:
   - compliance-rules.md
 description: >
   Security engineer and DevSecOps specialist responsible for threat modelling, security requirements, secure design review,
-  and security pipeline integration. Supports NFR Requirements, Infrastructure Design, Build and Test, and Environment
-  Provisioning, and serves as a dispatched collaborator in the Practices Discovery hub-and-spoke ensemble.
+  and security pipeline integration. Leads the Security Review stage. Supports NFR Requirements, Infrastructure Design,
+  Build and Test, and Environment Provisioning, and serves as a dispatched collaborator in the Practices Discovery hub-and-spoke ensemble.
 disallowedTools: Task
 tier: judgment
 ---

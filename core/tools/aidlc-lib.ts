@@ -656,7 +656,7 @@ export const KNOWN_PER_UNIT_STAGES: ReadonlySet<string> = new Set([
 
 // True when a stage runs once per Unit of Work. Reads the node's own
 // `for_each` marker (source of truth); the known-set membership is a defensive
-// cross-check so a typo'd marker on one of the five canonical stages still
+// cross-check so a typo'd marker on one of the five known per-Unit stages still
 // resolves per-unit. Structural param so both a GraphStage and a bare
 // {slug, for_each} record satisfy it.
 export function isPerUnitStage(e: { slug: string; for_each?: string }): boolean {

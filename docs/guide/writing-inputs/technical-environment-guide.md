@@ -35,7 +35,7 @@ document belongs where every stage reads it: your space's team knowledge.
    [Rules and the Learning Loop](../09-rules-and-the-learning-loop.md).
 
 Do this before the first `/aidlc` of the piece of work. When the plan includes
-Practices Discovery, early in Inception, it asks how your team works; on a new
+Practices Discovery, early in Design, it asks how your team works; on a new
 project, the answers already in this document are quick to confirm.
 
 ---

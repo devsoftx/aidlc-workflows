@@ -210,7 +210,7 @@ function stageInOutput(text: string): string | null {
 const RECORD_PHASES = PHASES.filter((phase) => phase !== "initialization").join("|");
 const RECORD_PATH = new RegExp(`/intents/[^/]+/(${RECORD_PHASES})/([^/]+)/(?:([^/]+)/)?`);
 
-/** The stage a record path belongs to: `<record>/<phase>/<stage>/` or `<record>/build/<unit>/<stage>/`. */
+/** The stage a record path belongs to: `<record>/<phase>/<stage>/`, or `<record>/<phase>/<unit>/<stage>/` for a per-Unit stage. */
 export function stageOfPath(path: string): string | null {
   const p = path.replace(/\\/g, "/");
   const m = RECORD_PATH.exec(p);

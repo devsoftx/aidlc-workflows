@@ -6,7 +6,7 @@
 // tokens, no process boundary. The bytes on disk ARE the contract.
 //
 // SUBJECT: the bounded Build & Test → Code Generation failure loop-back in the
-// conditional Construction protocol module.
+// conditional loop-back protocol module.
 // Four surfaces carry the contract:
 //   1. dist/claude/.claude/aidlc-common/stages/test/build-and-test.md
 //      — Step 9's 4-rung failure-escalation ladder, the `## Loop-Back Log`
@@ -177,13 +177,13 @@ describe("t305 construction protocol module — Build-and-Test failure loop-back
     expect(mismatched).toEqual([]);
   });
 
-  test('the "### Build-and-Test failure loop-back (3.6 → 3.5)" heading exists (anchored H3)', () => {
-    expect(/^### Build-and-Test failure loop-back \(3\.6 → 3\.5\)$/m.test(LOOPBACK_PROTOCOL)).toBe(true);
+  test('the "### Build-and-Test failure loop-back (4.1 → 3.1)" heading exists (anchored H3)', () => {
+    expect(/^### Build-and-Test failure loop-back \(4\.1 → 3\.1\)$/m.test(LOOPBACK_PROTOCOL)).toBe(true);
   });
 
   test("the loop-back is its own module; the Construction halt-and-ask stays in the construction module", () => {
     expect(CONSTRUCTION_PROTOCOL).toContain("**Halt-and-ask on failure**");
-    expect(CONSTRUCTION_PROTOCOL).not.toContain("### Build-and-Test failure loop-back (3.6 → 3.5)");
+    expect(CONSTRUCTION_PROTOCOL).not.toContain("### Build-and-Test failure loop-back (4.1 → 3.1)");
     expect(LOOPBACK_PROTOCOL.startsWith("# Loop-back Protocol Module\n")).toBe(true);
   });
 
@@ -262,7 +262,7 @@ describe("t305 construction protocol module — Build-and-Test failure loop-back
       "aidlc-common/protocols/stage-protocol-loopback.md";
     expect(MAIN_PROTOCOL).toContain(modulePath);
     expect(LOOPBACK_PROTOCOL).toContain(
-      "### Build-and-Test failure loop-back (3.6 → 3.5)",
+      "### Build-and-Test failure loop-back (4.1 → 3.1)",
     );
     expect(STAGE).toContain(modulePath);
     expect(CODE_GENERATION).toContain(modulePath);

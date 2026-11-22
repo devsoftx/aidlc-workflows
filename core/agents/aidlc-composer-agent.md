@@ -24,8 +24,8 @@ planning**, not keyword pattern-matching:
 > minimum viable workflow that solves this intent safely and economically in
 > this codebase?'"
 
-A **scope** is an EXECUTE/SKIP grid over the full stage set (33 stages today;
-the compiled stage graph is authoritative). You compose the grid by
+A **scope** is an EXECUTE/SKIP grid over the full stage set (36 stages today,
+three of them setup; the compiled stage graph is authoritative). You compose the grid by
 principled estimation; the deterministic engine runs whatever grid is approved.
 Single-shot is valid only when it IS the minimum viable workflow (clear
 codebase, small affected subgraph, strong tests, resolved assumptions). Each
@@ -209,7 +209,7 @@ routes on it.
 | 21–40 | Focused workflow | 8–15 | refactor, security-patch, infra |
 | 41–60 | Standard workflow | 15–22 | mvp, custom |
 | 61–80 | Comprehensive workflow | 22–28 | feature, custom |
-| 81–100 | Full ceremony | 28–32 | enterprise |
+| 81–100 | Full ceremony | 28–33 | enterprise |
 
 **These are guidelines, not mappings.** Two tasks with ARS=50 may need different
 stages based on WHICH components are high. In particular, a HIGH score built
@@ -393,13 +393,16 @@ target component is HIGH enough that reduction has meaningful value.
 | infrastructure-design | CSU, R | Infrastructure changes are needed |
 | code-generation | (core) | Always — the implementation |
 | build-and-test | VE | Always — verification |
+| performance-validation | VE, R | Performance is an explicit NFR |
+| code-review | VE | Always — the review of the built code |
+| security-review | R | Always — the security review of the built code |
+| conformance-review | CSU, R | Written requirements, standards, or regulatory obligations the code must meet |
 | ci-pipeline | VE | CI needs setup or modification |
 | deployment-pipeline | R | Deployment is non-trivial or new |
 | environment-provisioning | R | New environments needed |
 | deployment-execution | R | Deployment needs coordination |
 | observability-setup | VE | Observability needs creation (new service) |
 | incident-response | R | Runbook/playbook needed (new operational surface) |
-| performance-validation | VE, R | Performance is an explicit NFR |
 | feedback-optimization | VE | Post-launch iteration planned |
 
 #### Economy Discipline — Fold Overlapping Stages (esp. Discover & Design)
@@ -448,7 +451,7 @@ When a stage is KEPT at Minimal depth (row 3 above), remember in in-flight
 re-estimation (Step 5) that it only produced its unique dimensions, not the
 full component reduction; re-score from what its artifact actually resolved.
 
-**Example — Intent Capture (1.1) vs Requirements Analysis (2.3):**
+**Example — Intent Capture (1.1) vs Requirements Analysis (2.2):**
 
 Both target IAE and UA. Decomposing:
 - Intent Capture UNIQUE: stakeholder map, initiative trigger/framing, scope
@@ -459,7 +462,7 @@ Both target IAE and UA. Decomposing:
 - OVERLAP: business context, success metrics, scope assessment
 
 Resolution: KEEP BOTH when Requirements Analysis's unique dimensions (functional
-spec, NFRs, constraints) are consumed by downstream EXECUTE stages (application-
+spec, NFRs, constraints) are consumed by downstream EXECUTE stages (domain-
 design, functional-design, nfr-requirements). Set Intent Capture focus to its
 unique outputs (stakeholder map, trigger, scope signal) and instruct
 Requirements Analysis to SKIP its business-context dimension (already resolved
@@ -521,8 +524,8 @@ high-ARS intent from inflating to full ceremony.
 |-----------|-------|--------|
 | Low | 1 | intent-capture, scope-definition, approval-handoff |
 | Low-Medium | 2 | market-research, team-formation, rough-mockups, practices-discovery |
-| Medium | 3 | feasibility, requirements-analysis, user-stories, refined-mockups, units-generation, delivery-planning, ci-pipeline |
-| Medium-High | 4 | reverse-engineering, domain-design, contract-design, functional-design, nfr-requirements, nfr-design, infrastructure-design, build-and-test |
+| Medium | 3 | feasibility, requirements-analysis, user-stories, refined-mockups, units-generation, delivery-planning, code-review, conformance-review, ci-pipeline |
+| Medium-High | 4 | reverse-engineering, domain-design, contract-design, functional-design, nfr-requirements, nfr-design, infrastructure-design, build-and-test, security-review |
 | High | 5 | code-generation, deployment-pipeline, environment-provisioning, deployment-execution, observability-setup, performance-validation |
 
 A stage with cost=4 is justified when its target ARS component is > 0.4

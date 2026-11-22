@@ -226,8 +226,8 @@ describe("kiro-acp-drive calibration (known-answer)", () => {
         expect(statusCall).toBeDefined();
         const out = probeOutput(r, probe);
         // The status tool renders DISPLAY names (probe-verified): the planted
-        // slug requirements-analysis renders "Requirements Analysis (2.3)".
-        expect(out).toContain("Requirements Analysis (2.3)");
+        // slug requirements-analysis renders "Requirements Analysis (2.2)".
+        expect(out).toContain("Requirements Analysis (2.2)");
         expect(out).toContain("Scope:          feature");
         // Known-answer through the full path: the planted Completed count.
         expect(out).toContain("12/");

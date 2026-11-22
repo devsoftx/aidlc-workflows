@@ -277,7 +277,7 @@ The welcome message is rendered at session start via `companyAnnouncements` in `
 | 2.11 NFR Design | `observability-design.md` | Per plan, service units only |
 | 2.12 Infrastructure Design | `infrastructure-specification.md`, `monitoring-design.md`, `cicd-pipeline.md` | Per plan, per unit (by kind) |
 
-Stages 2.9-2.12 repeat per unit of work. Artifacts go in `design/{unit-name}/{stage-name}/`. Code Generation (3.1) repeats per unit of work too, in `build/{unit-name}/code-generation/`. Build and Test (4.1) and CI Pipeline (6.1) run once after all units.
+Stages 2.9-2.12 repeat per unit of work. Artifacts go in `design/{unit-name}/{stage-name}/`. Code Generation (3.1) repeats per unit of work too, in `build/{unit-name}/code-generation/`. Build and Test (4.1), the Secure reviews (5.1-5.3) and CI Pipeline (6.1) run once after all units.
 
 The four design stages (2.9-2.12) prune their artifacts to each unit's **kind** (tagged in 2.6's edge block: `service`, `spec`, `ui`, `packaging`, or `library`). A `spec` unit owes no scalability doc, a `packaging` unit no functional spec; a unit left untagged receives the full matrix above. Which artifact applies to which kind is stage frontmatter data (`produces_kinds`, see [Stage definition](../reference/15-stage-definition.md)). A unit for which none of a stage's artifacts apply is complete for that stage with zero files.
 
@@ -365,10 +365,10 @@ Each stage reads artifacts from prior stages as input. Key dependency chains:
 - **Intent Capture** artifacts flow into Market Research, Feasibility, Scope Definition, and Rough Mockups
 - **Requirements Analysis** artifacts flow into User Stories, Domain Design, and all per-unit stages
 - **Domain Design** and **Units Generation** artifacts flow into all per-unit stages
-- **All per-unit artifacts** flow into Build and Test and CI Pipeline
+- **All per-unit artifacts** flow into Build and Test, the Secure reviews and CI Pipeline
 - **Infrastructure Design** artifacts flow into the Deploy and Operate stages
 
-Each stage's own inputs are listed on its phase page in the Developer Reference: [Initialization](../reference/04-stages/initialization.md), [Discover](../reference/04-stages/discover.md), [Design](../reference/04-stages/design.md), [Test](../reference/04-stages/test.md), [Deploy](../reference/04-stages/deploy.md), and [Operate](../reference/04-stages/operate.md).
+Each stage's own inputs are listed on its phase page in the Developer Reference: [Initialization](../reference/04-stages/initialization.md), [Discover](../reference/04-stages/discover.md), [Design](../reference/04-stages/design.md), [Build](../reference/04-stages/build.md), [Test](../reference/04-stages/test.md), [Secure](../reference/04-stages/secure.md), [Deploy](../reference/04-stages/deploy.md), and [Operate](../reference/04-stages/operate.md).
 
 ---
 

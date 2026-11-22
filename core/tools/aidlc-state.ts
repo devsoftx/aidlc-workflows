@@ -187,7 +187,6 @@ import {
   unitSkippedUnits,
   PHASE_NUMBERS,
   PHASES,
-  PHASE_LABELS,
   isUnitLoopStage,
   UNIT_RECORD_PHASES,
   loadStageGraphAll,
@@ -2458,7 +2457,8 @@ function handleSyncUnitScopeStage(args: string[]): void {
       error(`Stage "${slug}" is not a per-unit Construction stage.`);
     }
     content = setField(content, "Current Stage", slug);
-    content = setField(content, "Lifecycle Phase", PHASE_LABELS.build);
+    // The Units' stages span Design and Build: the phase is the stage's own.
+    content = setField(content, "Lifecycle Phase", stage.phase.toUpperCase());
     content = setField(content, "In Progress", slug);
     content = setField(content, "Active Agent", stage.lead_agent);
     if (getSlugState(content, slug) !== "completed") {

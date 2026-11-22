@@ -43,5 +43,6 @@ the production floor.
 ## Membership
 
 Keyword triggers: `workshop`, `lab`, `training`. Initialization, the
-design set, reverse-engineering, all of the unit loop, and all of deploy and operate execute; the
-other discover stages are SKIP.
+design set, reverse-engineering, all of the unit loop and of test, code-review,
+security-review, and all of deploy and operate execute; the other discover
+stages and conformance-review are SKIP.

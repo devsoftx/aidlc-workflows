@@ -284,7 +284,7 @@ describe("t133 Bolt-DAG runtime compile (migrated from t133-bolt-dag-compile.sh,
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 });
 
-describe("t133 edge-block sensor (aidlc-sensor-required-sections, units-generation 2.7)", () => {
+describe("t133 edge-block sensor (aidlc-sensor-required-sections, units-generation 2.6)", () => {
   // ---- 7-9: sensor edge-block validation -----------------------------------
   test("sensor: valid block → pass:true, edge_block:ok [.sh test 7]", () => {
     const proj = makeProject();

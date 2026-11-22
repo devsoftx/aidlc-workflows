@@ -55,7 +55,7 @@ where possible, and derives functional-design business-rule orphans.
 |---------|---------------|
 | **Discover → Design** | Intent → Scope → Intent Backlog consistency; all scope items have feasibility backing |
 | **Design → Build** | Requirements → Stories → Architecture alignment; all stories trace to requirements; architecture covers all stories |
-| **Build → Operate** | Architecture → Code → Tests alignment; all code traces to design; test coverage against acceptance criteria |
+| **Build → Deploy** | Architecture → Code → Tests alignment; all code traces to design; test coverage against acceptance criteria |
 | **On demand** | Human can request verification at any point |
 | **Stage output write** | Validate the stage's element-level coverage and targets |
 

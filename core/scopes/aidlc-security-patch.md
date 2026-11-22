@@ -46,5 +46,6 @@ the three incremental scopes that skip the walking-skeleton ceremony.
 
 Keyword triggers: `security`, `CVE`, `vulnerability`, `patch`.
 Initialization, reverse-engineering, requirements-analysis,
-nfr-requirements, code-generation, build-and-test, deployment-pipeline,
-and deployment-execution execute; the rest is SKIP.
+nfr-requirements, code-generation, build-and-test, code-review,
+security-review, conformance-review, deployment-pipeline, and
+deployment-execution execute; the rest is SKIP.

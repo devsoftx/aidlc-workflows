@@ -93,7 +93,7 @@ For each STRIDE category, common AWS mitigations include:
 
 ## When to Threat Model
 
-- During design (Stage 3 of AI-DLC) before implementation begins.
+- During design (the Design phase of AI-DLC) before implementation begins.
 - When adding a new external integration or data flow.
 - When changing authentication or authorization mechanisms.
 - After a security incident, to update the model with newly discovered threats.

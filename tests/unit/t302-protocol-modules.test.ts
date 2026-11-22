@@ -490,7 +490,7 @@ describe("t302 learnings: the one question after a correction", () => {
 describe("t302 construction branches live in their own modules", () => {
   const MOVED: Array<[string, string]> = [
     ["checkpoint", "### Checkpoint verification and approval"],
-    ["loopback", "### Build-and-Test failure loop-back (3.6 \u2192 3.5)"],
+    ["loopback", "### Build-and-Test failure loop-back (4.1 \u2192 3.1)"],
     ["wave", "**Per-unit batch waves (optional, stage-major only).**"],
     ["swarm", "### 12b. Autonomous Code Generation Plan Contract"],
     ["collaborators", "### Collaborator contribution files (ensemble topologies)"],

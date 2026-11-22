@@ -221,9 +221,9 @@ absence alone is not a recovery grant. A checkpoint revision retains its
 ## Shaping what can run in parallel — the Bolt-DAG
 
 The swarm fans work out across Units, so the question "what can run at once?"
-is decided upstream, in inception, by the `units-generation` stage. That stage
+is decided upstream, in Design, by the `units-generation` stage. That stage
 produces `unit-of-work-dependency.md`
-(`core/aidlc-common/stages/inception/units-generation.md`
+(`core/aidlc-common/stages/design/units-generation.md`
 declares `produces: unit-of-work-dependency`), and inside that artifact a
 required fenced `yaml` edge block lists every Unit with its `depends_on` list.
 
@@ -254,15 +254,16 @@ uses the checkpoint-enabled or legacy path selected by its recorded state.
 | `code-generation` | once per Unit |
 
 For the four design stages the per-Unit coverage is further **kind-filtered**:
-each Unit's `kind` (tagged in the 2.7 edge block) selects, via the stage's
+each Unit's `kind` (tagged in the 2.6 edge block) selects, via the stage's
 `produces_kinds` map, which of its produces artifacts that Unit actually owes.
 The engine prunes both the run-stage directive's produces paths and the
 coverage check to that set, so a `spec` Unit is complete for infrastructure-
 design without a deployment doc and a `packaging` Unit is complete for
 functional-design with zero files. An untagged Unit keeps the full matrix.
 
-(The remaining two Construction stages, `build-and-test` and `ci-pipeline`, run
-once at the end across everything, so they are not part of the per-Unit fan-out.)
+(The stages after the Unit walk, from `build-and-test` in Test through the Secure
+reviews and `ci-pipeline` in Deploy, run once at the end across everything, so
+they are not part of the per-Unit fan-out.)
 
 **This parallel surface exists only for the scopes where `units-generation`
 runs** — `enterprise`, `feature`, `mvp`, `classic`, and `workshop`. The incremental scopes

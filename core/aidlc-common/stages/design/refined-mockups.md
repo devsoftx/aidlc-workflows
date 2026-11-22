@@ -54,7 +54,7 @@ outputs: mockups.md, interaction-spec.md, design-system-mapping.md, accessibilit
 - Read user stories from `<record>/design/user-stories/`
 - Read requirements from `<record>/design/requirements-analysis/`
 
-The classic scope skips rough-mockups by design (no Discover phase); when the wireframes and user-flow inputs are absent, design the refined mockups directly from the user stories and requirements — never invent the content of a missing artifact.
+The classic scope skips rough-mockups by design (it runs no Discover stage but reverse-engineering); when the wireframes and user-flow inputs are absent, design the refined mockups directly from the user stories and requirements — never invent the content of a missing artifact.
 
 ### Step 2: Generate Clarifying Questions
 

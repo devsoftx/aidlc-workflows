@@ -6727,10 +6727,13 @@ function settingEndsTurn(pd: string, scope: string, stateContent: string): boole
     if (openPendingDecision(pd, slug) !== null) return true;
     const walk = scope ? unitMajorWalkBeat(pd, scope, stateContent, slug) : null;
     if (walk !== null && walk.step.kind !== "work") return true;
-    const phase = (getField(stateContent, "Lifecycle Phase") ?? "").trim().toLowerCase();
+    // Each stage's questions sit under its own phase. In a Unit-by-Unit walk
+    // Current Stage, and so Lifecycle Phase, stays on the block's first stage
+    // while the step moves on into Build.
+    const phase = findStageBySlug(slug)?.phase ?? (getField(stateContent, "Lifecycle Phase") ?? "").trim().toLowerCase();
     if (phase.length === 0) return true;
     const dirs = [stageDir(pd, phase, slug)];
-    if (walk !== null && walk.step.kind === "work") dirs.push(join(docsRoot(pd), phase, walk.step.unit, walk.step.stage.slug));
+    if (walk !== null && walk.step.kind === "work") dirs.push(join(docsRoot(pd), walk.step.stage.phase, walk.step.unit, walk.step.stage.slug));
     // A questions file written after the person's last turn has not been in
     // front of them, so the agent goes on to ask it: a live run ended the turn
     // on a switch typed while the questions were written, and the person had

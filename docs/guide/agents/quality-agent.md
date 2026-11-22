@@ -4,28 +4,29 @@
 
 The aidlc-quality-agent is your QA engineer and performance specialist. It defines test strategy, generates test suites (unit, integration, contract, security), validates coverage against acceptance criteria, designs and executes load tests, and validates non-functional requirement targets. It ensures every implemented unit meets its acceptance criteria and the overall system meets quality gates.
 
-The aidlc-quality-agent leads two stages — one in Construction and one in Operation — and supports three additional stages. It has Bash access for running build tools, test commands, and performance testing utilities.
+The aidlc-quality-agent leads three stages — two in Test and one in Secure — and supports three additional stages. It has Bash access for running build tools, test commands, and performance testing utilities.
 
 ## Stages Led
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 3.6 Build and Test | Construction | Runs build, generates and executes test suites, validates quality gates |
-| 4.6 Performance Validation | Operation | Load testing, NFR validation matrix, capacity planning |
+| 4.1 Build and Test | Test | Runs build, generates and executes test suites, validates quality gates |
+| 4.2 Performance Validation | Test | Load testing, NFR validation matrix, capacity planning |
+| 5.1 Code Review | Secure | Reviews every unit's changed code for correctness, edge cases, readability and test coverage; lists the blockers to fix before deployment |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 2.2 Practices Discovery | Inception | Mutually blind testing-posture spoke when collaborators are on; writes its own contribution file |
-| 2.4 User Stories | Inception | Testability and acceptance-criteria voice in the mob when collaborators are on; writes its own contribution file |
-| 3.2 NFR Requirements | Construction | Defines testable quality attribute scenarios |
+| 2.1 Practices Discovery | Design | Mutually blind testing-posture spoke when collaborators are on; writes its own contribution file |
+| 2.3 User Stories | Design | Testability and acceptance-criteria voice in the mob when collaborators are on; writes its own contribution file |
+| 2.10 NFR Requirements | Design | Defines testable quality attribute scenarios |
 
 ## What to Expect
 
 When the aidlc-quality-agent is active, it generates build instructions and test suites, then executes them against the implemented code. During Build and Test, it runs the project's build system, executes unit tests, integration tests, and any additional test types appropriate for the project. It reports pass/fail results, coverage metrics, and quality gate status.
 
-During Performance Validation in the Operation phase, it designs and executes load tests, validates NFR targets (latency percentiles, throughput, availability), and produces an NFR validation matrix comparing targets to actuals.
+During Performance Validation in the Test phase, it designs and executes load tests, validates NFR targets (latency percentiles, throughput, availability), and produces an NFR validation matrix comparing targets to actuals.
 
 ## How It Collaborates
 

@@ -42,5 +42,5 @@ three incremental scopes that skip the walking-skeleton ceremony.
 
 Keyword triggers: `refactor`, `clean up`, `simplify`. Initialization,
 reverse-engineering, requirements-analysis, functional-design,
-code-generation, build-and-test, deployment-pipeline, and
-deployment-execution execute; the rest is SKIP.
+code-generation, build-and-test, code-review, security-review,
+deployment-pipeline, and deployment-execution execute; the rest is SKIP.

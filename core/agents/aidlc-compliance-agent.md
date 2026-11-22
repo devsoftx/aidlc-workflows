@@ -6,7 +6,7 @@ examples:
   - audit-requirements.md
 description: >
   GRC analyst and regulatory specialist responsible for compliance mapping, data classification, and risk assessment.
-  Support-only agent for Feasibility & Constraint Analysis and cross-cutting compliance validation.
+  Leads the Conformance Review stage. Supports Feasibility & Constraint Analysis and cross-cutting compliance validation.
 disallowedTools: Task
 tier: judgment
 ---

@@ -113,8 +113,8 @@ rather than the request.
 The agent reads your request and proposes a plan: a ready-made set of stages
 for this kind of work. The question names the plan, how many stages and
 approval gates it has, and how many stages repeat for each unit of work in
-Construction. For the inventory API the agent proposed `mvp`, 19 stages; a
-`feature` plan runs all 33. You can:
+Construction. For the inventory API the agent proposed `mvp`, 21 stages; an
+`enterprise` plan runs all 33. You can:
 
 - go ahead with the proposed plan;
 - use a different plan: the agent lists the other ready-made plans with their
@@ -136,27 +136,31 @@ piece of work in the active space and set it up.
 
 ### Stage 0.1: Workspace Scaffold
 
-The framework creates the record at `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` (the `<space>` is `default` unless you use a named space). It creates one folder per phase your plan actually runs, so the record shows the plan rather than every phase that exists. The inventory API's `mvp` plan has no Operation stages, so its record has no `operation/` folder (its top level, as listed after the first stage):
+The framework creates the record at `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` (the `<space>` is `default` unless you use a named space). It creates one folder per phase your plan actually runs, so the record shows the plan rather than every phase that exists. The inventory API's `mvp` plan has no Operate stages, so its record has no `operate/` folder (its top level, as listed after the first stage):
 
 ```text
 aidlc/spaces/default/intents/261013-inventory-rest-api/
   aidlc-state.md
   audit/
   initialization/
-  ideation/
-  inception/
-  construction/
+  discover/
+  design/
+  build/
+  test/
+  secure/
+  deploy/
   verification/
   project-description.json
 ```
 
-A `feature` plan runs all five phases; a `bugfix` plan skips Ideation but keeps
-its deployment stages, so `ideation/` is absent while `operation/` appears. The
-space's shared folders, such as `aidlc/spaces/default/knowledge/` for team
-knowledge, are created beside `intents/` at the same time.
+A `feature` plan runs all seven phases; an `infra` plan skips Discover but keeps
+its deployment and operations stages, so `discover/` is absent while `deploy/`
+and `operate/` appear. The space's shared folders, such as
+`aidlc/spaces/default/knowledge/` for team knowledge, are created beside
+`intents/` at the same time.
 
 Per-stage folders are not created up front. A stage's folder (for example
-`inception/requirements-analysis/`) appears the first time that stage writes an
+`design/requirements-analysis/`) appears the first time that stage writes an
 artifact, so the record only ever lists work that produced something.
 
 ### Stage 0.2: Workspace Detection
@@ -171,16 +175,16 @@ The orchestrator writes the intent's `aidlc-state.md` (under its record dir) wit
 
 ---
 
-## Ideation Phase (Interactive)
+## Discover Phase (Interactive)
 
-After Initialization, the workflow enters Ideation. Each stage from here on runs interactively with an approval gate.
+After Initialization, the workflow enters Discover. Each stage from here on runs interactively with an approval gate.
 
 ### Stage 1.1: Intent Capture (aidlc-product-agent)
 
 On Claude Code, when you chose AI-DLC's status line at setup (or turned it on with `/aidlc --statusline on`), the status line at the bottom of your terminal follows the work (Kiro and opencode use `/aidlc --status`; Codex uses `$aidlc --status` and its built-in `update_plan` progress display). In the inventory API run, one stage later, it read (the bar's block characters and the separator dot shown as plain text, and the model segment on the right left out):
 
 ```text
-[AIDLC] inventory-rest-api - IDEATION [##--------] 1/4 > Feasibility -- Architect Agent
+[AIDLC] inventory-rest-api - DISCOVER [##--------] 1/4 > Feasibility -- Architect Agent
 ```
 
 From the left: the piece of work (with more than one space, the space's name comes first), the current phase, the phase progress bar and ratio (both count the finished stages of this phase), the current stage, and the agent leading it. In Construction, `Unit N of M` takes the place of the bar. On the right, Claude Code's model, then `ctx:N%`, how much of the context window is used (shown when Claude Code reports it), and, once Claude Code has reported usage, the tokens in and out and a cost estimate for the active workflow and current session. Set `AIDLC_DISABLE_USAGE_TRACKING=1` to turn usage tracking (and that segment) off.
@@ -204,7 +208,7 @@ Then you see what the stage produced, what the review found, and the approval qu
 ```text
 Intent Capture & Framing is ready for your review. It produced intent-statement.md,
 stakeholder-map.md and intent-capture-questions.md (8 questions, all answered), in
-aidlc/spaces/default/intents/261013-inventory-rest-api/ideation/intent-capture/.
+aidlc/spaces/default/intents/261013-inventory-rest-api/discover/intent-capture/.
 
 Stage: Intent Capture & Framing
 Review outcome: Concerns remain for your decision.
@@ -259,32 +263,32 @@ on the revision process.
 After approval, a progress line appears:
 
 ```text
-Progress: 1 of 19 stages done. Next: Feasibility & Constraints.
+Progress: 1 of 21 stages done. Next: Feasibility & Constraints.
 ```
 
-### Remaining Ideation Stages
+### Remaining Discover Stages
 
-In a `feature` run the workflow continues through Market Research, Feasibility & Constraints, Scope Definition, Team Formation, Rough Mockups, and Approval & Handoff; a smaller plan runs fewer (the inventory API's `mvp` plan went from Intent Capture to Feasibility & Constraints). Each follows the same pattern: agent works, you review, you approve.
+In a `feature` run the workflow continues through Market Research, Feasibility & Constraints, Reverse Engineering, Scope Definition, Team Formation, Rough Mockups, and Approval & Handoff; a smaller plan runs fewer (the inventory API's `mvp` plan went from Intent Capture to Feasibility & Constraints). Each follows the same pattern: agent works, you review, you approve.
+
+Stage 1.4 (Reverse Engineering) runs only for **brownfield** projects (existing codebases), so the inventory API's empty folder skipped it. It runs in the background with no questions for you: with collaborators off (the default in every plan but `enterprise`), the aidlc-developer-agent scans the code and writes the nine code knowledge documents itself; with collaborators on, the developer scans and the aidlc-architect-agent then writes them. Either way you review the result at its approval gate.
 
 Some stages are **conditional** — they may be skipped based on your scope. When a stage is skipped, the orchestrator shows why and advances automatically.
 
 ---
 
-## Inception Phase
+## Design Phase
 
-Inception elaborates requirements and designs the solution. Stage 2.1 (Reverse Engineering) runs only for **brownfield** projects (existing codebases), so the inventory API's empty folder skipped it. It runs in the background with no questions for you: with collaborators off (the default in every plan but `enterprise`), the aidlc-developer-agent scans the code and writes the nine code knowledge documents itself; with collaborators on, the developer scans and the aidlc-architect-agent then writes them. Either way you review the result at its approval gate.
-
-The other Inception stages, from Requirements Analysis through Delivery Planning, work with you in the chat the way Intent Capture did. Practices Discovery and User Stories also bring in support agents when collaborators are on (see [Subagent Delegation](#subagent-delegation)).
+Design elaborates requirements and designs the solution. Its stages from Requirements Analysis through Delivery Planning work with you in the chat the way Intent Capture did. Practices Discovery and User Stories also bring in support agents when collaborators are on (see [Subagent Delegation](#subagent-delegation)). Its last four stages, Functional Design through Infrastructure Design (2.9-2.12), are done for each Unit of work, together with that Unit's Code Generation, as the next section describes.
 
 ---
 
-## Construction Phase
+## The Unit Walk (Design and Build)<a id="construction-phase"></a>
 
 For a new solo workflow that includes Unit decomposition and a source-producing
-Construction stage, the default is **unit-major, serial execution with verified
+Code Generation stage, the default is **unit-major, serial execution with verified
 Unit checkpoints**. One Unit goes through its applicable design stages and Code
 Generation before the next begins. A [Bolt](glossary.md) remains the delivery
-slice planned in 2.9; runtime order follows `unit-of-work-dependency.md` rather
+slice planned in 2.8; runtime order follows `unit-of-work-dependency.md` rather
 than the grouping in `bolt-plan.md`.
 
 During Delivery Planning, the conductor proposes a real project check, such as
@@ -350,16 +354,16 @@ the commit-and-retry step if the source is not yet reproducible.
 Existing workflows without the checkpoint setting keep their legacy first-stage
 review and stage-gate behavior. Design-only workflows and flows without Units
 keep their existing stage approvals; team-owned Units keep their own gate rhythm.
-Preserve any explicit iteration choice. After all applicable Unit work, Build and
-Test and CI Pipeline run once across the solution.
+Preserve any explicit iteration choice. After all applicable Unit work, the
+stages of the later phases run once across the solution.
 
 ---
 
-## Operation Phase
+## Test, Secure, Deploy and Operate Phases
 
-Operation deploys and monitors the solution. All 7 stages are conditional — smaller scopes like `mvp` and `poc` may skip this entire phase.
+Test builds the solution and runs its tests (Build and Test, 4.1), and validates performance where the plan asks for it (4.2). Secure reviews the built code: Code Review (5.1) and Security Review (5.2) in every plan, and Conformance Review (5.3) where the plan includes it. Deploy sets up CI and the deployment pipeline, provisions environments and ships the solution (6.1-6.4); Operate sets up monitoring, incident response and the feedback loop (7.1-7.3). Every Deploy and Operate stage is conditional: the inventory API's `mvp` plan runs CI Pipeline and no Operate stage, and `poc` runs neither phase.
 
-After the final stage (4.7 Feedback & Optimization), the workflow is complete.
+After the final stage (7.3 Feedback & Optimization), the workflow is complete.
 
 ---
 
@@ -394,7 +398,7 @@ sequenceDiagram
 
 ### Subagent Delegation
 
-Four stages dispatch to background subagents: 2.1 Reverse Engineering (pipeline: developer scan, then architect synthesis-and-write), 2.2 Practices Discovery (subagent hub-and-spoke: lead draft, three mutually blind support reviews, human interview, lead integration), 2.4 User Stories (mob: collaborators contribute in parallel, and judgment-call disagreements may surface to you mid-stage), and 3.5 Code Generation (subagent). Practices Discovery deliberately brings you into the room between the spokes and final integration; the User Stories mob may also surface judgment calls mid-stage. Those support agents take part when collaborators are on (the `collaborators` setting, shipped on only for `enterprise`; `/aidlc --collaborators on` turns it on for one piece of work). With collaborators off, each of these stages runs its lead alone: the developer both scans the code and writes the code knowledge base, Practices Discovery goes from the lead's draft straight to your interview, and User Stories has no mob round. Workspace detection (0.2) runs deterministically inside `aidlc-utility intent-create` rather than as a subagent.
+Four stages dispatch to background subagents: 1.4 Reverse Engineering (pipeline: developer scan, then architect synthesis-and-write), 2.1 Practices Discovery (subagent hub-and-spoke: lead draft, three mutually blind support reviews, human interview, lead integration), 2.3 User Stories (mob: collaborators contribute in parallel, and judgment-call disagreements may surface to you mid-stage), and 3.1 Code Generation (subagent). Practices Discovery deliberately brings you into the room between the spokes and final integration; the User Stories mob may also surface judgment calls mid-stage. Those support agents take part when collaborators are on (the `collaborators` setting, shipped on only for `enterprise`; `/aidlc --collaborators on` turns it on for one piece of work). With collaborators off, each of these stages runs its lead alone: the developer both scans the code and writes the code knowledge base, Practices Discovery goes from the lead's draft straight to your interview, and User Stories has no mob round. Workspace detection (0.2) runs deterministically inside `aidlc-utility intent-create` rather than as a subagent.
 
 ```mermaid
 sequenceDiagram
@@ -424,10 +428,13 @@ By the end of a `feature`-scoped workflow, the intent's record dir (`aidlc/space
 aidlc/spaces/<space>/intents/<YYMMDD>-<label>/
   aidlc-state.md          # Where the work stands, stage by stage
   audit/                  # Full decision audit trail (per-clone shards, merged by timestamp)
-  ideation/               # Intent, market research, scope, mockups
-  inception/              # Requirements, stories, design, units
-  construction/           # Per-unit code + test artifacts
-  operation/              # Deployment, observability, incident plans
+  discover/               # Intent, market research, scope, mockups
+  design/                 # Requirements, stories, design, units, per-unit designs
+  build/                  # Per-unit code
+  test/                   # Build and test results, performance validation
+  secure/                 # Code and security reviews
+  deploy/                 # CI, deployment pipeline, environments, deployment
+  operate/                # Observability, incident plans, feedback
   verification/           # Phase boundary verification reports
 ```
 
@@ -440,13 +447,13 @@ aidlc/spaces/<space>/intents/<YYMMDD>-<label>/
 Throughout the workflow on Claude Code, AI-DLC's status line (once you turn it on: setup asks, or `/aidlc --statusline on`) shows your current position (Kiro and opencode use `/aidlc --status` and the progress line at each gate; Codex uses `$aidlc --status` and its built-in `update_plan` progress display). From the inventory API run, with the bar and the separator dot shown as plain text and the model segment left out:
 
 ```text
-[AIDLC] inventory-rest-api - IDEATION [##--------] 1/4 > Feasibility -- Architect Agent
+[AIDLC] inventory-rest-api - DISCOVER [##--------] 1/4 > Feasibility -- Architect Agent
 ```
 
 | Segment | Meaning |
 |---------|---------|
 | `inventory-rest-api` | The piece of work; with more than one space, the space's name comes first |
-| `IDEATION` | Current phase |
+| `DISCOVER` | Current phase |
 | `[##--------]` | Phase progress bar (10 characters, the same count as the ratio) |
 | `1/4` | Finished stages within the phase; in Construction, `Unit N of M` takes the place of the bar and the ratio |
 | `> Feasibility` | Current stage |
@@ -461,7 +468,7 @@ Before any work is selected, it reads `[AIDLC] ready`.
 ## Next Steps
 
 - [Spaces and Intents](03-spaces-and-intents.md) — how the workspace holds many runs, and how to start and switch between them
-- [Phases and Stages](04-phases-and-stages.md) — detailed breakdown of all 5 phases and 33 stages
+- [Phases and Stages](04-phases-and-stages.md) — detailed breakdown of all 7 phases and 33 stages
 - [Interaction Modes](07-interaction-modes.md) — Guide Me, Edit File, and Chat explained
 - [Session Management](11-session-management.md) — resuming, redoing, and jumping between stages
 - [Glossary](glossary.md) — terminology reference

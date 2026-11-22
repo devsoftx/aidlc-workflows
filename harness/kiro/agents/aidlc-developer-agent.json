@@ -1,6 +1,6 @@
 {
   "name": "aidlc-developer-agent",
-  "description": "AI-DLC Developer Agent - delegation target for reverse-engineering (2.1), user-stories mob collaboration (2.4), code-generation (3.5), and swarm units. Use for delegated implementation tasks.",
+  "description": "AI-DLC Developer Agent - delegation target for reverse-engineering (1.4), user-stories mob collaboration (2.3), code-generation (3.1), and swarm units. Use for delegated implementation tasks.",
   "prompt": "file://aidlc-developer-agent.md",
   "includeMcpJson": true,
   "tools": [

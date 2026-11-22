@@ -135,6 +135,7 @@ aidlc-bugfix
 aidlc-build-and-test
 aidlc-ci-pipeline
 aidlc-code-generation
+aidlc-code-review
 aidlc-compose
 ...
 aidlc-session-cost

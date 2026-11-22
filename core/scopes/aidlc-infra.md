@@ -43,12 +43,13 @@ Design only describes the infrastructure, and Environment Provisioning only
 applies the IaC that code-generation wrote; neither authors it.
 
 This is the only scope where `reverse-engineering` is SKIP — infra changes start from the
-deployment topology, not the application source — and the only non-
-enterprise/feature scope that runs the deploy and operate phases.
+deployment topology, not the application source — and, with `enterprise`,
+`feature`, and `workshop`, one of the four scopes that provision environments.
 
 ## Membership
 
 Keyword triggers: `infrastructure`, `deploy`, `infra`. Initialization,
 practices-discovery, requirements-analysis, the NFR + infrastructure
-design stages, code-generation, build-and-test, ci-pipeline, and the
+design stages, code-generation, build-and-test, the three secure reviews
+(code-review, security-review, conformance-review), ci-pipeline, and the
 deployment/provisioning/observability stages in deploy and operate execute.

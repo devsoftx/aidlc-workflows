@@ -216,7 +216,7 @@ This example builds a notification service for a task management application. Th
 
 The 3 Initialization stages run automatically inside `aidlc-utility intent-create`. Workspace Detection identifies: TypeScript, Node.js 20, Express, PostgreSQL, brownfield project with existing task and user services.
 
-> Setting up the feature workflow for this: 32 stages, 32 approval gates, 5 stages repeat per unit of work in Design and Build.
+> Setting up the feature workflow for this: 32 stages, 32 approval gates, 5 stages repeat per unit of work in Construction.
 
 ### Discover Phase (stages 1.1-1.8)
 

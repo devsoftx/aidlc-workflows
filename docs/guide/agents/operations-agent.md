@@ -2,23 +2,23 @@
 
 > **Agent deep dive** · [User Guide](../00-introduction.md) › [Agents](../06-agents.md) › [deep dives](README.md) · Technical reference: [operations-agent](../../reference/agents/operations-agent.md)
 
-The aidlc-operations-agent is your site reliability engineer and incident manager. It ensures that deployed systems are observable, resilient, and continuously improving. It owns the operational layer from CloudWatch dashboards and alarms through X-Ray tracing, SLO tracking, incident response runbooks, and chaos engineering validation. Critically, it closes the feedback loop by channeling production insights back into Ideation for the next iteration.
+The aidlc-operations-agent is your site reliability engineer and incident manager. It ensures that deployed systems are observable, resilient, and continuously improving. It owns the operational layer from CloudWatch dashboards and alarms through X-Ray tracing, SLO tracking, incident response runbooks, and chaos engineering validation. Critically, it closes the feedback loop by channeling production insights back into Discover for the next iteration.
 
-The aidlc-operations-agent leads three stages in the Operation phase. It has Bash access for running monitoring setup commands, runbook scripts, and diagnostic tools.
+The aidlc-operations-agent leads the three stages of the Operate phase. It has Bash access for running monitoring setup commands, runbook scripts, and diagnostic tools.
 
 ## Stages Led
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 4.4 Observability Setup | Operation | Dashboards, alarms, tracing, structured logging, custom metrics |
-| 4.5 Incident Response | Operation | SSM runbooks, incident plan, escalation matrix, on-call structure |
-| 4.7 Feedback & Optimization | Operation | SLO reports, cost analysis, drift detection, feedback loop |
+| 7.1 Observability Setup | Operate | Dashboards, alarms, tracing, structured logging, custom metrics |
+| 7.2 Incident Response | Operate | SSM runbooks, incident plan, escalation matrix, on-call structure |
+| 7.3 Feedback & Optimization | Operate | SLO reports, cost analysis, drift detection, feedback loop |
 
-The aidlc-quality-agent leads 4.6 Performance Validation; the operational telemetry and baselines this agent sets up in 4.4 feed that work informally, but it is not a formal support agent on 4.6.
+The aidlc-quality-agent leads 4.2 Performance Validation in the Test phase; the operational telemetry and baselines this agent sets up in 7.1 can feed that work informally, but it is not a formal support agent on 4.2.
 
 ## Stages Supported
 
-None. The aidlc-operations-agent is a lead-only agent — it supports no other agent's stages. Its leads all fall in Operation, where it closes the lifecycle loop.
+None. The aidlc-operations-agent is a lead-only agent — it supports no other agent's stages. Its leads all fall in Operate, where it closes the lifecycle loop.
 
 ## What to Expect
 
@@ -28,7 +28,7 @@ During Feedback & Optimization (the final stage), it analyzes production metrics
 
 ## How It Collaborates
 
-The aidlc-operations-agent receives provisioned infrastructure from the aidlc-aws-platform-agent and deployed services from the aidlc-pipeline-deploy-agent. It works with the aidlc-quality-agent on performance baselines and SLO validation, and with the aidlc-developer-agent on application-level logging improvements. Its feedback report is the bridge from Operation back to Ideation, completing the lifecycle loop.
+The aidlc-operations-agent receives provisioned infrastructure from the aidlc-aws-platform-agent and deployed services from the aidlc-pipeline-deploy-agent. It works with the aidlc-quality-agent on performance baselines and SLO validation, and with the aidlc-developer-agent on application-level logging improvements. Its feedback report is the bridge from Operate back to Discover, completing the lifecycle loop.
 
 ## Key Principles
 
@@ -36,5 +36,5 @@ The aidlc-operations-agent receives provisioned infrastructure from the aidlc-aw
 - SLOs define the reliability target; everything else derives from them
 - Every incident is a learning opportunity — blameless postmortems convert incidents into improvements
 - Untested resilience mechanisms are assumptions — chaos engineering verifies them
-- Production insights that do not flow back to Ideation are wasted learning
+- Production insights that do not flow back to Discover are wasted learning
 - Manual operational toil must be eliminated — automate every repeatable runbook step

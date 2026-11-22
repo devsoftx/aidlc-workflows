@@ -1132,9 +1132,9 @@ Jump directly to a specific stage by slug or number.
 
 ```
 /aidlc --stage code-generation
-/aidlc --stage 3.5
+/aidlc --stage 3.1
 /aidlc --stage requirements-analysis
-/aidlc --stage 2.3
+/aidlc --stage 2.2
 ```
 
 **Behavior:** If a workflow is active, jumps to the target stage (skipping intervening stages with warnings); a `--scope`, `--depth`, `--test-strategy` or `--guard-policy` typed with the jump is applied first, then the jump is made in the work as changed (set `--review` and the ceremony switches such as `--sensors` on their own first). If no workflow exists, you can combine with `--scope` to start one there:

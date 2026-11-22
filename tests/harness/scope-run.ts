@@ -621,7 +621,7 @@ export interface PersonAnswers {
   autonomy(): "Continue automatically" | "Review each checkpoint";
   verificationCommand(): string;
   checkpoint(unit: string, kind: string): string;
-  /** Who builds a plan of two or more Units, asked as Inception ends. */
+  /** Who builds a plan of two or more Units, asked as the Unit walk starts. */
   staffing(): string;
   /** The answer to "where does this new work go?": unset means the run never expects it. */
   newWork?(description: string): string;

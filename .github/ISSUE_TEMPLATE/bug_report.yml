@@ -70,10 +70,13 @@ body:
       description: Which workflow phase were you in when the bug occurred?
       options:
         - Initialization
-        - Ideation
-        - Inception
-        - Construction
-        - Operation
+        - Discover
+        - Design
+        - Build
+        - Test
+        - Secure
+        - Deploy
+        - Operate
         - Not phase-specific
     validations:
       required: true

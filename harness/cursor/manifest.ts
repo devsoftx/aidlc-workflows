@@ -25,7 +25,7 @@
 //   - rules: Cursor loads ONLY .mdc files with frontmatter from
 //     .cursor/rules/ (a plain .md there is ignored, and @-import lines do NOT
 //     expand — both live-verified). The method include is therefore split:
-//     rules/aidlc.mdc always carries org/team/project, while four agent-decided
+//     rules/aidlc.mdc always carries org/team/project, while seven agent-decided
 //     phase pointers keep phase guidance relevant (live-verified: a phase
 //     question loads only the matching phase rule; an off-topic prompt loads
 //     none). The sessionStart hook injects the live workflow context.

@@ -3110,12 +3110,13 @@ export function renderShow(d: ShownDocument): string {
 
 // --- The documents card ------------------------------------------------------
 //
-// What an Inception stage's reading list carries from the index: each document
-// with current text (this work's first, then the space's), its summary or the
-// opening of its text, and where its full text is, so the agent checks a
-// question against the team's documents before asking it. Text is read through
-// the same verified readers `show` uses, so a stale or torn derivative is left
-// out here exactly as it is there.
+// What the reading list of a Design stage that runs once for the work (not per
+// Unit) carries from the index: each document with current text (this work's
+// first, then the space's), its summary or the opening of its text, and where
+// its full text is, so the agent checks a question against the team's
+// documents before asking it. Text is read through the same verified readers
+// `show` uses, so a stale or torn derivative is left out here exactly as it is
+// there.
 
 const CARD_DOCUMENTS_MAX = 12;
 const CARD_OPENING_CHARS = 1500;

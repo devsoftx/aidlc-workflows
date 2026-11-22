@@ -6,7 +6,7 @@ imports them as the matching phase rule.
 ## Focus
 
 - Prioritize user needs and problem definition before proposing solutions
-- Keep ideation artifacts at the problem/opportunity level — no implementation details
+- Keep the idea's artifacts at the problem/opportunity level — no implementation details (Reverse Engineering's record of the existing code is the exception)
 - Explore the problem space broadly before narrowing to solutions
 
 ## Evidence Standards
@@ -17,13 +17,13 @@ imports them as the matching phase rule.
 
 ## Scope Discipline
 
-- No implementation details (architecture, tech stack, code) in ideation artifacts
+- No implementation details (architecture, tech stack, code) in the idea's artifacts
 - Do not carry forward scope decisions that have not been explicitly approved
 - If a feasibility concern would block progress, surface it early rather than glossing over it
 
 ## Output Quality
 
-- All ideation artifacts must be readable by non-technical stakeholders
+- All of the idea's artifacts must be readable by non-technical stakeholders
 - Avoid jargon unless defined in a glossary
 - Success metrics must be measurable — avoid vague outcomes like "improved performance"
 

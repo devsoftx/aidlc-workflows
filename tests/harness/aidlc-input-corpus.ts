@@ -18,7 +18,7 @@ import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/
 
 /**
  * Where the person is when they type the line:
- * fresh: no workflow yet. work-open: a bugfix mid-Inception. plan-question-open: a code plan awaiting approval.
+ * fresh: no workflow yet. work-open: a bugfix mid-Design. plan-question-open: a code plan awaiting approval.
  * gate-open: a stage gate awaiting approval (review READY, summary confirmed, so an approval goes through).
  * two-similar-records: auth and auth-fix, the second active. plan-offer-open: a fresh workspace where they typed
  * "build a notes app" and the plan offer is on screen. routing-question-open: open work where they typed "fix the
