@@ -806,10 +806,12 @@ export function hasPendingQuestion(
   if (slug.length === 0 || phase.length === 0) return false;
   const normalizedPhase = phase.toLowerCase();
   const stage = findStageBySlug(slug);
+  // A known stage's folder is its own phase's; Lifecycle Phase follows Current
+  // Stage, which a Unit walk's step can be past.
   const stageDirPath =
     unit && stage && isUnitLoopStage(stage)
       ? join(docsRoot(projectDir), stage.phase, unit, slug)
-      : stageDir(projectDir, normalizedPhase, slug);
+      : stageDir(projectDir, stage?.phase ?? normalizedPhase, slug);
   if (!existsSync(stageDirPath)) return false;
   let files: string[];
   try {

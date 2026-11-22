@@ -37,6 +37,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -116,18 +117,18 @@ describe("t170 audit-logger per-intent gate (mechanism cli — spawned hook)", (
     const { auditDir, recordRoot } = seedIntentWithShard(proj, "auth-service");
     // A stage artifact under the re-rooted record dir — NOT containing
     // "aidlc-docs/". The old gate dropped this; the new gate logs it.
-    const artifact = join(recordRoot, "construction", "functional-design", "design.md");
+    const artifact = join(recordRoot, phaseFor("functional-design"), "functional-design", "design.md");
     const rc = fire(proj, "Write", artifact);
     expect(rc).toBe(0);
     const body = readShards(auditDir);
     expect(body).toContain("ARTIFACT_CREATED");
     // The breadcrumb is the path RELATIVE to the record root.
-    expect(body).toContain("construction > functional-design > design.md");
+    expect(body).toContain(`${phaseFor("functional-design")} > functional-design > design.md`);
   });
 
   test("Edit under the per-intent record dir emits ARTIFACT_UPDATED", () => {
     const { auditDir, recordRoot } = seedIntentWithShard(proj, "export-bug");
-    fire(proj, "Edit", join(recordRoot, "ideation", "intent-capture", "intent.md"));
+    fire(proj, "Edit", join(recordRoot, phaseFor("intent-capture"), "intent-capture", "intent.md"));
     expect(readShards(auditDir)).toContain("ARTIFACT_UPDATED");
   });
 

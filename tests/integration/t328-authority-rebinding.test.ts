@@ -49,6 +49,7 @@ import {
   seededStateFile,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 
 resetAidlcEnv();
@@ -167,8 +168,8 @@ async function project(
     .replace(/^- \*\*Depth\*\*:.*$/m, "- **Depth**: Minimal")
     .replace(/^- \*\*Test Strategy\*\*:.*$/m, "- **Test Strategy**: Minimal")
     .replace(/^- \*\*In Progress\*\*:.*$/m, "- **In Progress**: code-generation")
-    .replace(/^- \*\*Inception\*\*:.*$/m, "- **Inception**: Verified")
-    .replace(/^- \*\*Construction\*\*:.*$/m, "- **Construction**: Active")
+    .replace(/^- \*\*Design\*\*:.*$/m, "- **Design**: Verified")
+    .replace(/^- \*\*Build\*\*:.*$/m, "- **Build**: Active")
     .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: BUILD")
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation");
   state = state.replace(
@@ -930,7 +931,7 @@ describe("t328 (5) the per-Unit walk", () => {
       seedBoltDag(dir, ["alpha", "beta"]);
       for (const unit of ["alpha", "beta"]) {
         for (const [slug, artifacts] of Object.entries(DESIGN_ARTIFACTS)) {
-          const recordDir = join(seededRecordDir(dir), "construction", unit, slug);
+          const recordDir = join(seededRecordDir(dir), phaseFor(slug), unit, slug);
           mkdirSync(recordDir, { recursive: true });
           for (const name of artifacts) {
             writeFileSync(

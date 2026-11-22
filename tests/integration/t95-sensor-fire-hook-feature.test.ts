@@ -94,6 +94,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { stateDigest } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -323,7 +324,7 @@ describe("t95 sensor-fire hook — single & multi-entry fire (mechanism cli — 
     const proj = makeProjectActive("requirements-analysis");
     const r = runHook(
       proj,
-      join(seededRecordDir(proj), "inception", "requirements-analysis", "intent.md"),
+      join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", "intent.md"),
     );
     expect(r.status).toBe(0);
     expect(spawnArgvs(proj).length).toBe(0);

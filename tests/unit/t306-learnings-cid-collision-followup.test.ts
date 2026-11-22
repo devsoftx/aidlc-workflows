@@ -75,6 +75,7 @@ import {
   seededStateFile,
   writeLearningsSelections,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { parseStageFrontmatter, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -531,7 +532,7 @@ describe("t306 aidlc-learnings persist/surface — #735 follow-up (PR #747 revie
       writeFileSync(
         join(bareRoot, "runtime-graph.json"),
         JSON.stringify({
-          stages: [{ stage_slug: STAGE_SLUG, memory_path: `aidlc/spaces/${DEFAULT_SPACE}/intents/inception/${STAGE_SLUG}/memory.md` }],
+          stages: [{ stage_slug: STAGE_SLUG, memory_path: `aidlc/spaces/${DEFAULT_SPACE}/intents/${phaseFor(STAGE_SLUG)}/${STAGE_SLUG}/memory.md` }],
         }),
         "utf-8",
       );
@@ -567,7 +568,7 @@ describe("t306 aidlc-learnings persist/surface — #735 follow-up (PR #747 revie
       writeFileSync(
         join(intentsDirOf(pd, DEFAULT_SPACE), SECOND_RECORD_DIR, "runtime-graph.json"),
         JSON.stringify({
-          stages: [{ stage_slug: STAGE_SLUG, memory_path: `aidlc/spaces/${DEFAULT_SPACE}/intents/${SECOND_RECORD_DIR}/inception/${STAGE_SLUG}/memory.md` }],
+          stages: [{ stage_slug: STAGE_SLUG, memory_path: `aidlc/spaces/${DEFAULT_SPACE}/intents/${SECOND_RECORD_DIR}/${phaseFor(STAGE_SLUG)}/${STAGE_SLUG}/memory.md` }],
         }),
         "utf-8",
       );
@@ -641,8 +642,8 @@ describe("t306 aidlc-learnings persist/surface — #735 follow-up (PR #747 revie
       // legitimately per-stage (Destinations is an array for exactly this reason).
       const pd = mkProject();
       const stagesDir = join(pd, ".claude", "skills", "aidlc", "stages");
-      seedStageFile(stagesDir, "inception", "user-stories");
-      seedStageFile(stagesDir, "construction", "requirements-analysis");
+      seedStageFile(stagesDir, phaseFor("user-stories"), "user-stories");
+      seedStageFile(stagesDir, phaseFor("requirements-analysis"), "requirements-analysis");
       const env = { AIDLC_STAGES_DIR: stagesDir };
 
       const sel1 = sensorSelectionsFile(pd, "acceptance-format", {
@@ -651,7 +652,7 @@ describe("t306 aidlc-learnings persist/surface — #735 follow-up (PR #747 revie
       const res1 = runPersist(pd, sel1, { slug: "user-stories", env });
       expect(res1.status).toBe(0);
       expect(JSON.parse(res1.out).sensor_proposed).toBe(1);
-      const stageAMd = readFileSync(join(stagesDir, "inception", "user-stories.md"), "utf-8");
+      const stageAMd = readFileSync(join(stagesDir, phaseFor("user-stories"), "user-stories.md"), "utf-8");
       // Read the list the way the graph compile does: the stage file's
       // `sensors: []` now carries the id.
       expect(parseStageFrontmatter(stageAMd).sensors).toEqual(["acceptance-format"]);
@@ -667,7 +668,7 @@ describe("t306 aidlc-learnings persist/surface — #735 follow-up (PR #747 revie
       const res2 = runPersist(pd, sel2, { slug: "requirements-analysis", env });
       expect(res2.status).toBe(0);
 
-      const stageBMd = readFileSync(join(stagesDir, "construction", "requirements-analysis.md"), "utf-8");
+      const stageBMd = readFileSync(join(stagesDir, phaseFor("requirements-analysis"), "requirements-analysis.md"), "utf-8");
       expect(parseStageFrontmatter(stageBMd).sensors).toEqual(["acceptance-format"]);
     }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
   });

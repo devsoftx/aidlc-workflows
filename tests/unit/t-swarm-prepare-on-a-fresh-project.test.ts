@@ -71,16 +71,18 @@ const STATE = `# State
 - **Stages to Skip**: none
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
+### BUILD PHASE
 - [-] code-generation — EXECUTE
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 ## Current Status
 - **Current Stage**: code-generation
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Status**: Running
 `;
 

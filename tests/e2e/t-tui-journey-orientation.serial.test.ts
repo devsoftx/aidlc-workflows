@@ -10,14 +10,14 @@
 //
 // WHY THIS IS A RENDER ASSERTION:
 //   - The deterministic twin t168 SPAWNS the shipped hook directly and
-//     asserts the `teamB · export-bug · CONSTRUCTION` two-space string — so the
+//     asserts the `team-b · export-bug · <phase>` two-space string — so the
 //     prefix LOGIC is unit-proven token-free. What t168 CANNOT prove is that the
 //     prefix survives the real TUI render path (the host pipes the workspace
 //     JSON to the statusLine command and paints its stdout into the pane). This
 //     test closes exactly that gap, live, in the selected terminal backend.
 //   - The sibling render test t-tui-render-statusline.serial seeds a SINGLE-space
 //     fixture (setupTuiProject with no secondSpace), so its statusline never
-//     paints the `<space> ·` segment — it matches `[AIDLC].*IDEATION` loosely and
+//     paints the `<space> ·` segment — it matches `[AIDLC].*DISCOVER` loosely and
 //     asserts the bar/counter/stage, never the orientation prefix. So the
 //     >1-space orientation paint rides the `secondSpace` fixture variant
 //     (tui-fixtures.ts).
@@ -90,7 +90,7 @@ describe("t-tui-journey-orientation (live Claude TUI — the render-half 'you ar
   // the render assertion the sibling t-tui-render-statusline cannot make: it seeds
   // a single space, so its statusline never paints the space segment.
   test.skipIf(ABSENT_REASON !== null)(
-    `paints the "default · fixture · IDEATION" orientation prefix (>1 space)${ABSENT_REASON ? ` — SKIP: ${ABSENT_REASON}` : ""}`,
+    `paints the "default · fixture · DISCOVER" orientation prefix (>1 space)${ABSENT_REASON ? ` — SKIP: ${ABSENT_REASON}` : ""}`,
     () => {
       for (const sample of samples()) {
         expect(sample.pane).toContain(ORIENTATION_MARKER);

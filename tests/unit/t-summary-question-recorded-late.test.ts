@@ -28,6 +28,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, seedAidlcMemory, seededRecordDir, seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
 import { env, exec, LOG, SESSION, say, type Harness } from "../harness/aidlc-input-corpus.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -47,7 +48,7 @@ function project(summary: "on" | "off"): { proj: string; questions: string } {
   const state = seededStateFile(proj);
   writeFileSync(state, readFileSync(state, "utf-8")
     .replace("- **Summary Confirmation**: on (from scope bugfix)", `- **Summary Confirmation**: ${summary} (set by you)`));
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const questions = join(dir, `${STAGE}-questions.md`);
   writeFileSync(questions, [

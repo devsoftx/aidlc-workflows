@@ -12,6 +12,7 @@ import {
   cleanupTestProject, createTestProject, seedAidlcMemory, seededRecordDir,
   seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const projects: string[] = [];
 afterEach(() => { while (projects.length) cleanupTestProject(projects.pop()!); });
@@ -23,11 +24,11 @@ function fixture(content = confirmed) {
   seedAidlcMemory(proj);
   seedStateFile(proj, "state-mid-inception.md");
   const stage: Parameters<typeof checkSummaryConfirmationEvidence>[1] = {
-    slug: "requirements-analysis", name: "Requirements Analysis", phase: "inception",
+    slug: "requirements-analysis", name: "Requirements Analysis", phase: phaseFor("requirements-analysis"),
     outputs: "record", produces: ["requirements", "requirements-analysis-questions"],
     optional_produces: [], produces_kinds: {}, summary_confirmation: "required",
   };
-  const dir = join(seededRecordDir(proj), "inception", stage.slug);
+  const dir = join(seededRecordDir(proj), stage.phase, stage.slug);
   mkdirSync(dir, { recursive: true });
   const questions = join(dir, `${stage.slug}-questions.md`);
   const artifact = join(dir, "requirements.md");

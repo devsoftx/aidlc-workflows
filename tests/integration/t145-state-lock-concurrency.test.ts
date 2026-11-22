@@ -219,7 +219,7 @@ describe("t145 C2b state-lock lost-update safety (mechanism cli — parallel spa
   beforeEach(() => {
     proj = createTestProject();
     // Seed a genuine v8 state file via the real intent-create path (Scope=bugfix
-    // gives a running INCEPTION workflow at requirements-analysis with
+    // gives a running DESIGN workflow at requirements-analysis with
     // code-generation next - the shape the gate handlers expect).
     const init = Bun.spawnSync({
       cmd: [BUN, UTIL_TOOL, "intent-create", "--scope", "bugfix", "--project-dir", proj],

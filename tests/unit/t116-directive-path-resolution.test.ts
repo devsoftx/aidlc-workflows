@@ -19,7 +19,7 @@
 //            isCodekb arm — fires for produces[] AND consumes[] of a codekb stage
 //            like reverse-engineering, dropping the per-intent record tail).
 //          - non-per-unit: aidlc-docs/<owner.phase>/<owner.slug>/<name>.md
-//          - per-unit:     aidlc-docs/construction/<unit>/<owner.slug>/<name>.md
+//          - per-unit:     aidlc-docs/<owner.phase>/<unit>/<owner.slug>/<name>.md
 //   resolveConsumePath(name, node, unit) - keys on producersOf(name)[0],
 //          NOT the consuming node (1:1 producer rule); orphan fallback to node.
 //   projectTypeFrom(stateContent) - reads "Project Type", lowercased to
@@ -410,7 +410,7 @@ describe("t116 per-unit {unit-name} injection", () => {
     FD = emitFor("state-construction.md", "functional-design");
     CG = emitFor("state-construction.md", "code-generation");
     // domain-design here is only used for the test-11 negative; greenfield
-    // fixture so it EXECUTEs and is non-per-unit (inception phase).
+    // fixture so it EXECUTEs and is non-per-unit (design phase).
     AD = emitFor("state-construction.md", "domain-design");
   });
 
@@ -451,11 +451,11 @@ describe("t116 per-unit {unit-name} injection", () => {
   });
 
   // .sh test 11 (negative): a non-per-unit stage (domain-design) does NOT
-  // get the construction/{unit-name}/ prefix — its produces stay under inception/.
+  // get a <phase>/{unit-name}/ prefix — its produces stay under design/domain-design/.
   // STRONGER: assert the invariant over EVERY produces entry.
-  test("11: non-per-unit domain-design produces NEVER carry construction/{unit-name}/", () => {
+  test("11: non-per-unit domain-design produces NEVER carry a {unit-name} segment", () => {
     const perUnit = AD.produces.filter((p) =>
-      p.includes("construction/{unit-name}/"),
+      p.includes("/{unit-name}/"),
     );
     expect(perUnit).toEqual([]);
   });
@@ -464,7 +464,7 @@ describe("t116 per-unit {unit-name} injection", () => {
   // `contract-summary` as an optional consume, so once the workflow-level
   // contract exists on disk the resolved directive must carry it — keyed under
   // the PRODUCER's dir (design/contract-design/), NOT a per-unit
-  // construction path. Seed the artifact so it lands in the PRESENT `consumes`
+  // build/{unit-name}/ path. Seed the artifact so it lands in the PRESENT `consumes`
   // split (an absent optional whose producer is off this fixture's scope grid
   // is dropped by design — see test 14 — which is why presence is seeded here).
   test("12: per-unit code-generation resolves contract-summary under design/contract-design/", () => {

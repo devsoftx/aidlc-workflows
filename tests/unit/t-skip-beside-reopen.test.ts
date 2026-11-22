@@ -27,6 +27,7 @@ import {
   resetAidlcEnv,
   runOrchestrateNext,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -133,7 +134,7 @@ function featureAtFeasibility(box: "in-progress" | "awaiting-approval"): string 
   const done = ["workspace-scaffold", "workspace-detection", "state-init", "intent-capture", "market-research"];
   expect(run(STATE, proj, ["checkbox", ...done.map((s) => `${s}=completed`), `feasibility=${box}`]).rc).toBe(0);
   expect(run(STATE, proj, [
-    "set", "Current Stage=feasibility", "Status=Running", "Lifecycle Phase=IDEATION",
+    "set", "Current Stage=feasibility", "Status=Running", `Lifecycle Phase=${phaseFor("feasibility").toUpperCase()}`,
     "Next Stage=scope-definition", "In Progress=feasibility", "Last Completed Stage=market-research",
   ]).rc).toBe(0);
   return proj;

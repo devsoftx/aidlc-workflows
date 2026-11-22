@@ -8,7 +8,7 @@
 // Status is "Completed"/"Complete" the hook prints
 //   "[AIDLC] <prefix>COMPLETE <completeBar>"
 // where completeBar is the natural phase bar when it resolves, else a forced full
-// bar. The completed fixture has OPERATION fully [x] (7/7), so progressBar(7,7)
+// bar. The completed fixture has OPERATE fully [x] (3/3), so progressBar(3,3)
 // fills all 10 cells -> "[▓▓▓▓▓▓▓▓▓▓]". Assert the EXACT sentinel + full grid the
 // branch should draw.
 //
@@ -108,7 +108,7 @@ describe("t-tui-render statusline COMPLETE sentinel (seeded completed, no tokens
       const session = `aidlc_tui_render_complete_${process.pid}`;
       // setupTuiProject copies the distributable + sibling aidlc/ memory shell,
       // seeds the per-intent workspace shell, and writes the completed fixture
-      // into the active intent's record (Status: Completed + OPERATION 7/7 -> the
+      // into the active intent's record (Status: Completed + OPERATE 3/3 -> the
       // COMPLETE branch fires with a full bar). State-driven; no prompt, no tokens.
       const sandbox = setupTuiProject({ withState: "state-completed.md" });
       try {

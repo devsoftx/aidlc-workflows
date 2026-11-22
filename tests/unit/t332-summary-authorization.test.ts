@@ -116,10 +116,18 @@ function project(
       );
     }
     if (options.stage === NFR_STAGE) {
+      const [from, to] = [STAGE, NFR_STAGE].map((slug) => {
+        const phase = phaseFor(slug);
+        return `${phase.charAt(0).toUpperCase()}${phase.slice(1)}`;
+      });
+      // Phase Progress moves on only when the NFR stage sits in a later phase.
+      if (from !== to) {
+        state = state
+          .replace(`- **${from}**: Active`, `- **${from}**: Verified`)
+          .replace(`- **${to}**: Pending`, `- **${to}**: Active`);
+      }
       state = state
-        .replace("- **Inception**: Active", "- **Inception**: Verified")
-        .replace("- **Construction**: Pending", "- **Construction**: Active")
-        .replace("- **Lifecycle Phase**: INCEPTION", `- **Lifecycle Phase**: ${phaseFor(NFR_STAGE).toUpperCase()}`)
+        .replace(`- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}`, `- **Lifecycle Phase**: ${phaseFor(NFR_STAGE).toUpperCase()}`)
         .replace(`- **Current Stage**: ${STAGE}`, `- **Current Stage**: ${NFR_STAGE}`)
         .replace(`- **In Progress**: ${STAGE}`, `- **In Progress**: ${NFR_STAGE}`)
         .replace(`- [-] ${STAGE} — EXECUTE`, `- [x] ${STAGE} — EXECUTE`)

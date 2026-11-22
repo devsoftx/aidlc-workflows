@@ -107,8 +107,8 @@ const TOOLS = join(REPO_ROOT, "dist", "claude", ".claude", "tools");
 const ORCHESTRATE = join(TOOLS, "aidlc-orchestrate.ts");
 
 // The skeleton-gate stage for the fixture's scope (feature): the first
-// Construction EXECUTE stage. Frozen here; matches firstInScopeStageOfPhase(
-// "construction", "feature") and the Bolt-1 fixture's own Current Stage.
+// per-unit EXECUTE stage. Frozen here; matches isSkeletonGateStage
+// (aidlc-orchestrate.ts) for "feature" and the Bolt-1 fixture's own Current Stage.
 const SKELETON_STAGE = "functional-design";
 
 // Scope is resolved partly from AWS_AIDLC_DEFAULT_SCOPE — start from a known

@@ -153,7 +153,7 @@ function walk(designed: number, rhythm: "unit-end" | "per-stage" = "unit-end"): 
   writeFileSync(path, lines.join("\n")
     .replace(/- \*\*Current Stage\*\*: .*/, "- **Current Stage**: functional-design")
     .replace(/- \*\*In Progress\*\*: .*/, "- **In Progress**: functional-design")
-    .replace(/- \*\*Lifecycle Phase\*\*: .*/, "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace(/- \*\*Lifecycle Phase\*\*: .*/, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
     .replace(
       "- **State Version**: 8",
       `- **State Version**: 8\n- **Unit Ownership**: team\n- **Unit Gate Rhythm**: ${rhythm}\n- **Skeleton Stance**: on`,

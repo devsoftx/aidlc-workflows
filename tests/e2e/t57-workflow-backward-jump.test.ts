@@ -35,12 +35,12 @@
 // (STAGE_JUMPED) rather than grepping a loose substring.
 //
 // THE INVARIANT UNDER TEST. A backward jump (`--stage reverse-engineering`
-// from a construction-phase fixture) resolves to direction "backward"
-// (target index 10 < current index, aidlc-jump.ts), so executeJump's
+// from a design-phase fixture) resolves to direction "backward"
+// (target index 6 < current index, aidlc-jump.ts), so executeJump's
 // backward branch resets target + downstream EXECUTE stages [x]/[-]/[S] → [ ]
 // (aidlc-jump.ts), pivots Current Stage to the target
 // (aidlc-jump.ts), and rewrites Lifecycle Phase to the target's phase
-// uppercased (aidlc-jump.ts - reverse-engineering is an INCEPTION stage).
+// uppercased (aidlc-jump.ts - reverse-engineering is a DISCOVER stage).
 // A jump always lands Status="Running" (aidlc-jump.ts -> never terminates),
 // so the
 // orchestrator CONTINUES after the jump, which is exactly why this port
@@ -50,19 +50,20 @@
 // transient target-checkbox [-]→[x] churn (the .sh's own header note,
 // t57.sh) is deliberately NOT asserted by either suite.
 //
-// THE KNOWN-ANSWER COUNT. Running the SHIPPED tool deterministically on this
+// THE KNOWN-ANSWER COUNT. movedState's backward branch (aidlc-jump.ts) on this
 // exact fixture (`aidlc-jump.ts execute --target reverse-engineering
-// --direction backward --scope feature` over state-construction.md, 2026-06-10)
-// emits completed_count:11 and stages_reset of 9 slugs (reverse-engineering →
-// functional-design) — the 20 [x] fixture minus the 9 in-scope EXECUTE resets.
-// 11 < 15 satisfies the .sh's bound; we pin the exact value.
+// --direction backward --scope feature` over state-construction.md) resets the
+// 14 in-scope EXECUTE stages from reverse-engineering to the in-progress
+// functional-design, 13 of them [x], so completed_count is 6: the 19 [x]
+// fixture minus those 13. 6 < 15 satisfies the .sh's bound; we pin the exact
+// value.
 //
 // ASSERTION MAP (.sh test -> SDK surface -> shipped-handler cite):
 //   1 Current Stage = reverse-engineering
 //       -> the state as the jump left it (jump.ts) PLUS the audit
 //          `**Target**: reverse-engineering` line.
-//   2 X_COUNT < 15 (fixture had 20 [x]; .sh comment said "19")
-//       -> that state's Completed field and `- [x]` rows read 11 (jump.ts).
+//   2 X_COUNT < 15 (the fixture has 19 [x])
+//       -> that state's Completed field and `- [x]` rows read 6 (jump.ts).
 //          STRONGER than the .sh's <15: pins the exact reset arithmetic.
 //   3 audit has STAGE_JUMPED
 //       -> assertAuditEvent(r, "STAGE_JUMPED")
@@ -77,9 +78,9 @@
 //          Stronger than the .sh's bare `grep BACKWARD`: pins the exact field
 //          shape AND ties the direction to the reverse-engineering jump, so an
 //          unrelated future use of "BACKWARD" can't satisfy it.
-//   5 Lifecycle Phase = INCEPTION
-//       -> that state's Lifecycle Phase (jump.ts; reverse-engineering's phase is
-//          "inception" -> "INCEPTION")
+//   5 Lifecycle Phase = DISCOVER
+//       -> that state's Lifecycle Phase (jump.ts; reverse-engineering's phase,
+//          uppercased: "discover" -> "DISCOVER")
 //   + one engine call
 //       -> assertJumpInOneCall: the person's `next` returned the
 //          reverse-engineering step and no shell call ran the jump.
@@ -94,10 +95,10 @@
 //   - Lifecycle Phase write: aidlc-jump.ts
 //   - STAGE_JUMPED emit:     aidlc-jump.ts; Direction field aidlc-jump.ts
 //   - audit block shape:     aidlc-audit.ts
-//   - known-answer Completed=11, confirmed by running the shipped tool on the
+//   - known-answer Completed=6, from movedState's backward reset on the
 //     fixture.
-//   - fixture state-construction.md: Scope=feature, Lifecycle Phase=CONSTRUCTION,
-//     Current Stage=functional-design (idx > RE's 10 -> backward), 20 [x] stages.
+//   - fixture state-construction.md: Scope=feature, Lifecycle Phase=DESIGN,
+//     Current Stage=functional-design (idx 19 > RE's 6 -> backward), 19 [x] stages.
 //   - reverse-engineering EXECUTEs under feature scope: scope-mapping.json.
 //
 // It SPENDS TOKENS — each driveAidlc drives the real /aidlc on Opus/Bedrock.
@@ -115,6 +116,7 @@ import {
   driveAidlc,
   readStateFile,
 } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // AIDLC_TEST_TIMEOUT bounds the entire case, including setup and cleanup.
 const TIMEOUT_S = Number(process.env.AIDLC_TEST_TIMEOUT);
@@ -134,10 +136,11 @@ function remainingWorkMs(): number {
 
 
 // Known-answer literals from the SHIPPED handler / seeded fixture (see header).
-const TARGET_SLUG = "reverse-engineering"; // jump target (inception stage 2.1)
+const TARGET_SLUG = "reverse-engineering"; // jump target (discover stage 1.4)
+const TARGET_PHASE = phaseFor(TARGET_SLUG).toUpperCase(); // aidlc-jump.ts movedState
 const DIRECTION_FIELD = "**Direction**: BACKWARD"; // aidlc-jump.ts handleExecute + audit field shape (aidlc-audit.ts renderAuditBlock)
 const TARGET_FIELD = `**Target**: ${TARGET_SLUG}`; // aidlc-jump.ts handleExecute - names WHICH jump
-const COMPLETED_AFTER = 11; // aidlc-jump.ts movedState - known-answer (20 [x] - 9 resets)
+const COMPLETED_AFTER = 6; // aidlc-jump.ts movedState - known-answer (19 [x] - 13 reset)
 const COMPLETED_CEILING = 15; // fixture sanity floor below
 
 /** Count of `- [x]` (completed) checkbox lines in a state-file string. */
@@ -147,10 +150,10 @@ function completedCount(stateText: string): number {
 
 describe("t57 workflow backward jump (sdk)", () => {
   // -------------------------------------------------------------------------
-  // Backward jump from a construction-phase fixture to reverse-engineering.
+  // Backward jump from a design-phase fixture to reverse-engineering.
   //
-  // The fixture seeds 20 completed [x] stages with Current Stage in
-  // construction (functional-design). `--stage reverse-engineering` resolves
+  // The fixture seeds 19 completed [x] stages with Current Stage in
+  // design (functional-design). `--stage reverse-engineering` resolves
   // to a BACKWARD jump because the target precedes the current stage.
   // Assertions read the engine calls, the state the jump left and the audit files.
   // -------------------------------------------------------------------------
@@ -164,12 +167,12 @@ describe("t57 workflow backward jump (sdk)", () => {
       try {
         // Pre-jump baseline: the fixture's completed-count, captured off disk
         // so the fixture sanity check can reject a low pre-jump count.
-        // The construction fixture carries 20 [x].
+        // The fixture carries 19 [x].
         const stateBefore = readStateFile(proj);
         expect(stateBefore).toBeDefined();
         const completedBefore = completedCount(stateBefore as string);
         // Guard the fixture itself didn't drift — the jump arithmetic depends
-        // on a high pre-jump count (20).
+        // on a high pre-jump count (19).
         expect(completedBefore).toBeGreaterThanOrEqual(COMPLETED_CEILING);
 
         // Stop the SDK the instant the step the jump lands on comes back, so
@@ -188,11 +191,11 @@ describe("t57 workflow backward jump (sdk)", () => {
         assertJumpInOneCall(r, TARGET_SLUG);
 
         // The state as that call left it (aidlc-jump.ts movedState): the pivot to
-        // reverse-engineering, Lifecycle Phase rewritten to INCEPTION, and the
-        // exact known-answer reset, 11 = 20 [x] - 9 in-scope EXECUTE resets.
+        // reverse-engineering, Lifecycle Phase rewritten to DISCOVER, and the
+        // exact known-answer reset, 6 = 19 [x] - the 13 [x] reset.
         const stateAfter = readStateFile(proj) as string;
         expect(stateAfter).toContain(`- **Current Stage**: ${TARGET_SLUG}`);
-        expect(stateAfter).toContain("- **Lifecycle Phase**: INCEPTION");
+        expect(stateAfter).toContain(`- **Lifecycle Phase**: ${TARGET_PHASE}`);
         expect(stateAfter).toContain(`- **Completed**: ${COMPLETED_AFTER}`);
         expect(completedCount(stateAfter)).toBe(COMPLETED_AFTER);
 

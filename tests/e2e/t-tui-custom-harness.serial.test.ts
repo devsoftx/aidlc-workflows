@@ -28,7 +28,7 @@
 // fixture (tests/harness/custom-harness.ts) seeds a `data-migration` scope with
 // a TWO-STAGE CHAIN — the schema-snapshot stage (2.0, produces the `source-schema`
 // artefact) -> the migration-plan stage (2.10, consumes `source-schema`, produces
-// the `migration-strategy` artefact), both inception — plus a custom
+// the `migration-strategy` artefact), both design — plus a custom
 // `Data Migration Agent`, a custom knowledge playbook, a `schema-validator`
 // sensor, and a unique project-rule marker. Note the slug≠ artefact split
 // (shipped convention: the stage is the ACTIVITY, the artefact is the named
@@ -73,9 +73,9 @@
 //     firstPostInit): tests/harness/custom-harness.ts header + its constants.
 //   - lead_agent appears in the run-stage directive from aidlc-orchestrate.ts,
 //     populated directly from stage-graph.json.
-//   - init records Scope + routes to firstPostInit + Lifecycle Phase=INCEPTION:
-//     aidlc-utility.ts (verified: init --scope data-migration writes
-//     Lifecycle Phase: INCEPTION, Current Stage: schema-snapshot).
+//   - init records Scope + routes to firstPostInit + Lifecycle Phase=DESIGN:
+//     aidlc-utility.ts (init --scope data-migration writes
+//     Lifecycle Phase: DESIGN, Current Stage: schema-snapshot).
 //   - SENSOR_FIRED event string + detail path: aidlc-sensor.ts.
 //   - statusline raw-slug fallback: aidlc-statusline.ts.
 //   - F1 freeform vs --scope dispatch: SKILL.md (--scope) vs detect-scope.
@@ -134,6 +134,8 @@ function completedStartupProbe<T extends { error?: Error }>(result: T): T {
 
 const DRIVER = join(import.meta.dir, "..", "harness", "tui-drive.ts");
 const { bin: DRIVE_BIN, prefix: DRIVE_PREFIX } = resolveTuiRuntime(DRIVER);
+// The statusline prints the Lifecycle Phase label of the custom head stage.
+const SNAPSHOT_PHASE_LABEL = SNAPSHOT_STAGE_PHASE.toUpperCase();
 
 /** Retain command structure after raw SDK traces are sanitized, never token/key contents. */
 function steeringDiagnostics(results: CapturedToolResult[]): string {
@@ -273,7 +275,7 @@ describe("t-tui-custom-harness (the {sdk,tui} two-driver journey)", () => {
       // The method lives in the harness-neutral workspace-root
       // aidlc/spaces/default/memory/ tree (neutral basenames). The compile bakes
       // the neutral display path; verified against the actual emitted array
-      // ["…/org.md","…/team.md","…/project.md","…/phases/inception.md"].
+      // ["…/org.md","…/team.md","…/project.md","…/phases/design.md"].
       expect(rulePaths).toContain("aidlc/spaces/default/memory/project.md");
       const rule = readFileSync(
         join(proj, "aidlc", "spaces", "default", "memory", "project.md"),
@@ -328,17 +330,17 @@ describe("t-tui-custom-harness (the {sdk,tui} two-driver journey)", () => {
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*INCEPTION", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", `\\[AIDLC\\].*${SNAPSHOT_PHASE_LABEL}`, "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
-        // The custom stage is in INCEPTION — wait for the workflow statusline.
+        // The custom stage's phase label — wait for the workflow statusline.
         // The orientation prefix (the intent slug and a middle-dot separator) sits
         // between [AIDLC] and the phase, so match with .* rather than a contiguous gap.
-        const sawMarker = waitFor(session, "\\[AIDLC\\].*INCEPTION", remainingWorkMs(), 1000);
+        const sawMarker = waitFor(session, `\\[AIDLC\\].*${SNAPSHOT_PHASE_LABEL}`, remainingWorkMs(), 1000);
         const pane = drive(["capture", "--session", session]).stdout;
         if (!sawMarker) {
           throw new Error(
-            `workflow statusline "[AIDLC] INCEPTION" never painted.\n---- pane ----\n${pane}\n--------------`,
+            `workflow statusline "[AIDLC] ${SNAPSHOT_PHASE_LABEL}" never painted.\n---- pane ----\n${pane}\n--------------`,
           );
         }
         expect(pane).toContain(`> ${SNAPSHOT_STAGE_SLUG}`);
@@ -514,10 +516,10 @@ describe("t-tui-custom-harness (the {sdk,tui} two-driver journey)", () => {
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*(ready|INCEPTION)", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", `\\[AIDLC\\].*(ready|${SNAPSHOT_PHASE_LABEL})`, "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
-        expect(waitFor(session, "\\[AIDLC\\].*(ready|INCEPTION)", remainingWorkMs(), 800)).toBe(true);
+        expect(waitFor(session, `\\[AIDLC\\].*(ready|${SNAPSHOT_PHASE_LABEL})`, remainingWorkMs(), 800)).toBe(true);
 
         // Resume the pre-initialized custom-scope workflow. answer-gate below
         // handles any custom-stage approval gates by keystroke.

@@ -53,7 +53,7 @@
 // then gate-start -> approve per remaining stage (approve auto-advances; the
 // final approve reaches handleCompleteWorkflow). Same seam t51 uses. Then parse
 // the resulting audit shards and assert on the FILE bytes (never prose). bugfix
-// has 4 PHASE_VERIFIED (initialization, inception, construction, operation); we
+// has 6 PHASE_VERIFIED (initialization, design, build, test, secure, deploy); we
 // assert the FINAL phase's terminal ordering and the singleton
 // WORKFLOW_COMPLETED.
 
@@ -71,6 +71,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 // Audit is sharded per clone under the created intent's record; read the
 // merged shards via the shipped helper (default-resolves the active intent).
 import {
@@ -124,10 +125,10 @@ function walkStage(slug: string, proj: string): void {
     if (!record) throw new Error("active record missing");
     const artifact =
       slug === "requirements-analysis"
-        ? join(record, "inception", slug, "requirements.md")
+        ? join(record, phaseFor(slug), slug, "requirements.md")
         : join(
             record,
-            "construction",
+            phaseFor(slug),
             "unit-alpha",
             slug,
             "code-generation-plan.md",
@@ -196,9 +197,9 @@ function countEvent(seq: string[], type: string): number {
 
 // Drive a complete bugfix workflow once; return the project dir (audit is read
 // from the created intent's shards via readAllAuditShards(proj)). Bootstrap via
-// intent-create (emits WORKFLOW_STARTED + init phase + PHASE_SKIPPED for
-// Ideation and pre-completes the 3 init stages), then walk the remaining EXECUTE
-// stages.
+// intent-create (emits WORKFLOW_STARTED + init phase + PHASE_SKIPPED for each
+// phase the scope runs no stage in, and pre-completes the 3 init stages), then
+// walk the remaining EXECUTE stages.
 function driveBugfixToCompletion(): { proj: string } {
   const proj = createTestProject();
   const init = run(
@@ -214,6 +215,8 @@ function driveBugfixToCompletion(): { proj: string } {
   walkStage("requirements-analysis", proj);
   walkStage("code-generation", proj);
   walkStage("build-and-test", proj);
+  walkStage("code-review", proj);
+  walkStage("security-review", proj);
   walkStage("deployment-pipeline", proj);
   walkStage("deployment-execution", proj); // final stage -> handleCompleteWorkflow
 
@@ -226,7 +229,7 @@ afterAll(() => {
 });
 
 // Each `bun <tool>.ts` cold-start costs ~hundreds of ms and a full bugfix drive
-// includes five post-init stage walks; driving once per test blows
+// includes seven post-init stage walks; driving once per test blows
 // bun:test's default 5s per-test timeout. So drive the workflow ONCE per
 // describe in a beforeAll (the walk is deterministic) and share the resulting
 // audit across the assertions. Generous explicit timeouts on the drives keep
@@ -275,11 +278,11 @@ describe("complete-workflow terminal-event ordering (bugfix, no claude)", () => 
   });
 
   test("the FINAL phase's closure ordering holds: the last PHASE_VERIFIED is immediately followed by WORKFLOW_COMPLETED, with PHASE_COMPLETED before it", () => {
-    // bugfix crosses 4 phase boundaries -> 4 PHASE_VERIFIED / 4 PHASE_COMPLETED.
+    // bugfix crosses 6 phase boundaries -> 6 PHASE_VERIFIED / 6 PHASE_COMPLETED.
     // We pin the FINAL phase's ordering specifically (the others are mid-stream
     // boundaries emitted by handleAdvance; this one is the terminal handler).
-    expect(countEvent(seq, "PHASE_VERIFIED")).toBe(4);
-    expect(countEvent(seq, "PHASE_COMPLETED")).toBe(4);
+    expect(countEvent(seq, "PHASE_VERIFIED")).toBe(6);
+    expect(countEvent(seq, "PHASE_COMPLETED")).toBe(6);
 
     const lastVerified = seq.lastIndexOf("PHASE_VERIFIED");
     const lastCompletedPhase = seq.lastIndexOf("PHASE_COMPLETED");

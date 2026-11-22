@@ -437,7 +437,7 @@ function restartFixture(harness: Harness = HARNESS_RUNTIMES[0], projection: Proj
     // recovery, not the plan's question.
     .replace("- **Revision Count**: 0", "- **Revision Count**: 0\n- **Plan Approval**: off (set by you)")
     .replace("- **Current Stage**: requirements-analysis", "- **Current Stage**: code-generation")
-    .replace("- **Lifecycle Phase**: INCEPTION", "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace(`- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}`, `- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}`)
     .replace("- [-] requirements-analysis — EXECUTE", "- [x] requirements-analysis — EXECUTE")
     .replace("- [ ] code-generation — EXECUTE", "- [R] code-generation — EXECUTE"));
   // The lifecycle fixture starts mid-revision with no outputs written; the
@@ -899,7 +899,7 @@ describe("source and native guard remedies execute their owning operations", () 
           if (scenario.op === "restore-or-jump") {
             state = state
               .replace("- **Current Stage**: requirements-analysis", "- **Current Stage**: build-and-test")
-              .replace("- **Lifecycle Phase**: INCEPTION", "- **Lifecycle Phase**: CONSTRUCTION")
+              .replace(`- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}`, `- **Lifecycle Phase**: ${phaseFor("build-and-test").toUpperCase()}`)
               .replace("- [ ] code-generation — EXECUTE", "- [x] code-generation — EXECUTE")
               .replace("- [ ] build-and-test — EXECUTE", "- [-] build-and-test — EXECUTE");
           }

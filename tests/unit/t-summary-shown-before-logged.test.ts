@@ -24,6 +24,7 @@ import { readMessage, saveMessage } from "../../dist/claude/.claude/tools/aidlc-
 import {
   AIDLC_SRC, cleanupTestProject, createTestProject, seedAidlcMemory, seededRecordDir, seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -45,7 +46,7 @@ function project(policy: "off" | "relaxed" | "strict"): { proj: string; question
   const state = seededStateFile(proj);
   writeFileSync(state, readFileSync(state, "utf-8").replace("- **Change Control**: strict (from scope bugfix)",
     policy === "off" ? "- **Guard Policy**: off (from scope bugfix)" : `- **Guard Policy**: ${policy} (set by you)`));
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const questions = join(dir, `${STAGE}-questions.md`);
   writeFileSync(questions, [

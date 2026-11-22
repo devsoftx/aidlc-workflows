@@ -179,7 +179,7 @@ describe("t-tui-workshop (answering AUQ gates advances disk state)", () => {
         // `ready`). --stable-ms 0: the screen is streaming (live token counter /
         // spinner), so match the instant the phase text appears.
         expect(
-          waitFor(session, "\\[AIDLC\\].*(INITIALIZATION|IDEATION|INCEPTION)", remainingWorkMs(), 0),
+          waitFor(session, "\\[AIDLC\\].*(INITIALIZATION|DISCOVER|DESIGN)", remainingWorkMs(), 0),
         ).toBe(true);
 
         // Begin tailing the grid for the render assertion BEFORE answer-gate runs,

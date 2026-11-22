@@ -31,6 +31,7 @@ import {
   seededAuditShard,
   seededRecordDir,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -124,7 +125,7 @@ describe("t349 audit trail guard: file-write tools", () => {
       `${RECORD}/design/requirements-analysis/requirements.md`,
       `${RECORD}/design/requirements-analysis/requirements-analysis-questions.md`,
       `${RECORD}/audit-notes.md`,
-      `${RECORD}/construction/audit/log.md`,
+      `${RECORD}/build/audit/log.md`,
       `${RECORD}/.aidlc-engine/reviews/functional-design/review.md`,
       `${RECORD}/.aidlc-engine/audit-notes.md`,
       "aidlc/spaces/default/memory/project.md",
@@ -244,7 +245,7 @@ describe("t349 audit trail guard: shell commands", () => {
   });
 
   test("a shell apply_patch heredoc's body is data: a stage document's Markdown is not read as a redirect", () => {
-    const doc = `${RECORD}/inception/architecture-design/doc.md`;
+    const doc = `${RECORD}/design/architecture-design/doc.md`;
     const patch = (lines: string[]) => `apply_patch <<'PATCH'\n*** Begin Patch\n*** Add File: ${doc}\n${lines.map((l) => `+${l}`).join("\n")}\n*** End Patch\nPATCH`;
     for (const line of ["Scale out when traffic > $5 a day.", "Alarm when retries > 3?", "> **Note** the region.", "> `x` is the key.", "A -->|$5| B"]) {
       expect(bash(patch([line, "more"])), line).toBeNull();
@@ -526,7 +527,7 @@ describe("t349 audit trail guard: the hooks refuse with the owning routes named"
       { tool_name: "Read", tool_input: { file_path: shard } },
       { tool_name: "Bash", tool_input: { command: `cat "${shard}"` } },
       { tool_name: "Bash", tool_input: { command: `grep -c STAGE_STARTED "${shard}"` } },
-      { tool_name: "Write", tool_input: { file_path: join(seededRecordDir(project), "inception", "feasibility", "feasibility.md"), content: "# ok\n" } },
+      { tool_name: "Write", tool_input: { file_path: join(seededRecordDir(project), phaseFor("feasibility"), "feasibility", "feasibility.md"), content: "# ok\n" } },
       { tool_name: "Bash", tool_input: { command: `bun .claude/tools/aidlc-log.ts decision --stage feasibility --decision "How would you like to answer the questions?" --options "Guide me,I'll edit the file,Chat"` } },
     ]) {
       const r = runHook(STATE_TRANSITION_GUARD, payload, project);

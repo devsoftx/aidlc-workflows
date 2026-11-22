@@ -45,6 +45,7 @@ import {
   type CapturedToolResult,
   type DriveResult,
 } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 import { targetsStateFile } from "../harness/state-file-target.ts";
 
@@ -59,7 +60,7 @@ const SUPPORT_AGENTS = [
   "aidlc-developer-agent",
   "aidlc-quality-agent",
 ] as const;
-// One distinctive token from each of org.md and phases/inception.md. A support
+// One distinctive token from each of org.md and phases/design.md. A support
 // brief must carry the content marker; a path alone is the rejected contract.
 // team.md/project.md ship as unpopulated templates and have no markers here.
 const RULE_MARKERS = [
@@ -116,8 +117,8 @@ function userStoriesState(projectDir: string): string {
 - **Practices Affirmed Timestamp**:
 
 ## Scope Configuration
-- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.2, 2.3, 2.4
-- **Stages to Skip**: 2.1, 2.5, 2.6, 2.7, 2.8, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
+- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3
+- **Stages to Skip**: 1.4, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 3.1, 4.1, 4.2, 5.1, 5.2, 5.3, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3
 - **Depth**: Minimal
 - **Test Strategy**: Minimal
 - **Collaborators**: on (set by you)
@@ -140,10 +141,13 @@ function userStoriesState(projectDir: string): string {
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
 - **Initialization**: Verified
-- **Ideation**: Verified
-- **Inception**: Active
-- **Construction**: Skipped
-- **Operation**: Skipped
+- **Discover**: Verified
+- **Design**: Active
+- **Build**: Skipped
+- **Test**: Skipped
+- **Secure**: Skipped
+- **Deploy**: Skipped
+- **Operate**: Skipped
 
 ## Stage Progress
 
@@ -152,17 +156,17 @@ function userStoriesState(projectDir: string): string {
 - [x] workspace-detection — EXECUTE
 - [x] state-init — EXECUTE
 
-### IDEATION PHASE
+### DISCOVER PHASE
 - [x] intent-capture — EXECUTE
 - [x] market-research — EXECUTE
 - [x] feasibility — EXECUTE
+- [S] reverse-engineering — SKIP (greenfield)
 - [x] scope-definition — EXECUTE
 - [x] team-formation — EXECUTE
 - [x] rough-mockups — EXECUTE
 - [x] approval-handoff — EXECUTE
 
-### INCEPTION PHASE
-- [S] reverse-engineering — SKIP (greenfield)
+### DESIGN PHASE
 - [x] practices-discovery — EXECUTE
 - [x] requirements-analysis — EXECUTE
 - [-] user-stories — EXECUTE
@@ -171,28 +175,37 @@ function userStoriesState(projectDir: string): string {
 - [S] units-generation — SKIP (live SDK fixture terminal boundary)
 - [S] contract-design — SKIP (live SDK fixture terminal boundary)
 - [S] delivery-planning — SKIP (live SDK fixture terminal boundary)
-
-### CONSTRUCTION PHASE
 Per unit: [unit-name]
 - [S] functional-design — SKIP (live SDK fixture terminal boundary)
 - [S] nfr-requirements — SKIP (live SDK fixture terminal boundary)
 - [S] nfr-design — SKIP (live SDK fixture terminal boundary)
 - [S] infrastructure-design — SKIP (live SDK fixture terminal boundary)
-- [S] code-generation — SKIP (live SDK fixture terminal boundary)
-- [S] build-and-test — SKIP (live SDK fixture terminal boundary)
-- [S] ci-pipeline — SKIP (live SDK fixture terminal boundary)
 
-### OPERATION PHASE
+### BUILD PHASE
+- [S] code-generation — SKIP (live SDK fixture terminal boundary)
+
+### TEST PHASE
+- [S] build-and-test — SKIP (live SDK fixture terminal boundary)
+- [S] performance-validation — SKIP (live SDK fixture terminal boundary)
+
+### SECURE PHASE
+- [S] code-review — SKIP (live SDK fixture terminal boundary)
+- [S] security-review — SKIP (live SDK fixture terminal boundary)
+- [S] conformance-review — SKIP (live SDK fixture terminal boundary)
+
+### DEPLOY PHASE
+- [S] ci-pipeline — SKIP (live SDK fixture terminal boundary)
 - [S] deployment-pipeline — SKIP (live SDK fixture terminal boundary)
 - [S] environment-provisioning — SKIP (live SDK fixture terminal boundary)
 - [S] deployment-execution — SKIP (live SDK fixture terminal boundary)
+
+### OPERATE PHASE
 - [S] observability-setup — SKIP (live SDK fixture terminal boundary)
 - [S] incident-response — SKIP (live SDK fixture terminal boundary)
-- [S] performance-validation — SKIP (live SDK fixture terminal boundary)
 - [S] feedback-optimization — SKIP (live SDK fixture terminal boundary)
 
 ## Current Status
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: user-stories
 - **Next Stage**: none
 - **Status**: Running
@@ -208,7 +221,7 @@ Per unit: [unit-name]
 function seedRequirements(projectDir: string): void {
   const dir = join(
     seededRecordDir(projectDir),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -244,7 +257,7 @@ function seedRuntimeGraph(projectDir: string): void {
     projectDir,
     join(
       seededRecordDir(projectDir),
-      "inception",
+      phaseFor("user-stories"),
       "user-stories",
       "memory.md",
     ),
@@ -271,7 +284,7 @@ function seedRuntimeGraph(projectDir: string): void {
 function contributionPath(projectDir: string, agent: string): string {
   return join(
     seededRecordDir(projectDir),
-    "inception",
+    phaseFor("user-stories"),
     "user-stories",
     "contributions",
     `${agent}.md`,
@@ -609,7 +622,7 @@ describe("t238 user-stories mob topology (Claude SDK live)", () => {
 
         const stageDir = join(
           seededRecordDir(projectDir),
-          "inception",
+          phaseFor("user-stories"),
           "user-stories",
         );
         for (const artifact of [

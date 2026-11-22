@@ -948,7 +948,7 @@ describe("t181 per-harness conductor-SKILL freshness gate (P11 RESOLVE-2)", () =
     try {
       mkdirSync(dirname(seededStateFile(proj)), { recursive: true });
       writeFileSync(seededStateFile(proj),
-        "# AI-DLC State Tracking\n\n## Project Information\n- **Project**: t181\n- **State Version**: 8\n- **Lifecycle Phase**: CONSTRUCTION\n");
+        "# AI-DLC State Tracking\n\n## Project Information\n- **Project**: t181\n- **State Version**: 8\n- **Lifecycle Phase**: BUILD\n");
       const run = spawnSync(process.execPath, [
         join(REPO_ROOT, "dist", "claude", ".claude", "tools", "aidlc-state.ts"),
         "set-construction-checkpoints", "disabled", "--message", "m0000000", "--project-dir", proj,

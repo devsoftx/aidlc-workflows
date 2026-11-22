@@ -204,7 +204,7 @@ describe("t29 aidlc-sync-workflow-state hook (migrated from t29-hook-sync-status
 
   test("6: updates Lifecycle Phase from stage graph", () => {
     const p = hookProject();
-    seedStateFile(p, MID_IDEATION); // Lifecycle Phase starts as IDEATION
+    seedStateFile(p, MID_IDEATION); // Lifecycle Phase starts as DISCOVER
     runHook(
       p,
       '{"tool_name":"TaskUpdate","tool_input":{"taskId":"t1","status":"in_progress","activeForm":"Running Code Generation [code-generation]"}}',

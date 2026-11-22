@@ -31,10 +31,9 @@
 // FIXTURE DISCIPLINE (mirrors t135's seedCodegenProject + t116's fresh-temp-per-
 // emit): each case uses a FRESH temp project (createTestProject seeds the
 // per-intent workspace shell + default record). We write a CLEAN single-row-per-
-// slug Construction state (NOT the synthetic duplicate-row state-construction.md
-// fixture, that models a representation the engine never writes), pivot Current
-// Stage to the per-unit stage and flip its checkbox in-flight, write a bolt_dag
-// runtime-graph.json with units [alpha, beta], and seed per-unit artifact dirs to
+// slug Construction state of our own, pivot Current Stage to the per-unit stage
+// and flip its checkbox in-flight, write a bolt_dag runtime-graph.json with
+// units [alpha, beta], and seed per-unit artifact dirs to
 // control coverage. The `Skeleton Stance` field is recorded so functional-design
 // (the feature-scope skeleton-gate stage) resolves its gate to a boolean rather
 // than emitting the unresolved sentinel, isolating the per-unit behaviour. All
@@ -206,12 +205,11 @@ interface Directive {
 }
 
 /**
- * A CLEAN Construction-phase state file: one checkbox row per slug (the shape
- * the engine actually writes, NOT the synthetic duplicate-row fixture), Current
- * Stage pivoted to `current` and marked in-flight ([-]). `skeletonStance`, when
- * set, records the resolved walking-skeleton stance so the feature-scope
- * skeleton-gate stage (functional-design) emits a boolean gate rather than the
- * unresolved sentinel.
+ * A CLEAN Construction state file: one checkbox row per slug (the shape the
+ * engine actually writes), Current Stage pivoted to `current` and marked
+ * in-flight ([-]). `skeletonStance`, when set, records the resolved
+ * walking-skeleton stance so the feature-scope skeleton-gate stage
+ * (functional-design) emits a boolean gate rather than the unresolved sentinel.
  */
 function constructionState(current: string, skeletonStance?: string): string {
   const stanceLine = skeletonStance
@@ -493,7 +491,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.kind).toBe("run-stage");
     expect(d.stage).toBe("domain-design");
     expect(d.unit).toBeUndefined();
-    expect(d.produces?.some((p) => p.includes("/construction/"))).toBe(false);
+    expect(d.produces?.some((p) => /\/(alpha|beta|\{unit-name\})\//.test(p))).toBe(false);
     expect(d.reviewer).toBeDefined();
     expect(d.protocol_modules).not.toContain("reviewer-unit");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);

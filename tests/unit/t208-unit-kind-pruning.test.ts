@@ -120,19 +120,23 @@ function constructionState(current: string, skeletonStance = "on"): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation — EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 
-### INCEPTION PHASE
+### DESIGN PHASE
 - [-] domain-design — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;

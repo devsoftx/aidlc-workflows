@@ -28,6 +28,7 @@ import {
   seedAidlcMemory, seededRecordDir, seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -112,7 +113,7 @@ function gate(policy: Policy): string {
   says(proj, "/aidlc");
   const started = runOrchestrateNext(ORCHESTRATE, proj, [], { env: env(proj, CHAT) });
   expect(started.directive?.kind, started.out).toBe("run-stage");
-  const dir = join(seededRecordDir(proj), "ideation", "feasibility");
+  const dir = join(seededRecordDir(proj), phaseFor("feasibility"), "feasibility");
   mkdirSync(dir, { recursive: true });
   for (const name of findStageBySlug("feasibility")!.produces ?? []) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n## Summary\n\nWritten for this case.\n`, "utf-8");

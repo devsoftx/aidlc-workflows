@@ -926,8 +926,8 @@ describe("documentation parity derives current behavior from authored implementa
     // A team writes its phase rules into the space's phases/*.md, which the copy runtime ships (it leaves out only
     // team.md, project.md and active-space). A contents copy would replace them with no word.
     const owned: Array<[string, string, string[]]> = [
-      ["codex-cli.md", "codex/aidlc", ["spaces/default/memory/phases/construction.md"]],
-      ["opencode.md", "opencode/aidlc", ["spaces/default/memory/phases/construction.md"]],
+      ["codex-cli.md", "codex/aidlc", ["spaces/default/memory/phases/build.md"]],
+      ["opencode.md", "opencode/aidlc", ["spaces/default/memory/phases/build.md"]],
     ];
     for (const [page, folder, names] of owned) {
       const shipped = names.filter((name) => existsSync(at("dist", folder, name)));

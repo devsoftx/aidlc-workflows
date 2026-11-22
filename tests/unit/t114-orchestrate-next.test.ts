@@ -94,6 +94,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { engineTouchMarkerPath } from "../../core/tools/aidlc-lib.ts";
 import { shellWords } from "../harness/code-generation-states.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
@@ -455,7 +456,7 @@ describe("t114 read-only dispatch + guards", () => {
   test("11: mutually-exclusive --stage+--phase -> error directive", () => {
     proj = createOrchestrationTestProject();
     expect(
-      runNext(proj, ["--stage", "feasibility", "--phase", "ideation"]).out,
+      runNext(proj, ["--stage", "feasibility", "--phase", phaseFor("feasibility")]).out,
     ).toContain("Cannot use --stage and --phase together");
   });
 });
@@ -877,7 +878,7 @@ describe("t114 gate axis != execution axis", () => {
     // intent-capture is execution:ALWAYS yet presents a standard approval gate.
     // A rule reading gate from `execution !== ALWAYS` would emit gate:false here
     // — wrong. Every EXECUTE stage gates except bootstrap initialization stages,
-    // so intent-capture (an ideation stage) MUST carry gate:true.
+    // so intent-capture (a discover stage) MUST carry gate:true.
     proj = createOrchestrationTestProject();
     const out = runNext(proj, ["--stage", "intent-capture"], {
       AWS_AIDLC_DEFAULT_SCOPE: "poc",
@@ -1362,7 +1363,7 @@ describe("t114 mid-flow freeform prose -> routing ask (Branch 9c)", () => {
 
   test("same-scope --scope + new description over in-flight work proposes the typed scope", () => {
     proj = createOrchestrationTestProject();
-    seedStateFile(proj, MID_IDEATION); // scope: feature, mid-Ideation
+    seedStateFile(proj, MID_IDEATION); // scope: feature, mid-Discover
     const out = runNext(proj, ["--scope", "feature", "a standalone metrics dashboard"]).out;
     const directive = JSON.parse(out) as { kind?: string; ask_type?: string; proposed_scope?: string; new_intent_command?: string };
     expect(directive.kind).toBe("ask");

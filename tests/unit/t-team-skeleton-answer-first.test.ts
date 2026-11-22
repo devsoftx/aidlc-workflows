@@ -83,6 +83,17 @@ const CONSTRUCTION = ["functional-design", "nfr-requirements", "nfr-design", "in
 // Design just entered with nothing built.
 function stateFile(at: "delivery-planning" | "functional-design", ownership: "team" | "solo" | null): string {
   const inception = at === "delivery-planning";
+  const rows: Array<[string, string]> = [
+    ["units-generation", "[x]"],
+    ["delivery-planning", inception ? "[-]" : "[x]"],
+    ...CONSTRUCTION.map((slug): [string, string] => [slug, !inception && slug === at ? "[-]" : "[ ]"]),
+  ];
+  const progress = [...new Set(rows.map(([slug]) => phaseFor(slug)))]
+    .map((phase) => [
+      `### ${phase.toUpperCase()} PHASE`,
+      ...rows.filter(([slug]) => phaseFor(slug) === phase).map(([slug, box]) => `- ${box} ${slug} ${D} EXECUTE`),
+    ].join("\n"))
+    .join("\n\n");
   return `# AI-DLC State Tracking
 
 ## Project Information
@@ -103,15 +114,10 @@ ${ownership ? `- **Unit Ownership**: ${ownership}\n` : ""}
 
 ## Stage Progress
 
-### INCEPTION PHASE
-- [x] units-generation ${D} EXECUTE
-- ${inception ? "[-]" : "[x]"} delivery-planning ${D} EXECUTE
-
-### CONSTRUCTION PHASE
-${CONSTRUCTION.map((slug) => `- ${!inception && slug === at ? "[-]" : "[ ]"} ${slug} ${D} EXECUTE`).join("\n")}
+${progress}
 
 ## Current Status
-- **Lifecycle Phase**: ${inception ? "INCEPTION" : "CONSTRUCTION"}
+- **Lifecycle Phase**: ${phaseFor(at).toUpperCase()}
 - **Current Stage**: ${at}
 - **Status**: Running
 `;
@@ -207,7 +213,7 @@ function jumpThenTeams(proj: string): void {
 }
 
 describe("the team's walking-skeleton answer is read before a team step decides", () => {
-  test("teams picked in Inception: the answer is read first, and a no opens every Unit", () => {
+  test("teams picked in Design: the answer is read first, and a no opens every Unit", () => {
     const proj = project("delivery-planning", null, NO);
     teams(proj);
     expect(claimsOpenHere(proj)).toBe(false);

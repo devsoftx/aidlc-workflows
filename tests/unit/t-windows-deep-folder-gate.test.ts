@@ -21,6 +21,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
   NATIVE_STARTUP_TIMEOUT_MS,
@@ -152,20 +153,22 @@ const STATE = `# AI-DLC State Tracking
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### ${phaseFor(STAGE).toUpperCase()} PHASE
 ${row("x", "domain-design")}
 ${row("-", STAGE)}
-
-### CONSTRUCTION PHASE
 ${row(" ", "functional-design")}
 ${row(" ", "nfr-requirements")}
 ${row(" ", "nfr-design")}
 ${row(" ", "infrastructure-design")}
+
+### ${phaseFor("code-generation").toUpperCase()} PHASE
 ${row(" ", "code-generation")}
+
+### ${phaseFor("build-and-test").toUpperCase()} PHASE
 ${row(" ", "build-and-test")}
 
 ## Current Status
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}
 - **Current Stage**: ${STAGE}
 - **Status**: Running
 `;
@@ -193,7 +196,7 @@ function project(units: (depth: number, record: number) => string[]): { proj: st
   seedAidlcMemory(proj);
   writeFileSync(seededStateFile(proj), STATE);
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "feature" }, proj);
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const names = units(proj.length, relative(proj, seededRecordDir(proj)).length);
   writeFileSync(join(dir, "unit-of-work.md"), `# Units of Work\n\n| Unit ID | Directory | Name |\n|---|---|---|\n${

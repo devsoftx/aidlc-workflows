@@ -110,15 +110,17 @@ const CONSTRUCTION_STATE = `# AI-DLC State Tracking
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
+
+### ${phaseFor("code-generation").toUpperCase()} PHASE
 - [ ] code-generation — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-07-30T00:00:00Z

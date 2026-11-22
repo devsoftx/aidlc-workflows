@@ -1380,7 +1380,7 @@ describe("t342 Construction checkpoint routing", () => {
     const env: NodeJS.ProcessEnv = { ...process.env, AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS: "1" };
     delete env.AIDLC_SKIP_HUMAN_PRESENCE_GUARD;
     const refused = spawnSync(process.execPath, [
-      join(AIDLC_SRC, "tools/aidlc-state.ts"), "set", "Lifecycle Phase=inception",
+      join(AIDLC_SRC, "tools/aidlc-state.ts"), "set", `Lifecycle Phase=${phaseFor("requirements-analysis")}`,
       "Construction Checkpoints=disabled", "--project-dir", p,
     ], { timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8", env });
     const output = `${refused.stdout}${refused.stderr}`;

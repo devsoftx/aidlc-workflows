@@ -79,19 +79,21 @@ function constructionStateAtCodeGen(strategy: string): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("domain-design").toUpperCase()} PHASE
+- [x] domain-design — EXECUTE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
+
+### ${phaseFor("code-generation").toUpperCase()} PHASE
 - [-] code-generation — EXECUTE
+
+### ${phaseFor("build-and-test").toUpperCase()} PHASE
 - [ ] build-and-test — EXECUTE
 
-### INCEPTION PHASE
-- [x] domain-design — EXECUTE
-
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}
 - **Current Stage**: code-generation
 - **Status**: Running
 `;

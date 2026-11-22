@@ -19,6 +19,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync,
 import { join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, REPO_ROOT, cleanupTestProject, createOrchestrationTestProject, intentsDirOf, seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   buildState, type Directive, env, exec, type Harness, type RunOptions, SECOND_SESSION, say, UTILITY,
 } from "../harness/aidlc-input-corpus.ts";
@@ -101,7 +102,7 @@ async function clonedWork(harness: "codex" | "claude"): Promise<string> {
   install(proj, harness);
   await buildState(proj, "work-open");
   appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, proj);
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, `${STAGE}-questions.md`),
     "# Questions\n\n## Q1\n\nShould a blank title be refused?\n\nA) Refuse it\nB) Save it as Untitled\n\n[Answer]: A\n", "utf-8");

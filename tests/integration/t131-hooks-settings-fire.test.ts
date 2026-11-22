@@ -107,6 +107,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -395,7 +396,7 @@ describe("t131 spine fires inside a workflow (mechanism cli — spawnSync)", () 
         // Under the per-intent record so the audit-logger's docsRoot() gate fires.
         file_path: join(
           seededRecordDir(proj),
-          "inception",
+          phaseFor("requirements-analysis"),
           "requirements-analysis",
           "requirements.md",
         ),

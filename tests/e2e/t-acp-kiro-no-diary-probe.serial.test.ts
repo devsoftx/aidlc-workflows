@@ -12,6 +12,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   type AcpToolCall,
   AcpSession,
@@ -234,7 +235,7 @@ describe("t-acp-kiro no pre-stage diary probe", () => {
       });
       const stageDir = join(
         seededRecordDir(project),
-        "ideation",
+        phaseFor("intent-capture"),
         "intent-capture",
       );
       const diaryPath = join(stageDir, "memory.md");

@@ -1,9 +1,9 @@
 // covers: subcommand:aidlc-jump:execute, audit:STAGE_JUMPED
 //
 // t-acp-kiro-jump.serial.test.ts — Kiro ACP port of the t25 backward-jump
-// contract: from a mid-INCEPTION seeded state, `/aidlc --phase ideation`
+// contract: from a mid-DESIGN seeded state, `/aidlc --phase discover`
 // resolves to a BACKWARD jump targeting intent-capture (first in-scope
-// ideation stage for scope=feature), made by the person's `next` itself, which
+// discover stage for scope=feature), made by the person's `next` itself, which
 // returns Intent Capture's step in that one call (no tool call runs the jump
 // tool), and the audit's STAGE_JUMPED block lands with Target/Direction lines,
 // all asserted on verbatim tool output + disk, never prose.
@@ -74,17 +74,17 @@ const SKIP_REASON = skipReason();
 
 describe("t-acp-kiro-jump (backward phase jump over ACP; t26-class flake policy applies)", () => {
   test.skipIf(SKIP_REASON !== null)(
-    `--phase ideation from INCEPTION: jump executes backward to intent-capture${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
+    `--phase discover from DESIGN: jump executes backward to intent-capture${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
       const proj = setupTuiProject({
         harness: "kiro",
-        withState: "state-brownfield-feature.md", // mid-inception, scope=feature
+        withState: "state-brownfield-feature.md", // mid-design, scope=feature
         withAudit: true,
       });
       try {
         const r = await driveKiroAcp({
           projectDir: proj,
-          prompt: "/aidlc --phase ideation",
+          prompt: "/aidlc --phase discover",
           timeoutMs: remainingWorkMs(),
           stopAfterToolOutput: TARGET_STEP,
         });

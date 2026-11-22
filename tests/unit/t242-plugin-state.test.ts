@@ -89,14 +89,14 @@ function pluginRoot(
     ? ".codex-plugin"
     : ".kiro-plugin";
   mkdirSync(join(root, manifestDir), { recursive: true });
-  mkdirSync(join(root, "stages", "construction"), { recursive: true });
+  mkdirSync(join(root, "stages", "test"), { recursive: true });
   mkdirSync(join(root, "hooks"), { recursive: true });
   writeFileSync(
     join(root, manifestDir, "plugin.json"),
     `${JSON.stringify({ name: "aidlc-test-pro", version })}\n`,
   );
   writeFileSync(
-    join(root, "stages", "construction", "test-pro-stage.md"),
+    join(root, "stages", "test", "test-pro-stage.md"),
     "---\nname: test\npath: {{HARNESS_DIR}}/tools\n---\n",
   );
   writeFileSync(join(root, "hooks", "compose.ts"), "throw new Error('excluded wrapper');\n");
@@ -208,13 +208,13 @@ describe("t242 plugin manifest and hash contract", () => {
 
   test("hashes sorted relative paths and LF-normalized source before token substitution", () => {
     const root = pluginRoot();
-    const path = join(root, "stages", "construction", "test-pro-stage.md");
+    const path = join(root, "stages", "test", "test-pro-stage.md");
     const first = pluginSourceHash(root);
     writeFileSync(path, readFileSync(path, "utf-8").replaceAll("\n", "\r\n"));
     expect(pluginSourceHash(root)).toBe(first);
     writeFileSync(join(root, "hooks", "compose.ts"), "changed host wrapper\n");
     expect(pluginSourceHash(root)).toBe(first);
-    const renamed = join(root, "stages", "construction", "renamed.md");
+    const renamed = join(root, "stages", "test", "renamed.md");
     renameSync(path, renamed);
     expect(pluginSourceHash(root)).not.toBe(first);
     expect(readFileSync(renamed, "utf-8")).toContain("{{HARNESS_DIR}}");

@@ -83,15 +83,15 @@ describe("t156 method relocation to aidlc/spaces/default/memory/ + per-harness i
       "org.md": "# Org\n\n## Way of Working\n\nTrunk-based.\n",
       "team.md": "# Team\n\n## Code Style\n\nNamed exports.\n",
       "project.md": "# Project\n\n## Tech Stack\n\nBun.\n",
-      "phases/construction.md": "# Construction phase rule\n\nBuild-and-test.\n",
+      "phases/build.md": "# Build phase rule\n\nBuild-and-test.\n",
     });
     const rules = loadRules();
     const byScope = rules.map((r) => r.scope).sort();
     expect(byScope).toEqual(["org", "phase", "project", "team"]);
     expect(rules.map((r) => r.path)).toContain("aidlc/spaces/default/memory/org.md");
     const phase = rules.find((r) => r.scope === "phase");
-    expect(phase?.path).toBe("aidlc/spaces/default/memory/phases/construction.md");
-    expect(phase?.phase).toBe("construction");
+    expect(phase?.path).toBe("aidlc/spaces/default/memory/phases/build.md");
+    expect(phase?.phase).toBe("build");
   });
 
   // === (1b) precedence order is preserved (org<team<project<phase) ========
@@ -100,7 +100,7 @@ describe("t156 method relocation to aidlc/spaces/default/memory/ + per-harness i
       "org.md": "# Org\n",
       "team.md": "# Team\n",
       "project.md": "# Project\n",
-      "phases/inception.md": "# Inception\n",
+      "phases/design.md": "# Design\n",
     });
     expect(loadRules().map((r) => r.scope)).toEqual([
       "org",

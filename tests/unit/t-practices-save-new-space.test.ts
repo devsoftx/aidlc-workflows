@@ -14,6 +14,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv, seedAidlcMemory, seededAuditShard, seededRecordDir,
   seededStateFile, seedWorkspaceShell,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { placeRulesBlock, renderRulesBlock, stripRulesBlock } from "../../dist/claude/.claude/tools/aidlc-plugin.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -122,14 +123,16 @@ function practicesInProgress(proj: string, space: string, teamPractices = TEAM_P
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### ${phaseFor("reverse-engineering").toUpperCase()} PHASE
 - [S] reverse-engineering ${STAGE_SEP} SKIP
+
+### ${phaseFor("practices-discovery").toUpperCase()} PHASE
 - [-] practices-discovery ${STAGE_SEP} EXECUTE
 - [ ] requirements-analysis ${STAGE_SEP} EXECUTE
 
 ## Current Status
 - **Current Stage**: practices-discovery
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor("practices-discovery").toUpperCase()}
 - **Status**: In Progress
 `);
   const shard = seededAuditShard(proj, space);
@@ -138,7 +141,7 @@ function practicesInProgress(proj: string, space: string, teamPractices = TEAM_P
     "", "## STAGE_STARTED", "**Timestamp**: 2026-07-17T14:01:00Z", "**Event**: STAGE_STARTED",
     "**Stage**: practices-discovery", "**Agent**: aidlc-pipeline-deploy-agent", "", "---", "",
   ].join("\n"), { flag: "a" });
-  const draftDir = join(seededRecordDir(proj, space), "inception", "practices-discovery");
+  const draftDir = join(seededRecordDir(proj, space), phaseFor("practices-discovery"), "practices-discovery");
   mkdirSync(draftDir, { recursive: true });
   writeFileSync(join(draftDir, "team-practices.md"), teamPractices);
   writeFileSync(join(draftDir, "discovered-rules.md"), DISCOVERED_RULES);

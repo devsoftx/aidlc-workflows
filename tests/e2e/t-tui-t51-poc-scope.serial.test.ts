@@ -17,7 +17,7 @@
 //       * the intent-capture intent-statement artifact exists & is non-empty,
 //       * the created intent's aidlc-state.md records the `poc` scope and a greenfield
 //         classification,
-//       * <record>/ideation/ exists with a questions file carrying filled
+//       * <record>/discover/ exists with a questions file carrying filled
 //         [Answer]: lines and at least one structured (heading-bearing) artifact,
 //       * MORE than 6 stages are marked complete `- [x]`,
 //       * the README.md the person brought (the greenfield stub) is byte for
@@ -61,6 +61,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readAuditText, recordDirFor, stateFilePathFor } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { gridHasMenu } from "../harness/tui-drive.ts";
 import { runTuiDriverWithinBudget } from "../harness/tui-time-budget.ts";
 import {
@@ -152,7 +153,7 @@ function skipReason(): string | null {
 }
 const SKIP_REASON = skipReason();
 
-describe("t-tui-t51-poc-scope (answering gates advances poc Ideation on disk)", () => {
+describe("t-tui-t51-poc-scope (answering gates advances poc Discover on disk)", () => {
   test.skipIf(SKIP_REASON !== null)(
     `poc run-through produces the intent-capture artifact + > 6 completed stages on disk${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
@@ -211,11 +212,11 @@ describe("t-tui-t51-poc-scope (answering gates advances poc Ideation on disk)", 
         drive(["send", "--session", session, "--keys", "Enter", "--no-enter"]);
 
         // Confirm the workflow started (statusline shows a live phase, not
-        // `ready`). poc begins in INITIALIZATION and advances into IDEATION.
+        // `ready`). poc begins in INITIALIZATION and advances into DISCOVER.
         // --stable-ms 0: the screen is streaming (live token counter / spinner),
         // so match the instant the phase text appears.
         expect(
-          waitFor(session, "\\[AIDLC\\].*(INITIALIZATION|IDEATION|INCEPTION)", remainingWorkMs(), 0),
+          waitFor(session, "\\[AIDLC\\].*(INITIALIZATION|DISCOVER|DESIGN)", remainingWorkMs(), 0),
         ).toBe(true);
 
         // Begin tailing the grid for the render assertion BEFORE answer-gate runs,
@@ -285,11 +286,11 @@ describe("t-tui-t51-poc-scope (answering gates advances poc Ideation on disk)", 
         expect(completed).toBeGreaterThan(6);
         expect(readFileSync(join(sandbox, "README.md"), "utf8")).toBe(readFileSync(SEEDED_README, "utf8"));
 
-        // Ideation directory created (POC includes ideation).
-        const ideationDir = join(recordDirFor(sandbox), "ideation");
-        expect(existsSync(ideationDir) && statSync(ideationDir).isDirectory()).toBe(true);
+        // Discover directory created (POC includes intent-capture).
+        const discoverDir = join(recordDirFor(sandbox), phaseFor("intent-capture"));
+        expect(existsSync(discoverDir) && statSync(discoverDir).isDirectory()).toBe(true);
 
-        const icDir = join(ideationDir, "intent-capture");
+        const icDir = join(discoverDir, "intent-capture");
         expect(existsSync(icDir) && statSync(icDir).isDirectory()).toBe(true);
 
         const intentFile = readdirSync(icDir).find(
@@ -302,8 +303,8 @@ describe("t-tui-t51-poc-scope (answering gates advances poc Ideation on disk)", 
 
         // An intent-capture questions file exists and carries
         // filled [Answer]: lines (proves the gate answers were captured to disk,
-        // not auto-stubbed). Look across the ideation tree.
-        const questionsFile = findFirst(ideationDir, (name) => /questions/i.test(name));
+        // not auto-stubbed). Look across the discover tree.
+        const questionsFile = findFirst(discoverDir, (name) => /questions/i.test(name));
         expect(questionsFile).not.toBeNull();
         const questionsMd = readFileSync(questionsFile as string, "utf8");
         // Filled answers (an [Answer]: line with at least one letter).
@@ -313,14 +314,14 @@ describe("t-tui-t51-poc-scope (answering gates advances poc Ideation on disk)", 
         expect(filledAnswers).toBeGreaterThan(0);
 
         const headingFile = findFirst(
-          ideationDir,
+          discoverDir,
           () => true,
           (md) => /^#/m.test(md),
         );
         expect(headingFile).not.toBeNull();
 
         const bigArtifact = findFirst(
-          ideationDir,
+          discoverDir,
           (name) => name.endsWith(".md"),
           (_md, size) => size > 100,
         );

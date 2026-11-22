@@ -107,14 +107,14 @@ function inceptionState(checkbox = "[?]"): string {
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### ${phaseFor("user-stories").toUpperCase()} PHASE
 - [x] requirements-analysis — EXECUTE
 - ${checkbox} user-stories — EXECUTE
 - [ ] delivery-planning — EXECUTE
 
 ## Current Status
 - **Current Stage**: user-stories
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor("user-stories").toUpperCase()}
 - **Status**: In Progress
 `;
 }
@@ -140,14 +140,16 @@ function practicesState(
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### ${phaseFor("reverse-engineering").toUpperCase()} PHASE
 - [S] reverse-engineering — SKIP
+
+### ${phaseFor("practices-discovery").toUpperCase()} PHASE
 - ${checkbox} practices-discovery — EXECUTE
 - [ ] requirements-analysis — EXECUTE
 
 ## Current Status
 - **Current Stage**: practices-discovery
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor("practices-discovery").toUpperCase()}
 - **Status**: In Progress
 `;
 }

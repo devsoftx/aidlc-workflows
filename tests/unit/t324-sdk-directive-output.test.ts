@@ -11,17 +11,17 @@ const WINDOWS_ANNOTATION =
 const DIRECTIVE: RunStageDirective = {
   kind: "run-stage",
   stage: "schema-snapshot",
-  phase: "inception",
+  phase: "design",
   lead_agent: "aidlc-data-migration-agent",
   support_agents: [],
   mode: "inline",
   inline_context_paths: [],
   gate: true,
   memory_path:
-    "aidlc/spaces/default/intents/260823-data-migration/inception/schema-snapshot/memory.md",
+    "aidlc/spaces/default/intents/260823-data-migration/design/schema-snapshot/memory.md",
   consumes: [],
   produces: [
-    "aidlc/spaces/default/intents/260823-data-migration/inception/schema-snapshot/source-schema.md",
+    "aidlc/spaces/default/intents/260823-data-migration/design/schema-snapshot/source-schema.md",
   ],
   rules_in_context: [],
   sensors_applicable: ["schema-validator"],

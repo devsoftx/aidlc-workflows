@@ -379,7 +379,7 @@ describe("t27 aidlc-utility status", () => {
     expect(r.stdout).toContain("(1 archived; /aidlc intent list --all shows it)");
   });
 
-  test("6: status shows IDEATION phase", () => {
+  test("6: status shows DISCOVER phase", () => {
     const r = util(["status"], stateProj());
     expect(r.stdout).toContain(phaseFor("feasibility").toUpperCase());
   });
@@ -991,7 +991,7 @@ describe("t27 aidlc-utility scope-change", () => {
 // ============================================================
 
 describe("t27 aidlc-utility set-status", () => {
-  test("25: set-status updates Lifecycle Phase to IDEATION", () => {
+  test("25: set-status updates Lifecycle Phase to DISCOVER", () => {
     const p = stateProj();
     util(["set-status", "--stage", "feasibility"], p);
     expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("feasibility").toUpperCase());
@@ -1031,7 +1031,7 @@ describe("t27 aidlc-utility set-status", () => {
     expect(r.status).toBe(1);
   });
 
-  test("31: set-status cross-phase sets CONSTRUCTION for code-generation", () => {
+  test("31: set-status cross-phase sets BUILD for code-generation", () => {
     const p = stateProj();
     util(["set-status", "--stage", "code-generation"], p);
     expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("code-generation").toUpperCase());

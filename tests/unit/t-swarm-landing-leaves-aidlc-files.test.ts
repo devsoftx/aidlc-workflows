@@ -21,6 +21,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { boltSlugForUnit } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { REPO_ROOT, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts";
 import {
   cleanupCheckpointFixtures, fixtureWithShippedGitignore, git, ISOLATED_GIT_ENV, prepare, reviewRevisedSource,
@@ -95,7 +96,7 @@ describe("every harness's shipped .gitignore part", () => {
     const metadata = [".aidlc/worktree-meta.json", ".aidlc/base-source-listing.tsv"];
     const checkouts = [
       `.aidlc/worktrees/${boltSlugForUnit("alpha")}/src/alpha.ts`,
-      `.aidlc/worktrees/${boltSlugForUnit("alpha")}/aidlc/spaces/default/intents/x/construction/alpha/plan.md`,
+      `.aidlc/worktrees/${boltSlugForUnit("alpha")}/aidlc/spaces/default/intents/x/${phaseFor("code-generation")}/alpha/code-generation/code-generation-plan.md`,
       `.aidlc/restored/${boltSlugForUnit("alpha")}-20261111T000000Z/src/alpha.ts`,
     ];
     for (const part of parts) {

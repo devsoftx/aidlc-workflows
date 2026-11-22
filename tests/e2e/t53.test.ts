@@ -22,11 +22,13 @@
 // directly on the audit's STAGE_STARTED blocks (every STAGE_STARTED names only
 // an EXECUTE stage; no SKIP slug ever appears in a STAGE_STARTED block).
 //
-// THE JOURNEY. `bugfix` is a Minimal scope whose scope-mapping marks the entire
-// Ideation phase SKIP and nine stages EXECUTE: workspace-scaffold,
-// workspace-detection, state-init (the 3 init stages), reverse-engineering,
-// requirements-analysis (Inception), code-generation, build-and-test
-// (Construction), deployment-pipeline, and deployment-execution (Operation).
+// THE JOURNEY. `bugfix` is a Minimal scope whose scope-mapping marks every
+// Discover stage but reverse-engineering SKIP and eleven stages EXECUTE:
+// workspace-scaffold, workspace-detection, state-init (the 3 init stages),
+// reverse-engineering (Discover), requirements-analysis (Design),
+// code-generation (Build), build-and-test (Test), code-review and
+// security-review (Secure), deployment-pipeline, and deployment-execution
+// (Deploy).
 // On a fresh greenfield project (--no-aidlc-docs ->
 // noAidlcDocs:true) reverse-engineering is auto-downgraded to SKIP
 // (aidlc-utility.ts), leaving requirements-analysis as the first
@@ -34,10 +36,10 @@
 // `aidlc-utility.ts init --scope bugfix` directly, which writes
 // the full aidlc-state.md and the audit's WORKFLOW_STARTED / PHASE_STARTED /
 // PHASE_SKIPPED / STAGE_STARTED+COMPLETED×3 / WORKSPACE_* events plus the
-// init->Inception phase hand-off (a 4th STAGE_STARTED naming requirements-
+// init->Design phase hand-off (a 4th STAGE_STARTED naming requirements-
 // analysis). Crucially the init tool emits a STAGE_STARTED block for EXECUTE
 // stages ONLY (aidlc-utility.ts) - the SKIP stages
-// (every Ideation stage, five Operation stages, etc.) get a
+// (every other Discover stage, the Operate stages, etc.) get a
 // `[ ] <slug> — SKIP` row in Stage Progress and a `## Scope Configuration`
 // Skip-list entry, but NO audit STAGE_STARTED. The SDK portion proves the live
 // slash route asks the orchestrator for bugfix's next directive and receives
@@ -50,8 +52,8 @@
 //                                              (init writes aidlc-state.md, utility.ts)
 //   2  no ideation artifacts (empty/absent) -> no files under aidlc-docs/ideation/ on disk
 //                                              (init scaffolds empty stage dirs only, utility.ts;
-//                                               every Ideation stage is SKIP so no stage writes there)
-//   3  0× `[x] <ideation-stage>`            -> STRONGER: each of the 7 Ideation stage rows in Stage
+//                                               the stages it held are SKIP so no stage writes there)
+//   3  0× `[x] <ideation-stage>`            -> STRONGER: each of the 7 skipped Discover stage rows in Stage
 //                                              Progress is `[ ] <slug> — SKIP` (never [x]); asserted
 //                                              per-stage on the state file (utility.ts)
 //   4  grep STATE reverse-engineering|requirements-analysis (Inception present)
@@ -78,9 +80,10 @@
 //       starts an EXECUTE stage). assertAuditEvent(r,"STAGE_STARTED") first proves the event class fired.
 //
 // Known-answer literals (read from the SHIPPED handler / scope-mapping, not guessed):
-//   - bugfix scope mapping (Ideation all SKIP, EXECUTE = init×3 + reverse-engineering +
-//     requirements-analysis + code-generation + build-and-test +
-//     deployment-pipeline + deployment-execution): scope-mapping.json "bugfix"
+//   - bugfix scope mapping (Discover SKIP but reverse-engineering, EXECUTE = init×3 +
+//     reverse-engineering + requirements-analysis + code-generation + build-and-test +
+//     code-review + security-review + deployment-pipeline + deployment-execution):
+//     scope-mapping.json "bugfix"
 //   - greenfield downgrades reverse-engineering EXECUTE->SKIP: aidlc-utility.ts
 //   - Stage Progress row shape `- [x|-| ] <slug>`, an em dash, then EXECUTE|SKIP, as the
 //     state file writes it and stageRow's regex reads it: aidlc-utility.ts
@@ -102,6 +105,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { driveAidlc, readAuditText } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // AIDLC_TEST_TIMEOUT bounds the entire case, including setup and cleanup.
 const TIMEOUT_S = Number(process.env.AIDLC_TEST_TIMEOUT);
@@ -121,9 +125,10 @@ function remainingWorkMs(): number {
 
 
 // Known-answer stage slugs from the SHIPPED scope-grid.json "bugfix" entry.
-// The Ideation phase is ENTIRELY SKIP for bugfix; the 3 init stages EXECUTE;
-// Deployment Pipeline and Deployment Execution execute in Operation while the
-// other five Operation stages skip. (scope-grid.json "bugfix".stages)
+// Every Discover stage but reverse-engineering is SKIP for bugfix; the 3 init
+// stages EXECUTE; Deployment Pipeline and Deployment Execution execute in Deploy
+// while environment-provisioning, performance-validation and the three Operate
+// stages skip. (scope-grid.json "bugfix".stages)
 const IDEATION_STAGES = [
   "intent-capture",
   "market-research",
@@ -223,7 +228,7 @@ function stageStartedStages(proj: string): string[] {
 
 describe("t53 /aidlc bugfix scope routing (sdk)", () => {
   test(
-    "bugfix skips Ideation and most Operation stages, marks init [x], records bugfix scope; STAGE_STARTED names EXECUTE stages only",
+    "bugfix skips every Discover stage but reverse-engineering and the Operate stages, marks init [x], records bugfix scope; STAGE_STARTED names EXECUTE stages only",
     async () => {
       // noAidlcDocs: fresh greenfield project; intent-create creates the per-intent
       // record from scratch and downgrades reverse-engineering to SKIP (greenfield).
@@ -248,7 +253,7 @@ describe("t53 /aidlc bugfix scope routing (sdk)", () => {
             tr.toolName === "Bash" &&
             tr.resultText.includes('"kind":"run-stage"') &&
             tr.resultText.includes('"stage":"requirements-analysis"') &&
-            tr.resultText.includes('"phase":"inception"'),
+            tr.resultText.includes(`"phase":"${phaseFor("requirements-analysis")}"`),
         );
         expect(directive).toBeDefined();
 
@@ -300,8 +305,9 @@ describe("t53 /aidlc bugfix scope routing (sdk)", () => {
           expect(row!.action).toBe("EXECUTE");
         }
 
-        // Every Ideation stage is SKIP, so no stage should write an artifact under
-        // aidlc-docs/ideation/; this assertion checks only that legacy path.
+        // Every stage the legacy ideation/ folder held is SKIP, so no stage should
+        // write an artifact under aidlc-docs/ideation/; this assertion checks only
+        // that legacy path.
         expect(ideationFiles(proj)).toEqual([]);
 
         // The count of `- [x]` Stage-Progress rows. bugfix marks the 3 init stages [x]

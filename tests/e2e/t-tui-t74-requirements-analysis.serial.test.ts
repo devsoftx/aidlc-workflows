@@ -1,14 +1,14 @@
 // covers: stage:design/requirements-analysis
 //
 // t-tui-t74-requirements-analysis.serial.test.ts - drive the
-// requirements-analysis Inception stage through a REAL claude TUI and prove the
+// requirements-analysis Design stage through a REAL claude TUI and prove the
 // stage commits its artefacts + advances workflow state ON DISK, answering every
 // rendered AskUserQuestion gate by keystroke. This answers the painted gates with
 // the shared `answer-gate` primitive, terminating on approval AND advancement in
 // state.
 //
 // WHAT IT PROVES:
-//   The fixture seeds a brownfield Todo app, mid-inception state (Current Stage ==
+//   The fixture seeds a brownfield Todo app, mid-Design state (Current Stage ==
 //   requirements-analysis — a redo jump, so aidlc-jump does NOT terminate; the
 //   stage's own gate runs, approve auto-advances to the next in-scope stage), and
 //   4 pre-seeded reverse-engineering artefacts. After the stage runs it asserts:
@@ -84,6 +84,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTuiProjectAfterKill,
   setupTuiProject,
@@ -187,7 +188,7 @@ describe("t-tui-t74-requirements-analysis (answering AUQ gates commits the requi
     `requirements-analysis run-through writes requirements.md + advances state on disk${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
       const session = `aidlc_tui_t74_${process.pid}`;
-      // Brownfield Todo app, mid-inception
+      // Brownfield Todo app, mid-Design
       // state (Current Stage == requirements-analysis, a redo jump), 4 pre-seeded
       // RE artefacts, and a seeded audit the workflow appends to.
       const sandbox = setupTuiProject({
@@ -225,13 +226,13 @@ describe("t-tui-t74-requirements-analysis (answering AUQ gates commits the requi
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*(INCEPTION|ready)", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", "\\[AIDLC\\].*(DESIGN|ready)", "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
-        // Seeded mid-inception -> the statusline paints the workflow phase
-        // (INCEPTION), not the fresh "ready" line. Either is a valid pre-prompt
-        // resting state, but the seeded fixture is INCEPTION.
-        expect(waitFor(session, "\\[AIDLC\\].*(INCEPTION|ready)", remainingWorkMs(), 800)).toBe(true);
+        // Seeded mid-Design -> the statusline paints the workflow phase
+        // (DESIGN), not the fresh "ready" line. Either is a valid pre-prompt
+        // resting state, but the seeded fixture is DESIGN.
+        expect(waitFor(session, "\\[AIDLC\\].*(DESIGN|ready)", remainingWorkMs(), 800)).toBe(true);
 
         // --- submit the stage jump --------------------------------------------
         // The slash command has spaces -> send literally with no auto-Enter, then
@@ -253,7 +254,7 @@ describe("t-tui-t74-requirements-analysis (answering AUQ gates commits the requi
         // live phase). --stable-ms 0: the screen is streaming (token counter /
         // spinner), so match the instant the phase text appears.
         expect(
-          waitFor(session, "\\[AIDLC\\].*(INCEPTION|IDEATION|CONSTRUCTION)", remainingWorkMs(), 0),
+          waitFor(session, "\\[AIDLC\\].*(DISCOVER|DESIGN|BUILD)", remainingWorkMs(), 0),
         ).toBe(true);
 
         // Begin tailing the grid for the render assertion BEFORE answer-gate runs,
@@ -322,7 +323,7 @@ describe("t-tui-t74-requirements-analysis (answering AUQ gates commits the requi
         expect(gateRc).toBe(0);
 
         // --- assert ON DISK ------------
-        const reqDir = join(seededRecordDir(sandbox), "inception", "requirements-analysis");
+        const reqDir = join(seededRecordDir(sandbox), phaseFor("requirements-analysis"), "requirements-analysis");
 
         expect(existsSync(reqDir)).toBe(true);
 

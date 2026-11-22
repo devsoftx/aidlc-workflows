@@ -39,7 +39,7 @@ const TABLE: [pattern: string, path: string, expected: boolean][] = [
   ["./src/*.ts", "/p/src/a.ts", false],
   ["**/one.md", "./p/one.md", true],
   // Windows paths, backslashes or not, any drive-letter case.
-  ["**/{aidlc-docs,intents,codekb}/**", "C:\\p\\aidlc\\spaces\\default\\intents\\i\\inception\\requirements.md", true],
+  ["**/{aidlc-docs,intents,codekb}/**", "C:\\p\\aidlc\\spaces\\default\\intents\\i\\design\\requirements-analysis\\requirements.md", true],
   [CODE_SUMMARY, "C:\\p\\code-generation\\code-summary.md", true],
   ["**/*.{ts,tsx}", "c:/p/src/a.tsx", true],
   // The shipped manifests' patterns on the outputs they are bound to.
@@ -47,7 +47,7 @@ const TABLE: [pattern: string, path: string, expected: boolean][] = [
   ["**/{aidlc-docs,intents}/**", "/p/aidlc/spaces/default/codekb/repo-a/architecture.md", false],
   ["**/{aidlc-docs,intents,codekb}/**", "/p/aidlc/spaces/default/codekb/repo-a/architecture.md", true],
   ["**/{aidlc-docs,intents,codekb}/**", "/p/aidlc-docs/inception/requirements.md", true],
-  ["**/traceability.json", `${RECORD}/construction/unit-a/traceability.json`, true],
+  ["**/traceability.json", `${RECORD}/build/unit-a/code-generation/traceability.json`, true],
   ["**/traceability.json", "/p/traceability.json.bak", false],
   ["**/*.{ts,js}", "/p/README.md", false],
   ["**/*.{ts,tsx}", "/p/src/a.ts", true],

@@ -202,7 +202,7 @@ function mkproj(name: string): string {
   const pd = join(tmpRoot, name);
   mkdirSync(join(recordRoot(pd), phaseFor("user-stories"), "user-stories"), { recursive: true });
   mkdirSync(join(pd, ".claude", "rules"), { recursive: true });
-  mkdirSync(join(pd, ".claude", "skills", "aidlc", "stages", "inception"), {
+  mkdirSync(join(pd, ".claude", "skills", "aidlc", "stages", phaseFor("user-stories")), {
     recursive: true,
   });
   writeFileSync(
@@ -218,7 +218,7 @@ function mkproj(name: string): string {
     "utf-8",
   );
   writeFileSync(
-    join(pd, ".claude", "skills", "aidlc", "stages", "inception", "user-stories.md"),
+    join(pd, ".claude", "skills", "aidlc", "stages", phaseFor("user-stories"), "user-stories.md"),
     `---
 slug: user-stories
 phase: design
@@ -530,7 +530,7 @@ describe("t97 persist (cli, idempotency-sensitive)", () => {
       readFile(join(pd, ".claude", "sensors", "aidlc-acceptance-format.md")),
     ).toContain("matches:");
     const stageMd = readFile(
-      join(pd, ".claude", "skills", "aidlc", "stages", "inception", "user-stories.md"),
+      join(pd, ".claude", "skills", "aidlc", "stages", phaseFor("user-stories"), "user-stories.md"),
     );
     expect(/acceptance-format$/m.test(stageMd)).toBe(true);
   });
@@ -746,7 +746,7 @@ describe("t97 persist sensor bind keeps the stage header whole (cli)", () => {
   function bindOn(name: string, before: string): { rc: number; after: string } {
     const pd = mkproj(name);
     const stagesRoot = join(pd, ".claude", "skills", "aidlc", "stages");
-    const stageFile = join(stagesRoot, "inception", "user-stories.md");
+    const stageFile = join(stagesRoot, phaseFor("user-stories"), "user-stories.md");
     writeFileSync(stageFile, before, "utf-8");
     const sel = writeLearningsSelections(pd, {
       stage_slug: "user-stories",

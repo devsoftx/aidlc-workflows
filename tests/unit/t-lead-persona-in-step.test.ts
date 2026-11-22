@@ -33,6 +33,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 
 setDefaultTimeout(120_000);
@@ -210,7 +211,7 @@ describe("t-lead-persona-in-step: where the step lists the persona as before", (
     const proj = createOrchestrationTestProject();
     projects.push(proj);
     writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8"), "utf-8");
-    const dir = join(seededRecordDir(proj), "inception", stage);
+    const dir = join(seededRecordDir(proj), phaseFor(stage), stage);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "requirements.md"), "# Requirements\n", "utf-8");
     appendAuditEntry("STAGE_STARTED", { Stage: stage }, proj);

@@ -1196,7 +1196,8 @@ describe("t127 an isolated run over the work's own files keeps a copy of them (#
   });
 
   test("a per-Unit stage keeps every Unit's folder", () => {
-    // functional-design is [x] for widget-cart and [-] for widget-checkout.
+    // The fixture has functional-design in progress ([-]); the record holds an
+    // approved Unit's folder and the one in progress.
     const proj = workProject("state-construction.md");
     writeFiles(proj, {
       "design/widget-cart/functional-design/entities.md": "# Entities\n\nCART APPROVED\n",

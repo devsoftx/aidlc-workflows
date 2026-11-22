@@ -3,7 +3,7 @@
 // Status over work built one Unit at a time (#3628). The dependency file Units
 // Generation writes has no heading over its edge block, and the status view and
 // the status line read Units from it with a pattern that needed one, so with
-// the first Unit done both said "CONSTRUCTION 0/6", and Next Stage named the
+// the first Unit done both said "0/6" on the Units' row, and Next Stage named the
 // stage after the block's first one whatever Unit the work was on. Status now
 // says where each Unit stands, from the walk that hands out the next step, and
 // names the next stage of the Unit in progress; the status line counts the Unit

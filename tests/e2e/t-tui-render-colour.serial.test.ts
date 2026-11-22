@@ -177,12 +177,12 @@ describe("t-tui-render statusline COLOUR branch (live turn populates ctx:%, ANSI
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*IDEATION", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", "\\[AIDLC\\].*DISCOVER", "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
         // The orientation prefix (the intent slug and a middle-dot separator) sits
         // between [AIDLC] and the phase, so match with .* rather than a contiguous gap.
-        expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 1000)).toBe(true);
+        expect(waitFor(session, "\\[AIDLC\\].*DISCOVER", remainingWorkMs(), 1000)).toBe(true);
 
         // --- submit a trivial prompt to consume context (populate ctx:%) ------
         // One word back; the smallest turn that still advances the context window.

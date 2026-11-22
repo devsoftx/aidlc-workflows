@@ -145,14 +145,14 @@ function project(): string {
   return proj;
 }
 
-// A stateful project mid-ideation (Current Stage: feasibility, scope feature).
+// A stateful project in Discover (Current Stage: feasibility, scope feature).
 function statefulProject(withState = "state-mid-ideation.md"): string {
   const proj = setupIntegrationProject({ withState });
   projects.push(proj);
   return proj;
 }
 
-// Mid-inception (Requirements Analysis): its stock step and rules fit one
+// In Design (Requirements Analysis): its stock step and rules fit one
 // message with room, where Feasibility's sit at the cap.
 const ONE_MESSAGE_STATE = "state-mid-inception.md";
 
@@ -2512,7 +2512,7 @@ describe("t248 reviewer knowledge absorption", () => {
     try {
       const coreRoot = join(root, "core");
       const pluginRoot = join(root, "plugins", "example");
-      const stages = join(pluginRoot, "stages", "operation");
+      const stages = join(pluginRoot, "stages", "operate");
       const knowledge = join(
         pluginRoot,
         "knowledge",

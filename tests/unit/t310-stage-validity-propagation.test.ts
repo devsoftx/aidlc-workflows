@@ -70,7 +70,7 @@ const graph: StageValidityNode[] = [
   },
   {
     slug: "security-design",
-    phase: "inception",
+    phase: "design",
     produces: [],
     optional_produces: ["threat-model"],
     consumes: [],
@@ -93,7 +93,7 @@ const graph: StageValidityNode[] = [
   },
   {
     slug: "unrelated-stage",
-    phase: "operation",
+    phase: "operate",
     consumes: [],
     produces: ["operations-note"],
   },
@@ -182,7 +182,7 @@ function writeGraphArtifacts(record: string, includeThreatModel = false): void {
   if (includeThreatModel) {
     writeArtifact(
       record,
-      "inception",
+      "design",
       "security-design",
       "threat-model.md",
       "threat-v1\n",
@@ -206,7 +206,7 @@ function writeGraphArtifacts(record: string, includeThreatModel = false): void {
   );
   writeArtifact(
     record,
-    "operation",
+    "operate",
     "unrelated-stage",
     "operations-note.md",
     "ops-v1\n",
@@ -423,7 +423,7 @@ describe("v2 stage-graph compatibility", () => {
     initializeProject(projectDir);
     const owner: StageValidityNode = {
       slug: "kind-aware-stage",
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       produces: ["service-contract"],
       produces_kinds: { "service-contract": ["service"] },
@@ -535,7 +535,7 @@ describe("v2 stage-graph compatibility", () => {
     );
     const owner: StageValidityNode = {
       slug: "legacy-stage",
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       produces: ["legacy-note"],
     };
@@ -562,7 +562,7 @@ describe("v2 stage-graph compatibility", () => {
     );
     const owner: StageValidityNode = {
       slug: "malformed-stage",
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       produces: ["malformed-note"],
     };
@@ -589,7 +589,7 @@ describe("v2 stage-graph compatibility", () => {
     );
     const owner: StageValidityNode = {
       slug: "runtime-stage",
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       produces: ["runtime-note"],
     };
@@ -793,7 +793,7 @@ describe("schema-3 validation basis", () => {
 
     writeArtifact(
       record,
-      "inception",
+      "design",
       "security-design",
       "threat-model.md",
       "threat-v1\n",
@@ -815,7 +815,7 @@ describe("schema-3 validation basis", () => {
     initializeProject(projectDir, state);
     const consumer: StageValidityNode = {
       slug: "plugin-consumer",
-      phase: "inception",
+      phase: "design",
       consumes: [{ artifact: "optional-plugin-output", required: false }],
       produces: [],
     };
@@ -836,7 +836,7 @@ describe("schema-3 validation basis", () => {
     initializeProject(projectDir, state);
     const requiredConsumer: StageValidityNode = {
       slug: "consumer",
-      phase: "inception",
+      phase: "design",
       consumes: [{ artifact: "missing", required: true }],
       produces: [],
     };
@@ -854,8 +854,8 @@ describe("schema-3 validation basis", () => {
       consumes: [{ artifact: "duplicate", required: false }],
     };
     const producers: StageValidityNode[] = [
-      { slug: "one", phase: "inception", produces: ["duplicate"] },
-      { slug: "two", phase: "inception", produces: ["duplicate"] },
+      { slug: "one", phase: "design", produces: ["duplicate"] },
+      { slug: "two", phase: "design", produces: ["duplicate"] },
       optionalConsumer,
     ];
     expect(() =>
@@ -874,7 +874,7 @@ describe("schema-3 validation basis", () => {
     initializeProject(projectDir, state);
     const consumer: StageValidityNode = {
       slug: "consumer",
-      phase: "inception",
+      phase: "design",
       consumes: [{ artifact: "missing", required: true }],
       produces: [],
     };
@@ -967,8 +967,8 @@ describe("observed stage-level stale propagation", () => {
 
   test("terminates on observed dependency cycles", () => {
     const cyclic: StageValidityNode[] = [
-      { slug: "a", phase: "inception", produces: ["a-out"] },
-      { slug: "b", phase: "inception", produces: ["b-out"] },
+      { slug: "a", phase: "design", produces: ["a-out"] },
+      { slug: "b", phase: "design", produces: ["b-out"] },
     ];
     const bases = new Map<string, StageValidationBasis>([
       [
@@ -1192,7 +1192,7 @@ describe("a moved or copied project folder", () => {
   const codekbGraph: StageValidityNode[] = [
     {
       slug: "reverse-engineering",
-      phase: "inception",
+      phase: phaseFor("reverse-engineering"),
       produces: ["architecture"],
       consumes: [],
     },

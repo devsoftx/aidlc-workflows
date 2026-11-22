@@ -12,7 +12,7 @@ import {
   initialTuiStartupState,
 } from "../harness/tui-drive.ts";
 
-const ORIENTATION_MARKER = "default · fixture · IDEATION";
+const ORIENTATION_MARKER = "default · fixture · DISCOVER";
 const READY = new RegExp(ORIENTATION_MARKER);
 
 describe("TUI startup state machine", () => {

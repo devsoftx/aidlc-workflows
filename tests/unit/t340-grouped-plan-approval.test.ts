@@ -206,15 +206,17 @@ ${options.legacy ? "" : "- **Construction Checkpoints**: enabled\n- **Constructi
 - **Stages to Skip**: none
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
+### BUILD PHASE
 - [-] code-generation — EXECUTE
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);

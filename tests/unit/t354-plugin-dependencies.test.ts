@@ -642,8 +642,8 @@ describe("t354 turning a base off pauses the plugin built on it", () => {
   // runs" can be read in that stage's source.
   function contributingAlpha(): string {
     const out = alpha();
-    mkdirSync(join(out, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(out, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(out, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(out, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     return out;
   }
 
@@ -758,8 +758,8 @@ describe("t354 turning a base off pauses the plugin built on it", () => {
       mkdirSync(dir, { recursive: true });
       cpSync(join(REPO_ROOT, "dist", harness, leaf), join(dir, leaf), { recursive: true });
       const built = plugin({ name: "alpha", harness });
-      mkdirSync(join(built, "contributions", "construction"), { recursive: true });
-      writeFileSync(join(built, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+      mkdirSync(join(built, "contributions", phaseFor("build-and-test")), { recursive: true });
+      writeFileSync(join(built, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
       const run = (tool: string, args: string[], extra: Record<string, string> = {}): Ran => {
         const result = spawnSync(process.execPath, [join(dir, leaf, "tools", tool), ...args], {
           cwd: dir,
@@ -864,8 +864,8 @@ describe("t354 every line that sends the person to sync names a command that wor
     mkdirSync(dir, { recursive: true });
     cpSync(join(REPO_ROOT, tree, harness, leaf), join(dir, leaf), { recursive: true });
     const built = plugin({ name: "alpha", harness });
-    mkdirSync(join(built, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(built, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(built, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(built, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     const run = (tool: string, args: string[]): Ran => {
       const result = spawnSync(process.execPath, [join(dir, leaf, "tools", tool), ...args], {
         cwd: dir,
@@ -926,8 +926,8 @@ describe("t354 every line that sends the person to sync names a command that wor
     mkdirSync(dir, { recursive: true });
     cpSync(join(REPO_ROOT, "dist", "kiro", ".kiro"), join(dir, ".kiro"), { recursive: true });
     const built = plugin({ name: "alpha", harness: "kiro" });
-    mkdirSync(join(built, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(built, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(built, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(built, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     // A compose hook that merges nothing stands in for a composition lost
     // after the sync committed: alpha's record of what it added never lands.
     writeFileSync(join(built, "hooks", "compose.ts"), "export async function compose(): Promise<void> {}\n");
@@ -1025,8 +1025,8 @@ describe("t354 turning a paused plugin's base back on says how the plugin comes 
     cpSync(join(REPO_ROOT, "dist", harness), dir, { recursive: true });
     const zeta = plugin({ name: "zeta", harness });
     const team = alpha({ harness });
-    mkdirSync(join(team, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(team, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(team, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(team, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     const run = (args: string[], via = leaf): Ran => {
       const result = spawnSync(process.execPath, [join(dir, via, "tools", "aidlc.ts"), ...args], {
         cwd: dir,

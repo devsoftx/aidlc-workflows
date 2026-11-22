@@ -23,6 +23,7 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { env, exec, LOG, next, say } from "../harness/aidlc-input-corpus.ts";
 import { cleanupTestProject, FIXTURES_DIR, seededRecordDir, seededStateFile, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -42,7 +43,7 @@ async function asked(options: string): Promise<string> {
   const proj = setupIntegrationProject();
   projects.push(proj);
   writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8"), "utf-8");
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, `${STAGE}-questions.md`), "# Questions\n\n## Q1\n\nShould a blank title be refused?\n\n[Answer]: Yes\n", "utf-8");
   appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, proj);

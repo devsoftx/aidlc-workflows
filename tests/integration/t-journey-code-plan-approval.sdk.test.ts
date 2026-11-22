@@ -39,6 +39,7 @@ import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude
 import { planSteps as enginePlanSteps } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { cleanupTestProject, seededRecordDir, seededStateFile, setupIntegrationProject } from "../harness/fixtures.ts";
 import { type CapturedAskUserQuestion, type DriveResult, driveAidlc, prepareSdkStageFixture, readStateFile } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   fileCleanupReserveMs,
   LIVE_LONG_OPERATION_TIMEOUT_MS,
@@ -101,8 +102,8 @@ const STATE = `# AI-DLC State Tracking
 - **Active Agent**: aidlc-developer-agent
 
 ## Scope Configuration
-- **Stages to Execute**: 0.1, 0.2, 0.3, 2.1, 2.3, 3.5, 3.6, 4.1, 4.3
-- **Stages to Skip**: 1.1 (intent-capture), 1.2 (market-research), 1.3 (feasibility), 1.4 (scope-definition), 1.5 (team-formation), 1.6 (rough-mockups), 1.7 (approval-handoff), 2.2 (practices-discovery), 2.4 (user-stories), 2.5 (refined-mockups), 2.6 (domain-design), 2.7 (units-generation), 2.8 (contract-design), 2.9 (delivery-planning), 3.1 (functional-design), 3.2 (nfr-requirements), 3.3 (nfr-design), 3.4 (infrastructure-design), 3.7 (ci-pipeline), 4.2 (environment-provisioning), 4.4 (observability-setup), 4.5 (incident-response), 4.6 (performance-validation), 4.7 (feedback-optimization)
+- **Stages to Execute**: 0.1, 0.2, 0.3, 1.4, 2.2, 3.1, 4.1, 5.1, 5.2, 6.2, 6.4
+- **Stages to Skip**: 1.1 (intent-capture), 1.2 (market-research), 1.3 (feasibility), 1.5 (scope-definition), 1.6 (team-formation), 1.7 (rough-mockups), 1.8 (approval-handoff), 2.1 (practices-discovery), 2.3 (user-stories), 2.4 (refined-mockups), 2.5 (domain-design), 2.6 (units-generation), 2.7 (contract-design), 2.8 (delivery-planning), 2.9 (functional-design), 2.10 (nfr-requirements), 2.11 (nfr-design), 2.12 (infrastructure-design), 4.2 (performance-validation), 5.3 (conformance-review), 6.1 (ci-pipeline), 6.3 (environment-provisioning), 7.1 (observability-setup), 7.2 (incident-response), 7.3 (feedback-optimization)
 - **Depth**: Minimal
 - **Test Strategy**: Minimal
 - **Guard Policy**: off (from scope bugfix)
@@ -121,25 +122,34 @@ const STATE = `# AI-DLC State Tracking
 
 ## Phase Progress
 - **Initialization**: Verified
-- **Ideation**: Skipped
-- **Inception**: Verified
-- **Construction**: Active
-- **Operation**: Pending
+- **Discover**: Verified
+- **Design**: Verified
+- **Build**: Active
+- **Test**: Pending
+- **Secure**: Pending
+- **Deploy**: Pending
+- **Operate**: Pending
 
 ## Stage Progress
 
 ${stageRows("INITIALIZATION PHASE", [["x", "workspace-scaffold", "EXECUTE"], ["x", "workspace-detection", "EXECUTE"], ["x", "state-init", "EXECUTE"]])}
 
-${stageRows("IDEATION PHASE", skipped("intent-capture", "market-research", "feasibility", "scope-definition", "team-formation", "rough-mockups", "approval-handoff"))}
+${stageRows("DISCOVER PHASE", [...skipped("intent-capture", "market-research", "feasibility"), ["x", "reverse-engineering", "EXECUTE"], ...skipped("scope-definition", "team-formation", "rough-mockups", "approval-handoff")])}
 
-${stageRows("INCEPTION PHASE", [["x", "reverse-engineering", "EXECUTE"], ...skipped("practices-discovery"), ["x", "requirements-analysis", "EXECUTE"], ...skipped("user-stories", "refined-mockups", "domain-design", "units-generation", "contract-design", "delivery-planning")])}
+${stageRows("DESIGN PHASE", [...skipped("practices-discovery"), ["x", "requirements-analysis", "EXECUTE"], ...skipped("user-stories", "refined-mockups", "domain-design", "units-generation", "contract-design", "delivery-planning", "functional-design", "nfr-requirements", "nfr-design", "infrastructure-design")])}
 
-${stageRows("CONSTRUCTION PHASE", [...skipped("functional-design", "nfr-requirements", "nfr-design", "infrastructure-design"), ["-", "code-generation", "EXECUTE"], [" ", "build-and-test", "EXECUTE"], ...skipped("ci-pipeline")])}
+${stageRows("BUILD PHASE", [["-", "code-generation", "EXECUTE"]])}
 
-${stageRows("OPERATION PHASE", [[" ", "deployment-pipeline", "EXECUTE"], ...skipped("environment-provisioning"), [" ", "deployment-execution", "EXECUTE"], ...skipped("observability-setup", "incident-response", "performance-validation", "feedback-optimization")])}
+${stageRows("TEST PHASE", [[" ", "build-and-test", "EXECUTE"], ...skipped("performance-validation")])}
+
+${stageRows("SECURE PHASE", [[" ", "code-review", "EXECUTE"], [" ", "security-review", "EXECUTE"], ...skipped("conformance-review")])}
+
+${stageRows("DEPLOY PHASE", [...skipped("ci-pipeline"), [" ", "deployment-pipeline", "EXECUTE"], ...skipped("environment-provisioning"), [" ", "deployment-execution", "EXECUTE"]])}
+
+${stageRows("OPERATE PHASE", skipped("observability-setup", "incident-response", "feedback-optimization"))}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
@@ -152,12 +162,13 @@ async function seedBugfixAtCodeGeneration(proj: string): Promise<string> {
     "export function formatPrice(cents) {\n  if (!cents) return \"\";\n  return `$${(cents / 100).toFixed(2)}`;\n}\n");
   writeFileSync(seededStateFile(proj), STATE);
   const record = seededRecordDir(proj);
-  mkdirSync(join(record, "inception", "requirements-analysis"), { recursive: true });
-  writeFileSync(join(record, "inception", "requirements-analysis", "requirements.md"),
+  const requirements = join(record, phaseFor("requirements-analysis"), "requirements-analysis");
+  mkdirSync(requirements, { recursive: true });
+  writeFileSync(join(requirements, "requirements.md"),
     "# Requirements\n\n## Bug\n`formatPrice(0)` returns an empty string. It must return `$0.00`.\n\n" +
     "## Acceptance\n- `formatPrice(0)` is `$0.00`.\n- `formatPrice(1999)` is still `$19.99`.\n");
   await prepareSdkStageFixture(proj, "code-generation");
-  return join(record, "construction", "code-generation", "code-generation-plan.md");
+  return join(record, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
 }
 
 // Top-level plan steps, in order: true when ticked.

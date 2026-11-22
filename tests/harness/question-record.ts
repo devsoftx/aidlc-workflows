@@ -146,11 +146,14 @@ export function built(projects: string[]): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${CONSTRUCTION.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${DASH} EXECUTE`).join("\n")}
+### DESIGN PHASE
+${CONSTRUCTION.filter((stage) => phaseFor(stage) === "design").map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${DASH} EXECUTE`).join("\n")}
+### BUILD PHASE
+- [ ] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -208,20 +211,22 @@ export function staffing(projects: string[]): string {
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 - [x] units-generation ${DASH} EXECUTE
 - [x] delivery-planning ${DASH} EXECUTE
-
-### CONSTRUCTION PHASE
 - [-] functional-design ${DASH} EXECUTE
 - [ ] nfr-requirements ${DASH} EXECUTE
 - [ ] nfr-design ${DASH} EXECUTE
 - [ ] infrastructure-design ${DASH} EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation ${DASH} EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);

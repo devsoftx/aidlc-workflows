@@ -7,8 +7,8 @@
 // each approval prompt; bugfix asks no learnings question and shows no
 // consolidated summary to confirm. It then TERMINATES on the
 // on-disk Completed counter crossing the post-init milestone — the same
-// milestone the Claude twin pinned: init=3 + >=2 Inception stages =
-// Completed >= 5.
+// milestone the Claude twin pinned: init=3 + reverse-engineering + >=1 Design
+// stage = Completed >= 5.
 //
 // The gate loop is the kiro-intent-capture pattern (idle footer → classify and
 // answer the visible prompt → re-check disk): disk is the terminator, never the
@@ -16,8 +16,9 @@
 //
 // What it proves on the SHIPPED tree:
 //   - `/aidlc bugfix <description>` on a fresh BROWNFIELD workspace detects
-//     brownfield, skips Ideation (bugfix scope), and runs Initialization +
-//     early Inception with real keystroke-answered gates,
+//     brownfield, skips Discover but reverse-engineering (bugfix scope), and
+//     runs Initialization + reverse-engineering + early Design with real
+//     keystroke-answered gates,
 //   - state: scope=bugfix, Project Type=Brownfield, Completed >= 5 and ==
 //     the count of [x] lines,
 //   - audit: WORKFLOW_STARTED + >=1 GATE_APPROVED (a human-shaped approval
@@ -33,6 +34,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { recordDirFor, stateFilePathFor } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTuiProjectAfterKill,
   createKiroNumberedProseAnswerState,
@@ -195,7 +197,7 @@ describe("t-tui-kiro-bugfix-scope (brownfield bugfix journey, numbered-prose gat
 
         const questionsPath = join(
           recordDirFor(sandbox),
-          "inception",
+          phaseFor("requirements-analysis"),
           "requirements-analysis",
           "requirements-analysis-questions.md",
         );

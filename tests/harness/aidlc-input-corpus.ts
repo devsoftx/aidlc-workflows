@@ -279,9 +279,9 @@ export async function buildState(proj: string, state: State): Promise<void> {
         .replace("- [-] requirements-analysis ", "- [x] requirements-analysis ")
         .replace("- [ ] code-generation ", "- [-] code-generation ")
         .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation")
-        .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
-        .replace("- **Inception**: Active", "- **Inception**: Verified")
-        .replace("- **Construction**: Pending", "- **Construction**: Active"), "utf-8");
+        .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}`)
+        .replace("- **Design**: Active", "- **Design**: Verified")
+        .replace("- **Build**: Pending", "- **Build**: Active"), "utf-8");
       mkdirSync(join(proj, "src"), { recursive: true });
       writeFileSync(join(proj, "src", "todo.ts"), "export const todo = (title: string) => title;\n", "utf-8");
       const requirements = join(seededRecordDir(proj), "design", "requirements-analysis");

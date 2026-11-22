@@ -25,6 +25,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
   NATIVE_STARTUP_TIMEOUT_MS,
@@ -108,7 +109,7 @@ ${rows("CONSTRUCTION PHASE", [...skipped("functional-design", "nfr-requirements"
 ${rows("OPERATION PHASE", [[" ", "deployment-pipeline", "EXECUTE"], ...skipped("environment-provisioning"), [" ", "deployment-execution", "EXECUTE"], ...skipped("observability-setup", "incident-response", "performance-validation", "feedback-optimization")])}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
@@ -224,7 +225,7 @@ async function parkedProject(at: "stage" | "plan question" = "stage"): Promise<W
   writeFileSync(join(proj, "package.json"), `${JSON.stringify({ name: "price-format", type: "module" }, null, 2)}\n`);
   writeFileSync(join(proj, "src", "price.js"), "export function formatPrice(cents) {\n  if (!cents) return \"\";\n  return `$${(cents / 100).toFixed(2)}`;\n}\n");
   writeFileSync(seededStateFile(proj), STATE);
-  const requirements = join(seededRecordDir(proj), "inception", "requirements-analysis");
+  const requirements = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(requirements, { recursive: true });
   writeFileSync(join(requirements, "requirements.md"), "# Requirements\n\n`formatPrice(0)` must return `$0.00`.\n");
   const { appendAuditEntry } = await import("../../dist/claude/.claude/tools/aidlc-audit.ts");

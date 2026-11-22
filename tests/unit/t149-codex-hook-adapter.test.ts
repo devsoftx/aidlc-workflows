@@ -85,6 +85,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { codexRefusal } from "../harness/codex-hook-answer.ts";
 import { envWithoutCommandOnPath } from "../harness/test-command-paths.ts";
 
@@ -221,7 +222,7 @@ function seedUnapprovedCodeGeneration(dir: string, unit: string): void {
     unit,
     state_sha256: stateDigest(state),
   });
-  mkdirSync(join(seededRecordDir(dir), "construction", unit, "code-generation"), {
+  mkdirSync(join(seededRecordDir(dir), phaseFor("code-generation"), unit, "code-generation"), {
     recursive: true,
   });
 }

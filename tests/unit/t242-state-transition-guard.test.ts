@@ -29,6 +29,7 @@ import {
   ENGINE_OWNED_STATE_TRANSITIONS,
   MESSAGE_FILL,
   MESSAGE_SLOT,
+  PHASE_LABELS,
   PHASES,
   UTILITY_COMMANDS,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -109,8 +110,12 @@ const DIRECT_LIFECYCLE_VERB = new RegExp(
 const DIRECT_CHECKBOX_COMPLETION =
   /\b(?:mark|update)\b[^\n]*`\[x\]`[^\n]*\bcomplete(?:d)?\b/i;
 const DIRECT_STATE_HEADING = /^### Step \d+: .*Update State\b/m;
-const DIRECT_PHASE_BOOKKEEPING =
-  /\b(?:update|set)\s+(?:the\s+)?Lifecycle Phase\b|\bmark\s+(?:IDEATION|INCEPTION|CONSTRUCTION|OPERATION)\s+phase\s+(?:as\s+)?complete\b/i;
+const DIRECT_PHASE_BOOKKEEPING = new RegExp(
+  String.raw`\b(?:update|set)\s+(?:the\s+)?Lifecycle Phase\b|\bmark\s+(?:${PHASES.filter((phase) => phase !== "initialization")
+    .map((phase) => PHASE_LABELS[phase])
+    .join("|")})\s+phase\s+(?:as\s+)?complete\b`,
+  "i",
+);
 
 const projects: string[] = [];
 afterAll(() => {
@@ -2053,8 +2058,8 @@ describe("t242 state-transition ownership guard", () => {
       ["Bash", { command: "echo x > aidlc/.aidlc-sessions-backup/foo.json" }],
       ["Bash", { command: "MY_AIDLC_SESSION_OVERRIDE=abc git status" }],
       ["Write", { file_path: "aidlc/spaces/default/intents/x/.aidlc-engine/reviewer-dispatch.json" }],
-      ["Edit", { file_path: "aidlc/spaces/default/intents/x/inception/requirements.md" }],
-      ["MultiEdit", { edits: [{ file_path: "aidlc/spaces/default/intents/x/inception/requirements.md" }] }],
+      ["Edit", { file_path: `aidlc/spaces/default/intents/x/${phaseFor("requirements-analysis")}/requirements.md` }],
+      ["MultiEdit", { edits: [{ file_path: `aidlc/spaces/default/intents/x/${phaseFor("requirements-analysis")}/requirements.md` }] }],
       ["NotebookEdit", { notebook_path: "aidlc/analysis.ipynb" }],
       // Prose that names a hook, a helper, or the engine hook route is ordinary
       // project content; only a concrete import or execution is a reference.

@@ -31,6 +31,7 @@ import {
   runOrchestrateNext,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -409,7 +410,7 @@ function featureAtFeasibility(box: "in-progress" | "awaiting-approval"): string 
   const done = ["workspace-scaffold", "workspace-detection", "state-init", "intent-capture", "market-research"];
   expect(run(STATE, proj, ["checkbox", ...done.map((s) => `${s}=completed`), `feasibility=${box}`]).rc).toBe(0);
   expect(run(STATE, proj, [
-    "set", "Current Stage=feasibility", "Status=Running", "Lifecycle Phase=IDEATION",
+    "set", "Current Stage=feasibility", "Status=Running", `Lifecycle Phase=${phaseFor("feasibility").toUpperCase()}`,
     "Next Stage=scope-definition", "In Progress=feasibility", "Last Completed Stage=market-research",
   ]).rc).toBe(0);
   return proj;
@@ -459,7 +460,7 @@ describe("t-scope-change-reopens-finished-work: a scope switch over running work
     const setup = ["workspace-scaffold", "workspace-detection", "state-init"];
     expect(run(STATE, proj, ["checkbox", ...setup.map((s) => `${s}=completed`), "reverse-engineering=awaiting-approval"]).rc).toBe(0);
     expect(run(STATE, proj, [
-      "set", "Current Stage=reverse-engineering", "Status=Running", "Lifecycle Phase=INCEPTION",
+      "set", "Current Stage=reverse-engineering", "Status=Running", `Lifecycle Phase=${phaseFor("reverse-engineering").toUpperCase()}`,
       "Next Stage=requirements-analysis", "In Progress=reverse-engineering", "Last Completed Stage=state-init",
     ]).rc).toBe(0);
     const typed = ["--project-type", "greenfield", "--scope", "enterprise"];

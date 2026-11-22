@@ -178,10 +178,8 @@ function project(policy?: "off" | "relaxed" | "strict"): Project {
   projects.push(dir);
   const record = seededRecordDir(dir);
   const statePath = join(record, "aidlc-state.md");
-  const state = readFileSync(statePath, "utf-8")
+  let state = readFileSync(statePath, "utf-8")
     .replace(/^- \*\*In Progress\*\*:.*$/m, "- **In Progress**: functional-design")
-    .replace(/^- \*\*Inception\*\*:.*$/m, "- **Inception**: Verified")
-    .replace(/^- \*\*Construction\*\*:.*$/m, "- **Construction**: Active")
     .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: functional-design")
     .replace(/^- \*\*Next Stage\*\*:.*$/m, "- **Next Stage**: nfr-requirements")
@@ -197,6 +195,17 @@ function project(policy?: "off" | "relaxed" | "strict"): Project {
       /^- \[ \] functional-design(\s+\S\s+)EXECUTE$/m,
       "- [-] functional-design$1EXECUTE",
     );
+  // Phase Progress moves on only when Functional Design sits in a later phase
+  // than Requirements Analysis.
+  const [from, to] = ["requirements-analysis", "functional-design"].map((slug) => {
+    const phase = phaseFor(slug);
+    return `${phase.charAt(0).toUpperCase()}${phase.slice(1)}`;
+  });
+  if (from !== to) {
+    state = state
+      .replace(new RegExp(`^- \\*\\*${from}\\*\\*:.*$`, "m"), `- **${from}**: Verified`)
+      .replace(new RegExp(`^- \\*\\*${to}\\*\\*:.*$`, "m"), `- **${to}**: Active`);
+  }
   // The Guard Policy as the person sets it, when a case names one.
   writeFileSync(statePath, policy ? setGuardPolicyLine(state, `${policy} (set by you)`) : state, "utf-8");
   // One Unit, every produced functional-design artifact present, and NO summary

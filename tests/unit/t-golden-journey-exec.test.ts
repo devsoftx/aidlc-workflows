@@ -19,6 +19,7 @@ import { cleanupTestProject, createTestProject, REPO_ROOT, seededAuditShard, see
 import { type GoldenJourney, type GoldenRun, goldenPathProblems, GoldenPerson } from "../harness/golden-journey.ts";
 import { seedGreeter } from "../harness/release-journey.ts";
 import type { CapturedToolResult } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const projects: string[] = [];
 afterEach(() => {
@@ -146,12 +147,12 @@ describe("a question the stage's questions file holds", () => {
     const dir = createTestProject();
     projects.push(dir);
     writeFileSync(seededStateFile(dir), [
-      "# AI-DLC State", "", "- **Lifecycle Phase**: INCEPTION", "- **Current Stage**: requirements-analysis", "",
-      "- [x] reverse-engineering inception EXECUTE", "- [-] requirements-analysis inception EXECUTE", "",
+      "# AI-DLC State", "", `- **Lifecycle Phase**: ${phaseFor("requirements-analysis").toUpperCase()}`, "- **Current Stage**: requirements-analysis", "",
+      `- [x] reverse-engineering ${phaseFor("reverse-engineering")} EXECUTE`, `- [-] requirements-analysis ${phaseFor("requirements-analysis")} EXECUTE`, "",
     ].join("\n"));
     row(dir, "DECISION_RECORDED", { Stage: "requirements-analysis", Decision: "How would you like to answer the questions?", Options: "Guide me,I'll edit the file,Chat" });
     row(dir, "QUESTION_ANSWERED", { Stage: "requirements-analysis", Details: "Guide me" });
-    const file = join(seededRecordDir(dir), "inception", "requirements-analysis", "requirements-analysis-questions.md");
+    const file = join(seededRecordDir(dir), phaseFor("requirements-analysis"), "requirements-analysis", "requirements-analysis-questions.md");
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, questions);
     return dir;
@@ -194,13 +195,13 @@ describe("the plan question is one question, whichever record shows it", () => {
     "- Builds: the greeting uses the name.", "", "- A. Approve Plan", "- B. Request Changes", "- C. I'll edit the files", "",
     "[Answer]:", "",
   ].join("\n");
-  const RUN_STAGE = shell("bun .aidlc/tools/aidlc-orchestrate.ts continue EGu2NsTK", { kind: "run-stage", stage: "code-generation", phase: "construction" });
+  const RUN_STAGE = shell("bun .aidlc/tools/aidlc-orchestrate.ts continue EGu2NsTK", { kind: "run-stage", stage: "code-generation", phase: phaseFor("code-generation") });
 
   test("left for the day from the questions file, it comes back as the engine's ask in the new session and counts once", () => {
     const dir = createTestProject();
     projects.push(dir);
-    writeFileSync(seededStateFile(dir), "# AI-DLC State\n\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: code-generation\n");
-    const file = join(seededRecordDir(dir), "construction", "code-generation", "code-generation-questions.md");
+    writeFileSync(seededStateFile(dir), `# AI-DLC State\n\n- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}\n- **Current Stage**: code-generation\n`);
+    const file = join(seededRecordDir(dir), phaseFor("code-generation"), "code-generation", "code-generation-questions.md");
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, PLAN_FILE);
     const person = new GoldenPerson(journey(dir, { newSessionAtPlan: "/aidlc" }));

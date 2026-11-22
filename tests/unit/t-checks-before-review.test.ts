@@ -250,8 +250,9 @@ function buildAndTest(): string {
     .replace(/^- \*\*Current Stage\*\*:.*$/m, `- **Current Stage**: ${BT}`)
     .replace(/^- \*\*In Progress\*\*:.*$/m, `- **In Progress**: ${BT}`)
     .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor(BT).toUpperCase()}`)
-    .replace("- **Inception**: Active", "- **Inception**: Verified")
-    .replace("- **Construction**: Pending", "- **Construction**: Active"), "utf-8");
+    .replace("- **Design**: Active", "- **Design**: Verified")
+    .replace("- **Build**: Pending", "- **Build**: Verified")
+    .replace("- **Test**: Pending", "- **Test**: Active"), "utf-8");
   appendAuditEntry("STAGE_STARTED", { Stage: BT }, proj);
   const built = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(built, { recursive: true });

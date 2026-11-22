@@ -23,6 +23,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, REPO_ROOT, resetAidlcEnv, seedAidlcMemory, seededAuditShard,
   seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { integrationBranchToRead, shareOfferTarget, shareTarget } from "../../dist/claude/.claude/tools/aidlc-unit.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -227,7 +228,7 @@ describe("Practices Discovery writes the line into team.md", () => {
       "", "## STAGE_STARTED", "**Timestamp**: 2026-07-17T14:01:00Z", "**Event**: STAGE_STARTED",
       "**Stage**: practices-discovery", "**Agent**: aidlc-pipeline-deploy-agent", "", "---", "",
     ].join("\n"), { flag: "a" });
-    const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+    const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
     mkdirSync(draftDir, { recursive: true });
     writeFileSync(join(draftDir, "team-practices.md"), [
       "# Team Practices", "", "## Way of Working", "", D2, "", "- **Integration branch**: main", "",

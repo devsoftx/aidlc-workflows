@@ -68,6 +68,7 @@ import {
   withEnvAndFreshCaches,
 } from "../harness/fixtures.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const REPO_ROOT = join(import.meta.dir, "..", "..");
@@ -786,7 +787,7 @@ describe("t351 (4) next carries the plan's typed changes and checks every echoed
       .replace("- [x] build-and-test", "- [?] build-and-test")
       .replace("- [x] ci-pipeline", "- [ ] ci-pipeline")
       .replace("- [-] deployment-pipeline", "- [ ] deployment-pipeline")
-      .replace("- **Lifecycle Phase**: OPERATION", "- **Lifecycle Phase**: CONSTRUCTION")
+      .replace(`- **Lifecycle Phase**: ${phaseFor("deployment-pipeline").toUpperCase()}`, `- **Lifecycle Phase**: ${phaseFor("build-and-test").toUpperCase()}`)
       .replace("- **Current Stage**: deployment-pipeline", "- **Current Stage**: build-and-test")
       .replace("- **Next Stage**: environment-provisioning", "- **Next Stage**: ci-pipeline"));
     const d = nextDirective(proj, ["--skip", "deployment-pipeline,deployment-execution"]);

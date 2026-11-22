@@ -19,6 +19,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanupTestProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   activeRecord,
   AgentStandIn,
@@ -66,7 +67,7 @@ function installBlockingCheck(proj: string, host: ScopeHost): void {
     "if (import.meta.main) main(process.argv.slice(2));",
     "",
   ].join("\n"));
-  const stageFile = join(proj, ".claude", "aidlc-common", "stages", "construction", "code-generation.md");
+  const stageFile = join(proj, ".claude", "aidlc-common", "stages", phaseFor("code-generation"), "code-generation.md");
   const text = readFileSync(stageFile, "utf-8");
   const bound = text.replace(/^sensors:\n/m, "sensors:\n  - retention\n");
   expect(bound).not.toBe(text);

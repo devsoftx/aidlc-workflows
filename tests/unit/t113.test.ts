@@ -57,7 +57,7 @@ function runStage(): Record<string, unknown> {
   return {
     kind: "run-stage",
     stage: "application-design",
-    phase: "inception",
+    phase: "design",
     lead_agent: "aidlc-architect-agent",
     support_agents: ["aidlc-aws-platform-agent", "aidlc-design-agent"],
     mode: "inline",
@@ -67,9 +67,9 @@ function runStage(): Record<string, unknown> {
       ".claude/agents/aidlc-design-agent.md",
     ],
     gate: true,
-    memory_path: "aidlc-docs/inception/application-design/memory.md",
-    consumes: ["aidlc-docs/inception/requirements/requirements.md"],
-    produces: ["aidlc-docs/inception/application-design/decisions.md"],
+    memory_path: "aidlc-docs/design/application-design/memory.md",
+    consumes: ["aidlc-docs/design/requirements/requirements.md"],
+    produces: ["aidlc-docs/design/application-design/decisions.md"],
     rules_in_context: ["aidlc-org.md", "aidlc-team.md"],
     sensors_applicable: ["required-sections"],
     ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
@@ -90,7 +90,7 @@ function wave() {
         review_iteration: 1,
         unit_memory_path:
           "aidlc-docs/design/auth/functional-design/memory.md",
-        consumes: ["aidlc-docs/inception/requirements/requirements.md"],
+        consumes: ["aidlc-docs/design/requirements/requirements.md"],
         consumes_absent: [],
         produces: [
           "aidlc-docs/design/auth/functional-design/business-logic-model.md",
@@ -107,7 +107,7 @@ function dispatchSubagent(): Record<string, unknown> {
   return {
     kind: "dispatch-subagent",
     stage: "code-generation",
-    phase: "construction",
+    phase: "build",
     lead_agent: "aidlc-developer-agent",
     support_agents: ["aidlc-quality-agent"],
     mode: "subagent",
@@ -142,8 +142,8 @@ function presentGate(): Record<string, unknown> {
   return {
     kind: "present-gate",
     stage: "application-design",
-    phase: "inception",
-    memory_path: "aidlc-docs/inception/application-design/memory.md",
+    phase: "design",
+    memory_path: "aidlc-docs/design/application-design/memory.md",
   };
 }
 
@@ -1095,7 +1095,7 @@ describe("t113 directive-schema — validateDirective (migrated from t113-direct
         ...runStage(),
         consumes_absent: [
           { path: "aidlc-docs/design/units-generation/unit-of-work.md", expected: true },
-          { path: "aidlc-docs/inception/requirements/requirements.md", expected: false },
+          { path: "aidlc-docs/design/requirements/requirements.md", expected: false },
         ],
       }),
     ).toBe("VALID");

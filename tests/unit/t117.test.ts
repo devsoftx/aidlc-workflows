@@ -356,7 +356,7 @@ describe("t117 creation branch (P4: --init retired, engine names intent-create)"
 describe("t117 flag-validation, env-scope, scope/config change, phase jump, freeform", () => {
   test("9: --stage + --phase together → error (verbatim)", () => {
     const p = proj(); // no state needed — the guard fires before state inspection
-    const r = next(["--stage", "feasibility", "--phase", "ideation"], p);
+    const r = next(["--stage", "feasibility", "--phase", phaseFor("feasibility")], p);
     expect(r.out).toContain("Cannot use --stage and --phase together");
     expect(directive(r.stdout).kind).toBe("error");
   });

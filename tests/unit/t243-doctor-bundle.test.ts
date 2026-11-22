@@ -65,6 +65,7 @@ import {
   createTestProject,
   seededRecordDir,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   adaptLegacyResult,
   isRecoveryBypass,
@@ -739,7 +740,7 @@ describe("t243 doctor --export diagnostic exporter (#575)", () => {
 
   const RE_STAGE: GraphStageLite = {
     slug: "reverse-engineering",
-    phase: "inception",
+    phase: phaseFor("reverse-engineering"),
     mode: "subagent",
     lead_agent: "aidlc-developer-agent",
     support_agents: ["aidlc-architect-agent"],
@@ -891,7 +892,7 @@ describe("t243 doctor --export diagnostic exporter (#575)", () => {
       join(rgDir, "runtime-graph.json"),
       JSON.stringify({
         stages: [
-          { slug: "intent-capture", phase: "ideation", mode: "inline", lead_agent: CUSTOM_LEAD, support_agents: [] },
+          { slug: "intent-capture", phase: phaseFor("intent-capture"), mode: "inline", lead_agent: CUSTOM_LEAD, support_agents: [] },
         ],
       }),
       "utf-8",
@@ -1256,7 +1257,7 @@ describe("t243 doctor --export diagnostic exporter (#575)", () => {
     );
     writeFileSync(
       join(rec, "runtime-graph.json"),
-      JSON.stringify({ stages: [{ slug: "intent-capture", phase: "ideation", mode: "inline", lead_agent: "aidlc-product-agent", support_agents: [42, "aidlc-architect-agent"] }] }),
+      JSON.stringify({ stages: [{ slug: "intent-capture", phase: phaseFor("intent-capture"), mode: "inline", lead_agent: "aidlc-product-agent", support_agents: [42, "aidlc-architect-agent"] }] }),
       "utf-8",
     );
     // Must not throw (an uncaught TypeError from createHash on a number crashed

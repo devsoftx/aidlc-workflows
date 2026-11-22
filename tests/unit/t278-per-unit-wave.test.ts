@@ -157,20 +157,22 @@ ${autonomy ? `- **Construction Autonomy Mode**: ${autonomy}\n` : ""}
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 ${row("x", "domain-design")}
 ${row("x", "units-generation")}
-
-### CONSTRUCTION PHASE
 ${row(current === "functional-design" ? "-" : " ", "functional-design")}
 ${row(current === "nfr-requirements" ? "-" : " ", "nfr-requirements")}
 ${row(current === "nfr-design" ? "-" : " ", "nfr-design")}
 ${row(current === "infrastructure-design" ? "-" : " ", "infrastructure-design")}
+
+### BUILD PHASE
 ${row(current === "code-generation" ? "-" : " ", "code-generation")}
+
+### TEST PHASE
 ${row(" ", "build-and-test")}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;

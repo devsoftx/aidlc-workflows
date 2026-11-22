@@ -266,7 +266,7 @@ function setAutonomous(proj: string): void {
 function summaryQuestions(proj: string, answer = ""): string {
   const path = join(
     seededRecordDir(proj),
-    "ideation",
+    phaseFor("feasibility"),
     "feasibility",
     "feasibility-questions.md",
   );
@@ -991,7 +991,7 @@ describe("t188: human-presence approval gate (ledger-event design)", () => {
   });
 
   // --- Scenario D: AUTONOMY carve-out is Construction-only -------------------
-  test("D: a Construction autonomy field does NOT waive an Ideation gate", () => {
+  test("D: a Construction autonomy field does NOT waive a Discover gate", () => {
     const slug = field(proj, "Current Stage");
     guarded(proj, ["checkbox", `${slug}=in-progress`]);
     setAutonomous(proj);

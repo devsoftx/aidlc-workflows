@@ -6,11 +6,11 @@
 // planned-then-skipped work. Creation makes a phase dir only for a phase the
 // SCOPE RUNS (one holding at least one EXECUTE stage), derived from the same
 // stagesInScope data that drives the PHASE_SKIPPED audit rows. Bugfix omits
-// `ideation/` but includes `deploy/` for its deployment stages.
+// `operate/` but includes `deploy/` for its deployment stages.
 //
 // Five contracts land here:
 //   (a) NARROW SCOPE: a bugfix record has initialization/discover/design/build/
-//       test/secure/deploy + verification, and NO ideation/ or operate/ dir at all.
+//       test/secure/deploy + verification, and NO operate/ dir at all.
 //   (b) FULL SCOPE: a feature record still has every phase dir.
 //   (c) AGREEMENT: the phase dirs on disk and the PHASE_SKIPPED audit rows are
 //       exact complements. This is the invariant that makes the trimming
@@ -109,11 +109,11 @@ function phasesSkippedInAudit(record: string): string[] {
 
 describe("t271 scope-aware phase dirs at intent creation", () => {
   // === (a) NARROW SCOPE ====================================================
-  test("a: a bugfix record gets only its in-scope phase dirs, no ideation/", () => {
+  test("a: a bugfix record gets only its in-scope phase dirs, no operate/", () => {
     const record = createAndResolveRecord(mkTemp("bugfix"), "bugfix");
 
     // bugfix runs initialization, discover, design, build, test, secure and
-    // deploy; ideation and operate have zero EXECUTE stages.
+    // deploy; operate has zero EXECUTE stages.
     expect(phaseDirsPresent(record).sort()).toEqual([
       "build",
       "deploy",
@@ -124,8 +124,8 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
       "test",
     ]);
     // Stated as explicit absences too, so the failure message names the dir.
-    expect(existsSync(join(record, "ideation")), "no ideation/ dir for bugfix").toBe(false);
-    expect(existsSync(join(record, "operate")), "operate/ dir for bugfix").toBe(false);
+    expect(existsSync(join(record, "operate")), "no operate/ dir for bugfix").toBe(false);
+    expect(existsSync(join(record, "deploy")), "deploy/ dir for bugfix").toBe(true);
 
     // verification/ is scope-independent: every record gets it.
     const verification = join(record, "verification");
@@ -146,8 +146,8 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
 
   // === (c) DISK AND AUDIT AGREE ============================================
   test("c: the phase dirs present and the PHASE_SKIPPED rows are exact complements", () => {
-    // Three scopes with different exclusion shapes: bugfix and infra drop
-    // ideation, while mvp drops operation.
+    // Three scopes with different exclusion shapes: bugfix and mvp drop
+    // operate, while infra drops discover.
     for (const scope of ["bugfix", "mvp", "infra"]) {
       const record = createAndResolveRecord(mkTemp(`agree-${scope}`), scope);
       const present = phaseDirsPresent(record);
@@ -165,8 +165,8 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
 
   // === (d) ADDITIVE ONLY ===================================================
   test("d: a pre-existing record carrying every phase dir is never pruned", () => {
-    // A legacy install: a record created by an older engine already has all five
-    // dirs. Creating a NEW narrow-scope intent alongside it must leave it alone:
+    // A legacy install: a record created by an older engine already has every
+    // phase dir. Creating a NEW narrow-scope intent alongside it must leave it alone:
     // this path only ever creates.
     const proj = mkTemp("legacy");
     const legacy = join(proj, INTENTS_REL, "260101-legacy");
@@ -189,12 +189,12 @@ describe("t271 scope-aware phase dirs at intent creation", () => {
     // pre-created, because a writer creates its own parent chain. Prove it on the
     // hardest case, a stage dir two levels under a phase that has NO dir at all.
     const record = createAndResolveRecord(mkTemp("late-write"), "bugfix");
-    const lateArtifact = join(record, "ideation", "intent-capture", "report.md");
-    expect(existsSync(join(record, "ideation")), "ideation/ absent before the write").toBe(
+    const lateArtifact = join(record, "operate", "observability-setup", "report.md");
+    expect(existsSync(join(record, "operate")), "operate/ absent before the write").toBe(
       false,
     );
 
-    mkdirSync(join(record, "ideation", "intent-capture"), { recursive: true });
+    mkdirSync(join(record, "operate", "observability-setup"), { recursive: true });
     writeFileSync(lateArtifact, "# Report\n", "utf-8");
 
     expect(readFileSync(lateArtifact, "utf-8")).toBe("# Report\n");

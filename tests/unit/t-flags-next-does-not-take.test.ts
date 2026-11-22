@@ -174,8 +174,8 @@ function planQuestionProject(): string {
     .replace("- [ ] code-generation ", "- [-] code-generation ")
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation")
     .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: BUILD")
-    .replace("- **Inception**: Active", "- **Inception**: Verified")
-    .replace("- **Construction**: Pending", "- **Construction**: Active");
+    .replace("- **Design**: Active", "- **Design**: Verified")
+    .replace("- **Build**: Pending", "- **Build**: Active");
   writeFileSync(seededStateFile(proj), state, "utf-8");
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "todo.ts"), "export const todo = (title: string) => title;\n", "utf-8");

@@ -209,11 +209,10 @@ describe("t44 stage-instruction completeness — parseStageFrontmatter (migrated
   // ============================================================
 
   // A stage's artefacts sit under `<record>/<phase>/`, with the phase read from
-  // the compiled stage graph (phaseFor). The titles below keep the old
-  // `<record>/construction/` wording; the check is the stage's own phase.
+  // the compiled stage graph (phaseFor).
   const phaseFolderRe = (slug: string): RegExp => new RegExp(`<record>/${phaseFor(slug)}`, "i");
   for (const slug of ["functional-design", "nfr-requirements", "nfr-design", "code-generation"]) {
-    test(`construction dir: ${slug} mentions <record>/construction/`, () => {
+    test(`construction dir: ${slug} mentions <record>/${phaseFor(slug)}/`, () => {
       expect(fileMatches(findStageFile(slug), phaseFolderRe(slug))).toBe(true);
     });
   }
@@ -223,7 +222,7 @@ describe("t44 stage-instruction completeness — parseStageFrontmatter (migrated
   // ============================================================
 
   for (const slug of ["deployment-pipeline", "observability-setup", "incident-response"]) {
-    test(`operation dir: ${slug} mentions <record>/operation/`, () => {
+    test(`operation dir: ${slug} mentions <record>/${phaseFor(slug)}/`, () => {
       expect(fileMatches(findStageFile(slug), phaseFolderRe(slug))).toBe(true);
     });
   }

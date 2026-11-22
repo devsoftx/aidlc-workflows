@@ -83,6 +83,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { memoryDirFor } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { extractMarkdownSection } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { resolveTestingPostureFromSections } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
@@ -204,7 +205,7 @@ function makeFixture(): Fixture {
   const memDir = memoryDirFor(proj);
   const draftDir = join(
     seededRecordDir(proj),
-    "inception",
+    phaseFor("practices-discovery"),
     "practices-discovery",
   );
   mkdirSync(memDir, { recursive: true });

@@ -4,13 +4,13 @@
 // through a REAL claude TUI (Pattern A "landed + rendered").
 //
 // WHAT IT PROVES
-//   A user mid-IDEATION (seeded Current Stage=feasibility) types
+//   A user mid-DISCOVER (seeded Current Stage=feasibility) types
 //   `/aidlc --stage approval-handoff` at the live prompt. The jump must:
 //     - land DETERMINISTICALLY on disk: aidlc-jump.ts emits a per-stage
 //       STAGE_SKIPPED for each in-flight stage it skips over and one canonical
 //       STAGE_JUMPED with Direction: FORWARD (aidlc-jump.ts), and
 //       rewrites aidlc-state.md — Current Stage=approval-handoff, Lifecycle
-//       Phase=IDEATION, the skipped intermediate stages flipped to [S]
+//       Phase=DISCOVER, the skipped intermediate stages flipped to [S]
 //       (aidlc-jump.ts), the prior [x] stages untouched, the
 //       Completed counter == the live [x] count, and a fresh Last Updated stamp.
 //     - RE-RENDER the statusline: STAGE_DISPLAY["approval-handoff"] =
@@ -49,7 +49,7 @@
 //
 // EQUAL-OR-STRONGER THAN THE .sh
 //   The .sh (12 asserts) is reproduced on the SAME on-disk surface: [S] present,
-//   approval-handoff is Current Stage, IDEATION phase, feasibility [S],
+//   approval-handoff is Current Stage, DISCOVER phase, feasibility [S],
 //   team-formation [S], intent-capture still [x], Completed counter == [x] count,
 //   Last Updated has a timestamp, audit STAGE_JUMPED + FORWARD + ISO timestamp.
 //   This port ADDS the rendered statusline assertion the .sh could not make.
@@ -171,7 +171,7 @@ describe("t-tui-t24 stage-jump (forward --stage lands on disk + re-renders statu
     `forward jump to approval-handoff lands STAGE_JUMPED + re-renders "> Approval & Handoff"${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
       const session = `aidlc_tui_t24_${process.pid}`;
-      // Seeded mid-IDEATION at Current Stage=feasibility with 5 completed [x]
+      // Seeded mid-DISCOVER at Current Stage=feasibility with 5 completed [x]
       // stages; an audit shard is seeded so the jump appends to it.
       const proj = setupTuiProject({
         withState: "state-mid-ideation.md",
@@ -207,12 +207,12 @@ describe("t-tui-t24 stage-jump (forward --stage lands on disk + re-renders statu
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*IDEATION", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", "\\[AIDLC\\].*DISCOVER", "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
-        // Seeded state -> the workflow statusline paints IDEATION (not "ready").
+        // Seeded state -> the workflow statusline paints DISCOVER (not "ready").
         // Before the jump it shows the seeded "> Feasibility" stage.
-        expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 800)).toBe(true);
+        expect(waitFor(session, "\\[AIDLC\\].*DISCOVER", remainingWorkMs(), 800)).toBe(true);
 
         // --- send the slash command ------------------------------------------
         // Spaces in the command -> send literally with no auto-Enter, then Enter
@@ -248,14 +248,14 @@ describe("t-tui-t24 stage-jump (forward --stage lands on disk + re-renders statu
         // The captured grid shows the landed stage name in the workflow
         // statusline. Anchored on the full display string so a stray "Approval"
         // elsewhere can't satisfy it.
-        expect(pane).toContain("· IDEATION");
+        expect(pane).toContain("· DISCOVER");
         expect(pane).toContain("> Approval & Handoff");
 
         // --- assert ON DISK: aidlc-state.md -----------
         const stateMd = readFileSync(seededStateFile(proj), "utf8");
 
         expect(stateMd).toMatch(/^-\s*\*\*Current Stage\*\*:\s*approval-handoff\s*$/m);
-        expect(stateMd).toMatch(/^-\s*\*\*Lifecycle Phase\*\*:\s*IDEATION\s*$/m);
+        expect(stateMd).toMatch(/^-\s*\*\*Lifecycle Phase\*\*:\s*DISCOVER\s*$/m);
         expect(stateMd).toMatch(/\[S\]/);
         expect(stateMd).toMatch(/^-\s*\[S\]\s*feasibility\b/m);
         expect(stateMd).toMatch(/^-\s*\[S\]\s*team-formation\b/m);

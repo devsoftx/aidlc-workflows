@@ -25,7 +25,7 @@ function runStage(policy: Record<string, unknown>): Record<string, unknown> {
   return {
     kind: "run-stage",
     stage: "functional-design",
-    phase: "construction",
+    phase: "design",
     stage_file: ".claude/aidlc-common/stages/design/functional-design.md",
     lead_agent: "aidlc-architect-agent",
     gate: false,

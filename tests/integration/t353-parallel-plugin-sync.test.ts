@@ -49,7 +49,6 @@ function temp(prefix: string): string {
 function overlayPlugin(parent: string, key: string): string {
   const root = join(parent, `plugin-${key}`);
   mkdirSync(join(root, ".claude-plugin"), { recursive: true });
-  mkdirSync(join(root, "contributions", "construction"), { recursive: true });
   mkdirSync(join(root, "hooks"), { recursive: true });
   writeFileSync(
     join(root, ".claude-plugin", "plugin.json"),
@@ -61,8 +60,9 @@ function overlayPlugin(parent: string, key: string): string {
   );
   cpSync(COMPOSE_HOOK, join(root, "hooks", "compose.ts"));
   for (const target of ["nfr-design", "build-and-test"]) {
+    mkdirSync(join(root, "contributions", phaseFor(target)), { recursive: true });
     writeFileSync(
-      join(root, "contributions", "construction", `${target}.md`),
+      join(root, "contributions", phaseFor(target), `${target}.md`),
       [
         "---",
         `target: ${target}`,

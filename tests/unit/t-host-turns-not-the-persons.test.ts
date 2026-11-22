@@ -171,7 +171,7 @@ function seedShell(dir: string): void {
   );
 }
 
-// A project mid-Ideation: feasibility has no reviewer, so presence is the only
+// A project mid-Discover: feasibility has no reviewer, so presence is the only
 // check an approval meets. Its own HOME, so Kiro's chat record is the test's.
 function scratchProject(tree: Tree): { dir: string; home: string } {
   const dir = mkdtempSync(join(tmpdir(), "t-host-turns-"));

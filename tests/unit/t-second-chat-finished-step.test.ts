@@ -61,10 +61,12 @@ const STAGE_MAJOR_STATE = [
   "## Scope Configuration",
   "- **Stages to Execute**: all", "- **Stages to Skip**: none", "- **Depth**: Standard", "- **Test Strategy**: Standard", "",
   "## Stage Progress", "",
-  "### CONSTRUCTION PHASE",
-  ...CONSTRUCTION_STAGES.map((stage) => `- [ ] ${stage} \u2014 EXECUTE`), "",
+  ...[...new Set(CONSTRUCTION_STAGES.map(phaseFor))].flatMap((phase) => [
+    `### ${phase.toUpperCase()} PHASE`,
+    ...CONSTRUCTION_STAGES.filter((stage) => phaseFor(stage) === phase).map((stage) => `- [ ] ${stage} \u2014 EXECUTE`), "",
+  ]),
   "## Current Status",
-  "- **Lifecycle Phase**: CONSTRUCTION", `- **Current Stage**: ${UNIT_STAGE}`, "- **Status**: Running", "",
+  `- **Lifecycle Phase**: ${phaseFor(UNIT_STAGE).toUpperCase()}`, `- **Current Stage**: ${UNIT_STAGE}`, "- **Status**: Running", "",
 ].join("\n");
 
 type Json = Record<string, unknown>;

@@ -21,6 +21,7 @@ import {
   runOrchestrateNext,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -172,7 +173,7 @@ function runThroughBuild(p: string): void {
     stage: "requirements-analysis",
     gate: true,
   });
-  expect(stateField(p, "Lifecycle Phase")).toBe("INCEPTION");
+  expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("requirements-analysis").toUpperCase());
   expect(requirements.reviewer).toBeUndefined();
   approve(p, "requirements-analysis", [
     "design/requirements-analysis/requirements.md",
@@ -191,7 +192,7 @@ function runThroughBuild(p: string): void {
   // frontmatter, so the ritual is absent here by the scope's word rather than by
   // anything this journey does. Scopes that keep learnings on still carry it.
   expect(code.protocol_modules).toEqual(["ensemble", "construction", "loopback"]);
-  expect(stateField(p, "Lifecycle Phase")).toBe("CONSTRUCTION");
+  expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("code-generation").toUpperCase());
   expect((code.produces as string[]).every((path) =>
     path.includes("/build/code-generation/") &&
     !path.includes("{unit-name}")
@@ -218,7 +219,7 @@ function runThroughBuild(p: string): void {
     "test/build-and-test/build-and-test-summary.md",
     "test/build-and-test/test-results.md",
   ]);
-  expect(stateField(p, "Lifecycle Phase")).toBe("OPERATION");
+  expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("deployment-pipeline").toUpperCase());
 }
 
 describe("t301 express scope routing (deterministic CLI journey)", () => {

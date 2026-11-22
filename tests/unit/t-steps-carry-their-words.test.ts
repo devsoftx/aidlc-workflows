@@ -63,7 +63,7 @@ function runStage(extra: Json = {}): Json {
   return {
     kind: "run-stage",
     stage: "requirements-analysis",
-    phase: "inception",
+    phase: "design",
     lead_agent: "aidlc-product-agent",
     support_agents: [],
     mode: "inline",
@@ -474,7 +474,7 @@ describe("a stage step carries its instructions, not the fields to branch on", (
   });
 
   test("a Code Generation step says whether to plan, revise, repair or build", () => {
-    const plan = (status: Json) => str(notes(runStage({ stage: "code-generation", phase: "construction", plan_approval: status })).plan_note);
+    const plan = (status: Json) => str(notes(runStage({ stage: "code-generation", phase: "build", plan_approval: status })).plan_note);
     expect(plan({ status: "plan" })).toContain("Write this plan and its test instructions");
     expect(plan({ status: "plan" })).toContain("AI-DLC asks the person to approve the plan itself, never you");
     expect(plan({ status: "revise", feedback: "use cookies" })).toContain("asked for changes");

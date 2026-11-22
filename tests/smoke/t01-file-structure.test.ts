@@ -23,10 +23,7 @@
 //   .sh L20-29  11 hooks (each)                        -> "ships each of the 17 framework hooks" + exact-set strengthening
 //   .sh L32-34  11 agents (loop)                       -> "ships each of the 14 agent personas" + "ships EXACTLY 14 aidlc-*-agent.md files" (count strengthening; roster grew to 13 with the two reviewer personas, then 14 with the composer)
 //   .sh L38-40  3 initialization stages (loop)         -> "ships the 3 initialization stages"
-//   .sh L43-45  7 ideation stages (loop)               -> "ships the 7 ideation stages"
-//   .sh L48-50  8 inception stages (loop)              -> "ships the 8 inception stages"
-//   .sh L53-55  7 construction stages (loop)           -> "ships the 7 construction stages"
-//   .sh L58-60  7 operation stages (loop)              -> "ships the 7 operation stages"
+//   .sh L43-60  the delivery-phase stages (loops)     -> "ships every stage of each delivery phase" (the seven phases)
 //   .sh (all stages)                                   -> "ships EXACTLY 36 stage files across the 8 phase dirs" (count strengthening)
 //   .sh L63-64  settings.json + settings.local.json.example -> "ships settings.json and settings.local.json.example"
 //   .sh L67  state-template.md                          -> "ships knowledge/aidlc-shared/state-template.md"

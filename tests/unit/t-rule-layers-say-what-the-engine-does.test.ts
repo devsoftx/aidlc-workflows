@@ -8,7 +8,7 @@
 //   - org.md's per-scope test floors name the same scopes as the Testing
 //     Contract (combineTestObligations): classic, the default scope, adds no
 //     floor in either;
-//   - the Design phase's Traceability rule asks no trace to an Ideation
+//   - the Design phase's Traceability rule asks no trace to a Discover
 //     document, which the default scope never writes;
 //   - the empty team and project templates still read as holding no rule, in
 //     today's header and in the earlier one a team's own files keep;
@@ -83,7 +83,7 @@ describe("t-rule-layers-say-what-the-engine-does", () => {
       expect(named).toEqual(withFloor);
       const phasesDir = join(memory, "phases");
       for (const name of readdirSync(phasesDir).filter((file) => file.endsWith(".md"))) {
-        expect(read(join(phasesDir, name)), name).not.toContain("trace back to an ideation artifact");
+        expect(read(join(phasesDir, name)), name).not.toMatch(/trace back to an? (ideation|discover) artifact/);
       }
     },
   );

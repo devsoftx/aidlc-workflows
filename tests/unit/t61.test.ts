@@ -47,6 +47,7 @@ import {
   seededStateFile,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -143,7 +144,7 @@ function seedState(p: string, activeAgent: string): void {
     stateFile,
     `# AI-DLC State Tracking
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("ci-pipeline").toUpperCase()}
 - **Current Stage**: ci-pipeline
 - **Active Agent**: ${activeAgent}
 - **Status**: Running
