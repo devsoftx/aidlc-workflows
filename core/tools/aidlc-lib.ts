@@ -12829,18 +12829,16 @@ export function stageRevisionCycles(
   return cycles;
 }
 
-// Construction's grant and checkpoints cover the Unit's walk: the per-Unit
-// stages and Build and Test. Five-phase Construction held that whole; the seven
-// phases split it across design, build and test, so walk membership, not a
-// phase name or the per-Unit marker alone, says which stages it covers.
-const inConstructionWalk = (slug: string): boolean =>
-  (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).inUnitWalk(slug);
-
+// Construction's grant and checkpoints cover the Unit's walk (aidlc-graph's
+// inUnitWalk): the per-Unit stages and Build and Test, which the seven phases
+// split across design, build and test.
 export function isAutonomousConstructionDecision(
   stateContent: string | null,
   stage: { slug: string; for_each?: string | null } | null | undefined,
 ): boolean {
-  return !!stage && inConstructionWalk(stage.slug) && isAutonomousMode(stateContent);
+  return !!stage &&
+    (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).inUnitWalk(stage.slug) &&
+    isAutonomousMode(stateContent);
 }
 
 function firstConstructionApprovalStage(
@@ -12877,7 +12875,11 @@ export function isAutonomousConstructionGate(
   evidence?: ConstructionEvidence,
 ): boolean {
   const checkpoints = stateContent !== null && constructionCheckpointsApply(stateContent);
-  if (checkpoints && inConstructionWalk(stage.slug) && projectDir) {
+  if (
+    checkpoints &&
+    (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).inUnitWalk(stage.slug) &&
+    projectDir
+  ) {
     if (
       (stage.slug === "code-generation" &&
         isConstructionSwarmEnabled(stateContent) &&
@@ -12944,7 +12946,7 @@ export function constructionCheckpointGaps(
 ): string[] | null {
   const scope = getField(stateContent, "Scope") ?? "";
   if (
-    !inConstructionWalk(stage.slug) ||
+    !(require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).inUnitWalk(stage.slug) ||
     !constructionCheckpointsApply(stateContent) ||
     usesStageLevelPerUnitArtifacts(scope, stateContent)
   ) return null;
