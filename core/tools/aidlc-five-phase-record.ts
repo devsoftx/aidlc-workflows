@@ -346,7 +346,8 @@ export const FIVE_PHASE_CONDITIONS: Readonly<Record<string, { fivePhase: string;
  * A stage's graph contract (the fields a stage receipt hashes) as a five-phase
  * release hashed the same contract: the stage's five-phase folder for its
  * phase, and the 2.11.4 wording of a condition the seven phases only reworded
- * (FIVE_PHASE_CONDITIONS). Null for a stage 2.11.4 did not ship. Every other
+ * (FIVE_PHASE_CONDITIONS). Null for a stage 2.11.4 did not ship
+ * (fivePhaseGraphContracts gives a plugin's stage its forms). Every other
  * field is the contract as it is now, so a change to what the stage reads,
  * writes or runs on still reads as one.
  */
@@ -358,4 +359,18 @@ export function fivePhaseGraphContract<T extends { slug: string; phase: string; 
     phase: FIVE_PHASE_STAGE_FOLDER[contract.slug],
     condition: reworded !== undefined && contract.condition === reworded.sevenPhase ? reworded.fivePhase : contract.condition,
   };
+}
+
+/**
+ * Every graph contract a five-phase release could have hashed for a stage: the
+ * one fivePhaseGraphContract gives a stage 2.11.4 shipped, and, for a stage the
+ * frozen tables do not know (a plugin's), one per five-phase folder, because
+ * 2.11.4 recorded no folder for it (as fivePhaseLogicalSpellings spells its
+ * documents). Those differ from the contract as it is now only in the phase,
+ * so a plugin stage whose inputs, outputs or condition changed still reads as
+ * changed.
+ */
+export function fivePhaseGraphContracts<T extends { slug: string; phase: string; condition?: string }>(contract: T): T[] {
+  const shipped = fivePhaseGraphContract(contract);
+  return shipped !== null ? [shipped] : FIVE_PHASE_FOLDERS.map((phase) => ({ ...contract, phase }));
 }

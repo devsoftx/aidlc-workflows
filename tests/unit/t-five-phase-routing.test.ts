@@ -7,9 +7,12 @@
 // after the 8 to 10 step where 2.11.4 would carry it:
 //   - a stage the plan runs that 2.11.4 had still to reach, and that now comes
 //     before the cursor, runs once at the next stage boundary (never over an
-//     open gate), and the walk then returns to where it stood without running
-//     the stages between that the work had passed over, Code Review and
-//     Security Review among them, and without starting a finished one again;
+//     open gate), and the walk then carries on from where it stood without
+//     running the stages between that the work had passed over (Code Review
+//     and Security Review among them on work already started past them; on
+//     work that had only just entered CI Pipeline they run first) and without
+//     starting a finished one again, and the line said after the redo names
+//     the stage the person meets next;
 //   - a stage 2.11.4 had passed over that now comes after the cursor stays
 //     passed over;
 //   - a forward jump since the update that 2.11.4 would have made past the
@@ -159,13 +162,13 @@ function walk(proj: string, stop?: string): Walk {
     }
     if (d.kind !== "run-stage" || typeof d.stage !== "string") {
       out.ended = String(d.kind);
-      return out;
+      return namesWhatFollowsTheRedo(out);
     }
     const slug = d.stage;
     out.stages.push(d.gate_only === true ? `${slug} (gate)` : slug);
     if (slug === stop) {
       out.ended = "stopped";
-      return out;
+      return namesWhatFollowsTheRedo(out);
     }
     if (slug === "reverse-engineering") documentTheCode(proj);
     if (box(proj, slug) === "-") expect(tool(proj, "aidlc-state.ts", ["gate-start", slug]).status).toBe(0);
@@ -173,6 +176,22 @@ function walk(proj: string, stop?: string): Walk {
     expect(approved.status, approved.out).toBe(0);
   }
   throw new Error(`the walk did not end: ${out.stages.join(", ")}`);
+}
+
+const STAGE_NAMES = new Map(loadStageGraph().map((stage) => [stage.slug, stage.name]));
+
+// The line a redo has the agent say names the stage the person meets once
+// they approve its target: the one the walk shows next.
+function namesWhatFollowsTheRedo(out: Walk): Walk {
+  for (const { command } of out.jumps) {
+    const [target, direction] = command.split(" ");
+    const after = out.stages[out.stages.indexOf(target) + 1];
+    if (direction !== "redo" || !out.stages.includes(target) || after === undefined) continue;
+    const name = STAGE_NAMES.get(after.replace(/ \(gate\)$/, ""));
+    expect(out.said.some((line) => line.startsWith("Once you approve ") && line.endsWith(` ${name}.`)), `${after}: ${out.said.join(" | ")}`)
+      .toBe(true);
+  }
+  return out;
 }
 
 const ORDER = loadStageGraph().map((stage) => stage.slug);
@@ -287,7 +306,8 @@ describe("a stage 2.11.4 had still to reach runs once, then the walk returns whe
     expect(r.ended).toBe("done");
     expect(r.changed).toEqual([]);
     expect(r.jumps).toEqual([{ command: "performance-validation redo", skipped: [] }]);
-    expect(r.said).toEqual(["Once you approve Performance Validation, we're back at CI Pipeline."]);
+    // The work had only just entered CI Pipeline, so the line names Code Review, which comes first.
+    expect(r.said).toEqual(["Once you approve Performance Validation, the work goes on to Code Review."]);
     expect(upgradeRow(proj)).toMatch(/^\*\*Stages moved behind\*\*: performance-validation$/m);
     expect(rowsSinceUpgrade(proj, "STAGE_STARTED", "performance-validation")).toBe(1);
     expect(box(proj, "build-and-test")).toBe("x");
