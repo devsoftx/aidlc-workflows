@@ -9,13 +9,14 @@
 // tests/fixtures/state-v8) resume where they stood, approvals kept, every
 // document moved to its seven-phase folder, the original kept beside it, one
 // audit row, nothing said; doctor and status show it on purpose. A folder the
-// file system will not let move (held open, or one this user cannot change)
-// holds the whole bring-up back, said once with what frees it, until the next
-// step can make it; doctor and status name a folder this user cannot change
-// meanwhile, the held attempt keeps no copy, and a kept original is never
-// overwritten. A version no step brings up (below 7, 9 from upstream 2.12 team
-// work, newer, unparseable) is still refused by `next`, `report` and doctor
-// alike, without the old archive-and-start-again advice.
+// file system will not let move (held open, one this user cannot change, a
+// mount in the way) holds the whole bring-up back, said once with what frees
+// it, until the next step can make it; doctor and status name a folder this
+// user cannot change meanwhile and never promise a step that is held, the
+// held attempt keeps no copy, and a kept original is never overwritten. A
+// version no step brings up (below 7, 9 from upstream 2.12 team work, newer,
+// unparseable) is still refused by `next`, `report` and doctor alike, without
+// the old archive-and-start-again advice.
 
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
@@ -109,16 +110,16 @@ describe("t282 state-version doctor gate", () => {
     expect(status).not.toBe(0);
   });
 
-  test("a v7 state passes the state-version row: AI-DLC brings it up at its next step", () => {
+  test("a v7 state passes the state-version row: AI-DLC's next step brings it up, or names a folder in the way", () => {
     const { out } = runDoctor("7");
-    expect(out).toMatch(/State Version: 7 \(AI-DLC brings this record up to 10 at its next step\)/);
+    expect(out).toMatch(/State Version: 7 \(AI-DLC's next step brings this record up to 10, or names a folder in the way and what frees it\)/);
     expect(out).not.toMatch(/state version current/);
     expect(out).not.toContain("mv aidlc");
   });
 
-  test("a v8 state (2.6.1 to 2.11.4, five phases) passes the state-version row: AI-DLC brings it up at its next step", () => {
+  test("a v8 state (2.6.1 to 2.11.4, five phases) passes the state-version row: AI-DLC's next step brings it up, or names a folder in the way", () => {
     const { out } = runDoctor("8");
-    expect(out).toMatch(/State Version: 8 \(AI-DLC brings this record up to 10 at its next step\)/);
+    expect(out).toMatch(/State Version: 8 \(AI-DLC's next step brings this record up to 10, or names a folder in the way and what frees it\)/);
     expect(out).not.toMatch(/state version current/);
   });
 
@@ -514,6 +515,64 @@ describe("t282 a v7 record is brought up in place and resumes", () => {
     expect(existsSync(join(record, "inception", "application-design", "components.md"))).toBe(true);
   });
 
+  // Linux renames a folder this user cannot write in place, since only a new
+  // parent changes its ".." entry: the sensor folder's rename keeps its
+  // parent, so doctor and status do not call the record waiting on it. Root,
+  // whom no mode bit stops, cannot stand in for that user.
+  test.skipIf(process.platform !== "linux" || process.getuid?.() === 0)("a sensor folder this user cannot write, renamed in place, keeps nothing waiting: doctor, status and the step agree", () => {
+    const { proj, record } = v7Project("aidlc-state-2.3.0-design-approved.md", true);
+    const sensors = join(record, ".aidlc-sensors");
+    mkdirSync(join(sensors, "application-design"), { recursive: true });
+    writeFileSync(join(sensors, "application-design", "result.json"), "{}\n", "utf-8");
+    chmodSync(join(sensors, "application-design"), 0o555);
+    let doctor = "";
+    let status = "";
+    let step: { directive: Record<string, unknown>; out: string } = { directive: {}, out: "" };
+    try {
+      doctor = doctorOf(proj);
+      status = statusOf(proj);
+      step = engine(proj, ["next", "--resume"]);
+    } finally {
+      for (const slug of ["application-design", "domain-design"]) {
+        if (existsSync(join(sensors, slug))) chmodSync(join(sensors, slug), 0o755);
+      }
+    }
+    expect(doctor).not.toMatch(/cannot bring this record up|application-design/);
+    expect(doctor).toContain(
+      "State Version: 7 (AI-DLC's next step brings this record up to 10, or names a folder in the way and what frees it)",
+    );
+    expect(status).not.toMatch(/^Brought up: +waiting/m);
+    expect(status).toMatch(/^Brought up: +at AI-DLC's next step,/m);
+    // The step makes the rename doctor said it would.
+    expect(step.directive.stage).toBe("units-generation");
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toMatch(/^- \*\*State Version\*\*: 10$/m);
+    expect(readFileSync(join(sensors, "domain-design", "result.json"), "utf-8")).toBe("{}\n");
+    expect(existsSync(join(sensors, "application-design"))).toBe(false);
+  });
+
+  // A rename whose new folder is already there is never made (the old one is
+  // kept), so a folder it would move keeps nothing waiting, whoever owns it.
+  test.skipIf(process.platform === "win32")("a sensor folder whose new name is already there keeps nothing waiting, however it is locked", () => {
+    const { proj, record } = v7Project("aidlc-state-2.3.0-design-approved.md", true);
+    const sensors = join(record, ".aidlc-sensors");
+    for (const slug of ["application-design", "domain-design"]) mkdirSync(join(sensors, slug), { recursive: true });
+    const unlock = lockFolder(join(sensors, "application-design"));
+    let doctor = "";
+    let status = "";
+    let step: { directive: Record<string, unknown>; out: string } = { directive: {}, out: "" };
+    try {
+      doctor = doctorOf(proj);
+      status = statusOf(proj);
+      step = engine(proj, ["next", "--resume"]);
+    } finally {
+      unlock();
+    }
+    expect(doctor).not.toMatch(/cannot bring this record up/);
+    expect(status).not.toMatch(/^Brought up: +waiting/m);
+    expect(step.directive.stage).toBe("units-generation");
+    expect(existsSync(join(sensors, "application-design"))).toBe(true);
+  });
+
   test("after the step, doctor and status say when it was brought up", () => {
     const { proj } = v7Project("aidlc-state-2.3.0-design-approved.md", true);
     engine(proj, ["next", "--resume"]);
@@ -845,8 +904,21 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     const message = String(held.directive?.message ?? "");
     expect(message).toMatch(/^Tell the person in one line: "AI-DLC could not move `aidlc\/spaces\/default\/intents\/[^/`]+\/inception\/requirements-analysis` to `aidlc\/spaces\/default\/intents\/[^/`]+\/design\/requirements-analysis`, where this release keeps it: /);
     expect(message).toContain("Your work is as it was.");
-    expect(message).toContain("then ask me to carry on");
+    expect(message).toMatch(/\b[Tt]hen ask me to carry on, and AI-DLC finishes moving your work and picks up where you were\./);
     expect(message).not.toMatch(/State Version|STATE_UPGRADED|EBUSY|stage_validity/);
+    if (process.platform === "win32") {
+      expect(message).toContain(": a program on this computer has that folder open. Your work is as it was. Close what has it open (");
+    } else {
+      // A Linux or macOS drive of its own refuses no open folder, so EBUSY
+      // there is also a folder something is mounted on, which no program's
+      // closing frees: the line names both, and the move by hand for a mount.
+      expect(message).toContain(
+        ": a program on this computer has that folder open, or something is mounted there (a container's volume or " +
+          "a network drive). Your work is as it was. Close what has it open (",
+      );
+      expect(message).toMatch(/; if nothing has it open, move what is in it to `aidlc\/spaces\/default\/intents\/[^/`]+\/design\/requirements-analysis` yourself\. Then ask me to carry on/);
+      expect(message).not.toMatch(/unmount/);
+    }
     // The record is as 2.11.4 left it: still State Version 8, every document where it was, no audit row.
     expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
     expect(stageDocuments(record)).toEqual(documents);
@@ -913,6 +985,31 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     expect(statusOf(proj)).toMatch(/^Brought up: +from an older AI-DLC on \d{4}-\d{2}-\d{2} \(the record as it was: aidlc-state\.v8\.md\)$/m);
   });
 
+  // No platform can see a folder a program holds open without trying the
+  // move (nor, on Windows, one this user cannot change), so doctor and status
+  // name none: they say the next step brings the work up or names the folder
+  // in the way, never that it brings the work up, however often it is held.
+  test("while every step is held by a folder held open, doctor and status never promise the next step brings the work up", () => {
+    const { proj, state } = v8Project("inception-gate");
+    const fail = { AIDLC_TEST: "1", AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/requirements-analysis" };
+    for (let attempt = 0; attempt < 2; attempt++) expect(v8Next(proj, [], fail).directive?.kind).toBe("print");
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
+    const doctor = doctorOf(proj);
+    const status = statusOf(proj);
+    expect(doctor).not.toContain("AI-DLC brings this record up to 10 at its next step");
+    expect(doctor).toContain(
+      "State Version: 8 (AI-DLC's next step brings this record up to 10, or names a folder in the way and what frees it)",
+    );
+    expect(status.match(/^Brought up: .*$/gm)).toEqual([
+      "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven " +
+        "shown here (or that step names a folder in the way and what frees it)",
+    ]);
+    // What either says, the step does: it names the folder held open, then brings the work up once it is closed.
+    expect(String(v8Next(proj, [], fail).directive?.message ?? "")).toContain("/inception/requirements-analysis` to `");
+    expect(v8Next(proj).directive?.kind).toBe("run-stage");
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toMatch(/^- \*\*State Version\*\*: 10$/m);
+  });
+
   test("two folders held open are named together, in plain English", () => {
     const { proj } = v8Project("inception-gate");
     const held = v8Next(proj, [], {
@@ -921,28 +1018,35 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     });
     expect(held.directive?.kind).toBe("print");
     const message = String(held.directive?.message ?? "");
-    expect(message).toMatch(/AI-DLC could not move `[^`]+\/inception\/practices-discovery` and `[^`]+\/inception\/requirements-analysis` to where this release keeps them: a program on this computer has those folders open\. /);
+    expect(message).toMatch(/AI-DLC could not move `[^`]+\/inception\/practices-discovery` and `[^`]+\/inception\/requirements-analysis` to where this release keeps them: a program on this computer has those folders open[.,] /);
+    // Off Windows, EBUSY is also a folder something is mounted on.
+    expect(message).toContain(process.platform === "win32"
+      ? "has those folders open. Your work is as it was."
+      : "has those folders open, or something is mounted there (a container's volume or a network drive). Your work is as it was.");
     expect(message).toContain("Close what has them open (");
     expect(message).not.toMatch(/\bor them\b|has it open|that folder/);
   });
 
-  test("a move refused as one this user may not make names the folder and the step that frees it", () => {
+  // A Windows program holding the folder open under WSL (/mnt/c), or on a
+  // network share, is refused as EACCES on Linux too, while every folder is
+  // writable: the line names closing it, the step that works then, and doctor
+  // and status, which cannot see an open folder, promise nothing.
+  test("a move refused with EACCES while every folder is writable names both reasons, with a step for each", () => {
     const { proj, state } = v8Project("inception-gate");
-    const held = v8Next(proj, [], { AIDLC_TEST: "1", AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/requirements-analysis:EACCES" });
+    const fail = { AIDLC_TEST: "1", AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/requirements-analysis:EACCES" };
+    const held = v8Next(proj, [], fail);
     expect(held.directive?.kind).toBe("print");
     const message = String(held.directive?.message ?? "");
     expect(message).not.toMatch(/EACCES|State Version|STATE_UPGRADED/);
-    if (process.platform === "win32") {
-      // Windows refuses a folder held open the same way, so the line names both, and a step for each.
-      expect(message).toContain("has that folder open, or your user cannot change it. Your work is as it was. Close what has it open (");
-      expect(message).toContain("; if nothing has it open, give your user write access to it. Then ask me to carry on");
-    } else {
-      // An open folder never stops a move here: only the folder's access does.
-      expect(message).toMatch(/AI-DLC cannot change `aidlc\/spaces\/default\/intents\/[^/`]+\/inception\/requirements-analysis` \(another user or a container may own it, or it may be read-only\), so it could not move your work to where this release keeps it\. Your work is as it was\. Give your user write access to it, then ask me to carry on, /);
-      expect(message).not.toMatch(/Close what has|has that folder open/);
-    }
+    expect(message).toMatch(/AI-DLC could not move `aidlc\/spaces\/default\/intents\/[^/`]+\/inception\/requirements-analysis` to `aidlc\/spaces\/default\/intents\/[^/`]+\/design\/requirements-analysis`, where this release keeps it: /);
+    expect(message).toContain("has that folder open, or your user cannot change it. Your work is as it was. Close what has it open (");
+    expect(message).toContain("; if nothing has it open, give your user write access to it. Then ask me to carry on");
+    expect(message).not.toMatch(/AI-DLC cannot change/);
     expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
     expect(upgradeRows(proj)).toBe(0);
+    // Every folder is writable, so neither names one this user cannot change.
+    expect(doctorOf(proj)).not.toMatch(/cannot bring this record up|give your user write access/);
+    expect(statusOf(proj)).not.toMatch(/^Brought up: +waiting/m);
   });
 
   // Linux refuses moving a folder this user may not write to a new parent,
@@ -991,6 +1095,7 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     expect(upgradeRows(proj)).toBe(0);
     // Doctor and status say the bring-up waits on that folder, never that the next step makes it.
     expect(doctor).not.toContain("AI-DLC brings this record up to 10 at its next step");
+    expect(doctor).not.toContain("AI-DLC's next step brings this record up");
     expect(doctor).toContain(`State Version: 8 (AI-DLC cannot bring this record up to 10 while it cannot change ${folder})`);
     expect(doctor).toContain(
       `give your user write access to ${folder} (another user or a container may own it, or it may be read-only), then ask AI-DLC to carry on`,
@@ -1171,9 +1276,12 @@ describe("t282 before AI-DLC's first step on a v8 record, what the person reads 
       for (const out of [status, line]) expect(out).not.toMatch(FIVE_PHASE_NAME);
       // Said once, in plain words: the next step brings the work up to the seven phases.
       expect(status.match(/^Brought up: .*$/gm)).toEqual([
-        "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven shown here",
+        "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven " +
+          "shown here (or that step names a folder in the way and what frees it)",
       ]);
-      expect(doctor).toContain("State Version: 8 (AI-DLC brings this record up to 10 at its next step)");
+      expect(doctor).toContain(
+        "State Version: 8 (AI-DLC's next step brings this record up to 10, or names a folder in the way and what frees it)",
+      );
       // Once the step has run, the work reads as status and the status line showed it before.
       v8Next(proj);
       const after = statusOf(proj);

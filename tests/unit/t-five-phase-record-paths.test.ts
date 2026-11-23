@@ -1,6 +1,6 @@
 // covers: function:sevenPhaseRecordPath, function:sameRecordPath, function:fivePhaseLogicalPath, function:fivePhaseLogicalSpellings,
 // function:fivePhaseRecordPath, function:fivePhaseRecordSpellings, function:registerFivePhaseStageGraph, function:rememberFivePhaseFingerprint,
-// function:fivePhaseFingerprintForm
+// function:fivePhaseFingerprintForm, function:fivePhaseGraphContracts
 //
 // A five-phase AI-DLC (State Version 8, up to 2.11.4) kept each stage's record
 // under ideation/, inception/, construction/ or operation/, and a Unit's work
@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import {
   FIVE_PHASE_STAGE_FOLDER,
+  fivePhaseGraphContracts,
   fivePhaseFingerprintForm,
   fivePhaseLogicalPath,
   fivePhaseLogicalSpellings,
@@ -297,6 +298,20 @@ describe("the frozen tables", () => {
     const graph = loadStageGraphAll();
     for (const [slug, folder] of Object.entries(SEVEN_PHASE_STAGE_FOLDER)) {
       expect(graph.find((stage) => stage.slug === slug)?.phase, slug).toBe(folder);
+    }
+  });
+
+  // fivePhaseGraphContracts gives every stage outside the folder table one
+  // form per five-phase folder, which its docstring says only a plugin's stage
+  // needs: the core stages there are the Initialization ones, which 2.11.4
+  // hashed under the phase they still have, and the Secure ones, which it never
+  // shipped, so no receipt it wrote matches their extra forms.
+  test("the core stages outside the folder table are the Initialization and Secure stages, and their extra forms are five-phase only", () => {
+    const core = loadStageGraphAll().filter((stage) => !stage.plugin && !Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, stage.slug));
+    expect([...new Set(core.map((stage) => stage.phase))].sort()).toEqual(["initialization", "secure"]);
+    for (const stage of core) {
+      const forms = fivePhaseGraphContracts({ slug: stage.slug, phase: stage.phase });
+      expect(forms.map((form) => form.phase), stage.slug).toEqual(["ideation", "inception", "construction", "operation"]);
     }
   });
 });
