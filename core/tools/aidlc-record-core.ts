@@ -2278,6 +2278,19 @@ export interface AuditShardEvent {
   timestamp: string;
 }
 
+/**
+ * The bring-up an older record waits for (pendingBringUp, aidlc-state-upgrade),
+ * as a reader that writes nothing sees it before AI-DLC's next step has made
+ * it: what the step's STATE_UPGRADED row will name, read as a row stamped now,
+ * and the record folders it will move (record-relative, `/`-separated), whose
+ * files sit at `from` until then.
+ */
+export interface BringUpAhead {
+  added: readonly string[];
+  movedBehind: readonly string[];
+  moves: readonly { from: string; to: string }[];
+}
+
 // Preserve shard identity while parsing audit rows. A concatenated audit buffer
 // can preserve append order only within one shard; equal second-precision
 // timestamps across shards are causally unordered and must not be resolved by

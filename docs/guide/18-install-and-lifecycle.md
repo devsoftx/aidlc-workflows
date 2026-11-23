@@ -1556,18 +1556,21 @@ holds it and ask it to carry on, it brings the work up whole and picks up
 where you were. Each piece of work is brought up when AI-DLC first takes a
 step on it, so parked work waits until you pick it up again. Until then
 `/aidlc --status` and the status line already show it in the seven phases, and
-status says `Brought up: at AI-DLC's next step`. Finished stages keep their
-approvals through the move: a stage reads as changed only when your work or
-what the stage does really changed, never for a new phase name alone.
+status says `Brought up: at AI-DLC's next step` and already counts a stage that
+step goes back to (below). Finished stages keep their approvals through the
+move: a stage reads as changed only when your work or what the stage does
+really changed, never for a new phase name alone.
 
 The seven phases run two stages earlier than 2.11.4 did: Reverse Engineering
 now comes before Scope Definition, and Performance Validation before the code
 reviews and CI Pipeline. If your plan still had one of them to run and your
 work is already past its new place, it runs once at the next stage boundary
 (after you settle a gate that is open), and then the work goes back to the
-stage you were on; nothing you finished runs again. A stage your work had
-passed over on 2.11.4 that now comes later stays passed over, and so do Code
-Review and Security Review, the new Secure stages, on work already past them.
+stage you were on; nothing you finished runs again. If you skip it instead,
+you can undo the skip, and it runs at the next stage boundary as before. A
+stage your work had passed over on 2.11.4 that now comes later stays passed
+over, and so do Code Review and Security Review, the new Secure stages, on
+work already past them.
 
 Work a teammate set up with AI-DLC 2.12's team work is not carried on by a
 seven-phase release, and updating does not change that: AI-DLC says

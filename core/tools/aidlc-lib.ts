@@ -171,6 +171,7 @@ import {
   auditShardName,
   auditShards,
   type AuditShardText,
+  type BringUpAhead,
   boltName,
   boltSlugForUnit,
   canonicalPathKey,
@@ -38279,13 +38280,13 @@ export function effectivePlanAction(
 // work has passed without starting (a plan change put it behind the cursor, and
 // it never runs unless the person goes back to it). A stage `next` goes back to
 // stays (stagesOwedBehindCursor, read for `work`, the piece of work the record
-// is; with none, nothing behind the cursor counts). A plan switch's line and its
-// audit row, status, the progress line and each stage's start line count from
-// this one list.
+// is, with the bring-up it still waits for, if any; with none, nothing behind
+// the cursor counts). A plan switch's line and its audit row, status, the
+// progress line and each stage's start line count from this one list.
 export function plannedStages(
   stateContent: string,
   scope: string,
-  work?: { projectDir: string; intent?: string; space?: string } | null,
+  work?: { projectDir: string; intent?: string; space?: string; pending?: BringUpAhead | null } | null,
 ): StageEntry[] {
   const boxes = parseCheckboxes(stateContent);
   const stateOf = (slug: string) => boxes.find((c) => c.slug === slug)?.state;
@@ -38294,7 +38295,7 @@ export function plannedStages(
     (stateOf(slug) !== "skipped" && effectivePlanAction(slug, scope, stateContent) === "EXECUTE");
   let goesBackTo: Set<string> | null = null;
   const owed = (slug: string): boolean => {
-    goesBackTo ??= new Set(work ? stagesOwedBehindCursor(stateContent, work.projectDir, work.intent, work.space) : []);
+    goesBackTo ??= new Set(work ? stagesOwedBehindCursor(stateContent, work.projectDir, work.intent, work.space, work.pending) : []);
     return goesBackTo.has(slug);
   };
   // Under team ownership the Unit stages behind the cursor stay open for the
@@ -38474,11 +38475,16 @@ export function reverseEngineeringOwedBehindCursor(content: string, workRecordDi
 // current stage and not started, with nothing after them started but the
 // current stage, which an approval or a jump only just entered (in progress,
 // and nothing of it in the work's record: its own folder, `<phase>/<slug>`, and
-// each Unit's, `<phase>/<unit>/<slug>`, hold no file; the stages before it
-// wrote theirs elsewhere). Which of them an add put back is the callers' to
-// say (addReachesPassedOver, addedStagesPassedOver). Reverse Engineering
-// behind the cursor has its own rule (reverseEngineeringOwedBehindCursor).
-function stagesPassedOverJustNow(content: string, workRecordDir: string | null | undefined): string[] {
+// each Unit's, `<phase>/<unit>/<slug>`, hold no file, nor does a folder a
+// bring-up still to come moves there (`moves`); the stages before it wrote
+// theirs elsewhere). Which of them an add put back is the callers' to say
+// (addReachesPassedOver, addedStagesPassedOver). Reverse Engineering behind
+// the cursor has its own rule (reverseEngineeringOwedBehindCursor).
+function stagesPassedOverJustNow(
+  content: string,
+  workRecordDir: string | null | undefined,
+  moves: BringUpAhead["moves"] = [],
+): string[] {
   const scope = getField(content, "Scope")?.trim() ?? "";
   if (!loadScopeMapping()[scope] || !workRecordDir) return [];
   const current = getField(content, "Current Stage")?.trim() ?? "";
@@ -38495,7 +38501,12 @@ function stagesPassedOverJustNow(content: string, workRecordDir: string | null |
   const entered = graph[now];
   const phaseDir = join(workRecordDir, entered.phase);
   const holdsItsWork = (dir: string): boolean => holdsAnyFile(join(dir, entered.slug));
-  if (holdsItsWork(phaseDir) || (existsSync(phaseDir) && readdirSync(phaseDir, { withFileTypes: true })
+  const movesItsWork = moves.some(({ from, to }) => {
+    const [phase, ...rest] = to.split("/");
+    return phase === entered.phase && rest.length <= 2 && rest.at(-1) === entered.slug &&
+      holdsAnyFile(join(workRecordDir, ...from.split("/")));
+  });
+  if (movesItsWork || holdsItsWork(phaseDir) || (existsSync(phaseDir) && readdirSync(phaseDir, { withFileTypes: true })
     .some((entry) => entry.isDirectory() && holdsItsWork(join(phaseDir, entry.name))))) return [];
   return passed;
 }
@@ -38526,22 +38537,27 @@ export function stageSkippedWhereItStood(content: string, slug: string): boolean
 
 // Whether an add of `slug` puts back a stage the work has just passed over
 // (stagesPassedOverJustNow): one its scope skips, or one the work skipped where
-// it stood. A stage the scope runs that the work passed another way (behind
-// the cursor after a scope change) stays as it is. It is read with every stage
-// the same add puts back (`together`), so stages skipped one after another come
-// back together. Recompose takes such an add, and the step that names it
-// carries on into the stage.
+// it stood; or one `next` goes back to once it is on the plan again
+// (stagesOwedBehindCursor), as an older record's bring-up put it behind the
+// cursor or added it there, so a skip's undo holds. A stage the scope runs
+// that the work passed another way (behind the cursor after a scope change)
+// stays as it is, and Reverse Engineering keeps its own rule. It is read with
+// every stage the same add puts back (`together`), so stages skipped one after
+// another come back together. Recompose takes such an add, and the step that
+// names it carries on into the stage.
 export function addReachesPassedOver(
   content: string,
   slug: string,
-  workRecordDir: string | null | undefined,
+  work: { projectDir: string; intent?: string; space?: string },
   together: readonly string[] = [],
 ): boolean {
+  const added = [...new Set([slug, ...together])].reduce((state, each) => stageAddedBack(state, each), content);
+  if (slug !== "reverse-engineering" &&
+    stagesOwedBehindCursor(added, work.projectDir, work.intent, work.space).includes(slug)) return true;
   const scopeRuns = loadScopeMapping()[getField(content, "Scope")?.trim() ?? ""]?.stages[slug] === "EXECUTE";
   const skippedWhereItStood = parseCheckboxes(content).some((c) => c.slug === slug && c.state === "skipped");
   if (scopeRuns && !skippedWhereItStood) return false;
-  const added = [...new Set([slug, ...together])].reduce((state, each) => stageAddedBack(state, each), content);
-  return stagesPassedOverJustNow(added, workRecordDir).includes(slug);
+  return stagesPassedOverJustNow(added, recordDir(work.projectDir, work.intent, work.space)).includes(slug);
 }
 
 // The stages put back on the plan after the work had just passed over them:
@@ -38552,9 +38568,16 @@ export function addReachesPassedOver(
 // the first, as the work would have gone on to it had the add come before the
 // approval, and the jump it names is the engine's own move. A stage on the plan
 // behind the cursor with no such add (a plan whose rows say so from the start,
-// a scope change's) stays as it is.
-export function addedStagesPassedOver(content: string, projectDir: string, intent?: string, space?: string): string[] {
-  const passed = stagesPassedOverJustNow(content, recordDir(projectDir, intent, space));
+// a scope change's) stays as it is. `pending`: the bring-up a record still
+// waits for, its row read as written now.
+export function addedStagesPassedOver(
+  content: string,
+  projectDir: string,
+  intent?: string,
+  space?: string,
+  pending?: BringUpAhead | null,
+): string[] {
+  const passed = stagesPassedOverJustNow(content, recordDir(projectDir, intent, space), pending?.moves);
   if (passed.length === 0) return [];
   const current = getField(content, "Current Stage")?.trim() ?? "";
   const rows = readAuditShardEvents(projectDir, intent, space);
@@ -38563,9 +38586,10 @@ export function addedStagesPassedOver(content: string, projectDir: string, inten
     .map((row) => row.timestamp)
     .sort()
     .at(-1) ?? "";
-  const addedSince = new Set(rows
+  const addedSince = new Set([...rows
     .filter((row) => (row.event === "RECOMPOSED" || row.event === "STATE_UPGRADED") && row.timestamp >= entered)
-    .flatMap((row) => (auditBlockField(row.block, "Stages added") ?? "").split(",").map((slug) => slug.trim())));
+    .flatMap((row) => (auditBlockField(row.block, "Stages added") ?? "").split(",").map((slug) => slug.trim())),
+    ...(pending?.added ?? [])]);
   return passed.filter((slug) => addedSince.has(slug));
 }
 
@@ -38575,9 +38599,17 @@ export function addedStagesPassedOver(content: string, projectDir: string, inten
 // 8 to 10 step's new order put behind the cursor while 2.11.4 would still have
 // run it (its STATE_UPGRADED row's Stages moved behind), for as long as it
 // waits there not started, unless a forward jump since went where 2.11.4's walk
-// no longer reaches it: that jump passed it over there. The stage count keeps
-// them (plannedStages); owedJumpBack goes back to the first.
-export function stagesOwedBehindCursor(content: string, projectDir: string, intent?: string, space?: string): string[] {
+// no longer reaches it: that jump passed it over there. A bring-up the record
+// still waits for (`pending`) counts as that row written now, which no jump
+// has passed. The stage count keeps them (plannedStages); owedJumpBack goes
+// back to the first.
+export function stagesOwedBehindCursor(
+  content: string,
+  projectDir: string,
+  intent?: string,
+  space?: string,
+  pending?: BringUpAhead | null,
+): string[] {
   const order = loadStageGraph().map((stage) => stage.slug);
   const scope = getField(content, "Scope")?.trim() ?? "";
   const boxes = new Map(parseCheckboxes(content).map((c) => [c.slug, c.state]));
@@ -38594,8 +38626,9 @@ export function stagesOwedBehindCursor(content: string, projectDir: string, inte
   });
   const owed = new Set([
     ...(reverseEngineeringOwedBehindCursor(content, recordDir(projectDir, intent, space)) ? ["reverse-engineering"] : []),
-    ...addedStagesPassedOver(content, projectDir, intent, space),
+    ...addedStagesPassedOver(content, projectDir, intent, space, pending),
     ...movedBehind,
+    ...(pending?.movedBehind ?? []),
   ]);
   return waiting.filter((slug) => owed.has(slug));
 }

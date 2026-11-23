@@ -13494,7 +13494,7 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
       walk: planChanges ? planChangeWalk(pd, currentStateScope, stateContent) : null,
       together: planChanges ? openGateApprovesTogether(pd, (getField(stateContent, "Current Stage") ?? "").trim()) : [],
       passedOver: planChanges
-        ? planChanges.add.filter((slug) => addReachesPassedOver(stateContent, slug, recordDir(pd), planChanges.add))
+        ? planChanges.add.filter((slug) => addReachesPassedOver(stateContent, slug, { projectDir: pd }, planChanges.add))
         : [],
     };
     // Words typed with a differing scope may be new work or the reason for
@@ -19399,7 +19399,7 @@ function planChangeDirective(
   changes: PlanChanges,
   before: string | null,
   // `together`: the stages the open gate's one question named, when it named several.
-  // `passedOver`: the added stages the work has just passed over, which `next` goes back to.
+  // `passedOver`: the added stages behind the cursor that `next` goes back to (addReachesPassedOver).
   // `switchedTo`: a scope change typed in the same command, which runs first; it
   // rebuilds the plan from that scope's grid and keeps every checkbox, so
   // `stateContent` says where the work stands and the grid what it runs.
@@ -19747,9 +19747,10 @@ function planChangeDirective(
       ? printDirective(`${message} Then re-run \`next\` to carry on with the work.`)
       : turnEndingPrint(`${message}${end}${resume}`));
   }
-  // An added stage the work has just passed over (the approval came first) is
-  // the one `next` goes back to, so the work carries on into it, as it does
-  // when the add comes before the approval.
+  // An added stage the work has just passed over (the approval came first), or
+  // one an update put behind the cursor that a skip took off, is the one
+  // `next` goes back to, so the work carries on into it, as it does when the
+  // add comes before the approval.
   if (add.some((slug) => plan?.passedOver?.includes(slug))) {
     return kept(stillParked === null
       ? printDirective(`${message} Then re-run \`next\` to carry on with the work.${undo}`)

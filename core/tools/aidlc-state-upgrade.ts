@@ -3,9 +3,9 @@
 // AI-DLC carries on after an update with nothing asked and nothing said.
 // One owner: the engine's state read (loadStateFileIfPresent in
 // aidlc-orchestrate.ts) calls bringStateUpToDate, doctor and status read
-// hasStateUpgrade and stateUpgradeRecord, and status, the status line and the
-// session-start context show broughtUpStateText before the step has run, so
-// they never disagree with it.
+// hasStateUpgrade and stateUpgradeRecord, and status (pendingBringUp), the
+// status line and the session-start context show broughtUpStateText before the
+// step has run, so they never disagree with it.
 // A record a newer AI-DLC wrote is never brought down: newerStateStep names
 // the release it needs and the person's step, for next, report, doctor and the
 // unit commands alike.
@@ -14,12 +14,20 @@ import { dirname, join, relative } from "node:path";
 import { appendAuditEntryUnlocked } from "./aidlc-audit.ts";
 import { classifyStateVersion, findStageBySlug, nextInScopeStage } from "./aidlc-lib.ts";
 import { isReadOnlyEngineProbe, withAuditLock, writeFileAtomic } from "./aidlc-locks.ts";
-import { auditBlockField, getField, readAuditShardEvents, setField, writeStateFile } from "./aidlc-record-core.ts";
+import {
+  auditBlockField,
+  type BringUpAhead,
+  getField,
+  readAuditShardEvents,
+  setField,
+  writeStateFile,
+} from "./aidlc-record-core.ts";
 import { packageManagerForExecutable } from "./aidlc-install-paths.ts";
 import { releaseHostLabel } from "./aidlc-release.ts";
 import {
   type FolderMove,
   type FolderRename,
+  fivePhaseFolderPlan,
   fivePhaseReorder,
   moveFivePhaseFolders,
   putFolderMovesBack,
@@ -54,8 +62,10 @@ interface StateUpgrade {
   text?: (content: string, added: readonly string[]) => string;
   // The step's own record-folder moves, after every rename's: what they moved,
   // what they left behind, and what the file system would not let move (the
-  // step has put its own moves back then).
+  // step has put its own moves back then); and the moves it will make, which a
+  // reader that writes nothing reads the record's folders through until then.
   folders?: (recordDir: string) => { moved: string[]; left: string[]; failed: FolderMove[] };
+  folderPlan?: (recordDir: string) => FolderMove[];
   // What the step's new stage order does around the cursor, read from the
   // state text the step starts from: the stages it puts behind the cursor that
   // the work still owes (stagesOwedBehindCursor reads them from this step's
@@ -85,6 +95,7 @@ const STATE_UPGRADES: Readonly<Record<string, StateUpgrade>> = {
     added: ["code-review", "security-review", "conformance-review"],
     text: sevenPhaseStateText,
     folders: moveFivePhaseFolders,
+    folderPlan: (recordDir) => fivePhaseFolderPlan(recordDir).moves,
     reorder: fivePhaseReorder,
   },
 };
@@ -170,6 +181,33 @@ function upgradePlan(content: string, from: string): {
 export function broughtUpStateText(content: string): string {
   const verdict = classifyStateVersion(content);
   return verdict.kind === "past" && hasStateUpgrade(verdict.version) ? upgradePlan(content, verdict.version).text : content;
+}
+
+// The record folders a stage rename moves: its phase folder, from where the
+// release that wrote the record kept it, and its sensor folder.
+function renamedFolders(r: StageRename): FolderMove[] {
+  const toPhase = findStageBySlug(r.to)?.phase;
+  return [
+    ...(toPhase ? [{ from: `${r.fromPhase}/${r.from}`, to: `${toPhase}/${r.to}` }] : []),
+    { from: `.aidlc-sensors/${r.from}`, to: `.aidlc-sensors/${r.to}` },
+  ];
+}
+
+/**
+ * The bring-up AI-DLC's next step makes on a record, written nowhere, for
+ * status, which writes nothing: the state text (broughtUpStateText), and the
+ * stages the step's audit row will name and the folders it will move, which
+ * the count of the stages still to run reads (plannedStages), so status counts
+ * before the step what it counts after it. Null for a record no step brings up.
+ */
+export function pendingBringUp(content: string, recordDir: string): { text: string; pending: BringUpAhead } | null {
+  const verdict = classifyStateVersion(content);
+  if (verdict.kind !== "past" || !hasStateUpgrade(verdict.version)) return null;
+  const { text, renamed, added, movedBehind, steps } = upgradePlan(content, verdict.version);
+  // A rename never moves onto a folder already there (moveRecordFolder).
+  const renames = renamed.flatMap(renamedFolders).filter(({ to }) => !existsSync(join(recordDir, ...to.split("/"))));
+  const moves = [...renames, ...steps.flatMap((step) => step.folderPlan?.(recordDir) ?? [])];
+  return { text, pending: { added, movedBehind, moves } };
 }
 
 // Moves one record folder to its new path. Nothing moves when the source is
@@ -265,17 +303,12 @@ export function bringStateUpToDate(
     const moved: string[] = [];
     const renames: FolderRename[] = [];
     const failed: FolderMove[] = [];
-    for (const r of renamed) {
-      const toPhase = findStageBySlug(r.to)?.phase;
-      const folders: [string, string][] = [[`.aidlc-sensors/${r.from}`, `.aidlc-sensors/${r.to}`]];
-      if (toPhase) folders.unshift([`${r.fromPhase}/${r.from}`, `${toPhase}/${r.to}`]);
-      for (const [from, to] of folders) {
-        const result = moveRecordFolder(recordDir, from, to);
-        if (result === "failed") failed.push({ from, to });
-        else if (result !== null) {
-          renames.push(result);
-          moved.push(`${from} to ${to}`);
-        }
+    for (const { from, to } of renamed.flatMap(renamedFolders)) {
+      const result = moveRecordFolder(recordDir, from, to);
+      if (result === "failed") failed.push({ from, to });
+      else if (result !== null) {
+        renames.push(result);
+        moved.push(`${from} to ${to}`);
       }
     }
     const left: string[] = [];
