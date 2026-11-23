@@ -8,6 +8,9 @@
 // into before the engine's first read (the sync hook sets Lifecycle Phase), and
 // one a pre-release seven-phase build labelled 8. Doctor reads
 // fivePhaseFolderPlan for what the move left behind, so it names the same move.
+// The seven phases also walk two stages earlier than 2.11.4 did (Reverse
+// Engineering and Performance Validation); fivePhaseReorder says what that does
+// around the record's cursor, so the work goes on where 2.11.4 would take it.
 import { type Dirent, lstatSync, mkdirSync, readdirSync, rmdirSync, unlinkSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import {
@@ -15,6 +18,7 @@ import {
   FIVE_PHASE_STAGE_FOLDER,
   FIVE_PHASE_UNIT_STAGES,
   SEVEN_PHASE_STAGE_FOLDER,
+  stagesReorderedAround,
 } from "./aidlc-five-phase-record.ts";
 import {
   effectivePlanAction,
@@ -39,6 +43,9 @@ const PHASE_PROGRESS_SECTION = /## Phase Progress\r?\n(<!-- [^\r\n]* -->)\r?\n([
 // The Phase Progress rows either layout writes; the section is rebuilt with the eight current ones.
 const PHASE_PROGRESS_ROW =
   /^- \*\*(Initialization|Ideation|Inception|Construction|Operation|Discover|Design|Build|Test|Secure|Deploy|Operate)\*\*:/;
+// A Stage Progress heading or Phase Progress row only a five-phase release writes.
+const FIVE_PHASE_LAYOUT =
+  /^(?:### (?:IDEATION|INCEPTION|CONSTRUCTION|OPERATION) PHASE[ \t]*|- \*\*(?:Ideation|Inception|Construction|Operation)\*\*:.*)\r?$/m;
 
 function phaseLabel(phase: string): string {
   return phase.charAt(0).toUpperCase() + phase.slice(1);
@@ -54,14 +61,15 @@ function cursorStage(content: string): StageEntry | undefined {
  * graph's order under its phase headings (every row kept, marker and suffix,
  * by slug; a row for each stage in `added` that has none, with the action
  * routing reads for a missing row; rows and lines the graph does not place
- * kept after the row they followed), the plan fields renumbered, Phase
- * Progress with the eight current phases, and Lifecycle Phase as the phase of
- * Current Stage. Text already in that layout comes back as it was.
+ * kept after the row they followed; each stage fivePhaseReorder keeps passed
+ * over marked skipped), the plan fields renumbered, Phase Progress with the
+ * eight current phases, and Lifecycle Phase as the phase of Current Stage.
+ * Text already in that layout comes back as it was.
  */
 export function sevenPhaseStateText(content: string, added: readonly string[]): string {
   const graph = loadStageGraph();
   const scope = getField(content, "Scope") ?? "";
-  let text = sevenPhaseStageProgress(content, graph, added, scope);
+  let text = sevenPhaseStageProgress(content, graph, added, scope, fivePhaseReorder(content).keptPassedOver);
   text = rebuildEffectivePlanFields(text, scope, loadScopeMapping()[scope] ?? { stages: {} }, "", undefined, {
     renumber: true,
   }).content;
@@ -69,7 +77,13 @@ export function sevenPhaseStateText(content: string, added: readonly string[]): 
   return sevenPhaseLifecycle(text);
 }
 
-function sevenPhaseStageProgress(content: string, graph: readonly StageEntry[], added: readonly string[], scope: string): string {
+function sevenPhaseStageProgress(
+  content: string,
+  graph: readonly StageEntry[],
+  added: readonly string[],
+  scope: string,
+  passedOver: readonly string[],
+): string {
   const lines = stageProgressLines(content);
   if (lines === null) return content;
   const known = new Set(graph.map((stage) => stage.slug));
@@ -93,11 +107,38 @@ function sevenPhaseStageProgress(content: string, graph: readonly StageEntry[], 
     }
   }
   return withStageProgress(content, graph, (stage) => {
+    const passed = passedOver.includes(stage.slug);
     const kept = rows.get(stage.slug);
-    if (kept) return kept;
-    if (!added.includes(stage.slug)) return [];
-    return [`- [ ] ${stage.slug} — ${effectivePlanAction(stage.slug, scope, content) === "EXECUTE" ? "EXECUTE" : "SKIP"}`];
+    if (kept) return passed ? kept.map((row) => row.replace(/^- \[ \]/, "- [S]")) : kept;
+    if (!added.includes(stage.slug) && !passed) return [];
+    const action = effectivePlanAction(stage.slug, scope, content) === "EXECUTE" ? "EXECUTE" : "SKIP";
+    return [`- [${passed ? "S" : " "}] ${stage.slug} — ${action}`];
   }, following);
+}
+
+/**
+ * What the seven-phase order does to a five-phase record's plan around its
+ * cursor (stagesReorderedAround), among the stages the plan runs that have not
+ * started. `movedBehind`: the ones 2.11.4 would still have run that now come
+ * before the cursor, which `next` goes back to (the step's audit row names
+ * them, and stagesOwedBehindCursor reads it there). `keptPassedOver`: the ones
+ * 2.11.4's walk had passed over that now come after the cursor, which the
+ * step marks skipped, so the walk passes them as 2.11.4 did. A record already
+ * in the seven-phase layout (a pre-release seven-phase build labelled 8) has
+ * neither, and nothing is marked in a Stage Progress the step leaves as written.
+ */
+export function fivePhaseReorder(content: string): { movedBehind: string[]; keptPassedOver: string[] } {
+  if (!FIVE_PHASE_LAYOUT.test(content)) return { movedBehind: [], keptPassedOver: [] };
+  const scope = getField(content, "Scope") ?? "";
+  const boxes = new Map(parseCheckboxes(content).map((box) => [box.slug, box.state]));
+  const waiting = (slug: string): boolean =>
+    (boxes.get(slug) ?? "pending") === "pending" && effectivePlanAction(slug, scope, content) === "EXECUTE";
+  const order = loadStageGraph().map((stage) => stage.slug);
+  const { behind, ahead } = stagesReorderedAround(order, (getField(content, "Current Stage") ?? "").trim());
+  return {
+    movedBehind: behind.filter(waiting),
+    keptPassedOver: stageProgressLines(content) === null ? [] : ahead.filter(waiting),
+  };
 }
 
 // Each phase's status from the graph, the rows and the cursor, as the

@@ -352,7 +352,7 @@ import {
   type PlanChanges,
   plannedStages,
   cursorPastStage,
-  addedStagesPassedOver,
+  stagesOwedBehindCursor,
   addReachesPassedOver,
   stageAddedBack,
   stageSkippedWhereItStood,
@@ -13207,9 +13207,11 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
       // A stage the work has just passed over, while nothing after it has
       // started, is one `next` goes back to (addedStagesPassedOver): the add
       // lands as it would have before the approval that moved past it, and
-      // its undo takes it off again before `next` gets there.
+      // its undo takes it off again before `next` gets there. A skip takes off
+      // any stage `next` goes back to, one an update's new order put behind
+      // the cursor too (stagesOwedBehindCursor).
       const passedOver = skipping
-        ? addedStagesPassedOver(content, projectDir, flags.intent, flags.space).includes(slug)
+        ? stagesOwedBehindCursor(content, projectDir, flags.intent, flags.space).includes(slug)
         : addReachesPassedOver(content, slug, recordDir(projectDir, flags.intent, flags.space), addList);
       if (!owedRe && !passedOver && currentIdx !== -1 && idx !== -1 && idx <= currentIdx) {
         if (putBack) reject(slug, `${frozen} ${runAlone(slug)}`);

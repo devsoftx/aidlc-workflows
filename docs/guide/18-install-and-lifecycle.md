@@ -1556,6 +1556,15 @@ to carry on, it brings the work up whole and picks up where you were. Each
 piece of work is brought up when AI-DLC first takes a step on it, so parked
 work waits until you pick it up again.
 
+The seven phases run two stages earlier than 2.11.4 did: Reverse Engineering
+now comes before Scope Definition, and Performance Validation before the code
+reviews and CI Pipeline. If your plan still had one of them to run and your
+work is already past its new place, it runs once at the next stage boundary
+(after you settle a gate that is open), and then the work goes back to the
+stage you were on; nothing you finished runs again. A stage your work had
+passed over on 2.11.4 that now comes later stays passed over, and so do Code
+Review and Security Review, the new Secure stages, on work already past them.
+
 On a shared project, everyone should update together. Once one person's
 AI-DLC has brought the work up and they commit it, a teammate still on 2.11.4
 or earlier cannot carry it on: their AI-DLC says the plan was set up with a

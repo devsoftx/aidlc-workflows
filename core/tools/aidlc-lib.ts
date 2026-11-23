@@ -8,6 +8,7 @@ import {
   rememberFivePhaseFingerprint,
   sameRecordPath,
   sevenPhaseRecordPath,
+  stagesReorderedAround,
 } from "./aidlc-five-phase-record.ts";
 export { committedTextBytes } from "./aidlc-review-manifest.ts";
 import { withoutLearnedDate } from "./aidlc-learned-date.ts";
@@ -38569,32 +38570,58 @@ export function addedStagesPassedOver(content: string, projectDir: string, inten
 }
 
 // The stages on the plan the work has passed and not run that `next` goes back
-// to, in the order it goes: Reverse Engineering owed behind the cursor, then
-// each stage the person added after the work had just passed over it. The
-// stage count keeps them (plannedStages); owedJumpBack goes back to the first.
+// to, in stage order: Reverse Engineering owed behind the cursor, each stage
+// the person added after the work had just passed over it, and each stage the
+// 8 to 10 step's new order put behind the cursor while 2.11.4 would still have
+// run it (its STATE_UPGRADED row's Stages moved behind), for as long as it
+// waits there not started, unless a forward jump since went where 2.11.4's walk
+// no longer reaches it: that jump passed it over there. The stage count keeps
+// them (plannedStages); owedJumpBack goes back to the first.
 export function stagesOwedBehindCursor(content: string, projectDir: string, intent?: string, space?: string): string[] {
-  return [
+  const order = loadStageGraph().map((stage) => stage.slug);
+  const scope = getField(content, "Scope")?.trim() ?? "";
+  const boxes = new Map(parseCheckboxes(content).map((c) => [c.slug, c.state]));
+  const waiting = order.filter((slug) => (boxes.get(slug) ?? "pending") === "pending" &&
+    effectivePlanAction(slug, scope, content) === "EXECUTE" && cursorPastStage(content, slug));
+  if (waiting.length === 0) return [];
+  const rows = readAuditShardEvents(projectDir, intent, space);
+  const movedBehind = rows.filter((row) => row.event === "STATE_UPGRADED").flatMap((row) => {
+    const jumps = rows.filter((jump) => jump.event === "STAGE_JUMPED" && jump.timestamp >= row.timestamp &&
+      auditBlockField(jump.block, "Direction") === "FORWARD");
+    return (auditBlockField(row.block, "Stages moved behind") ?? "").split(",").map((slug) => slug.trim())
+      .filter((slug) => jumps.every((jump) =>
+        stagesReorderedAround(order, auditBlockField(jump.block, "Target") ?? "").behind.includes(slug)));
+  });
+  const owed = new Set([
     ...(reverseEngineeringOwedBehindCursor(content, recordDir(projectDir, intent, space)) ? ["reverse-engineering"] : []),
     ...addedStagesPassedOver(content, projectDir, intent, space),
-  ];
+    ...movedBehind,
+  ]);
+  return waiting.filter((slug) => owed.has(slug));
 }
 
 // The move `next` names to go back to a stage on the plan the work has passed
-// and not run: Reverse Engineering owed behind the cursor runs with a redo,
-// which leaves the finished stages alone and returns to the current stage; a
-// stage the person added after the work had just passed over it is gone back
-// to with a backward jump. The plan-approval guard lets exactly this move
-// through at Code Generation: it carries out the person's own change before
-// anything is built.
+// and not run: a stage the person added after the work had just passed over it
+// is gone back to with a backward jump; any other runs with a redo, which
+// leaves the finished stages alone and returns to the current stage. Never
+// while the current stage waits at its gate or is being revised: the move waits
+// for the gate to settle, as the project-type question does, so the gate the
+// person was reviewing is never set aside. The plan-approval guard lets exactly
+// this move through at Code Generation: it carries out the person's own change
+// before anything is built.
 export function owedJumpBack(
   content: string,
   projectDir: string,
   intent?: string,
   space?: string,
 ): { target: string; direction: "redo" | "backward" } | null {
+  const current = getField(content, "Current Stage")?.trim() ?? "";
+  const at = parseCheckboxes(content).find((c) => c.slug === current)?.state;
+  if (at === "awaiting-approval" || at === "revising") return null;
   const [target] = stagesOwedBehindCursor(content, projectDir, intent, space);
   if (target === undefined) return null;
-  return { target, direction: target === "reverse-engineering" ? "redo" : "backward" };
+  const added = addedStagesPassedOver(content, projectDir, intent, space).includes(target);
+  return { target, direction: added ? "backward" : "redo" };
 }
 
 // A per-unit stage runs per Unit only once Units exist, and otherwise uses one
