@@ -17,7 +17,7 @@ import { loadGraph } from "./aidlc-graph.ts";
 import { withdrawnTurnPositions } from "./aidlc-record-core.ts";
 import { SLUG_RE as STAGE_SLUG_RE } from "./aidlc-stage-schema.ts";
 import { artifactFilename } from "./aidlc-artifact-vocabulary.ts";
-import { fivePhaseGraphContract, fivePhaseRecordSpellings } from "./aidlc-five-phase-record.ts";
+import { fivePhaseGraphContracts, fivePhaseRecordSpellings } from "./aidlc-five-phase-record.ts";
 import {
   resolveArtifactInstances,
   type ArtifactResolutionOptions,
@@ -181,8 +181,9 @@ function canonicalJson(value: unknown): string {
  * an unsound over-approximation until the graph carries an explicit kind.
  *
  * A five-phase release (up to 2.11.4) hashed the same contract with its own
- * phase name and wording (fivePhaseGraphContract), so that hash is remembered
- * against this one beside the documents' (FIVE_PHASE_BASES), and
+ * phase name and wording (fivePhaseGraphContracts: one form for a stage it
+ * shipped, one per five-phase folder for a plugin's), so each such hash is
+ * remembered against this one beside the documents' (FIVE_PHASE_BASES), and
  * basisInCurrentForm reads its receipts as this release's: only a real change
  * to the contract reads as AI-DLC doing the stage differently.
  */
@@ -200,8 +201,7 @@ function graphContractFingerprint(stage: StageValidityNode): string {
     produces_kinds: stage.produces_kinds ?? {},
   };
   const current = `sha256:${sha256(canonicalJson(contract))}`;
-  const older = fivePhaseGraphContract(contract);
-  if (older !== null) FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(older))}`, current);
+  for (const older of fivePhaseGraphContracts(contract)) FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(older))}`, current);
   return current;
 }
 

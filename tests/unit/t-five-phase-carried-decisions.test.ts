@@ -1,6 +1,6 @@
 // covers: function:readReviewFindingDispositions, function:hydrateReviewArtifactContexts,
 // function:renderFindingsContext, function:pipelineLinkEvidence, function:reviewInvalidationDetails,
-// function:currentFingerprintForm, function:inspectStageValidity, audit:STAGE_JUMPED
+// function:currentFingerprintForm, function:inspectStageValidity, function:fivePhaseGraphContracts, audit:STAGE_JUMPED
 //
 // Records 2.11.4 wrote (State Version 8, five phases), made by driving that
 // release's own tools (tests/fixtures/state-v8): a finding the person rejected
@@ -10,7 +10,8 @@
 // five-phase folders; the 8 to 10 step moves the folders and never rewrites a
 // record. After the update each reads as 2.11.4 read it: the decision stays on
 // its finding, the handoffs stand and the gate approves, the plugin stage's
-// review and completion still hold, and a backward jump recorded before the
+// review and completion still hold and its new phase alone is no change to
+// what AI-DLC does there, and a backward jump recorded before the
 // update still says what it changed. Content stays bound exactly: only the
 // recorded paths are read at the folders they moved to.
 //
@@ -20,7 +21,7 @@
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { artifactFilename, codekbDir, findStageBySlug, pipelineLinkEvidence } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -37,6 +38,7 @@ import {
   createOrchestrationTestProject,
   REPO_ROOT,
   runOrchestrateNext,
+  seededAuditDir,
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
@@ -144,22 +146,40 @@ describe("the Reverse Engineering handoffs logged on 2.11.4 hold after the updat
   });
 });
 
-// The one test-pro install the plugin cases share: the shipped tools, with
-// test-pro composed as Claude Code composes it.
-let composed = "";
-beforeAll(() => {
-  composed = createOrchestrationTestProject();
-  cpSync(AIDLC_SRC, join(composed, ".claude"), { recursive: true });
+// A project with the shipped tools and test-pro composed as Claude Code
+// composes it.
+function testProProject(): string {
+  const proj = createOrchestrationTestProject();
+  cpSync(AIDLC_SRC, join(proj, ".claude"), { recursive: true });
   const plugin = join(REPO_ROOT, "dist", "plugins", "test-pro", "claude");
   const compose = spawnSync(process.execPath, [join(plugin, "hooks", "compose.ts")], {
-    cwd: composed, encoding: "utf-8", timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
-    env: { ...process.env, CLAUDE_PLUGIN_ROOT: plugin, CLAUDE_PROJECT_DIR: composed, AIDLC_HARNESS_DIR: ".claude" },
+    cwd: proj, encoding: "utf-8", timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
+    env: { ...process.env, CLAUDE_PLUGIN_ROOT: plugin, CLAUDE_PROJECT_DIR: proj, AIDLC_HARNESS_DIR: ".claude" },
   });
   if (compose.status !== 0) throw new Error(`test-pro compose failed: ${compose.stdout}${compose.stderr}`);
+  return proj;
+}
+
+// The one test-pro install the first plugin case shares.
+let composed = "";
+beforeAll(() => {
+  composed = testProProject();
 });
 afterAll(() => {
   if (composed !== "") cleanupTestProject(composed);
 });
+
+// `next` from a test-pro install. A session the install knows nothing of may
+// ask which work to carry on; the person carries on with this one.
+function nextCarryingOn(proj: string, install: string) {
+  let r = next(proj, install);
+  if (r.directive?.ask_type === "intent-pick") {
+    const carryOn = tool(proj, "aidlc", ["engine", "intent", "switch", "fixture-8000000000000001"], install);
+    expect(carryOn.status, carryOn.out).toBe(0);
+    r = next(proj, install);
+  }
+  return r;
+}
 
 // 2.11.4's own reviewArtifactFingerprint over this fixture's documents, with
 // test-pro (as 2.11.4 shipped it) composed: the value a review receipt of each
@@ -173,15 +193,8 @@ describe("a plugin stage finished on 2.11.4 holds after its folder moves", () =>
   test("test-pro's stages move to test/ and operate/, the finished one and the one it feeds still hold, and their review fingerprints still match", async () => {
     const { proj, record } = v8Project("plugin-stage", composed);
     created.pop();
-    // A session the install knows nothing of may ask which work to carry on;
-    // the person carries on with this one.
     const install = join(composed, ".claude");
-    let r = next(proj, install);
-    if (r.directive?.ask_type === "intent-pick") {
-      const carryOn = tool(proj, "aidlc", ["engine", "intent", "switch", "fixture-8000000000000001"], install);
-      expect(carryOn.status, carryOn.out).toBe(0);
-      r = next(proj, install);
-    }
+    const r = nextCarryingOn(proj, install);
     expect(r.directive?.kind, r.out).toBe("run-stage");
     expect(r.directive?.stage).toBe("test-pro-full-suite");
     for (const path of [
@@ -206,6 +219,36 @@ describe("a plugin stage finished on 2.11.4 holds after its folder moves", () =>
     const issue = validity.inspectStageValidity(proj, readFileSync(seededStateFile(proj), "utf-8")).issues
       .find((entry: { stage: string }) => entry.stage === "test-pro-integration");
     expect(issue).toMatchObject({ status: "stale", direct: true });
+  });
+
+  // 2.11.4 hashed test-pro-integration's graph contract with the phase it had
+  // then, construction, and recorded no folder for a plugin's stage; this
+  // release ships it in test, and nothing else the receipt hashes changed.
+  test("a phase rename alone is no change to the plugin stage: no row and no line says AI-DLC does it differently", async () => {
+    const proj = testProProject();
+    v8Project("plugin-stage", proj);
+    const install = join(proj, ".claude");
+    const r = nextCarryingOn(proj, install);
+    expect(r.directive?.kind, r.out).toBe("run-stage");
+    expect(r.directive?.stage).toBe("test-pro-full-suite");
+    const validity = await import(join(install, "tools", "aidlc-validity.ts"));
+    const after = validity.inspectStageValidity(proj, readFileSync(seededStateFile(proj), "utf-8"));
+    expect(after.issues).toEqual([]);
+    expect(after.redefined).toEqual([]);
+    expect(after.renewed).toEqual([]);
+    const audit = readdirSync(seededAuditDir(proj)).map((file) => readFileSync(join(seededAuditDir(proj), file), "utf-8"));
+    expect(audit.join("\n")).not.toMatch(/^\*\*Event\*\*: STAGE_DEFINITION_CHANGED$/m);
+    const status = tool(proj, "utility", ["status"], install);
+    expect(status.status, status.out).toBe(0);
+    expect(status.out).toContain("test-pro-integration");
+    expect(status.out).not.toMatch(/differently from when yours ran/);
+    // A plugin stage whose contract changed beyond its phase still reads as one AI-DLC now does differently.
+    const lib = await import(join(install, "tools", "aidlc-lib.ts"));
+    const reworded = lib.loadStageGraphAll().map((entry: { slug: string; condition?: string }) =>
+      entry.slug === "test-pro-integration" ? { ...entry, condition: "Runs when the team asks for integration tests" } : entry);
+    const changed = validity.inspectStageValidity(proj, readFileSync(seededStateFile(proj), "utf-8"), { stages: reworded });
+    expect(changed.redefined.map((entry: { stage: string }) => entry.stage)).toEqual(["test-pro-integration"]);
+    expect(changed.issues).toEqual([]);
   });
 });
 

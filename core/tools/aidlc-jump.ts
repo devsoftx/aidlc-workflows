@@ -263,16 +263,20 @@ export function backwardJumpNotice(
 
 // The redo `next` names for a stage owed behind the stage the person is on
 // (Reverse Engineering, once they said this is existing code; a stage an
-// update's new order put behind it) says what comes next. Kept here, where it
-// starts, so a skip asked for before it never hears it. It is said before the
-// person next replies, which is at that stage's gate while it still waits on
-// their approval, so it reads true before the work, at the gate, and after a
-// revise.
+// update's new order put behind it) says what comes next: `then`, the stage
+// the walk reaches once they approve it. That is the stage they were on,
+// unless the redo left one before it for the walk (a Secure review an update
+// added that the work had only just passed). Kept here, where it starts, so a
+// skip asked for before it never hears it. It is said before the person next
+// replies, which is at that stage's gate while it still waits on their
+// approval, so it reads true before the work, at the gate, and after a revise.
 export function owedRedoNotice(
   target: { slug: string; name: string; plugin?: string },
   from: { slug: string; name: string; plugin?: string },
+  then: { slug: string; name: string; plugin?: string } = from,
 ): string {
   const what = target.slug === "reverse-engineering" ? "the code's documentation" : stageLabel(target, target.slug) ?? "it";
+  if (then.slug !== from.slug) return `Once you approve ${what}, the work goes on to ${stageLabel(then, then.slug) ?? "the next stage"}.`;
   return `Once you approve ${what}, we're back at ${stageLabel(from, from.slug) ?? "where we were"}.`;
 }
 
@@ -582,8 +586,10 @@ function handleResolve(args: string[]): void {
 // redo of a stage behind the cursor: the passed-over ones between, less those
 // `owed` names) or resets (backward: the target and every later stage on the
 // effective plan), the target in progress, and Current Stage with its
-// projections on the target. `execute` writes it with its STAGE_JUMPED; a
-// reopen from a later stage writes it with the Units' own rejections instead.
+// projections on the target (`nextAfterTarget` is the stage Next Stage names,
+// where the walk goes once the target is approved). `execute` writes it with
+// its STAGE_JUMPED; a reopen from a later stage writes it with the Units' own
+// rejections instead.
 function movedState(
   content: string,
   targetSlug: string,
@@ -604,6 +610,7 @@ function movedState(
   phasesJumpedOver: string[];
   completedCount: number;
   timestamp: string;
+  nextAfterTarget: StageEntry | null;
 } {
   const graph = loadStageGraph();
   const targetIdx = stageIndex(targetSlug);
@@ -788,7 +795,7 @@ function movedState(
   content = setField(content, "Last Completed Stage", lastCompleted);
   return {
     content, stagesSkipped, stagesReset, currentSlug, currentStageForPhase,
-    crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp,
+    crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp, nextAfterTarget,
   };
 }
 
@@ -897,7 +904,9 @@ async function handleExecute(args: string[]): Promise<void> {
     : [];
   const moved = movedState(content, targetSlug, targetStage, direction, scope, suffixes, scopeMapping, keepsUnitStages, owed);
   content = moved.content;
-  const { stagesSkipped, stagesReset, currentStageForPhase, crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp } = moved;
+  const {
+    stagesSkipped, stagesReset, currentStageForPhase, crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp, nextAfterTarget,
+  } = moved;
 
   // One content-addressed snapshot is shared by both rows in the jump
   // transition. The companion STAGE_STARTED repeats the SAME authority rather
@@ -1024,7 +1033,7 @@ async function handleExecute(args: string[]): Promise<void> {
     notice = forwardJumpNotice(targetStage, skipped, cameFrom, unitSteps, !keepsUnitStages) +
       (stillOpen ? ` ${stillOpen}` : "");
   } else if (direction === "redo" && stageIndex(targetSlug) < stageIndex(currentSlug) && from && from.slug !== targetSlug) {
-    notice = owedRedoNotice(targetStage, from);
+    notice = owedRedoNotice(targetStage, from, nextAfterTarget ?? from);
   } else if (direction === "backward" && from && !addedBack) {
     notice = backwardJumpNotice(targetStage, from);
   }
