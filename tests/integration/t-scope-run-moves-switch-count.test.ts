@@ -103,9 +103,10 @@ describe("poc on a new project, User Stories added while the work is paused afte
       },
     });
     runs.push(run);
-    // Intent Capture and Requirements Analysis done, of Intent Capture, User
-    // Stories, Requirements Analysis, Code Generation and Build and Test.
-    expect(completion).toMatch(/Completion: +2\/5 stages/);
-    expect(started).toContain("(stage 3 of 5)");
+    // Intent Capture and Requirements Analysis done, of Intent Capture,
+    // Requirements Analysis, User Stories, Code Generation, Build and Test,
+    // Code Review and Security Review.
+    expect(completion).toMatch(/Completion: +2\/7 stages/);
+    expect(started).toContain("(stage 3 of 7)");
   }, SCOPE_RUN_TIMEOUT_MS);
 });

@@ -39,6 +39,8 @@ const EXPRESS_STAGES = [
   "requirements-analysis",
   "code-generation",
   "build-and-test",
+  "code-review",
+  "security-review",
   "deployment-pipeline",
   "deployment-execution",
   "observability-setup",
@@ -219,11 +221,21 @@ function runThroughBuild(p: string): void {
     "test/build-and-test/build-and-test-summary.md",
     "test/build-and-test/test-results.md",
   ]);
+  // Express reviews the code it built before anything ships: Code Review, then
+  // Security Review, the Secure phase, both before the deploy tail.
+  expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("code-review").toUpperCase());
+  for (const [stage, files] of [
+    ["code-review", ["code-review-report.md", "code-review-findings.md"]],
+    ["security-review", ["security-review-report.md", "security-findings.md"]],
+  ] as const) {
+    expect(next(p)).toMatchObject({ kind: "run-stage", stage });
+    approve(p, stage, files.map((file) => `${phaseFor(stage)}/${stage}/${file}`));
+  }
   expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("deployment-pipeline").toUpperCase());
 }
 
 describe("t301 express scope routing (deterministic CLI journey)", () => {
-  test("explicit --scope express writes the exact 10-stage plan", () => {
+  test("explicit --scope express writes the exact 12-stage plan", () => {
     const p = project();
     const result = utility(p, [
       "intent-create",
@@ -269,7 +281,7 @@ describe("t301 express scope routing (deterministic CLI journey)", () => {
     expect(readFileSync(activeStatePath(p), "utf-8")).toContain(
       "- **Status**: Completed",
     );
-  }); // Seven next/continue handshakes plus six reports across the full journey.
+  }); // Nine next/continue handshakes plus eight reports across the full journey.
 
   test("engine completes the Express deploy tail using explicit workspace fallbacks", () => {
     const p = project();

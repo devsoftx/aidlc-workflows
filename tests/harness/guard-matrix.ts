@@ -340,14 +340,18 @@ const PLUGIN_STAGES: Record<string, string> = {
   "units-generation": "design",
   "code-generation": "build",
   "build-and-test": "test",
+  "code-review": "secure",
+  "security-review": "secure",
+  "conformance-review": "secure",
 };
 
 /**
  * The matrix base as a plugin's scope: a synthetic plugin (never a shipped
  * one) whose scope file names the plugin, and whose contributions put
- * Requirements, Units Generation, Code Generation and Build and Test under it
- * (`adds.scopes`). Its compose hook installs it, as Claude Code runs it.
- * With no `policy`, the scope names no Guard Policy.
+ * Requirements, Units Generation, Code Generation, Build and Test and the three
+ * Secure reviews under it (`adds.scopes`), the stages the composed base runs.
+ * Its compose hook installs it, as Claude Code runs it. With no `policy`, the
+ * scope names no Guard Policy.
  */
 export function pluginCell(plugin: string, policy: GuardPolicy | null, review: ReviewCap): ComposedScope {
   const stages = expectedStages("classic", false).filter((s) => !MATRIX_SKIP.includes(s));
