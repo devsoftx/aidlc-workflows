@@ -45,7 +45,13 @@ import {
   maskSecretShapes,
   saySecretMaskedOnce,
 } from "./aidlc-audit.ts";
-import { hasStateUpgrade, newerStateStep, stateUpgradeRecord, waitsToBeBroughtUp } from "./aidlc-state-upgrade.ts";
+import {
+  broughtUpStateText,
+  hasStateUpgrade,
+  newerStateStep,
+  stateUpgradeRecord,
+  waitsToBeBroughtUp,
+} from "./aidlc-state-upgrade.ts";
 import { rebuildEffectivePlanFields, withStageProgress, withUnreachedPhasesRederived } from "./aidlc-state-progress.ts";
 import { fivePhaseFolderFindings } from "./aidlc-seven-phase-upgrade.ts";
 import {
@@ -2040,17 +2046,18 @@ function workHereStatus(projectDir: string, space: string): string | null {
 // orchestrator is loaded only here, with an awaited import as aidlc-jump.ts
 // loads it (the compiled build takes no require() of it), and only for the
 // work's own record in Construction, which is the record the walk reads, and
-// not while an older AI-DLC's record waits for the next step to bring it up:
-// reading the walk would bring it up in place, and status writes nothing. Null
-// otherwise, or when it cannot be read: status then gives the light count
-// (unitProgress) and the Next Stage field.
+// not while an older AI-DLC's record waits for the next step to bring it up
+// (`waiting`): reading the walk would bring it up in place, and status writes
+// nothing. Null otherwise, or when it cannot be read: status then gives the
+// light count (unitProgress) and the Next Stage field.
 async function soloUnitWalk(
   projectDir: string,
   flags: Record<string, string>,
   scope: string,
   content: string,
+  waiting: boolean,
 ): Promise<{ clause: string; current: number | null; total: number; next: string | null; phase: string | null } | null> {
-  if (flags.intent || flags.space || isTeamUnitOwnership(content) || waitsToBeBroughtUp(content)) return null;
+  if (flags.intent || flags.space || isTeamUnitOwnership(content) || waiting) return null;
   if ((getField(content, "Construction Iteration") ?? "").trim() !== "unit-major") return null;
   if (!isUnitLoopStage(findStageBySlug((getField(content, "Current Stage") ?? "").trim()))) return null;
   try {
@@ -2086,7 +2093,12 @@ To get started:
     return;
   }
 
-  const content = readFileSync(sp, "utf-8");
+  const recorded = readFileSync(sp, "utf-8");
+  // Work an earlier AI-DLC set up reads as AI-DLC's next step brings it up, the
+  // step the engine takes on its first read; until then its documents stay
+  // where that release kept them, so nothing here reads them in the new layout.
+  const waiting = waitsToBeBroughtUp(recorded);
+  const content = waiting ? broughtUpStateText(recorded) : recorded;
   const graph = loadStageGraph();
 
   // Extract key fields
@@ -2095,7 +2107,11 @@ To get started:
   const phase = getField(content, "Lifecycle Phase") || "Unknown";
   const currentStage = getField(content, "Current Stage") || "Unknown";
   const status = getField(content, "Status") || "Unknown";
-  const walk = await soloUnitWalk(projectDir, flags, scope, content);
+  const walk = await soloUnitWalk(projectDir, flags, scope, content, waiting);
+  // The Unit walk of a record that waits cannot be read yet, and its Next Stage
+  // field names the stage after the block's first, not the walk's next step.
+  const walkWaits = waiting && (getField(content, "Construction Iteration") ?? "").trim() === "unit-major" &&
+    isUnitLoopStage(findStageBySlug(currentStage.trim()));
   // Who is on it and what was done or comes next, in the names the person
   // sees elsewhere; a setup step or an empty value says nothing.
   const agentSlug = (getField(content, "Active Agent") ?? "").trim();
@@ -2123,8 +2139,9 @@ To get started:
   }
   const lastLine = lastName === null ? "" : `Last Completed: ${lastName}${approvedBy}\n`;
   // On a Unit walk the Next Stage field stays on the stage after the block's
-  // first one, so the walk's own next step is said instead.
-  const shownNext = walk === null ? nextName : walk.next;
+  // first one, so the walk's own next step is said instead, or nothing while
+  // the walk cannot be read yet.
+  const shownNext = walk !== null ? walk.next : walkWaits ? null : nextName;
   const nextLine = shownNext === null ? "" : `Next Stage:     ${shownNext}\n`;
   const plan = getField(content, PLAN_FIELD);
   // A plan composed for this work runs on a stock scope the person never
@@ -2300,7 +2317,9 @@ To get started:
   let phaseProgress = "";
   let lightUnits: ReturnType<typeof unitProgress> | undefined;
   const lightUnitCount = (): ReturnType<typeof unitProgress> => {
-    if (lightUnits === undefined) lightUnits = unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "");
+    if (lightUnits === undefined) {
+      lightUnits = unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "", undefined, waiting);
+    }
     return lightUnits;
   };
   for (const p of PHASES) {
@@ -2360,43 +2379,47 @@ To get started:
   }
 
   // Only a change the person can act on: a stage whose inputs moved since it
-  // was approved, with the redo that refreshes it. The rest is advisory.
+  // was approved, with the redo that refreshes it. The rest is advisory. Work
+  // waiting to be brought up has its documents where the earlier release kept
+  // them, so they are checked once the step has moved them.
   let validityOutput = "";
   try {
-    const validity = inspectStageValidity(projectDir, content, {
-      stages: graph,
-      audit: readAllAuditShards(projectDir, flags.intent, flags.space),
-      currentBasis: (stage, stages) =>
-        captureStageValidationBasis(projectDir, stage, content, stages, {
-          resolution: { recordPath: dirname(sp), stateContent: content },
-        }),
-    });
-    const directlyStale = validity.issues
-      .filter((issue) => issue.direct)
-      .map((issue) => issue.stage);
-    const needsRevalidation = validity.issues
-      .filter((issue) => !issue.direct)
-      .map((issue) => issue.stage);
-    const earliest = directlyStale[0] ?? validity.issues[0]?.stage ?? null;
-    const earliestIssue = validity.issues.find((issue) => issue.stage === earliest);
-    const earliestName = earliest === null ? null : stageLabel(findStageBySlug(earliest), earliest);
-    if (earliestName !== null && earliestIssue) {
-      // The same line the next step says, and the same way to act on it.
-      const others = [...directlyStale, ...needsRevalidation].filter((slug) => slug !== earliest);
-      const otherNames = stageNames(others);
-      validityOutput = staleStageNote(earliestName, earliestIssue, content) +
-        `${otherNames ? ` Also affected: ${otherNames}.` : ""}\n`;
-    }
-    // Finished stages AI-DLC itself now does differently, told or not on the
-    // way: the work stands, and the way back is named.
-    const pending = new Set(validity.redefined.map((entry) => entry.stage));
-    const redefined = graph.map((stage) => stage.slug)
-      .filter((slug) => pending.has(slug) || validity.renewed.includes(slug));
-    if (redefined.length > 0) {
-      validityOutput += `${stageDefinitionChangedLine(
-        redefined.map((slug) => stageLabel(findStageBySlug(slug), slug) ?? slug),
-        redefined[0],
-      )}\n`;
+    if (!waiting) {
+      const validity = inspectStageValidity(projectDir, content, {
+        stages: graph,
+        audit: readAllAuditShards(projectDir, flags.intent, flags.space),
+        currentBasis: (stage, stages) =>
+          captureStageValidationBasis(projectDir, stage, content, stages, {
+            resolution: { recordPath: dirname(sp), stateContent: content },
+          }),
+      });
+      const directlyStale = validity.issues
+        .filter((issue) => issue.direct)
+        .map((issue) => issue.stage);
+      const needsRevalidation = validity.issues
+        .filter((issue) => !issue.direct)
+        .map((issue) => issue.stage);
+      const earliest = directlyStale[0] ?? validity.issues[0]?.stage ?? null;
+      const earliestIssue = validity.issues.find((issue) => issue.stage === earliest);
+      const earliestName = earliest === null ? null : stageLabel(findStageBySlug(earliest), earliest);
+      if (earliestName !== null && earliestIssue) {
+        // The same line the next step says, and the same way to act on it.
+        const others = [...directlyStale, ...needsRevalidation].filter((slug) => slug !== earliest);
+        const otherNames = stageNames(others);
+        validityOutput = staleStageNote(earliestName, earliestIssue, content) +
+          `${otherNames ? ` Also affected: ${otherNames}.` : ""}\n`;
+      }
+      // Finished stages AI-DLC itself now does differently, told or not on the
+      // way: the work stands, and the way back is named.
+      const pending = new Set(validity.redefined.map((entry) => entry.stage));
+      const redefined = graph.map((stage) => stage.slug)
+        .filter((slug) => pending.has(slug) || validity.renewed.includes(slug));
+      if (redefined.length > 0) {
+        validityOutput += `${stageDefinitionChangedLine(
+          redefined.map((slug) => stageLabel(findStageBySlug(slug), slug) ?? slug),
+          redefined[0],
+        )}\n`;
+      }
     }
   } catch {
     // Unreadable receipts change nothing the person can act on here.
@@ -2456,10 +2479,12 @@ To get started:
   const alsoOpen = others.length === 0
     ? ""
     : `Also open:      ${others.join(", ")} (ask to switch to ${others.length === 1 ? "it" : "one"})\n`;
-  // Work an older AI-DLC recorded, brought up to this one in place: said here
-  // on purpose, never in chat.
+  // Work an older AI-DLC recorded, brought up to this one in place, or shown
+  // here as the next step brings it up: said here on purpose, never in chat.
   const upgrade = stateUpgradeRecord(projectDir, selection.intent ?? undefined, selection.space);
-  const upgradedLine = upgrade === null
+  const upgradedLine = waiting
+    ? "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven shown here\n"
+    : upgrade === null
     ? ""
     : `Brought up:     from an older AI-DLC on ${upgrade.date} (the record as it was: ${upgrade.original})\n`;
   const output = `AI-DLC Workflow Status

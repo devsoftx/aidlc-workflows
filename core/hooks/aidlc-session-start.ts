@@ -603,7 +603,16 @@ if (rebindCheckOnly) {
   return 0;
 }
 
-const content = readFileSync(stateFile, "utf-8");
+// Work an earlier AI-DLC set up reads as AI-DLC's next step brings it up, so
+// the chat hears the phase and stage that step leaves it at; the record itself
+// is the engine's to bring up.
+let content = readFileSync(stateFile, "utf-8");
+try {
+  const { broughtUpStateText } = await import("../tools/aidlc-state-upgrade.ts");
+  content = broughtUpStateText(content);
+} catch {
+  // The state as it is on disk.
+}
 
 const phase = getField(content, "Lifecycle Phase") ?? "unknown";
 const stage = getField(content, "Current Stage") ?? "unknown";

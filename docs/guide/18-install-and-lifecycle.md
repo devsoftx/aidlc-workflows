@@ -1545,16 +1545,20 @@ already there and holds something else, the next free number, such as
 and `/aidlc --doctor` say when it was brought up and name the kept copy. A
 Unit's folders move with it whatever the Unit is called, even a stage's name.
 Anything it could not move (a file whose new folder already holds one of the
-same name, or a folder no stage owns) stays where it was, and `/aidlc --doctor`
-names it with the move to make; the files Finder and Windows Explorer leave in
-folders you browse (`.DS_Store`, `Thumbs.db`, `desktop.ini`) are not counted,
-and go with the old folders. If a program on your computer has one of the
-folders open (a dev server or test watcher, a terminal or an editor inside it,
-a file sync or backup app), AI-DLC changes nothing: it tells you which folder
-it could not move and stops, and once you have closed what holds it and ask it
-to carry on, it brings the work up whole and picks up where you were. Each
-piece of work is brought up when AI-DLC first takes a step on it, so parked
-work waits until you pick it up again.
+same name, or a folder no stage owns) stays where it was, and `/aidlc
+--doctor` names it with the move to make; the files Finder and Windows
+Explorer leave in folders you browse (`.DS_Store`, `Thumbs.db`, `desktop.ini`)
+are not counted, and go with the old folders. If a program on your computer
+has one of the folders open (a dev server or test watcher, a terminal or an
+editor inside it, a file sync or backup app), AI-DLC changes nothing: it tells
+you which folder it could not move and stops, and once you have closed what
+holds it and ask it to carry on, it brings the work up whole and picks up
+where you were. Each piece of work is brought up when AI-DLC first takes a
+step on it, so parked work waits until you pick it up again. Until then
+`/aidlc --status` and the status line already show it in the seven phases, and
+status says `Brought up: at AI-DLC's next step`. Finished stages keep their
+approvals through the move: a stage reads as changed only when your work or
+what the stage does really changed, never for a new phase name alone.
 
 The seven phases run two stages earlier than 2.11.4 did: Reverse Engineering
 now comes before Scope Definition, and Performance Validation before the code
@@ -1564,6 +1568,12 @@ work is already past its new place, it runs once at the next stage boundary
 stage you were on; nothing you finished runs again. A stage your work had
 passed over on 2.11.4 that now comes later stays passed over, and so do Code
 Review and Security Review, the new Secure stages, on work already past them.
+
+Work a teammate set up with AI-DLC 2.12's team work is not carried on by a
+seven-phase release, and updating does not change that: AI-DLC says
+so and names the step that carries it on, pinning the project to the 2.12
+release your teammate uses (`aidlc config --pin <that version> --yes`, then
+`aidlc config --yes`), or, on a copied project, that release's copy runtime.
 
 On a shared project, everyone should update together. Once one person's
 AI-DLC has brought the work up and they commit it, a teammate still on 2.11.4
@@ -1697,7 +1707,7 @@ Previews are `main` as it stands, including project state-schema changes. A
 preview that raises the state schema writes project state a stable build does
 not understand. A build never advances work newer than it reads: on a native
 install it asks once whether to update AI-DLC and carry on ("This plan was set
-up with AI-DLC 2.12 or newer, and this computer has 2.11.5. Want me to update
+up with a newer AI-DLC, and this computer has 2.11.5. Want me to update
 AI-DLC now and carry on?"), and on yes runs `aidlc update` and the project's
 refresh and carries on with what you asked; a copied, pinned or
 package-managed install says its own one step instead. That project cannot be

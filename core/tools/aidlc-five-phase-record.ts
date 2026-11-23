@@ -314,3 +314,48 @@ export function fivePhaseFingerprintForm(current: string, raw = false): string |
   const forms = FIVE_PHASE_FINGERPRINTS.get(current);
   return forms === undefined ? null : raw ? forms.raw : forms.fingerprint;
 }
+
+// The condition 2.11.4 shipped for each stage whose condition the seven phases
+// reworded and did not change: a phase name or a stage number in it. Each holds
+// both wordings, so only the condition this release ships reads back as
+// 2.11.4's, and a later change to it still reads as a change. Every other field
+// a stage receipt hashes was the same in 2.11.4 for every stage it shipped,
+// apart from the phase and Performance Validation's inputs, which did change.
+export const FIVE_PHASE_CONDITIONS: Readonly<Record<string, { fivePhase: string; sevenPhase: string }>> = Object.freeze({
+  "approval-handoff": {
+    fivePhase: "Always executes — compiles all Ideation artifacts into initiative brief for approval",
+    sevenPhase: "Always executes — compiles all Discover artifacts into initiative brief for approval",
+  },
+  "units-generation": {
+    fivePhase: "Always executes when in scope. Produces the dependency DAG that Stage 2.9 Delivery Planning consumes " +
+      "for Bolt sequencing. In the compiled scope grid, 2.7 (Units Generation) and 2.9 (Delivery Planning) travel " +
+      "together — both EXECUTE or both SKIP per scope.",
+    sevenPhase: "Always executes when in scope. Produces the dependency DAG that Stage 2.8 Delivery Planning consumes " +
+      "for Bolt sequencing. In the compiled scope grid, 2.6 (Units Generation) and 2.8 (Delivery Planning) travel " +
+      "together — both EXECUTE or both SKIP per scope.",
+  },
+  "delivery-planning": {
+    fivePhase: "Always executes — capstone Inception stage, produces the detailed execution plan for Construction " +
+      "and Operation",
+    sevenPhase: "Always executes — capstone Design stage, produces the detailed execution plan for Build through " +
+      "Operate",
+  },
+});
+
+/**
+ * A stage's graph contract (the fields a stage receipt hashes) as a five-phase
+ * release hashed the same contract: the stage's five-phase folder for its
+ * phase, and the 2.11.4 wording of a condition the seven phases only reworded
+ * (FIVE_PHASE_CONDITIONS). Null for a stage 2.11.4 did not ship. Every other
+ * field is the contract as it is now, so a change to what the stage reads,
+ * writes or runs on still reads as one.
+ */
+export function fivePhaseGraphContract<T extends { slug: string; phase: string; condition?: string }>(contract: T): T | null {
+  if (!Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, contract.slug)) return null;
+  const reworded = Object.hasOwn(FIVE_PHASE_CONDITIONS, contract.slug) ? FIVE_PHASE_CONDITIONS[contract.slug] : undefined;
+  return {
+    ...contract,
+    phase: FIVE_PHASE_STAGE_FOLDER[contract.slug],
+    condition: reworded !== undefined && contract.condition === reworded.sevenPhase ? reworded.fivePhase : contract.condition,
+  };
+}

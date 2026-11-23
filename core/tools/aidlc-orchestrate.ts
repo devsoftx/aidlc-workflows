@@ -714,6 +714,8 @@ import {
   newerWorkInstall,
   newerWorkLead,
   newerWorkRefresh,
+  updateCarriesOn,
+  waitsToBeBroughtUp,
 } from "./aidlc-state-upgrade.ts";
 import { renderEngineInvocation, sameGuardOperation } from "./aidlc-guard-operation.ts";
 import { claimedCheckoutMovesElsewhere, claimedCheckoutReopens, completedUnits } from "./aidlc-unit-landing.ts";
@@ -1107,11 +1109,26 @@ function redefinedStagesNotice(
   };
 }
 
+// A record still waiting on disk for the step that brings it up (the
+// read-only probe read it brought up, and wrote nothing) keeps its documents
+// where the earlier release kept them, so they cannot be read against their
+// receipts until that step has moved them. A state that cannot be read here
+// is the validity check's own to report.
+function recordAwaitsItsMove(projectDir: string): boolean {
+  try {
+    const path = engineStateFilePath(projectDir);
+    return existsSync(path) && waitsToBeBroughtUp(readFileSync(path, "utf-8"));
+  } catch {
+    return false;
+  }
+}
+
 function projectStageValidityAdvisory(
   projectDir: string,
   stateContent: string,
 ): StageValidityAdvisory | undefined {
   activeRedefinedStages = null;
+  if (recordAwaitsItsMove(projectDir)) return undefined;
   try {
     // Under Guard Policy relaxed and off the guard accepts an edit to a
     // finished stage's document and says it once, so this line never raises it.
@@ -6472,8 +6489,14 @@ function tellAndStop(line: string): PrintDirective {
 // own one step. The question writes nothing into the record, which this build
 // cannot read: no question row, and the kept request lives in this machine's
 // own folder. After an update that left this build in place (`done`), the
-// person hears that once, never the question again.
+// person hears that once, never the question again. Work only a release
+// outside this line reads (updateCarriesOn) is never offered the update, which
+// would not carry it on: every install, and every answer, hears its one step.
 function newerWorkOffer(projectDir: string, version: string, carried: readonly string[], newWork = false): Directive {
+  if (!updateCarriesOn(version)) {
+    activeKeptRequestLine = null;
+    return tellAndStop(newerStateStep(projectDir, version, newWork));
+  }
   if (updateAnswer === "done") {
     // Nothing carried on, so the carry-on line is not said.
     activeKeptRequestLine = null;
@@ -6540,7 +6563,7 @@ function updateAnswerStep(projectDir: string, answer: UpdateAnswer, rest: readon
   if (answer === "done") return null;
   const version = newerStateVersion(loadStateFileIfPresent(projectDir));
   if (version === null) return null;
-  if (newerWorkInstall(projectDir).kind !== "native" || process.env.AIDLC_UNATTENDED === "1") {
+  if (!updateCarriesOn(version) || newerWorkInstall(projectDir).kind !== "native" || process.env.AIDLC_UNATTENDED === "1") {
     return tellAndStop(newerStateStep(projectDir, version));
   }
   const carryOn = `${aidlcToolInvocation("orchestrate")} next --update-ai-dlc done${rest.length > 0 ? ` ${rest.join(" ")}` : ""}`;

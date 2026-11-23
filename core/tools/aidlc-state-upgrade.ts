@@ -2,8 +2,10 @@
 // place the first time the engine reads it, so work started on an older
 // AI-DLC carries on after an update with nothing asked and nothing said.
 // One owner: the engine's state read (loadStateFileIfPresent in
-// aidlc-orchestrate.ts) calls bringStateUpToDate, and doctor and status read
-// hasStateUpgrade and stateUpgradeRecord, so they never disagree with it.
+// aidlc-orchestrate.ts) calls bringStateUpToDate, doctor and status read
+// hasStateUpgrade and stateUpgradeRecord, and status, the status line and the
+// session-start context show broughtUpStateText before the step has run, so
+// they never disagree with it.
 // A record a newer AI-DLC wrote is never brought down: newerStateStep names
 // the release it needs and the person's step, for next, report, doctor and the
 // unit commands alike.
@@ -116,6 +118,60 @@ export function waitsToBeBroughtUp(content: string): boolean {
   return verdict.kind === "past" && hasStateUpgrade(verdict.version);
 }
 
+// The text half of every step from `from` to the current version: each step's
+// rewrite, then the next stage as this graph routes it (a stage the newer graph
+// added comes first), which status reads; a scope the graph does not know
+// keeps its field.
+function upgradePlan(content: string, from: string): {
+  text: string;
+  version: string;
+  renamed: StageRename[];
+  added: string[];
+  movedBehind: string[];
+  passedOver: string[];
+  steps: StateUpgrade[];
+} {
+  let text = content;
+  let version = from;
+  const renamed: StageRename[] = [];
+  const added: string[] = [];
+  const movedBehind: string[] = [];
+  const passedOver: string[] = [];
+  const steps: StateUpgrade[] = [];
+  while (hasStateUpgrade(version)) {
+    const step = STATE_UPGRADES[version];
+    const reordered = step.reorder?.(text);
+    text = upgradedText(text, step);
+    renamed.push(...step.renamed);
+    added.push(...step.added);
+    movedBehind.push(...(reordered?.movedBehind ?? []));
+    passedOver.push(...(reordered?.keptPassedOver ?? []));
+    steps.push(step);
+    version = step.to;
+  }
+  // The stage the work goes to next, which status reads: one the new order put
+  // behind the cursor, which `next` goes back to at the next boundary, else the
+  // next one this graph routes to (a stage the newer graph added comes first);
+  // a scope the graph does not know keeps its field.
+  const after = (movedBehind.length > 0 ? findStageBySlug(movedBehind[0]) : undefined) ??
+    nextInScopeStage(getField(text, "Current Stage") ?? "", getField(text, "Scope") ?? "", text);
+  if (after) text = setField(text, "Next Stage", after.slug);
+  return { text, version, renamed, added, movedBehind, passedOver, steps };
+}
+
+/**
+ * The state text as AI-DLC's next step brings it up, written nowhere: what a
+ * reader that writes nothing (status, the status line, the session-start
+ * context) shows, so the work reads
+ * as it will once that step has run. The record's folders stay where the
+ * earlier release kept them until then. Text no step brings up comes back as
+ * it was.
+ */
+export function broughtUpStateText(content: string): string {
+  const verdict = classifyStateVersion(content);
+  return verdict.kind === "past" && hasStateUpgrade(verdict.version) ? upgradePlan(content, verdict.version).text : content;
+}
+
 // Moves one record folder to its new path. Nothing moves when the source is
 // absent or the target already exists, so a repeated step is a no-op and no
 // folder is overwritten or deleted; the target's parent folders are created.
@@ -201,31 +257,7 @@ export function bringStateUpToDate(
   if (!waitsToBeBroughtUp(content)) return content;
   const verdict = classifyStateVersion(content);
   if (verdict.kind !== "past") return content;
-  let text = content;
-  let version = verdict.version;
-  const renamed: StageRename[] = [];
-  const added: string[] = [];
-  const movedBehind: string[] = [];
-  const passedOver: string[] = [];
-  const steps: StateUpgrade[] = [];
-  while (hasStateUpgrade(version)) {
-    const step = STATE_UPGRADES[version];
-    const reordered = step.reorder?.(text);
-    text = upgradedText(text, step);
-    renamed.push(...step.renamed);
-    added.push(...step.added);
-    movedBehind.push(...(reordered?.movedBehind ?? []));
-    passedOver.push(...(reordered?.keptPassedOver ?? []));
-    steps.push(step);
-    version = step.to;
-  }
-  // The stage the work goes to next, which status reads: one the new order put
-  // behind the cursor, which `next` goes back to at the next boundary, else the
-  // next one this graph routes to (a stage the newer graph added comes first);
-  // a scope the graph does not know keeps its field.
-  const after = (movedBehind.length > 0 ? findStageBySlug(movedBehind[0]) : undefined) ??
-    nextInScopeStage(getField(text, "Current Stage") ?? "", getField(text, "Scope") ?? "", text);
-  if (after) text = setField(text, "Next Stage", after.slug);
+  const { text, version, renamed, added, movedBehind, passedOver, steps } = upgradePlan(content, verdict.version);
   if (isReadOnlyEngineProbe()) return text;
   try {
     const recordDir = dirname(statePath);
@@ -302,18 +334,41 @@ export function stateUpgradeRecord(
 }
 
 // --- A record a newer AI-DLC wrote ---
-//
-// The first release that writes each State Version newer than this build
-// reads, so the person hears which AI-DLC their teammate's work needs. 2.12
-// writes 9 on team work (#2783). The schema names the first release that
-// writes it, never the one that did, so it is said "or newer".
-export const STATE_VERSION_RELEASES: Readonly<Record<string, string>> = Object.freeze({ "9": "2.12" });
+
+interface NewerStateVersion {
+  // The first release that writes it.
+  release: string;
+  // For a version a release outside this line writes, the work it is written
+  // for there. No release of this line reads it, so updating never carries
+  // such work on.
+  otherLine?: string;
+}
+
+// The release that writes each State Version newer than this build reads, so
+// the person hears which AI-DLC their teammate's work needs. A version a later
+// release of this line writes names the first one that does, never the one
+// that did, so it is said "or newer". Upstream AI-DLC 2.12 writes 9 on team
+// work (#2783), which this line skips (its step from 8 goes to 10): no release
+// of it reads 9, so the person hears where that work carries on, never an
+// update.
+export const STATE_VERSION_RELEASES: Readonly<Record<string, NewerStateVersion>> = Object.freeze({
+  "9": { release: "2.12", otherLine: "team work" },
+});
+
+function knownNewerVersion(version: string): NewerStateVersion | undefined {
+  return Object.hasOwn(STATE_VERSION_RELEASES, version) ? STATE_VERSION_RELEASES[version] : undefined;
+}
 
 /** The AI-DLC a newer State Version needs, as the person reads it. */
 export function newerStateRelease(version: string): string {
-  return Object.hasOwn(STATE_VERSION_RELEASES, version)
-    ? `AI-DLC ${STATE_VERSION_RELEASES[version]} or newer`
-    : "a newer AI-DLC";
+  const known = knownNewerVersion(version);
+  if (known === undefined) return "a newer AI-DLC";
+  return known.otherLine === undefined ? `AI-DLC ${known.release} or newer` : `AI-DLC ${known.release} ${known.otherLine}`;
+}
+
+/** Whether updating AI-DLC carries the work on: not for a version only a release outside this line reads. */
+export function updateCarriesOn(version: string): boolean {
+  return knownNewerVersion(version)?.otherLine === undefined;
 }
 
 /**
@@ -370,6 +425,7 @@ export function newerStateStep(projectDir: string, version: string, newWork = fa
   const needs = newerStateRelease(version);
   const install = newerWorkInstall(projectDir);
   const refresh = `\`${newerWorkRefresh(projectDir)}\``;
+  if (!updateCarriesOn(version)) return otherLineStep(projectDir, version, lead, install);
   switch (install.kind) {
     case "copy":
       return `${lead}, and this project has AI-DLC ${AIDLC_VERSION}, copied in by hand. To carry on, get the copy ` +
@@ -385,6 +441,31 @@ export function newerStateStep(projectDir: string, version: string, newWork = fa
     default:
       return `${lead}, and this computer has ${AIDLC_VERSION}. ${carryOnStep(install, "`aidlc update`", refresh)}`;
   }
+}
+
+// Work a release outside this line set up (State Version 9, upstream 2.12's
+// team work): said once that this AI-DLC does not carry it on and an update
+// will not, then the one step that does, on that release. A copy takes that
+// release's copy runtime; any other install pins the project to it, which
+// switches the AI-DLC serving the project for everyone on it, then refreshes
+// the project's files to it.
+function otherLineStep(projectDir: string, version: string, lead: string, install: NewerWorkInstall): string {
+  const release = knownNewerVersion(version)?.release ?? "";
+  const here = install.kind === "copy"
+    ? `the AI-DLC ${AIDLC_VERSION} copied into this project by hand`
+    : install.kind === "pinned"
+    ? `AI-DLC ${AIDLC_VERSION}, which this project is pinned to,`
+    : install.kind === "managed"
+    ? `AI-DLC ${AIDLC_VERSION} from ${install.name}`
+    : `AI-DLC ${AIDLC_VERSION} on this computer`;
+  const step = install.kind === "copy"
+    ? `To carry on, get the copy runtime of the AI-DLC ${release} release your teammate uses ` +
+      `(aidlc-copy-runtime-<version>.tar.gz and its .sha256, from the releases on ${releaseHost()}) into one folder, ` +
+      `then run \`${refreshCommand(projectDir)} --from <that file>\` in this project.`
+    : `To carry on, pin this project to the ${release} release your teammate uses with ` +
+      `\`${aidlcInvocation()} config --pin <that version> --yes\`, then run \`${newerWorkRefresh(projectDir)}\`; ` +
+      "the pin changes for everyone on the project.";
+  return `${lead}, which ${here} does not carry on, and updating AI-DLC does not change that. ${step}`;
 }
 
 /** The one step to a newer AI-DLC: `update` natively, a package manager's own update, then `refresh`. */
