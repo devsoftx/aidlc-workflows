@@ -7,15 +7,22 @@
 // A record a newer AI-DLC wrote is never brought down: newerStateStep names
 // the release it needs and the person's step, for next, report, doctor and the
 // unit commands alike.
-import { existsSync, mkdirSync, renameSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { appendAuditEntryUnlocked } from "./aidlc-audit.ts";
 import { classifyStateVersion, findStageBySlug, nextInScopeStage } from "./aidlc-lib.ts";
 import { isReadOnlyEngineProbe, withAuditLock, writeFileAtomic } from "./aidlc-locks.ts";
 import { auditBlockField, getField, readAuditShardEvents, setField, writeStateFile } from "./aidlc-record-core.ts";
 import { packageManagerForExecutable } from "./aidlc-install-paths.ts";
 import { releaseHostLabel } from "./aidlc-release.ts";
-import { moveFivePhaseFolders, sevenPhaseStateText } from "./aidlc-seven-phase-upgrade.ts";
+import {
+  type FolderMove,
+  type FolderRename,
+  moveFivePhaseFolders,
+  putFolderMovesBack,
+  renameRecordFolder,
+  sevenPhaseStateText,
+} from "./aidlc-seven-phase-upgrade.ts";
 import { aidlcInvocation, compiledExecutable, runtimeHarnessName, typedHarnessName } from "./aidlc-runtime-paths.ts";
 import { AIDLC_VERSION } from "./aidlc-version.ts";
 
@@ -42,8 +49,10 @@ interface StateUpgrade {
   added: string[];
   // The step's own rewrite of the state text, after the version line and the renames.
   text?: (content: string, added: readonly string[]) => string;
-  // The step's own record-folder moves, after every rename's, and what they left behind.
-  folders?: (recordDir: string) => { moved: string[]; left: string[] };
+  // The step's own record-folder moves, after every rename's: what they moved,
+  // what they left behind, and what the file system would not let move (the
+  // step has put its own moves back then).
+  folders?: (recordDir: string) => { moved: string[]; left: string[]; failed: FolderMove[] };
 }
 
 // Keyed by the version a step starts from. 2.1.x to 2.3.0 wrote 7; 8 renamed
@@ -102,25 +111,77 @@ export function waitsToBeBroughtUp(content: string): boolean {
 // Moves one record folder to its new path. Nothing moves when the source is
 // absent or the target already exists, so a repeated step is a no-op and no
 // folder is overwritten or deleted; the target's parent folders are created.
-// Returns the audit label for the move, or null when nothing moved.
-function moveRecordFolder(recordDir: string, from: string, to: string): string | null {
+// Returns the rename made, null when nothing moved, or "failed" when the file
+// system would not let it move.
+function moveRecordFolder(recordDir: string, from: string, to: string): FolderRename | null | "failed" {
   const source = join(recordDir, ...from.split("/"));
   const target = join(recordDir, ...to.split("/"));
   if (!existsSync(source) || existsSync(target)) return null;
-  mkdirSync(dirname(target), { recursive: true });
-  renameSync(source, target);
-  return `${from} to ${to}`;
+  return renameRecordFolder(source, target, from) ?? "failed";
+}
+
+// The state as it was, kept beside it: aidlc-state.v<N>.md, or, when that
+// already holds other text (work put back by hand on the earlier release,
+// carried on there and brought up again), the first free
+// aidlc-state.v<N>.<k>.md, so a kept original is never overwritten. Returns
+// the name kept, which the audit row's Original names.
+function keepOriginal(recordDir: string, version: string, content: string): string {
+  for (let k = 1; ; k++) {
+    const name = k === 1 ? `aidlc-state.v${version}.md` : `aidlc-state.v${version}.${k}.md`;
+    const path = join(recordDir, name);
+    if (!existsSync(path)) {
+      writeFileAtomic(path, content);
+      return name;
+    }
+    if (readFileSync(path, "utf-8") === content) return name;
+  }
+}
+
+// The person's line for the bring-up this process last tried, when the file
+// system held it back; null when it finished, or none was tried.
+let heldBack: string | null = null;
+
+/**
+ * The person's one line when the bring-up the last state read tried could
+ * not move a record folder (one held open, or one that cannot be written),
+ * naming the folders; null otherwise. The record is then as the earlier
+ * release left it, still at its State Version, and the next read makes the
+ * whole bring-up again; next (a claim or release too) and report say the line
+ * and stop, so nothing is asked and no stage is routed against folders that
+ * did not move.
+ */
+export function heldBackBringUp(): string | null {
+  return heldBack;
+}
+
+function heldBackLine(projectDir: string, recordDir: string, failed: readonly FolderMove[]): string {
+  const shown = (path: string) => `\`${relative(projectDir, join(recordDir, ...path.split("/"))).split("\\").join("/")}\``;
+  const one = failed.length === 1;
+  const names = failed.map((move) => shown(move.from));
+  const where = one
+    ? `${names[0]} to ${shown(failed[0].to)}, where this release keeps it`
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)} to where this release keeps them`;
+  const it = one ? "it" : "them";
+  return `AI-DLC could not move ${where}: a program on this computer has ${one ? "that folder" : "those folders"} ` +
+    `open, or ${it} cannot be changed. Your work is as it was. Close what has ${it} open (a dev server or test ` +
+    "watcher still running over the project, a terminal or an editor inside, a file sync or backup app), then ask " +
+    "me to carry on, and AI-DLC finishes moving your work and picks up where you were.";
 }
 
 // The content as the current State Version reads it. When the version is one
 // a step brings up, the state as it was is kept beside it first
-// (aidlc-state.v<N>.md), each renamed stage's record folders move to the new
-// name and phase folder, then each step's own folder moves run (the 8 step's
+// (keepOriginal), each renamed stage's record folders move to the new name
+// and phase folder, then each step's own folder moves run (the 8 step's
 // five-phase folders), the state is written and one audit row says what
 // changed and what was left behind. A read-only engine probe gets the
-// brought-up text and writes nothing. A write that fails leaves the original
-// whole (the copy comes first, the state by rename) and this step carries on
-// with the brought-up text; the next one tries again.
+// brought-up text and writes nothing. A folder the file system will not let
+// move holds the whole bring-up back: every move is put back, the state stays
+// at its version, no row is written and this read gets the record as it is
+// (so nothing in this command writes a brought-up state over folders that did
+// not move), and the next read makes the whole move again, its row listing
+// every move (heldBackBringUp names the folder meanwhile). A write that fails
+// leaves the original whole (the copy comes first, the state by rename) and
+// this step carries on with the brought-up text; the next one tries again.
 export function bringStateUpToDate(
   projectDir: string,
   statePath: string,
@@ -128,6 +189,7 @@ export function bringStateUpToDate(
   intent?: string,
   space?: string,
 ): string {
+  heldBack = null;
   if (!waitsToBeBroughtUp(content)) return content;
   const verdict = classifyStateVersion(content);
   if (verdict.kind !== "past") return content;
@@ -151,24 +213,35 @@ export function bringStateUpToDate(
   if (isReadOnlyEngineProbe()) return text;
   try {
     const recordDir = dirname(statePath);
-    const kept = join(recordDir, `aidlc-state.v${verdict.version}.md`);
-    if (!existsSync(kept)) writeFileAtomic(kept, content);
+    const kept = keepOriginal(recordDir, verdict.version, content);
     const moved: string[] = [];
+    const renames: FolderRename[] = [];
+    const failed: FolderMove[] = [];
     for (const r of renamed) {
       const toPhase = findStageBySlug(r.to)?.phase;
       const folders: [string, string][] = [[`.aidlc-sensors/${r.from}`, `.aidlc-sensors/${r.to}`]];
       if (toPhase) folders.unshift([`${r.fromPhase}/${r.from}`, `${toPhase}/${r.to}`]);
       for (const [from, to] of folders) {
-        const label = moveRecordFolder(recordDir, from, to);
-        if (label) moved.push(label);
+        const result = moveRecordFolder(recordDir, from, to);
+        if (result === "failed") failed.push({ from, to });
+        else if (result !== null) {
+          renames.push(result);
+          moved.push(`${from} to ${to}`);
+        }
       }
     }
     const left: string[] = [];
-    for (const step of steps) {
+    for (const step of failed.length > 0 ? [] : steps) {
       const result = step.folders?.(recordDir);
       if (!result) continue;
+      failed.push(...result.failed);
       moved.push(...result.moved);
       left.push(...result.left);
+    }
+    if (failed.length > 0) {
+      putFolderMovesBack(renames);
+      heldBack = heldBackLine(projectDir, recordDir, failed);
+      return content;
     }
     withAuditLock(projectDir, () => {
       writeStateFile(projectDir, text, intent, space);
@@ -179,7 +252,7 @@ export function bringStateUpToDate(
         "Stages added": added.join(", "),
         Moved: moved.length > 0 ? moved.join(", ") : "none",
         "Left behind": left.length > 0 ? left.join(", ") : "none",
-        Original: basename(kept),
+        Original: kept,
       }, projectDir, intent, space);
     }, intent, space);
   } catch {

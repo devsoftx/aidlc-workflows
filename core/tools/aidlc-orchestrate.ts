@@ -708,6 +708,7 @@ import { inspectRequiredArtifactInstances } from "./aidlc-artifact-resolution.ts
 import { unitMemoryPath, unitStageMemoryPath } from "./aidlc-stage-diary.ts";
 import {
   bringStateUpToDate,
+  heldBackBringUp,
   newerStateRelease,
   newerStateStep,
   newerWorkInstall,
@@ -12350,6 +12351,11 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
       emit(newerWorkOffer(resolveProjectDir(projectDir), newer, args));
       return;
     }
+    const held = heldBackBringUp();
+    if (held !== null) {
+      emit(tellAndStop(held));
+      return;
+    }
     if (flags.claim && flags.release) {
       emit(errorDirective("Cannot combine --claim and --release."));
       return;
@@ -12890,6 +12896,14 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
     const newer = newerStateVersion(stateContent);
     if (newer !== null) {
       emit(newerWorkOffer(pd, newer, args, flags.newIntent === true));
+      return;
+    }
+    // The read above could not move a record folder to the current layout, so
+    // nothing is routed against folders that did not move: the person hears
+    // which one, and the next step makes the whole move again.
+    const held = heldBackBringUp();
+    if (held !== null) {
+      emit(tellAndStop(held));
       return;
     }
     const stale = staleStateVersionError(stateContent);
@@ -22251,6 +22265,11 @@ function handleReport(args: string[], projectDir: string | undefined): void {
       const newer = newerStateVersion(sc);
       if (newer !== null) {
         emit(newerWorkOffer(pd, newer, []));
+        return;
+      }
+      const held = heldBackBringUp();
+      if (held !== null) {
+        emit(tellAndStop(held));
         return;
       }
       const stale = staleStateVersionError(sc);

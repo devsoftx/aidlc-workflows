@@ -21735,7 +21735,7 @@ export const SOURCE_FINGERPRINT_HARD_EXCLUDED_DIRS: ReadonlySet<string> = new Se
 // source keeps a sanctioned escape. The same goes for the other files an OS or
 // editor drops beside source (Windows `Thumbs.db` and `desktop.ini`, vim swap
 // files, `~` backups): nobody authored them, so a stray one is not drift.
-const SOURCE_FINGERPRINT_HARD_EXCLUDED_FILES = new Set<string>([
+export const SOURCE_FINGERPRINT_HARD_EXCLUDED_FILES: ReadonlySet<string> = new Set<string>([
   ".DS_Store",
   ".coverage",
   "Thumbs.db",

@@ -8,8 +8,8 @@
 // into before the engine's first read (the sync hook sets Lifecycle Phase), and
 // one a pre-release seven-phase build labelled 8. Doctor reads
 // fivePhaseFolderPlan for what the move left behind, so it names the same move.
-import { type Dirent, lstatSync, mkdirSync, readdirSync, rmdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { type Dirent, lstatSync, mkdirSync, readdirSync, rmdirSync, unlinkSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import {
   FIVE_PHASE_FOLDERS,
   FIVE_PHASE_STAGE_FOLDER,
@@ -22,6 +22,7 @@ import {
   loadStageGraph,
   loadStageGraphAll,
   PHASES,
+  SOURCE_FINGERPRINT_HARD_EXCLUDED_FILES,
   type StageEntry,
 } from "./aidlc-lib.ts";
 import { isUnitLoopStage } from "./aidlc-phases.ts";
@@ -176,6 +177,49 @@ function isDirectory(path: string): boolean {
   }
 }
 
+// A file an OS or a tool drops in any folder the person browses (Finder's
+// .DS_Store, Windows' Thumbs.db and desktop.ini): no one's work, so it is never
+// placed or named, and it never keeps an old folder.
+function isByproduct(entry: { name: string; isFile(): boolean }): boolean {
+  return entry.isFile() && SOURCE_FINGERPRINT_HARD_EXCLUDED_FILES.has(entry.name);
+}
+
+function isByproductAt(path: string): boolean {
+  try {
+    const stat = lstatSync(path);
+    return isByproduct({ name: basename(path), isFile: () => stat.isFile() });
+  } catch {
+    return false;
+  }
+}
+
+// Whether a folder holds nothing but byproducts, at any depth (an empty one
+// included); one it cannot read holds something.
+function holdsOnlyByproducts(dir: string): boolean {
+  let found: Dirent[];
+  try {
+    found = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  return found.every((entry) => isByproduct(entry) || (entry.isDirectory() && holdsOnlyByproducts(join(dir, entry.name))));
+}
+
+// Removes a folder that holds nothing but byproducts, with them; any other is left as it is.
+function clearIfOnlyByproducts(dir: string): void {
+  if (!holdsOnlyByproducts(dir)) return;
+  try {
+    for (const entry of entries(dir)) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) clearIfOnlyByproducts(path);
+      else unlinkSync(path);
+    }
+    rmdirSync(dir);
+  } catch {
+    // Held open, or already gone: it stays, and holds nothing anyone reads.
+  }
+}
+
 function isSevenPhase(phase: string): boolean {
   return (PHASES as readonly string[]).includes(phase) && !(FIVE_PHASE_FOLDERS as readonly string[]).includes(phase);
 }
@@ -202,33 +246,39 @@ function unitStageFolder(slug: string, graph: ReadonlyMap<string, StageEntry>): 
 /**
  * What the 8 to 10 step moves out of a record's five-phase folders, and what
  * no stage claims there (`unplaced`, record-relative). Under construction/, a
- * folder no stage is named after that holds a per-Unit stage's folder is a
- * Unit: each of its stage folders moves to `<phase>/<unit>/<slug>`, so one Unit
- * splits across design/ and build/.
+ * folder that holds a per-Unit stage's folder is a Unit, whatever its name
+ * (2.11.4 let a Unit take any name, a stage's included, and
+ * sevenPhaseRecordPath reads such a path as the Unit's): each of its stage
+ * folders moves to `<phase>/<unit>/<slug>`, so one Unit splits across design/
+ * and build/. Any other folder is a stage's when the frozen table keeps that
+ * stage in this five-phase folder, or the graph knows it (a plugin's).
+ * Byproducts, and folders holding nothing else, are neither moved nor named.
  */
 export function fivePhaseFolderPlan(recordDir: string): { moves: FolderMove[]; unplaced: string[] } {
   const graph = new Map(loadStageGraphAll().map((stage) => [stage.slug, stage]));
   const moves: FolderMove[] = [];
   const unplaced: string[] = [];
+  const nobodys = (dir: string, entry: Dirent) =>
+    isByproduct(entry) || (entry.isDirectory() && holdsOnlyByproducts(join(dir, entry.name)));
   for (const old of FIVE_PHASE_FOLDERS) {
-    for (const entry of entries(join(recordDir, old))) {
+    const phaseDir = join(recordDir, old);
+    for (const entry of entries(phaseDir)) {
+      if (nobodys(phaseDir, entry)) continue;
       const from = `${old}/${entry.name}`;
+      const unitDir = join(phaseDir, entry.name);
+      const unit = old === "construction" && entry.isDirectory() ? entries(unitDir) : [];
+      if (unit.some((child) => child.isDirectory() && unitStageFolder(child.name, graph) !== null)) {
+        for (const child of unit) {
+          if (nobodys(unitDir, child)) continue;
+          const phase = child.isDirectory() ? unitStageFolder(child.name, graph) : null;
+          if (phase === null) unplaced.push(`${from}/${child.name}`);
+          else moves.push({ from: `${from}/${child.name}`, to: `${phase}/${entry.name}/${child.name}` });
+        }
+        continue;
+      }
       const target = entry.isDirectory() ? stageFolder(entry.name, old, graph) : null;
-      if (target !== null) {
-        moves.push({ from, to: `${target}/${entry.name}` });
-        continue;
-      }
-      const unit = old === "construction" && entry.isDirectory() && !Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, entry.name) &&
-        !graph.has(entry.name) ? entries(join(recordDir, old, entry.name)) : [];
-      if (!unit.some((child) => child.isDirectory() && unitStageFolder(child.name, graph) !== null)) {
-        unplaced.push(from);
-        continue;
-      }
-      for (const child of unit) {
-        const phase = child.isDirectory() ? unitStageFolder(child.name, graph) : null;
-        if (phase === null) unplaced.push(`${from}/${child.name}`);
-        else moves.push({ from: `${from}/${child.name}`, to: `${phase}/${entry.name}/${child.name}` });
-      }
+      if (target !== null) moves.push({ from, to: `${target}/${entry.name}` });
+      else unplaced.push(from);
     }
   }
   return { moves, unplaced };
@@ -242,52 +292,133 @@ function removeIfEmpty(dir: string): void {
   }
 }
 
-// Moves `source` to `target`, or into it entry by entry when it is a folder
-// already there, never over anything at the target. What could not move is
-// returned by its record-relative `label`.
-function mergeFolder(source: string, target: string, label: string): { moved: boolean; left: string[] } {
-  if (!pathExists(target)) {
-    try {
-      mkdirSync(dirname(target), { recursive: true });
-      renameRetryingOnWindows(source, target);
-      return { moved: true, left: [] };
-    } catch {
-      return { moved: false, left: [label] };
+/** One rename a move made, with the first folder it created for the target (mkdirSync's), to put it back. */
+export interface FolderRename {
+  source: string;
+  target: string;
+  made: string | undefined;
+}
+
+/**
+ * The one rename the bring-up's folder moves make: `source` to a `target`
+ * not there yet, its parent folders made first and removed again when the
+ * file system refuses the move (a folder held open, one that cannot be
+ * written). Returns the rename made, or null on that refusal.
+ * AIDLC_TEST_FOLDER_MOVE_FAIL (with AIDLC_TEST=1) names the record-relative
+ * `label` of a move refused the way a folder held open is on Windows, for the
+ * tests of a move that cannot finish.
+ */
+export function renameRecordFolder(source: string, target: string, label: string): FolderRename | null {
+  let made: string | undefined;
+  try {
+    made = mkdirSync(dirname(target), { recursive: true });
+    if (process.env.AIDLC_TEST === "1" && process.env.AIDLC_TEST_FOLDER_MOVE_FAIL === label) {
+      throw Object.assign(new Error(`EBUSY: resource busy or locked, rename '${source}'`), { code: "EBUSY" });
     }
+    renameRetryingOnWindows(source, target);
+    return { source, target, made };
+  } catch {
+    if (made !== undefined) removeEmptyUpTo(dirname(target), made);
+    return null;
   }
-  if (!isDirectory(source) || !isDirectory(target)) return { moved: false, left: [label] };
+}
+
+// One attempt's moves: each rename made (to undo them all when one fails),
+// what a folder already at the target kept back, and what failed to move.
+interface MoveRun {
+  renames: FolderRename[];
+  left: string[];
+  failed: FolderMove[];
+}
+
+// Moves `source` to `target`, or into it entry by entry when it is a folder
+// already there, never over anything at the target: a conflict is kept where
+// it is and named by its record-relative `from` (a byproduct only stays). A
+// move the file system refuses (a folder held open, one that cannot be
+// written) is a failure, never a conflict.
+function mergeFolder(source: string, target: string, move: FolderMove, run: MoveRun): boolean {
+  if (!pathExists(target)) {
+    const renamed = renameRecordFolder(source, target, move.from);
+    if (renamed === null) run.failed.push(move);
+    else run.renames.push(renamed);
+    return renamed !== null;
+  }
+  if (!isDirectory(source) || !isDirectory(target)) {
+    if (!isByproductAt(source)) run.left.push(move.from);
+    return false;
+  }
+  let inside: Dirent[];
+  try {
+    inside = readdirSync(source, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    run.failed.push(move);
+    return false;
+  }
   let moved = false;
-  const left: string[] = [];
-  for (const entry of entries(source)) {
-    const merged = mergeFolder(join(source, entry.name), join(target, entry.name), `${label}/${entry.name}`);
-    moved ||= merged.moved;
-    left.push(...merged.left);
+  for (const entry of inside) {
+    const child = { from: `${move.from}/${entry.name}`, to: `${move.to}/${entry.name}` };
+    moved = mergeFolder(join(source, entry.name), join(target, entry.name), child, run) || moved;
   }
   removeIfEmpty(source);
-  return { moved, left };
+  return moved;
+}
+
+// Removes `dir` and its parents up to `top` while each is empty: the folders
+// one move made for its target.
+function removeEmptyUpTo(dir: string, top: string): void {
+  for (let at = dir; at.length >= top.length; at = dirname(at)) {
+    removeIfEmpty(at);
+    if (at === top) return;
+  }
+}
+
+/**
+ * Puts each rename back, last first, with the folders it made removed, for a
+ * bring-up the file system held back. One that cannot go back stays where the
+ * seven-phase layout reads it, which the next attempt leaves as it is.
+ */
+export function putFolderMovesBack(renames: readonly FolderRename[]): void {
+  for (const { source, target, made } of [...renames].reverse()) {
+    try {
+      mkdirSync(dirname(source), { recursive: true });
+      renameRetryingOnWindows(target, source);
+    } catch {
+      continue;
+    }
+    if (made !== undefined) removeEmptyUpTo(dirname(target), made);
+  }
 }
 
 /**
  * Moves each stage folder out of the record's five-phase folders by
- * fivePhaseFolderPlan, then removes the old folders the moves left empty (a
- * Unit's, then the phase's own; never one that still holds something). Returns
- * the moves made (`<from> to <to>`) and every record-relative path left behind.
+ * fivePhaseFolderPlan, then removes the old folders the moves left empty or
+ * holding only byproducts (a Unit's stage folders, the Unit's, then the
+ * phase's own; never one that still holds anything else). Returns the moves
+ * made (`<from> to <to>`) and every record-relative path left behind. When the
+ * file system refuses a move, every move this attempt made is put back and
+ * `failed` names what could not move, so the record stays as 2.11.4 left it,
+ * the next attempt makes the whole move again and its one audit row lists it.
  */
-export function moveFivePhaseFolders(recordDir: string): { moved: string[]; left: string[] } {
+export function moveFivePhaseFolders(recordDir: string): { moved: string[]; left: string[]; failed: FolderMove[] } {
   const plan = fivePhaseFolderPlan(recordDir);
+  const run: MoveRun = { renames: [], left: [...plan.unplaced], failed: [] };
   const moved: string[] = [];
-  const left = [...plan.unplaced];
-  for (const { from, to } of plan.moves) {
-    const merged = mergeFolder(join(recordDir, ...from.split("/")), join(recordDir, ...to.split("/")), from);
-    if (merged.moved) moved.push(`${from} to ${to}`);
-    left.push(...merged.left);
+  for (const move of plan.moves) {
+    if (mergeFolder(join(recordDir, ...move.from.split("/")), join(recordDir, ...move.to.split("/")), move, run)) {
+      moved.push(`${move.from} to ${move.to}`);
+    }
   }
+  if (run.failed.length > 0) {
+    putFolderMovesBack(run.renames);
+    return { moved: [], left: [], failed: run.failed };
+  }
+  for (const { from } of plan.moves) clearIfOnlyByproducts(join(recordDir, ...from.split("/")));
   for (const old of FIVE_PHASE_FOLDERS) {
     const dir = join(recordDir, old);
-    for (const entry of entries(dir)) if (entry.isDirectory()) removeIfEmpty(join(dir, entry.name));
-    removeIfEmpty(dir);
+    for (const entry of entries(dir)) if (entry.isDirectory()) clearIfOnlyByproducts(join(dir, entry.name));
+    clearIfOnlyByproducts(dir);
   }
-  return { moved, left: left.filter((path) => pathExists(join(recordDir, ...path.split("/")))) };
+  return { moved, left: run.left.filter((path) => pathExists(join(recordDir, ...path.split("/")))), failed: [] };
 }
 
 /**

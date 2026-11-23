@@ -8,7 +8,9 @@
 // them: the real records those releases wrote (tests/fixtures/state-v7 and
 // tests/fixtures/state-v8) resume where they stood, approvals kept, every
 // document moved to its seven-phase folder, the original kept beside it, one
-// audit row, nothing said; doctor and status show it on purpose. A version no
+// audit row, nothing said; doctor and status show it on purpose. A folder the
+// file system will not let move holds the whole bring-up back, said once, until
+// the next step can make it; a kept original is never overwritten. A version no
 // step brings up (below 7, 9 from upstream 2.12 team work, newer, unparseable)
 // is still refused by `next`, `report` and doctor alike, without the old
 // archive-and-start-again advice.
@@ -20,8 +22,8 @@ import {
 } from "../harness/test-budget.ts";
 import { describe, expect, test, afterEach, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import {
   AIDLC_SRC,
   cleanupTestProject,
@@ -517,8 +519,9 @@ describe("t282 a v7 record is brought up in place and resumes", () => {
 // Real records 2.11.4 wrote (State Version 8, five phases), made by driving
 // that release's own engine and state tool, with the record folder named as
 // the test project's: an open gate in Inception, a solo Unit walk partway
-// through its first Unit, and work in Operation. Each holds its stage
-// documents, its review records and its audit as 2.11.4 left them.
+// through its first Unit, the same walk with its Units named like stages
+// (code-review, then incident-response), and work in Operation. Each holds its
+// stage documents, its review records and its audit as 2.11.4 left them.
 const V8 = join(REPO_ROOT, "tests", "fixtures", "state-v8");
 const SECURE = ["code-review", "security-review", "conformance-review"];
 const FIVE_PHASE_FOLDERS = ["ideation", "inception", "construction", "operation"];
@@ -570,6 +573,34 @@ function expectDocumentsMoved(record: string, before: Map<string, string>): void
 function expectSevenPhaseHeadings(state: string): void {
   const headings = [...state.matchAll(/^### (.*) PHASE$/gm)].map((m) => m[1]);
   expect(headings).toEqual(["INITIALIZATION", "DISCOVER", "DESIGN", "BUILD", "TEST", "SECURE", "DEPLOY", "OPERATE"]);
+}
+
+// Every STATE_UPGRADED row, in the order the audit holds them.
+function upgradeRowBlocks(proj: string): string[] {
+  const dir = seededAuditDir(proj);
+  return readdirSync(dir).sort().flatMap((f) => readFileSync(join(dir, f), "utf-8").split(/^(?=## )/m))
+    .filter((block) => /^\*\*Event\*\*: STATE_UPGRADED$/m.test(block));
+}
+
+// Puts a brought-up record back for 2.11.4 by hand, as the guide says: the
+// kept copy back as the state (copied, as the guide once said, or moved), and
+// every folder the latest row lists under Moved back where it came from.
+function putBackByHand(proj: string, record: string, kept: "copy" | "move"): void {
+  const moved = /^\*\*Moved\*\*: (.*)$/m.exec(upgradeRowBlocks(proj).at(-1) ?? "")?.[1] ?? "";
+  for (const move of moved.split(", ")) {
+    const [from, to] = move.split(" to ");
+    mkdirSync(dirname(join(record, ...from.split("/"))), { recursive: true });
+    renameSync(join(record, ...to.split("/")), join(record, ...from.split("/")));
+  }
+  for (const folder of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
+    const dir = join(record, folder);
+    if (existsSync(dir) && !readdirSync(dir, { recursive: true, withFileTypes: true }).some((entry) => entry.isFile())) {
+      rmSync(dir, { recursive: true });
+    }
+  }
+  const original = join(record, "aidlc-state.v8.md");
+  if (kept === "copy") cpSync(original, seededStateFile(proj));
+  else renameSync(original, seededStateFile(proj));
 }
 
 function phaseProgress(state: string): string[] {
@@ -678,8 +709,9 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     // the project's own folder name, outside the record, so a record copied
     // into another project cannot carry them and only that stage reads as
     // changed here, as it would on 2.11.4.
-    expect(r.directive?.stage_validity?.directly_stale).toEqual(["reverse-engineering"]);
-    expect(r.directive?.stage_validity?.needs_revalidation).toEqual([]);
+    const validity = r.directive?.stage_validity as { directly_stale?: string[]; needs_revalidation?: string[] } | undefined;
+    expect(validity?.directly_stale).toEqual(["reverse-engineering"]);
+    expect(validity?.needs_revalidation).toEqual([]);
     const now = readFileSync(seededStateFile(proj), "utf-8");
     expect(now).toMatch(/^- \*\*Lifecycle Phase\*\*: OPERATE$/m);
     expect(now).toMatch(/^### OPERATE PHASE\n- \[-\] observability-setup \u2014 EXECUTE$/m);
@@ -753,6 +785,128 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     expect(existsSync(join(record, "aidlc-state.v8.md"))).toBe(false);
     expect(stageDocuments(record)).toEqual(documents);
     expect(upgradeRows(proj)).toBe(0);
+  });
+
+  test("a Unit named like a stage is still a Unit: its folders split into design/<unit>/ and build/<unit>/, and the walk carries on at its Code Generation", () => {
+    // 2.11.4 lets a Unit take a stage's name: here code-review (a stage it did
+    // not ship), with incident-response (one of its Operation stages) next.
+    const { proj, record, documents } = v8Project("units-named-like-stages");
+    expect(documents.has("construction/code-review/code-generation/code-generation-plan.md")).toBe(true);
+    const r = v8Next(proj);
+    // 2.11.4 routes this record to the code-review Unit's Code Generation; so does this one.
+    expect(r.directive?.kind).toBe("run-stage");
+    expect(r.directive?.stage).toBe("code-generation");
+    expect(r.directive?.unit).toBe("code-review");
+    expect(r.directive?.stage_validity).toBeUndefined();
+    expectDocumentsMoved(record, documents);
+    expect(existsSync(join(record, "design", "code-review", "functional-design", "functional-spec.md"))).toBe(true);
+    expect(existsSync(join(record, "build", "code-review", "code-generation", "code-generation-plan.md"))).toBe(true);
+    expect(existsSync(join(record, "secure"))).toBe(false);
+    const row = upgradeRow(proj);
+    expect(row).toMatch(/construction\/code-review\/functional-design to design\/code-review\/functional-design/);
+    expect(row).toMatch(/construction\/code-review\/code-generation to build\/code-review\/code-generation/);
+    expect(row).toMatch(/^\*\*Left behind\*\*: none$/m);
+  });
+
+  test("a folder the file system will not let move holds the bring-up back: nothing asked or routed, the folder named once, and the next step makes the whole move", () => {
+    const { proj, state, record, documents } = v8Project("inception-gate");
+    const held = v8Next(proj, [], { AIDLC_TEST: "1", AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/requirements-analysis" });
+    // One line for the person, and the turn ends: no stage, gate or question.
+    expect(held.directive?.kind).toBe("print");
+    const message = String(held.directive?.message ?? "");
+    expect(message).toMatch(/^Tell the person in one line: "AI-DLC could not move `aidlc\/spaces\/default\/intents\/[^/`]+\/inception\/requirements-analysis` to `aidlc\/spaces\/default\/intents\/[^/`]+\/design\/requirements-analysis`, where this release keeps it: /);
+    expect(message).toContain("Your work is as it was.");
+    expect(message).toContain("then ask me to carry on");
+    expect(message).not.toMatch(/State Version|STATE_UPGRADED|EBUSY|stage_validity/);
+    // The record is as 2.11.4 left it: still State Version 8, every document where it was, no audit row.
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
+    expect(stageDocuments(record)).toEqual(documents);
+    for (const folder of ["discover", "design"]) expect(existsSync(join(record, folder)), folder).toBe(false);
+    expect(upgradeRows(proj)).toBe(0);
+    // Once nothing holds it, the next step brings the record up whole and shows the open gate, as 2.11.4 does.
+    const r = v8Next(proj);
+    expect(r.directive?.kind).toBe("run-stage");
+    expect(r.directive?.stage).toBe("requirements-analysis");
+    expect(r.directive?.gate).toBe(true);
+    expect(r.directive?.stage_validity).toBeUndefined();
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toMatch(/^- \*\*State Version\*\*: 10$/m);
+    expectDocumentsMoved(record, documents);
+    expect(readFileSync(join(record, "aidlc-state.v8.md"), "utf-8")).toBe(state);
+    // Its one row lists every move, the ones the held attempt had made too.
+    const row = upgradeRow(proj);
+    const moves = [
+      ...["approval-handoff", "feasibility", "intent-capture", "market-research", "rough-mockups", "scope-definition", "team-formation"]
+        .map((slug) => `ideation/${slug} to discover/${slug}`),
+      "inception/practices-discovery to design/practices-discovery",
+      "inception/requirements-analysis to design/requirements-analysis",
+    ];
+    expect(row).toContain(`\n**Moved**: ${moves.join(", ")}\n`);
+    expect(row).toMatch(/^\*\*Left behind\*\*: none$/m);
+  });
+
+  test("what Finder and Explorer leave in the old folders is no one's work: the old folders go, and doctor says nothing of it", () => {
+    const { proj, record } = v8Project("unit-walk");
+    const dropped = [
+      "ideation/.DS_Store", "inception/.DS_Store", "inception/Thumbs.db", "construction/.DS_Store",
+      "construction/store/.DS_Store", "construction/store/desktop.ini", "ideation/intent-capture/.DS_Store",
+    ];
+    for (const path of dropped) writeFileSync(join(record, ...path.split("/")), "written by the file browser\n");
+    // The one inside a stage folder moves with it; the rest go with the old folders.
+    const inStage = "ideation/intent-capture/.DS_Store";
+    const documents = new Map([...stageDocuments(record)].filter(([path]) => path === inStage || !dropped.includes(path)));
+    const r = v8Next(proj);
+    expect(r.directive?.stage).toBe("code-generation");
+    expect(r.directive?.unit).toBe("store");
+    expectDocumentsMoved(record, documents);
+    expect(existsSync(join(record, "discover", "intent-capture", ".DS_Store"))).toBe(true);
+    expect(upgradeRow(proj)).toMatch(/^\*\*Left behind\*\*: none$/m);
+    const doctor = spawnSync(BUN, [UTIL, "doctor", "--verbose", "--project-dir", proj], {
+      timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+    });
+    expect(`${doctor.stdout}`).toMatch(/State Version: 10 \(brought up from 8 on /);
+    expect(`${doctor.stdout}${doctor.stderr}`).not.toMatch(/Left where an earlier AI-DLC kept it|\.DS_Store|Thumbs\.db|desktop\.ini/);
+  });
+
+  test("work put back on 2.11.4, carried on there and brought up again keeps that original under its own name, and doctor and status name it", () => {
+    const { proj, state, record } = v8Project("inception-gate");
+    v8Next(proj);
+    // Put back as the guide once said: the kept copy copied over the state, every folder moved back.
+    putBackByHand(proj, record, "copy");
+    // On 2.11.4 the person approves Requirements Analysis.
+    const carried = readFileSync(seededStateFile(proj), "utf-8")
+      .replace("- [?] requirements-analysis — EXECUTE", "- [x] requirements-analysis — EXECUTE");
+    expect(carried).not.toBe(state);
+    writeFileSync(seededStateFile(proj), carried, "utf-8");
+    v8Next(proj);
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toMatch(/^- \[x\] requirements-analysis — EXECUTE$/m);
+    // The first original is never overwritten, and the second is kept beside it.
+    expect(readFileSync(join(record, "aidlc-state.v8.md"), "utf-8")).toBe(state);
+    expect(readFileSync(join(record, "aidlc-state.v8.2.md"), "utf-8")).toBe(carried);
+    const rows = upgradeRowBlocks(proj);
+    expect(rows.length).toBe(2);
+    expect(rows[1]).toMatch(/^\*\*Original\*\*: aidlc-state\.v8\.2\.md$/m);
+    const doctor = spawnSync(BUN, [UTIL, "doctor", "--verbose", "--project-dir", proj], {
+      timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+    });
+    expect(`${doctor.stdout}`).toMatch(/State Version: 10 \(brought up from 8 on \d{4}-\d{2}-\d{2}; the record as it was is aidlc-state\.v8\.2\.md\)/);
+    const status = spawnSync(BUN, [UTIL, "status", "--project-dir", proj], {
+      timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+    });
+    expect(`${status.stdout}`).toMatch(/^Brought up: +from an older AI-DLC on \d{4}-\d{2}-\d{2} \(the record as it was: aidlc-state\.v8\.2\.md\)$/m);
+  });
+
+  test("work put back the way the guide says (the kept copy moved back) is kept under the plain name when it is brought up again", () => {
+    const { proj, record } = v8Project("inception-gate");
+    v8Next(proj);
+    putBackByHand(proj, record, "move");
+    expect(existsSync(join(record, "aidlc-state.v8.md"))).toBe(false);
+    const carried = readFileSync(seededStateFile(proj), "utf-8")
+      .replace("- [?] requirements-analysis — EXECUTE", "- [x] requirements-analysis — EXECUTE");
+    writeFileSync(seededStateFile(proj), carried, "utf-8");
+    v8Next(proj);
+    expect(readFileSync(join(record, "aidlc-state.v8.md"), "utf-8")).toBe(carried);
+    expect(existsSync(join(record, "aidlc-state.v8.2.md"))).toBe(false);
+    expect(upgradeRowBlocks(proj).at(-1)).toMatch(/^\*\*Original\*\*: aidlc-state\.v8\.md$/m);
   });
 
   test("a v9 record (upstream AI-DLC 2.12 team work) is never brought up or claimed: next, next --claim and unit claim name the 2.12 step", () => {
