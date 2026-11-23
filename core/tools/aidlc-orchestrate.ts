@@ -80,6 +80,7 @@
 
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
 import { sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
+import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
 import {
   createHash,
   randomBytes,
@@ -23772,6 +23773,25 @@ function answerAsNext(
   handleNext(args, projectDir);
 }
 
+// Test-only: holds a `continue` after it has read the cursor it checks its
+// receipt against and before it can commit, so a test can make two calls a
+// real race whatever the gap between their process starts. A call that reads
+// after another's commit is a replay, which the cursor answers as a bare `next`
+// by design (commit order, not start time, decides).
+function waitAtContinueReadBarrier(): void {
+  const barrier = process.env.AIDLC_TEST_CONTINUE_READ_BARRIER?.trim();
+  if (!barrier) return;
+  writeFileSync(`${barrier}.read`, "read\n", "utf-8");
+  const waitCell = new Int32Array(new SharedArrayBuffer(4));
+  const deadline = Date.now() + DEFAULT_SUBPROCESS_TIMEOUT_MS;
+  while (!existsSync(`${barrier}.release`)) {
+    if (Date.now() >= deadline) {
+      throw new Error("timed out waiting at the continue read barrier");
+    }
+    Atomics.wait(waitCell, 0, 0, 10);
+  }
+}
+
 // Resume deterministic rule delivery. The conductor presents the 8-character
 // receipt printed at the top of the part it just applied; the engine finds the
 // matching payload on the active-directive marker and rebuilds the next part
@@ -23818,6 +23838,7 @@ function handleContinue(line: string[], projectDir: string | undefined): void {
       : args.length === 1 && receipt.length > 0
         ? readSteeringCursor(pd, receipt)
         : null;
+  waitAtContinueReadBarrier();
   const node = payload ? nodeForSlug(payload.s) : undefined;
   if (
     !payload ||
