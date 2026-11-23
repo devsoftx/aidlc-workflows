@@ -249,30 +249,49 @@ let heldBack: string | null = null;
 
 /**
  * The person's one line when the bring-up the last state read tried could
- * not move a record folder (one held open, or one this user cannot change),
- * naming the folders and the step that frees them (heldBackLine); null
- * otherwise. The record is then as the earlier release left it, still at its
- * State Version, and the next read makes the whole bring-up again; next (a
- * claim or release too) and report say the line and stop, so nothing is asked
- * and no stage is routed against folders that did not move.
+ * not move a record folder (one a program holds open, one this user cannot
+ * change, a mount in the way, or a full drive), naming the folders and the
+ * step that frees them (heldBackLine); null otherwise. The record is then as
+ * the earlier release left it, still at its State Version, and the next read
+ * makes the whole bring-up again; next (a claim or release too) and report say
+ * the line and stop, so nothing is asked and no stage is routed against
+ * folders that did not move.
  */
 export function heldBackBringUp(): string | null {
   return heldBack;
 }
 
-// Why the file system refused a folder move, as the person can act on it. On
-// Linux and macOS an open folder never stops a rename, so a refusal there is a
-// folder this user cannot change (EACCES, EPERM, EROFS), apart from EBUSY,
-// which a folder in use as a mount point gives. Windows refuses a folder held
-// open with EBUSY or EPERM, and one the user may not change with EPERM or
-// EACCES, so those cannot be told apart there. EROFS is a read-only drive
-// everywhere.
-type Refusal = "held open" | "cannot change" | "either";
+// What may have kept the file system from making a folder move, each with a
+// step that frees it. Windows refuses a folder held open with EBUSY or EPERM,
+// and one the user may not change with EPERM or EACCES. A Linux or macOS drive
+// of its own never refuses an open folder, but a Windows drive under WSL
+// (/mnt/c) and a network share do, as EACCES, EPERM or EBUSY. So a folder this
+// user cannot change is said alone only when the file system says the drive
+// is read-only (EROFS) or the access check finds that folder
+// (unwritableFolderFor), which it cannot on Windows; any other refusal names
+// both, so the step that works is always named. Away from Windows, EBUSY is
+// also a folder something is mounted on, and EXDEV one on another mount than
+// where it goes, on any platform; a mount cannot be renamed away, and
+// unmounting it would leave what it holds behind, so the step is to move
+// what is in it by hand. ENOSPC and EDQUOT are a full drive.
+type Cause = "open" | "cannot change" | "mounted" | "full";
 
-function refusalOf(code: string | undefined, platform: NodeJS.Platform): Refusal {
-  if (code === "EBUSY") return "held open";
-  if (code === "EROFS" || platform !== "win32") return "cannot change";
-  return "either";
+// The order the line names them in: an open folder, the likeliest, first.
+const CAUSES: readonly Cause[] = ["open", "cannot change", "mounted", "full"];
+
+function causesOf(recordDir: string, move: FolderMove, platform: NodeJS.Platform): Cause[] {
+  switch (move.code) {
+    case "EROFS":
+      return ["cannot change"];
+    case "ENOSPC":
+    case "EDQUOT":
+      return ["full"];
+    case "EXDEV":
+      return ["mounted"];
+    case "EBUSY":
+      return platform === "win32" ? ["open"] : ["open", "mounted"];
+  }
+  return unwritableFolderFor(recordDir, move, platform) === null ? ["open", "cannot change"] : ["cannot change"];
 }
 
 // A record-relative path as the person finds it from the project, `/`-separated.
@@ -282,6 +301,11 @@ function projectPath(projectDir: string, recordDir: string, path: string): strin
 
 function listed(names: readonly string[]): string {
   return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+// Clauses that are each a possible reason: "a, or b", "a, b, or c".
+function eitherOf(clauses: readonly string[]): string {
+  return clauses.length === 1 ? clauses[0] : `${clauses.slice(0, -1).join(", ")}, or ${clauses.at(-1)}`;
 }
 
 // The folders this user cannot change, as shown, why that may be, and the
@@ -300,10 +324,12 @@ function cannotChange(folders: readonly string[]) {
 
 /**
  * The held line for `failed`, the moves the file system refused, on
- * `platform`: a folder this user cannot change is named (the one the access
- * check finds, else the move's own) with the write access that frees it; a
- * folder held open with what to close; and where Windows cannot tell the two
- * apart, both, with a step for each.
+ * `platform`. A folder this user cannot change, and nothing else, is named as
+ * the access check finds it (else the move's own) with the write access that
+ * frees it. Otherwise the line names the move and every reason the refusal
+ * may have, with a step for each: what to close when a program may have the
+ * folder open, then, if nothing has, the write access, the move by hand or
+ * the space that frees it.
  */
 export function heldBackLine(
   projectDir: string,
@@ -311,11 +337,11 @@ export function heldBackLine(
   failed: readonly FolderMove[],
   platform: NodeJS.Platform = process.platform,
 ): string {
-  const kinds = new Set(failed.map((move) => refusalOf(move.code, platform)));
-  const kind: Refusal = kinds.size === 1 ? [...kinds][0] : "either";
+  const found = new Set(failed.flatMap((move) => causesOf(recordDir, move, platform)));
+  const causes = CAUSES.filter((cause) => found.has(cause));
   const shown = (path: string) => `\`${projectPath(projectDir, recordDir, path)}\``;
   const carryOn = "ask me to carry on, and AI-DLC finishes moving your work and picks up where you were.";
-  if (kind === "cannot change") {
+  if (causes.length === 1 && causes[0] === "cannot change") {
     const folders = [...new Set(failed.map((move) => unwritableFolderFor(recordDir, move, platform) ?? move.from))];
     const words = cannotChange(folders.map(shown));
     return `AI-DLC cannot change ${words.folders} (${words.why}), so it could not move your work to where this ` +
@@ -328,15 +354,34 @@ export function heldBackLine(
     : `${listed(names)} to where this release keeps them`;
   const those = one ? "that folder" : "those folders";
   const it = one ? "it" : "them";
-  const close = `Close what has ${it} open (a dev server or test watcher still running over the project, a ` +
-    "terminal or an editor inside, a file sync or backup app)";
-  if (kind === "held open") {
-    return `AI-DLC could not move ${where}: a program on this computer has ${those} open. Your work is as it was. ` +
-      `${close}, then ${carryOn}`;
-  }
-  return `AI-DLC could not move ${where}: a program on this computer has ${those} open, or your user cannot ` +
-    `change ${it}. Your work is as it was. ${close}; if nothing has ${it} open, give your user write access to ` +
-    `${it}. Then ${carryOn}`;
+  const why: Record<Cause, string> = {
+    open: `a program on this computer has ${those} open`,
+    "cannot change": `your user cannot change ${it}`,
+    mounted: "something is mounted there (a container's volume or a network drive)",
+    full: "the drive is full",
+  };
+  const step: Record<Cause, string> = {
+    open: `close what has ${it} open (a dev server or test watcher still running over the project, a terminal or ` +
+      "an editor inside, a file sync or backup app)",
+    "cannot change": `give your user write access to ${it}`,
+    mounted: one
+      ? `move what is in it to ${shown(failed[0].to)} yourself`
+      : "move what is in each to where this release keeps it yourself " +
+        `(${listed(failed.map((move) => `${shown(move.from)} to ${shown(move.to)}`))})`,
+    full: "free some space on the drive",
+  };
+  const [first, ...rest] = causes;
+  const steps = rest.length === 0
+    ? `${sentence(step[first])}, then ${carryOn}`
+    : first === "open"
+    ? `${sentence(step.open)}; if nothing has ${it} open, ${eitherOf(rest.map((cause) => step[cause]))}. ` +
+      `Then ${carryOn}`
+    : `${sentence(eitherOf(causes.map((cause) => step[cause])))}. Then ${carryOn}`;
+  return `AI-DLC could not move ${where}: ${eitherOf(causes.map((cause) => why[cause]))}. Your work is as it was. ${steps}`;
+}
+
+function sentence(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
 /**
@@ -344,8 +389,10 @@ export function heldBackLine(
  * change that the bring-up of a record still waiting for it has to move,
  * named as the held line names them, with why that may be and the pronoun
  * for them; null when there is none. Windows cannot tell such a folder from
- * the outside (unwritableFolderFor), so there only the step's own line names
- * one.
+ * the outside (unwritableFolderFor), and no platform can tell a folder a
+ * program holds open, a mount in the way or a full drive without trying the
+ * move, so for those only the step's own line names the folder, and doctor
+ * and status say that it will.
  */
 export function bringUpWaitsOn(
   projectDir: string,

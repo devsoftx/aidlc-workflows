@@ -2486,14 +2486,17 @@ To get started:
   // Work an older AI-DLC recorded, brought up to this one in place, or shown
   // here as the next step brings it up: said here on purpose, never in chat.
   // A folder this user cannot change keeps that step from making the move, so
-  // the line names it and the step that frees it instead.
+  // the line names it and the step that frees it instead. A folder a program
+  // holds open (or a Windows folder this user cannot change) shows only when
+  // the step tries the move, so the line never promises the step makes it.
   const upgrade = stateUpgradeRecord(projectDir, selection.intent ?? undefined, selection.space);
   const waitsOn = waiting ? bringUpWaitsOn(projectDir, sp, recorded) : null;
   const upgradedLine = waitsOn !== null
     ? `Brought up:     waiting: AI-DLC cannot change ${waitsOn.folders} (${waitsOn.why}); give your user write ` +
       `access to ${waitsOn.it}, then ask AI-DLC to carry on\n`
     : waiting
-    ? "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven shown here\n"
+    ? "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the " +
+      "seven shown here (or that step names a folder in the way and what frees it)\n"
     : upgrade === null
     ? ""
     : `Brought up:     from an older AI-DLC on ${upgrade.date} (the record as it was: ${upgrade.original})\n`;
@@ -5895,13 +5898,16 @@ export async function collectDoctorReport(
           fix: verdict.message,
         });
       } else if (verdict.kind === "past" && hasStateUpgrade(verdict.version)) {
-        // A folder this user cannot change holds that step back every time
-        // (Windows cannot tell one from here; the step's own line names it).
+        // A folder this user cannot change holds that step back every time.
+        // One a program holds open (or, on Windows, one this user cannot
+        // change) shows only when the step tries the move, and its own line
+        // names it, so the row never promises the step makes it.
         const waitsOn = bringUpWaitsOn(projectDir, stateMdPath, stateContent);
         results.push(waitsOn === null
           ? {
             pass: true,
-            label: `State Version: ${verdict.version} (AI-DLC brings this record up to ${CURRENT_STATE_VERSION} at its next step)`,
+            label: `State Version: ${verdict.version} (AI-DLC's next step brings this record up to ` +
+              `${CURRENT_STATE_VERSION}, or names a folder in the way and what frees it)`,
           }
           : {
             pass: false,

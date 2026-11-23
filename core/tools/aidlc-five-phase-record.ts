@@ -363,12 +363,14 @@ export function fivePhaseGraphContract<T extends { slug: string; phase: string; 
 
 /**
  * Every graph contract a five-phase release could have hashed for a stage: the
- * one fivePhaseGraphContract gives a stage 2.11.4 shipped, and, for a stage the
- * frozen tables do not know (a plugin's), one per five-phase folder, because
- * 2.11.4 recorded no folder for it (as fivePhaseLogicalSpellings spells its
- * documents). Those differ from the contract as it is now only in the phase,
- * so a plugin stage whose inputs, outputs or condition changed still reads as
- * changed.
+ * one fivePhaseGraphContract gives a stage the frozen folder table holds, and,
+ * for any other stage, one per five-phase folder. A plugin's stage needs them,
+ * because 2.11.4 recorded no folder for it (as fivePhaseLogicalSpellings
+ * spells its documents). The Initialization and Secure stages get them too,
+ * and they match no receipt: 2.11.4 hashed the Initialization stages under
+ * the phase they still have, and shipped no Secure stage. Those forms differ
+ * from the contract as it is now only in the phase, so a plugin stage whose
+ * inputs, outputs or condition changed still reads as changed.
  */
 export function fivePhaseGraphContracts<T extends { slug: string; phase: string; condition?: string }>(contract: T): T[] {
   const shipped = fivePhaseGraphContract(contract);

@@ -397,10 +397,13 @@ export function renameRecordFolder(source: string, target: string, label: string
  * change and this user may not, by the file system's own access check: the
  * one the target goes into (the nearest folder already there, the target
  * itself when the move merges into it), the one the source is in, then the
- * source folder itself, which Linux needs writable to give it a new parent.
- * Null when each is writable, and always on Windows, whose access check reads
- * only a read-only attribute, which a folder ignores: a folder another user
- * owns reads as writable there.
+ * source folder itself. Linux needs the source writable only to give it a
+ * new parent (its ".." entry changes) or to take its entries into a folder
+ * already there, so a rename that keeps the parent (a sensor folder's) does
+ * not ask for it; macOS asks for it on every folder rename
+ * (vn_authorize_renamex). Null when each is writable, and always on Windows,
+ * whose access check reads only a read-only attribute, which a folder
+ * ignores: a folder another user owns reads as writable there.
  */
 export function unwritableFolderFor(
   recordDir: string,
@@ -409,9 +412,11 @@ export function unwritableFolderFor(
 ): string | null {
   if (platform === "win32") return null;
   const source = join(recordDir, ...move.from.split("/"));
-  let into = join(recordDir, ...move.to.split("/"));
+  const target = join(recordDir, ...move.to.split("/"));
+  let into = target;
   while (into.length > recordDir.length && !isDirectory(into)) into = dirname(into);
-  for (const dir of [into, dirname(source), source]) {
+  const sourceToo = platform !== "linux" || into === target || dirname(source) !== dirname(target);
+  for (const dir of [into, dirname(source), ...(sourceToo ? [source] : [])]) {
     if (!isDirectory(dir)) continue;
     try {
       accessSync(dir, constants.W_OK);

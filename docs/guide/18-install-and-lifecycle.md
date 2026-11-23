@@ -1555,21 +1555,30 @@ are not counted, and go with the old folders.
 If a folder cannot be moved at all, AI-DLC changes nothing, keeps no copy, and
 stops with one line that names the folder and what frees it; once you have
 done that and ask it to carry on, it brings the work up whole and picks up
-where you were. On Windows a program can hold a folder open (a dev server or
-test watcher, a terminal or an editor inside it, a file sync or backup app),
-and the step is to close it. On every platform a folder your user cannot
-change (one `sudo` or a container made, or one on a read-only drive) holds the
-move back, and the step is to give your user write access to it. On Linux and
-macOS an open folder never stops the move, so there the line names the folder
-your user cannot change; Windows refuses the two alike, so there the line
-names both steps. Each piece of work is brought up when AI-DLC first takes a
-step on it, so parked work waits until you pick it up again. Until then
-`/aidlc --status` and the status line already show it in the seven phases, and
-status says `Brought up: at AI-DLC's next step` and already counts a stage that
-step goes back to (below). On Linux and macOS, while a
-folder your user cannot change holds the work back, status says
-`Brought up: waiting` instead and names that folder and the step, and
-`/aidlc --doctor` fails its State Version row with the same folder and step.
+where you were. A program can hold a folder open (a dev server or test
+watcher, a terminal or an editor inside it, a file sync or backup app) on
+Windows, and on Linux and macOS too when the project is on a network share or,
+under WSL, on a Windows drive (such as `/mnt/c`); the step is to close it. On
+every platform a folder your user cannot change (one `sudo` or a container
+made, or one on a read-only drive) holds the move back, and the step is to
+give your user write access to it. The line names only that step when AI-DLC can see
+the folder cannot be changed (it checks on Linux and macOS; Windows cannot
+tell), and otherwise names both, with a step for each. A folder something is
+mounted on (a container's volume, a network drive), or one on another drive
+than where it goes, cannot be moved at all, so the line asks you to move what
+is in it yourself; a full drive asks you to free some space. Each piece of
+work is brought up when AI-DLC first takes a step on it, so parked work waits
+until you pick it up again. Until then `/aidlc --status` and the status line
+already show it in the seven phases, and status says `Brought up: at AI-DLC's
+next step` (or that the step names a folder in the way) and already counts a
+stage that step goes back to (below). On Linux and macOS, while a folder your
+user cannot change holds the work back, status says `Brought up: waiting`
+instead and names that folder and the step, and `/aidlc --doctor` fails its
+State Version row with the same folder and step. A folder a program holds
+open, a mount and a full drive show only when the step tries the move (and on
+Windows so does a folder your user cannot change), so status and doctor never
+say the step brings the work up, only that it does so or names what is in
+the way.
 Finished stages keep their approvals through the move: a stage reads as
 changed only when your work or what the stage does really changed, never for a
 new phase name alone, a plugin's stages included.
