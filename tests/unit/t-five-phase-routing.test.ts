@@ -502,6 +502,31 @@ describe("the person's own move past an owed stage", () => {
     expect(rowsSinceUpgrade(proj, "STAGE_STARTED", "performance-validation")).toBe(1);
   });
 
+  // The person's own go-back to Performance Validation, in place of the
+  // engine's redo, returns the work to CI Pipeline as the redo does.
+  test("a skip of the Secure reviews can be undone until work on CI Pipeline starts, through the person's own go-back", () => {
+    const proj = v8Project("pv-ci-entered");
+    expect(next(proj).kind).toBe("print");
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "code-review,security-review", "--reason", "the person asked to skip it"]).status)
+      .toBe(0);
+    const back = runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, ["--stage", "performance-validation"], { env: ENV })
+      .directive ?? {};
+    expect(back).toMatchObject({ kind: "run-stage", stage: "performance-validation" });
+    expect(audit(proj)).toMatch(/^\*\*Direction\*\*: BACKWARD$/m);
+    expect(tool(proj, "aidlc-state.ts", ["gate-start", "performance-validation"]).status).toBe(0);
+    expect(tool(proj, "aidlc-state.ts", ["approve", "performance-validation", "--user-input", "approve"]).status).toBe(0);
+    expect(state(proj)).toMatch(/^- \*\*Current Stage\*\*: ci-pipeline$/m);
+    expect(box(proj, "ci-pipeline")).toBe("-");
+    const undo = tool(proj, "aidlc-utility.ts", ["recompose", "--add", "code-review,security-review"]);
+    expect(undo.status, undo.out).toBe(0);
+    const r = walk(proj);
+    expect(r.stages).toEqual([
+      "code-review", "security-review", "ci-pipeline", "deployment-pipeline", "environment-provisioning",
+      "deployment-execution", "observability-setup", "incident-response", "feedback-optimization",
+    ]);
+    expect(r.ended).toBe("done");
+  });
+
   test("once CI Pipeline has work of its own, the skip of the Secure reviews is not undone, as its line said", () => {
     const proj = v8Project("pv-ci-entered");
     expect(next(proj).kind).toBe("print");

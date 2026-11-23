@@ -38584,10 +38584,10 @@ export function addReachesPassedOver(
 // approval, and the jump it names is the engine's own move. A stage on the plan
 // behind the cursor with no such add (a plan whose rows say so from the start,
 // a scope change's) stays as it is. `pending`: the bring-up a record still
-// waits for, its row read as written now. A redo's return to the stage it was
-// run from (its STAGE_STARTED after a REDO jump from there) is no new entry:
-// the work carries on where it stood, so a skip's undo of such a stage still
-// holds after the redo.
+// waits for, its row read as written now. A return to the stage a redo or a
+// go-back was run from (its STAGE_STARTED after a REDO or BACKWARD jump from
+// there) is no new entry: the work carries on where it stood, so a skip's undo
+// of such a stage still holds after it.
 export function addedStagesPassedOver(
   content: string,
   projectDir: string,
@@ -38604,7 +38604,7 @@ export function addedStagesPassedOver(
   for (const row of rows) {
     if (row.event === "STAGE_JUMPED") jump = row;
     if (row.event !== "STAGE_STARTED" || auditBlockField(row.block, "Stage") !== current) continue;
-    const back = jump?.shard === row.shard && auditBlockField(jump.block, "Direction") === "REDO" &&
+    const back = jump?.shard === row.shard && ["REDO", "BACKWARD"].includes(auditBlockField(jump.block, "Direction") ?? "") &&
       auditBlockField(jump.block, "Source") === current && auditBlockField(jump.block, "Target") !== current;
     if (!back && row.timestamp > entered) entered = row.timestamp;
     jump = undefined;
