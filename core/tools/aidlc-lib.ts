@@ -38579,7 +38579,8 @@ export function addReachesPassedOver(
 // the ones stagesPassedOverJustNow names whose add the record holds since the
 // current stage started (a RECOMPOSED row naming it, as recompose writes for an
 // add addReachesPassedOver lets through, or the STATE_UPGRADED row of an older
-// record brought up, naming a stage the newer graph added). `next` goes back to
+// record brought up, naming a stage the newer graph added), in the audit's own
+// order (auditEventIsAfter), as a timestamp's second cannot order its rows. `next` goes back to
 // the first, as the work would have gone on to it had the add come before the
 // approval, and the jump it names is the engine's own move. A stage on the plan
 // behind the cursor with no such add (a plan whose rows say so from the start,
@@ -38599,18 +38600,18 @@ export function addedStagesPassedOver(
   if (passed.length === 0) return [];
   const current = getField(content, "Current Stage")?.trim() ?? "";
   const rows = readAuditShardEvents(projectDir, intent, space);
-  let entered = "";
+  let entered: (typeof rows)[number] | undefined;
   let jump: (typeof rows)[number] | undefined;
   for (const row of rows) {
     if (row.event === "STAGE_JUMPED") jump = row;
     if (row.event !== "STAGE_STARTED" || auditBlockField(row.block, "Stage") !== current) continue;
     const back = jump?.shard === row.shard && ["REDO", "BACKWARD"].includes(auditBlockField(jump.block, "Direction") ?? "") &&
       auditBlockField(jump.block, "Source") === current && auditBlockField(jump.block, "Target") !== current;
-    if (!back && row.timestamp > entered) entered = row.timestamp;
+    if (!back && (!entered || auditEventIsAfter(row, entered))) entered = row;
     jump = undefined;
   }
   const addedSince = new Set([...rows
-    .filter((row) => (row.event === "RECOMPOSED" || row.event === "STATE_UPGRADED") && row.timestamp >= entered)
+    .filter((row) => (row.event === "RECOMPOSED" || row.event === "STATE_UPGRADED") && (!entered || auditEventIsAfter(row, entered)))
     .flatMap((row) => (auditBlockField(row.block, "Stages added") ?? "").split(",").map((slug) => slug.trim())),
     ...(pending?.added ?? [])]);
   return passed.filter((slug) => addedSince.has(slug));

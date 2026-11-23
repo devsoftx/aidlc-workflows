@@ -316,6 +316,30 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
     expect(late.out).toContain("--stage code-generation --single");
   });
 
+  // An audit timestamp has a second's resolution, and a quick person (or a
+  // busy machine's clock) puts the undo, the skip again and the jump in one
+  // second: the audit's own order still says the undo came before Build and
+  // Test started.
+  test("Code Generation for every Unit from here: the undo is refused at Build and Test even when every step fell in one second", () => {
+    const proj = walk(["alpha", "beta"]);
+    const step = next(proj, ["--skip", "code-generation"]);
+    const undo = /If they later ask to undo skipping it for every Unit, run `([^`]*)`/.exec(String(step.message))?.[1] ?? "";
+    expect(runNamed(proj, EVERY_UNIT).status).toBe(0);
+    expect(runNamed(proj, undo).status).toBe(0);
+    expect(runNamed(proj, EVERY_UNIT).status).toBe(0);
+    const jumped = run(proj, "aidlc-jump.ts", ["execute", "--target", "build-and-test", "--direction", "forward", "--scope", "feature"]);
+    expect(jumped.status, jumped.out).toBe(0);
+    const shards = [...new Set(readAuditShardEvents(proj).map((row) => row.shard))];
+    expect(shards.length).toBeGreaterThan(0);
+    for (const shard of shards) {
+      const path = existsSync(shard) ? shard : join(proj, shard);
+      writeFileSync(path, readFileSync(path, "utf-8").replace(/^(\*\*Timestamp\*\*: ).*$/gm, "$12026-01-01T00:00:00Z"));
+    }
+    const late = runNamed(proj, undo);
+    expect(late.status, late.out).not.toBe(0);
+    expect(late.out).toContain("--stage code-generation --single");
+  });
+
   test("with no other Unit left to build it, one command skips it, the stage is marked skipped, and the line names the Unit", () => {
     const proj = walk(["alpha"]);
     const step = next(proj, ["--skip", "code-generation"]);
