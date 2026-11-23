@@ -261,6 +261,21 @@ export function heldBackBringUp(): string | null {
   return heldBack;
 }
 
+// The bring-up a read-only engine probe's state read left unmade, as status
+// reads it (pendingBringUp); null for any other read.
+let probed: BringUpAhead | null = null;
+
+/**
+ * For the engine's routing reads in a read-only probe (the Stop hook's, a
+ * route check): the bring-up the step that comes after it will make, which
+ * the probe may not write, so the stage it goes back to is the step's
+ * (owedJumpBack and the stage count read it as status does). Null outside a
+ * probe, and for a record no step brings up.
+ */
+export function probedBringUp(): BringUpAhead | null {
+  return probed;
+}
+
 // What may have kept the file system from making a folder move, each with a
 // step that frees it. Windows refuses a folder held open with EBUSY or EPERM,
 // and one the user may not change with EPERM or EACCES. A Linux or macOS drive
@@ -432,11 +447,25 @@ export function bringStateUpToDate(
   space?: string,
 ): string {
   heldBack = null;
+  probed = null;
   if (!waitsToBeBroughtUp(content)) return content;
   const verdict = classifyStateVersion(content);
   if (verdict.kind !== "past") return content;
   const { text, version, renamed, added, movedBehind, passedOver, steps } = upgradePlan(content, verdict.version);
-  if (isReadOnlyEngineProbe()) return text;
+  // A probe writes nothing, so it hands the step's row and folder moves to the
+  // reads that route the stage the work goes back to (probedBringUp), and
+  // routes that stage as the step does. The rest of the record (a stage's
+  // documents and their handoffs, the Units' folders) it reads where the
+  // earlier release kept it, so there it can route a stage-level step or the
+  // agent's own recovery where the step routes a Unit's step or the gate. It
+  // need not agree: such a record has had no step since the update, the Stop
+  // hook lets an attended turn end on pending work and hands an unattended one
+  // back to `next`, and a route check that refuses a Unit's start names `next`;
+  // either `next` brings the record up and routes it.
+  if (isReadOnlyEngineProbe()) {
+    probed = pendingBringUp(content, dirname(statePath))?.pending ?? null;
+    return text;
+  }
   try {
     const recordDir = dirname(statePath);
     const moved: string[] = [];

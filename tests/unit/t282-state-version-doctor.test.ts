@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:pendingBringUp, function:fivePhaseGraphContract, function:bringUpWaitsOn, function:unwritableFolderFor
+// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:pendingBringUp, function:constructionHasStarted, function:reverseEngineeringOwedBehindCursor, function:fivePhaseGraphContract, function:bringUpWaitsOn, function:unwritableFolderFor
 //
 // The state-version gate and the bring-up beside it. v8 renamed the Inception
 // `application-design` stage to `domain-design` and added `contract-design`;
@@ -1330,6 +1330,29 @@ describe("t282 before AI-DLC's first step on a v8 record, what the person reads 
       expect(phaseRows(before)).toEqual(phaseRows(after));
     });
   }
+
+  // Reverse Engineering on the plan of work on existing code is owed only
+  // until Construction starts, which a Unit's work says; before the step that
+  // work is in the Unit's five-phase folder, where 2.11.4 still keeps it.
+  test("unit-walk on existing code with Reverse Engineering still on the plan: status counts it before the step as after it", () => {
+    const { proj } = v8Project("unit-walk");
+    const path = seededStateFile(proj);
+    const brownfield = readFileSync(path, "utf-8")
+      .replace(/^- \*\*Project Type\*\*: Greenfield$/m, "- **Project Type**: Brownfield")
+      .replace(/^- \[ \] reverse-engineering — SKIP$/m, "- [ ] reverse-engineering — EXECUTE");
+    expect(brownfield).toMatch(/^- \[ \] reverse-engineering — EXECUTE$/m);
+    writeFileSync(path, brownfield);
+    const before = statusOf(proj);
+    const step = v8Next(proj).directive ?? {};
+    expect(upgradeRows(proj)).toBe(1);
+    // The step carries on with the Unit's own step, never back to Reverse Engineering.
+    expect(step.kind).toBe("run-stage");
+    expect(step.stage).toBe("code-generation");
+    const after = statusOf(proj);
+    expect(statusLine(before, "Completion:")).toBe(statusLine(after, "Completion:"));
+    expect(phaseRows(before)).toEqual(phaseRows(after));
+    for (const out of [before, after]) expect(out).toMatch(/^ {2}DISCOVER +\S+ 7\/7$/m);
+  });
 
   test("unit-walk: no stale Next Stage, and the status line counts the Units from the plan where 2.11.4 kept it", () => {
     const { proj } = v8Project("unit-walk");

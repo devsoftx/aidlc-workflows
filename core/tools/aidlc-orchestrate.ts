@@ -257,6 +257,7 @@ import {
   constructionCheckpointGaps,
   effectivePlanAction,
   addReachesPassedOver,
+  addedStagesPassedOver,
   stageSkippedWhereItStood,
   constructionHasStarted,
   owedJumpBack,
@@ -714,9 +715,11 @@ import {
   newerWorkInstall,
   newerWorkLead,
   newerWorkRefresh,
+  probedBringUp,
   updateCarriesOn,
   waitsToBeBroughtUp,
 } from "./aidlc-state-upgrade.ts";
+import { redoLeadsTo } from "./aidlc-jump.ts";
 import { renderEngineInvocation, sameGuardOperation } from "./aidlc-guard-operation.ts";
 import { claimedCheckoutMovesElsewhere, claimedCheckoutReopens, completedUnits } from "./aidlc-unit-landing.ts";
 import { isHookPreDispatch, withAuditLock } from "./aidlc-locks.ts";
@@ -13496,6 +13499,7 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
       passedOver: planChanges
         ? planChanges.add.filter((slug) => addReachesPassedOver(stateContent, slug, { projectDir: pd }, planChanges.add))
         : [],
+      justPassed: planChanges ? addedStagesPassedOver(stateContent, pd) : [],
     };
     // Words typed with a differing scope may be new work or the reason for
     // the change: Branch 9c asks which, so they are never dropped.
@@ -14368,15 +14372,19 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
   // went back on the plan (the person said this is existing code), or an
   // update's new stage order put one 2.11.4 would still have run there. Run it
   // now with a redo jump, which leaves the finished stages alone; once it is
-  // approved the walk returns here. An open gate is settled first
-  // (owedJumpBack), and the plan-approval guard reads the same move. A
-  // plugin's stage is named by its slug (stageLabel), never its own text.
-  const owed = owedJumpBack(stateContent, pd);
+  // approved the walk goes where the jump's own notice says (redoLeadsTo):
+  // back here, or first to another stage owed before this one. An open gate is
+  // settled first (owedJumpBack), and the plan-approval guard reads the same
+  // move. A plugin's stage is named by its slug (stageLabel), never its own
+  // text. A probe routes it as the step does (probedBringUp).
+  const owed = owedJumpBack(stateContent, pd, undefined, undefined, probedBringUp());
   const owedName = owed === null ? "" : stageLabel(nodeForSlug(owed.target), owed.target) ?? "A stage";
   if (owed?.direction === "redo") {
+    const then = redoLeadsTo(stateContent, owed.target, pd, probedBringUp())?.slug ?? currentSlug;
     emit(printDirective(
       `${owedName} is on the plan and has not run. Run \`${aidlcToolInvocation("jump")} execute --target ${owed.target} --direction redo --scope ${scopeArg(scope)}\` ` +
-        `to run it now (finished stages stay finished, and the workflow returns to ${currentSlug} after it). ` +
+        `to run it now (finished stages stay finished, and the workflow ${
+          then === currentSlug ? `returns to ${currentSlug}` : `goes on to ${then}`} after it). ` +
         "When its output carries `notice`, tell the person that line once, as written. Then re-run `next` to continue.",
     ));
     return;
@@ -19400,6 +19408,8 @@ function planChangeDirective(
   before: string | null,
   // `together`: the stages the open gate's one question named, when it named several.
   // `passedOver`: the added stages behind the cursor that `next` goes back to (addReachesPassedOver).
+  // `justPassed`: the stages behind the cursor `next` goes back to because the
+  // work had just passed over them (addedStagesPassedOver).
   // `switchedTo`: a scope change typed in the same command, which runs first; it
   // rebuilds the plan from that scope's grid and keeps every checkbox, so
   // `stateContent` says where the work stands and the grid what it runs.
@@ -19408,7 +19418,7 @@ function planChangeDirective(
   // would have reopened finished work at (skipsBeforeReopen).
   plan: {
     scope: string; stateContent: string; walk?: PlanChangeWalk | null; together?: string[]; passedOver?: string[];
-    switchedTo?: string; carriesOn?: boolean; skippedFirst?: string[];
+    justPassed?: string[]; switchedTo?: string; carriesOn?: boolean; skippedFirst?: string[];
   } | null,
   // The code plan's question is open: it stays the open step, so what the
   // person says next is kept as their answer to it, and an answer this
@@ -19569,7 +19579,19 @@ function planChangeDirective(
   const undoHolds = (skipped: string[] = planSkip, added: string[] = add, what = "that"): string => {
     if (skipped.length === 0) return `You can undo ${what} any time.`;
     const order = loadGraph().map((stage) => stage.slug);
-    const first = [...skipped, ...added].sort((a, b) => order.indexOf(a) - order.indexOf(b))[0];
+    // A stage skipped behind the cursor, one `next` goes back to, comes back
+    // while `next` still would: one the work had just passed over until the
+    // stage it passed into has work of its own (addedStagesPassedOver), which
+    // closes before any other window; one an update's new order put there
+    // until the work is finished, so the rest of the change says the window.
+    // Reverse Engineering the work still owes keeps its own window, worked out
+    // below with the stages ahead.
+    if (current !== "" && skipped.some((slug) => plan?.justPassed?.includes(slug))) {
+      return `You can undo ${what} until work on ${name(current)} starts.`;
+    }
+    const ahead = skipped.filter((slug) => slug === "reverse-engineering" || order.indexOf(slug) > order.indexOf(current));
+    if (ahead.length === 0 && added.length === 0) return `You can undo ${what} until the work is finished.`;
+    const first = [...ahead, ...added].sort((a, b) => order.indexOf(a) - order.indexOf(b))[0];
     const onTheWalk = walk?.steps.includes(first) === true;
     // A walk step added in the same change has no plain window of its own.
     if (onTheWalk && added.some((slug) => walk.steps.includes(slug))) return `You can undo ${what} any time.`;
@@ -19578,9 +19600,6 @@ function planChangeDirective(
       what === "that" && skipped.length === 1 && added.length === 0 ? "it" : name(first)}.`;
     if (plan === null) return past;
     const owed = first === "reverse-engineering" && order.indexOf(first) < order.indexOf(current);
-    // Another stage behind the cursor (an add the work had just passed over,
-    // skipped again before `next` went back to it) has no plain window.
-    if (!owed && order.indexOf(first) <= order.indexOf(current)) return `You can undo ${what} any time.`;
     const changed = [
       ...skipped.map((slug) => [slug, "SKIP"] as const),
       ...added.map((slug) => [slug, "EXECUTE"] as const),
@@ -22239,7 +22258,7 @@ function approvalProgressLine(
 // " (stage 3 of 9)" for a stage the plan runs, "" for one it does not.
 function stageOfPlan(slug: string, scope: string, stateContent: string | null, work: { projectDir: string } | null): string {
   if (!stateContent) return "";
-  const planned = plannedStages(stateContent, scope, work);
+  const planned = plannedStages(stateContent, scope, work && { ...work, pending: probedBringUp() });
   const at = planned.findIndex((stage) => stage.slug === slug);
   return at < 0 ? "" : ` (stage ${at + 1} of ${planned.length})`;
 }

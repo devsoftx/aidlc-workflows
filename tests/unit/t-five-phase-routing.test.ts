@@ -1,4 +1,4 @@
-// covers: function:stagesReorderedAround, function:fivePhaseReorder, function:stagesOwedBehindCursor, function:addReachesPassedOver, function:owedJumpBack, function:owedRedoNotice, function:bringStateUpToDate, subcommand:aidlc-orchestrate:next, subcommand:aidlc-jump:execute, subcommand:aidlc-utility:recompose
+// covers: function:stagesReorderedAround, function:fivePhaseReorder, function:stagesOwedBehindCursor, function:addReachesPassedOver, function:owedJumpBack, function:owedRedoNotice, function:redoLeadsTo, function:addedStagesPassedOver, function:probedBringUp, function:bringStateUpToDate, subcommand:aidlc-orchestrate:next, subcommand:aidlc-jump:execute, subcommand:aidlc-utility:recompose
 //
 // The seven phases walk two stages earlier than 2.11.4 did: Reverse
 // Engineering comes before Scope Definition (it came after Approval &
@@ -11,13 +11,18 @@
 //     running the stages between that the work had passed over (Code Review
 //     and Security Review among them on work already started past them; on
 //     work that had only just entered CI Pipeline they run first) and without
-//     starting a finished one again, and the line said after the redo names
-//     the stage the person meets next;
+//     starting a finished one again, and the line said after the redo, like
+//     the step that names the redo, names the stage the person meets next;
 //   - a stage 2.11.4 had passed over that now comes after the cursor stays
 //     passed over;
 //   - a forward jump since the update that 2.11.4 would have made past the
 //     owed stage passes it over, as 2.11.4's jump did, and a skip takes it off
-//     until its undo puts it back.
+//     until its undo puts it back, which works for as long as the skip's line
+//     says: Performance Validation's until the work is finished, the Secure
+//     reviews' the work had just passed until work on CI Pipeline starts,
+//     Performance Validation's redo in between;
+//   - the Stop hook's probe and the route check, which write nothing, route
+//     the stage the first step goes back to as that step does.
 // Each record is a real one 2.11.4 wrote (tests/fixtures/state-v8), made by
 // driving that release's own state tool, jump and scope change; the walks the
 // tests expect are the ones that release takes on the same record, with the
@@ -138,6 +143,8 @@ interface Walk {
   // Every line the walk had the agent say to the person: a jump's line rides
   // the next step the agent speaks from, or the jump's own output.
   said: string[];
+  // The stage each redo's step told the agent the walk reaches once it is approved.
+  printed: { target: string; then: string }[];
   ended: string;
   changed: unknown[];
 }
@@ -145,7 +152,7 @@ interface Walk {
 // Walks the work the way the conductor does: `next`, the jump a print names,
 // each stage approved at its gate, until the work is done or `stop` is shown.
 function walk(proj: string, stop?: string): Walk {
-  const out: Walk = { stages: [], jumps: [], said: [], ended: "", changed: [] };
+  const out: Walk = { stages: [], jumps: [], said: [], printed: [], ended: "", changed: [] };
   for (let step = 0; step < 30; step++) {
     const d = next(proj);
     if (d.stage_validity !== undefined) out.changed.push(d.stage_validity);
@@ -154,6 +161,10 @@ function walk(proj: string, stop?: string): Walk {
       const jump = /execute --target (\S+) --direction (\w+)/.exec(String(d.message));
       expect(jump, String(d.message)).not.toBeNull();
       const [, target, direction] = jump as RegExpExecArray;
+      if (direction === "redo") {
+        const then = /the workflow (?:returns|goes on) to (\S+) after it/.exec(String(d.message))?.[1] ?? "";
+        out.printed.push({ target, then });
+      }
       const ran = tool(proj, "aidlc-jump.ts", ["execute", "--target", target, "--direction", direction]);
       expect(ran.status, ran.out).toBe(0);
       const result = JSON.parse(ran.stdout.trim()) as { notice?: string; stages_skipped: string[] };
@@ -182,7 +193,8 @@ function walk(proj: string, stop?: string): Walk {
 const STAGE_NAMES = new Map(loadStageGraph().map((stage) => [stage.slug, stage.name]));
 
 // The line a redo has the agent say names the stage the person meets once
-// they approve its target: the one the walk shows next.
+// they approve its target: the one the walk shows next. The step that names
+// the redo tells the agent the same stage.
 function namesWhatFollowsTheRedo(out: Walk): Walk {
   for (const { command } of out.jumps) {
     const [target, direction] = command.split(" ");
@@ -191,6 +203,8 @@ function namesWhatFollowsTheRedo(out: Walk): Walk {
     const name = STAGE_NAMES.get(after.replace(/ \(gate\)$/, ""));
     expect(out.said.some((line) => line.startsWith("Once you approve ") && line.endsWith(` ${name}.`)), `${after}: ${out.said.join(" | ")}`)
       .toBe(true);
+    expect(out.printed.filter((step) => step.target === target).map((step) => step.then), target)
+      .toContain(after.replace(/ \(gate\)$/, ""));
   }
   return out;
 }
@@ -405,7 +419,7 @@ describe("the person's own move past an owed stage", () => {
     expect(existsSync(join(seededRecordDir(proj), "test", "performance-validation"))).toBe(false);
   });
 
-  // The skip's line says it can be undone any time, and names the add that does it.
+  // The skip's line says how long it can be undone, and names the add that does it.
   test("the skip's undo puts the owed stage back, and the walk is the one it would have been without the skip", () => {
     const walks: Record<string, string[]> = {
       "pv-deploy-entered": [
@@ -420,7 +434,7 @@ describe("the person's own move past an owed stage", () => {
       const proj = v8Project(fixture);
       expect(next(proj).kind).toBe("print");
       const skipStep = runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, ["--skip", "performance-validation"], { env: ENV }).directive ?? {};
-      expect(String(skipStep.message), fixture).toContain("You can undo that any time.");
+      expect(String(skipStep.message), fixture).toContain("You can undo that until the work is finished.");
       expect(String(skipStep.message), fixture).toContain("recompose --add performance-validation`");
       const skip = tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "performance-validation", "--reason", "the person asked to skip it"]);
       expect(skip.status, skip.out).toBe(0);
@@ -434,6 +448,73 @@ describe("the person's own move past an owed stage", () => {
     }
   });
 
+  // "Any time" was refused here: recompose takes no plan change on finished work.
+  test("a skip of the owed stage can be undone until the work is finished, and not after", () => {
+    const proj = v8Project("pv-deploy-entered");
+    expect(next(proj).kind).toBe("print");
+    const skipStep = runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, ["--skip", "performance-validation"], { env: ENV }).directive ?? {};
+    expect(String(skipStep.message)).toContain('"Skipped Performance Validation. You can undo that until the work is finished."');
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "performance-validation", "--reason", "the person asked to skip it"]).status).toBe(0);
+    const r = walk(proj, "feedback-optimization");
+    expect(r.stages).toEqual(["deployment-execution", "observability-setup", "incident-response", "feedback-optimization"]);
+    // At the last stage the undo still holds, and the work goes back for the stage.
+    const atLast = tool(proj, "aidlc-utility.ts", ["recompose", "--add", "performance-validation"]);
+    expect(atLast.status, atLast.out).toBe(0);
+    expect(String(next(proj).message)).toContain("execute --target performance-validation --direction redo");
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "performance-validation", "--reason", "the person asked to skip it"]).status).toBe(0);
+    expect(tool(proj, "aidlc-state.ts", ["gate-start", "feedback-optimization"]).status).toBe(0);
+    expect(tool(proj, "aidlc-state.ts", ["approve", "feedback-optimization", "--user-input", "approve"]).status).toBe(0);
+    expect(state(proj)).toMatch(/^- \*\*Status\*\*: Completed$/m);
+    const late = tool(proj, "aidlc-utility.ts", ["recompose", "--add", "performance-validation"]);
+    expect(late.status).not.toBe(0);
+    expect(late.out).toContain("finished");
+  });
+
+  // The Secure reviews an update added, which the work had only just passed,
+  // come back while CI Pipeline has nothing of its own; Performance
+  // Validation's redo, run first, only returns the work to where it stood.
+  test("a skip of the Secure reviews the work had just passed can be undone until work on CI Pipeline starts, through the redo", () => {
+    const proj = v8Project("pv-ci-entered");
+    expect(next(proj).kind).toBe("print");
+    const skipStep = runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, ["--skip", "code-review,security-review"], { env: ENV })
+      .directive ?? {};
+    expect(String(skipStep.message)).toContain('"Skipped Code Review and Security Review. You can undo that until work on CI Pipeline starts."');
+    expect(String(skipStep.message)).toContain("recompose --add code-review,security-review`");
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "code-review,security-review", "--reason", "the person asked to skip it"]).status)
+      .toBe(0);
+    // The conductor carries on: the redo runs Performance Validation, the
+    // person approves it, and the work is back at CI Pipeline with nothing written.
+    const redo = walk(proj, "performance-validation");
+    expect(redo.jumps).toEqual([{ command: "performance-validation redo", skipped: [] }]);
+    expect(tool(proj, "aidlc-state.ts", ["gate-start", "performance-validation"]).status).toBe(0);
+    expect(tool(proj, "aidlc-state.ts", ["approve", "performance-validation", "--user-input", "approve"]).status).toBe(0);
+    expect(state(proj)).toMatch(/^- \*\*Current Stage\*\*: ci-pipeline$/m);
+    expect(box(proj, "ci-pipeline")).toBe("-");
+    const undo = tool(proj, "aidlc-utility.ts", ["recompose", "--add", "code-review,security-review"]);
+    expect(undo.status, undo.out).toBe(0);
+    // The walk is the one it would have been without the skip.
+    const r = walk(proj);
+    expect(r.stages).toEqual([
+      "code-review", "security-review", "ci-pipeline", "deployment-pipeline", "environment-provisioning",
+      "deployment-execution", "observability-setup", "incident-response", "feedback-optimization",
+    ]);
+    expect(r.ended).toBe("done");
+    expect(rowsSinceUpgrade(proj, "STAGE_STARTED", "performance-validation")).toBe(1);
+  });
+
+  test("once CI Pipeline has work of its own, the skip of the Secure reviews is not undone, as its line said", () => {
+    const proj = v8Project("pv-ci-entered");
+    expect(next(proj).kind).toBe("print");
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "code-review,security-review", "--reason", "the person asked to skip it"]).status)
+      .toBe(0);
+    const ci = join(seededRecordDir(proj), "deploy", "ci-pipeline");
+    mkdirSync(ci, { recursive: true });
+    writeFileSync(join(ci, "ci-config.md"), "# CI config\n\nBuild on every push.\n");
+    const late = tool(proj, "aidlc-utility.ts", ["recompose", "--add", "code-review,security-review"]);
+    expect(late.status).not.toBe(0);
+    expect(late.out).toContain("--stage code-review --single");
+  });
+
   test("adding the owed stage back through next carries on into it, as the add of a stage just passed over does", () => {
     const proj = v8Project("pv-deploy-entered");
     expect(next(proj).kind).toBe("print");
@@ -445,5 +526,28 @@ describe("the person's own move past an owed stage", () => {
     const back = next(proj);
     expect(back.kind).toBe("print");
     expect(String(back.message)).toContain("execute --target performance-validation --direction redo");
+  });
+});
+
+// The Stop hook's probe and the route check run `next` and write nothing, so
+// before the first step they cannot write the step's row: they read it as
+// written now, and route the stage the work goes back to as the step does.
+describe("a read-only probe before the first step", () => {
+  test("routes the stage the step goes back to, as the step then does", () => {
+    for (const fixture of ["pv-deploy-entered", "pv-ci-entered"]) {
+      const proj = v8Project(fixture);
+      const before = state(proj);
+      const probes = ["AIDLC_STOP_HOOK_PROBE", "AIDLC_ROUTE_CHECK"].map((probe) =>
+        runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, [], { env: { ...ENV, [probe]: "1" } }).directive ?? {});
+      expect(state(proj), fixture).toBe(before);
+      expect(audit(proj), fixture).not.toMatch(/^\*\*Event\*\*: STATE_UPGRADED$/m);
+      const step = next(proj);
+      expect(step.kind, fixture).toBe("print");
+      expect(String(step.message), fixture).toContain("execute --target performance-validation --direction redo");
+      for (const probe of probes) {
+        expect(probe.kind, fixture).toBe(step.kind);
+        expect(String(probe.message), fixture).toBe(String(step.message));
+      }
+    }
   });
 });

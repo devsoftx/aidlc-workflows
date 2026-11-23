@@ -7,6 +7,7 @@ import { appendAuditEntry } from "./aidlc-audit.ts";
 import { personGitNameField } from "./aidlc-git-name.ts";
 import { beforePerUnitBlock, inUnitWalk, withStageProgressRow } from "./aidlc-graph.ts";
 import { keptSinceFinished } from "./aidlc-message-store.ts";
+import type { BringUpAhead } from "./aidlc-record-core.ts";
 import { isNonAnswer } from "./aidlc-reply-reader.ts";
 import { readReviewArtifactContexts } from "./aidlc-review-brief.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
@@ -278,6 +279,25 @@ export function owedRedoNotice(
   const what = target.slug === "reverse-engineering" ? "the code's documentation" : stageLabel(target, target.slug) ?? "it";
   if (then.slug !== from.slug) return `Once you approve ${what}, the work goes on to ${stageLabel(then, then.slug) ?? "the next stage"}.`;
   return `Once you approve ${what}, we're back at ${stageLabel(from, from.slug) ?? "where we were"}.`;
+}
+
+// Where the walk goes once the redo of `targetSlug`, a stage owed behind the
+// cursor, is approved: the Next Stage the redo writes (movedState), worked out
+// on the state as it stands, so the step that names the redo says the stage
+// the redo's notice then names. `pending`: as stagesOwedBehindCursor reads it.
+export function redoLeadsTo(
+  content: string,
+  targetSlug: string,
+  projectDir: string,
+  pending?: BringUpAhead | null,
+): StageEntry | null {
+  const scope = getField(content, "Scope") || "feature";
+  const scopeMapping = loadScopeMapping()[scope];
+  const targetStage = findStageBySlug(targetSlug);
+  if (!scopeMapping || !targetStage) return null;
+  const owed = stagesOwedBehindCursor(content, projectDir, undefined, undefined, pending);
+  return movedState(content, targetSlug, targetStage, "redo", scope, parseStateStageSuffixes(content), scopeMapping, false, owed)
+    .nextAfterTarget;
 }
 
 if (import.meta.main) {
