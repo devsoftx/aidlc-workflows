@@ -23,35 +23,43 @@ function manifestFingerprint(manifest: ManifestEntry[]): string {
  * or goes away after the review changes every form. `outputs` lines up with both
  * manifests, entry for entry.
  *
- * `relocate` names the logical path an earlier record layout gave an entry
- * (null for one it kept where it is). Each form over those paths, sorted as
- * that layout's reader sorted them, is an older form too, and `earlier` holds
- * that layout's fingerprint and raw-bytes fingerprint (null when no entry
- * moved), for evidence that embeds a review fingerprint. With
- * AIDLC_TEST_FIVE_PHASE_LOGICAL_PATHS a test records the documents as that
- * layout's release did: its forms are the only ones.
+ * `relocate` names, for each earlier record layout the entries could have
+ * been kept in, the logical path it gave each entry (null for one it kept
+ * where it is). Each form over a layout's paths, sorted as that layout's
+ * reader sorted them, is an older form too, and `earlier` holds that layout's
+ * fingerprint and raw-bytes fingerprint, for evidence that embeds a review
+ * fingerprint: null when no entry moved, or when more than one layout could
+ * have held them (a plugin stage's), since no one of them is the recorded
+ * one. With AIDLC_TEST_FIVE_PHASE_LOGICAL_PATHS a test records the documents
+ * as the first layout's release did: its forms are the only ones.
  */
 export function reviewManifestForms(
   manifest: ManifestEntry[],
   rawManifest: ManifestEntry[],
   outputs: ReadonlyArray<{ required: boolean; state: string }>,
-  relocate?: (logicalPath: string) => string | null,
+  relocate?: (logicalPaths: string[]) => ReadonlyArray<ReadonlyArray<string | null>>,
 ): { fingerprint: string; raw: string | null; older: string[]; earlier?: { fingerprint: string; raw: string } | null } {
   const declared = (list: ManifestEntry[], kinds = outputs) =>
     list.filter((_, at) => kinds[at].required || kinds[at].state !== "missing");
   let forms = [manifest, rawManifest, declared(manifest), declared(rawManifest)];
   let earlier: { fingerprint: string; raw: string } | null = null;
-  const paths = relocate ? manifest.map(([path]) => relocate(path) ?? path) : [];
-  if (paths.some((path, at) => path !== manifest[at][0])) {
+  const layouts: ManifestEntry[][][] = [];
+  const earliest: { fingerprint: string; raw: string }[] = [];
+  for (const spelled of relocate ? relocate(manifest.map(([path]) => path)) : []) {
+    const paths = manifest.map(([path], at) => spelled[at] ?? path);
+    if (paths.every((path, at) => path === manifest[at][0])) continue;
     const order = paths.map((_, at) => at).sort((a, b) => paths[a].localeCompare(paths[b]));
     const placed = (list: ManifestEntry[]): ManifestEntry[] => order.map((at) => [paths[at], list[at][1]]);
     const kinds = order.map((at) => outputs[at]);
     const [text, bytes] = [placed(manifest), placed(rawManifest)];
-    const moved = [text, bytes, declared(text, kinds), declared(bytes, kinds)];
-    if (process.env.AIDLC_TEST_FIVE_PHASE_LOGICAL_PATHS === "1") forms = moved;
+    layouts.push([text, bytes, declared(text, kinds), declared(bytes, kinds)]);
+    earliest.push({ fingerprint: manifestFingerprint(text), raw: manifestFingerprint(bytes) });
+  }
+  if (layouts.length > 0) {
+    if (process.env.AIDLC_TEST_FIVE_PHASE_LOGICAL_PATHS === "1") forms = layouts[0];
     else {
-      earlier = { fingerprint: manifestFingerprint(text), raw: manifestFingerprint(bytes) };
-      forms.push(...moved);
+      if (earliest.length === 1) earlier = earliest[0];
+      forms.push(...layouts.flat());
     }
   }
   const [fingerprint, raw, ...rest] = forms.map(manifestFingerprint);

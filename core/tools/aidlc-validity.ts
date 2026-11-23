@@ -17,7 +17,7 @@ import { loadGraph } from "./aidlc-graph.ts";
 import { withdrawnTurnPositions } from "./aidlc-record-core.ts";
 import { SLUG_RE as STAGE_SLUG_RE } from "./aidlc-stage-schema.ts";
 import { artifactFilename } from "./aidlc-artifact-vocabulary.ts";
-import { fivePhaseRecordPath } from "./aidlc-five-phase-record.ts";
+import { fivePhaseRecordSpellings } from "./aidlc-five-phase-record.ts";
 import {
   resolveArtifactInstances,
   type ArtifactResolutionOptions,
@@ -351,8 +351,10 @@ function aggregateArtifactBasis(
 // each document at the folder the 8 to 10 step moved it from. The same
 // documents and content under those paths, in that release's order, are
 // remembered against the hashes read now, so basisInCurrentForm reads such a
-// receipt as this one. Only documents read in this process are here, and only
-// the recorded side is mapped: a changed document still differs.
+// receipt as this one: once per layout a plugin stage's documents could have
+// been kept in, since its 2.11.4 folder is not recorded. Only documents read
+// in this process are here, and only the recorded side is mapped: a changed
+// document still differs.
 const FIVE_PHASE_BASES = new Map<string, string>();
 
 function rememberFivePhaseBasis(
@@ -360,8 +362,16 @@ function rememberFivePhaseBasis(
   structureHash: string,
   contentHash: string,
 ): void {
-  const older = fingerprints.map((fingerprint) => fivePhaseRecordPath(fingerprint.instance.relativePath));
-  if (older.every((path) => path === null)) return;
+  const spellings = fivePhaseRecordSpellings(fingerprints.map((fingerprint) => fingerprint.instance.relativePath));
+  for (const older of spellings) rememberFivePhaseLayout(fingerprints, older, structureHash, contentHash);
+}
+
+function rememberFivePhaseLayout(
+  fingerprints: readonly InstanceFingerprint[],
+  older: readonly (string | null)[],
+  structureHash: string,
+  contentHash: string,
+): void {
   const pathAt = (index: number): string => older[index] ?? fingerprints[index].instance.relativePath;
   const keyAt = (index: number): string =>
     [fingerprints[index].instance.unit ?? "", fingerprints[index].instance.unitKind ?? "", pathAt(index)].join("\u0000");

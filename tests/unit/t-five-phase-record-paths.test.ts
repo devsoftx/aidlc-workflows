@@ -1,5 +1,6 @@
-// covers: function:sevenPhaseRecordPath, function:sameRecordPath, function:fivePhaseLogicalPath,
-// function:fivePhaseRecordPath, function:rememberFivePhaseFingerprint, function:fivePhaseFingerprintForm
+// covers: function:sevenPhaseRecordPath, function:sameRecordPath, function:fivePhaseLogicalPath, function:fivePhaseLogicalSpellings,
+// function:fivePhaseRecordPath, function:fivePhaseRecordSpellings, function:registerFivePhaseStageGraph, function:rememberFivePhaseFingerprint,
+// function:fivePhaseFingerprintForm
 //
 // A five-phase AI-DLC (State Version 8, up to 2.11.4) kept each stage's record
 // under ideation/, inception/, construction/ or operation/, and a Unit's work
@@ -10,19 +11,51 @@
 // table. Only the recorded side is ever translated: a current path is compared
 // as it is, and a path that only looks like a five-phase one stays as it was.
 import { describe, expect, test } from "bun:test";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import {
   FIVE_PHASE_STAGE_FOLDER,
   fivePhaseFingerprintForm,
   fivePhaseLogicalPath,
+  fivePhaseLogicalSpellings,
   fivePhaseRecordPath,
+  fivePhaseRecordSpellings,
   rememberFivePhaseFingerprint,
   sameRecordPath,
   SEVEN_PHASE_STAGE_FOLDER,
   sevenPhaseRecordPath,
 } from "../../dist/claude/.claude/tools/aidlc-five-phase-record.ts";
-import { loadStageGraphAll } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { _resetStageGraphForTests, loadStageGraphAll } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { REPO_ROOT } from "../harness/fixtures.ts";
 
 const RECORD = "aidlc/spaces/default/intents/fixture-8000000000000001";
+
+// The stage graph with test-pro's stages at the phases its stage files name
+// now (2.11.4 shipped them under construction/ and operation/), and a team
+// plugin's stage that runs once per Unit, while `run` reads it.
+function withPluginGraph<T>(run: () => T): T {
+  const stagesDir = join(REPO_ROOT, "plugins", "test-pro", "stages");
+  const plugin = readdirSync(stagesDir).flatMap((phase) =>
+    readdirSync(join(stagesDir, phase)).map((file) => ({ slug: basename(file, ".md"), phase, plugin: "test-pro" })));
+  expect(plugin.map(({ slug, phase }) => `${phase}/${slug}`).sort())
+    .toEqual(["operate/test-pro-full-suite", "test/test-pro-integration"]);
+  const perUnit = { slug: "team-unit-check", phase: "build", plugin: "team", for_each: "unit-of-work" };
+  const dir = mkdtempSync(join(tmpdir(), "aidlc-plugin-graph-"));
+  const graph = join(dir, "stage-graph.json");
+  writeFileSync(graph, JSON.stringify([...loadStageGraphAll(), ...plugin, perUnit]));
+  const prior = process.env.AIDLC_STAGE_GRAPH;
+  process.env.AIDLC_STAGE_GRAPH = graph;
+  _resetStageGraphForTests();
+  try {
+    return run();
+  } finally {
+    if (prior === undefined) delete process.env.AIDLC_STAGE_GRAPH;
+    else process.env.AIDLC_STAGE_GRAPH = prior;
+    _resetStageGraphForTests();
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 describe("a five-phase record path reads in its seven-phase spelling", () => {
   test("each stage-level folder goes where the 8 to 10 step moves it", () => {
@@ -53,6 +86,35 @@ describe("a five-phase record path reads in its seven-phase spelling", () => {
     expect(sevenPhaseRecordPath("construction/infrastructure-design/x.md")).toBe("design/infrastructure-design/x.md");
   });
 
+  // 2.11.4 let a Unit take any name, a five-phase folder's or a stage's
+  // included, and the 8 to 10 step moves a folder under construction/ that
+  // holds a per-Unit stage's folder as a Unit, whatever its name.
+  test("a Unit reads as a Unit whatever it is called, both ways, and a row written since stays as it is", () => {
+    const cases: Array<[string, string]> = [
+      ["construction/construction/code-generation/code-generation-plan.md", "build/construction/code-generation/code-generation-plan.md"],
+      ["construction/construction/functional-design/functional-spec.md", "design/construction/functional-design/functional-spec.md"],
+      ["construction/inception/nfr-design/security-design.md", "design/inception/nfr-design/security-design.md"],
+      ["construction/operation/code-generation/code-summary.md", "build/operation/code-generation/code-summary.md"],
+      ["construction/code-generation/functional-design/functional-spec.md", "design/code-generation/functional-design/functional-spec.md"],
+      ["construction/code-generation/code-generation/code-generation-plan.md", "build/code-generation/code-generation/code-generation-plan.md"],
+      ["construction/functional-design/code-generation/code-summary.md", "build/functional-design/code-generation/code-summary.md"],
+      ["construction/requirements-analysis/nfr-requirements/tech-stack-decisions.md", "design/requirements-analysis/nfr-requirements/tech-stack-decisions.md"],
+    ];
+    for (const [five, seven] of cases) {
+      expect(sevenPhaseRecordPath(`${RECORD}/${five}`), five).toBe(`${RECORD}/${seven}`);
+      expect(sevenPhaseRecordPath(five), five).toBe(seven);
+      expect(sevenPhaseRecordPath(`${RECORD}/${seven}`), seven).toBe(`${RECORD}/${seven}`);
+      expect(sameRecordPath(`${RECORD}/${five}`, `${RECORD}/${seven}`), five).toBe(true);
+      expect(fivePhaseLogicalPath(seven), seven).toBe(five);
+      expect(fivePhaseRecordPath(`${RECORD}/${seven}`), seven).toBe(`${RECORD}/${five}`);
+    }
+    expect(sevenPhaseRecordPath(`C:\\p\\${RECORD.replaceAll("/", "\\")}\\design\\construction\\functional-design\\x.md`))
+      .toBe(`C:\\p\\${RECORD.replaceAll("/", "\\")}\\design\\construction\\functional-design\\x.md`);
+    // Another Unit's folder is still another file.
+    expect(sameRecordPath(`${RECORD}/construction/construction/code-generation/code-summary.md`,
+      `${RECORD}/build/build/code-generation/code-summary.md`)).toBe(false);
+  });
+
   test("backslashes are read as separators, and the path keeps its own", () => {
     const windows = `C:\\work\\proj\\${RECORD.replaceAll("/", "\\")}\\construction\\alpha\\code-generation\\code-generation-questions.md`;
     expect(sevenPhaseRecordPath(windows))
@@ -64,13 +126,6 @@ describe("a five-phase record path reads in its seven-phase spelling", () => {
   test("an absolute path translates only its record folder", () => {
     expect(sevenPhaseRecordPath(`/home/u/proj/${RECORD}/inception/user-stories/stories.md`))
       .toBe(`/home/u/proj/${RECORD}/design/user-stories/stories.md`);
-  });
-
-  test("a plugin stage moves only when its caller names its old and current folder", () => {
-    const plugin = (slug: string) => slug === "test-pro-integration" ? { old: "construction", current: "test" } : null;
-    expect(sevenPhaseRecordPath("construction/test-pro-integration/report.md", plugin)).toBe("test/test-pro-integration/report.md");
-    expect(sevenPhaseRecordPath("operation/test-pro-integration/report.md", plugin)).toBe("operation/test-pro-integration/report.md");
-    expect(sevenPhaseRecordPath("construction/test-pro-integration/report.md")).toBe("construction/test-pro-integration/report.md");
   });
 
   test("a path that only looks like a five-phase one is left as it is", () => {
@@ -92,6 +147,12 @@ describe("a five-phase record path reads in its seven-phase spelling", () => {
   test("a project folder that happens to hold a five-phase name keeps it: only the record's own pair moves", () => {
     expect(sevenPhaseRecordPath(`/home/u/construction/code-generation/${RECORD}/inception/requirements-analysis/requirements.md`))
       .toBe(`/home/u/construction/code-generation/${RECORD}/design/requirements-analysis/requirements.md`);
+    // A path written since, under such a folder, is already in the record's layout.
+    for (const path of [
+      `/home/u/construction/alpha/code-generation/${RECORD}/design/requirements-analysis/requirements.md`,
+      `/home/u/construction/alpha/code-generation/${RECORD}/build/alpha/code-generation/code-summary.md`,
+      `/home/u/inception/requirements-analysis/${RECORD}/discover/intent-capture/intent-statement.md`,
+    ]) expect(sevenPhaseRecordPath(path), path).toBe(path);
   });
 });
 
@@ -179,6 +240,54 @@ describe("a project-relative seven-phase path in the spelling a five-phase relea
       "aidlc/spaces/default/codekb/app/architecture.md",
       "src/design/widget.ts",
     ]) expect(fivePhaseRecordPath(path), path).toBeNull();
+  });
+});
+
+// A stage the frozen tables do not know (a plugin's) is moved by the 8 to 10
+// step from whichever five-phase folder holds it to its phase in the stage
+// graph; its recorded paths read there too. 2.11.4 recorded no folder for it,
+// so its five-phase spelling is one per five-phase folder, each over the same
+// documents.
+describe("a plugin stage reads at its phase in the stage graph", () => {
+  test("its recorded paths read where the step moves its folder, from any five-phase folder", () => {
+    withPluginGraph(() => {
+      const cases: Array<[string, string]> = [
+        ["construction/test-pro-integration/test-pro-integration-test-results.md", "test/test-pro-integration/test-pro-integration-test-results.md"],
+        ["operation/test-pro-integration/test-pro-integration-test-plan.md", "test/test-pro-integration/test-pro-integration-test-plan.md"],
+        ["operation/test-pro-full-suite/test-pro-full-suite-results.md", "operate/test-pro-full-suite/test-pro-full-suite-results.md"],
+        ["construction/alpha/team-unit-check/report.md", "build/alpha/team-unit-check/report.md"],
+        ["construction/construction/team-unit-check/report.md", "build/construction/team-unit-check/report.md"],
+      ];
+      for (const [five, seven] of cases) {
+        expect(sevenPhaseRecordPath(`${RECORD}/${five}`), five).toBe(`${RECORD}/${seven}`);
+        expect(sevenPhaseRecordPath(`${RECORD}/${seven}`), seven).toBe(`${RECORD}/${seven}`);
+        expect(sameRecordPath(`${RECORD}/${five}`, `${RECORD}/${seven}`)).toBe(true);
+      }
+      // A stage the graph does not know, under a five-phase folder, is not a stage's.
+      expect(sevenPhaseRecordPath("construction/not-a-stage/report.md")).toBe("construction/not-a-stage/report.md");
+    });
+    // With the plugin not in the graph, its folder is not moved, and its paths stay as they are.
+    expect(sevenPhaseRecordPath("construction/test-pro-integration/report.md")).toBe("construction/test-pro-integration/report.md");
+  });
+
+  test("its five-phase spelling is one per five-phase folder; a per-Unit one has one, and the frozen stages one", () => {
+    withPluginGraph(() => {
+      const entries = ["test/test-pro-integration/a.md", "test/test-pro-integration/b.md"];
+      expect(fivePhaseLogicalPath(entries[0])).toBeNull();
+      expect(fivePhaseLogicalPath(entries[0], "construction")).toBe("construction/test-pro-integration/a.md");
+      expect(fivePhaseLogicalSpellings(entries)).toEqual(["ideation", "inception", "construction", "operation"]
+        .map((folder) => entries.map((entry) => entry.replace(/^test\//, `${folder}/`))));
+      expect(fivePhaseRecordSpellings([`${RECORD}/${entries[0]}`, `${RECORD}/design/requirements-analysis/requirements.md`]))
+        .toEqual(["ideation", "inception", "construction", "operation"].map((folder) => [
+          `${RECORD}/${folder}/test-pro-integration/a.md`, `${RECORD}/inception/requirements-analysis/requirements.md`,
+        ]));
+      expect(fivePhaseLogicalSpellings(["build/alpha/team-unit-check/report.md"])).toEqual([["construction/alpha/team-unit-check/report.md"]]);
+      expect(fivePhaseLogicalSpellings(["design/requirements-analysis/requirements.md", "codekb/app/architecture.md"]))
+        .toEqual([["inception/requirements-analysis/requirements.md", null]]);
+      expect(fivePhaseLogicalSpellings(["codekb/app/architecture.md"])).toEqual([]);
+      // A plugin stage's entry at another phase than its own names no stage it kept.
+      expect(fivePhaseLogicalSpellings(["design/test-pro-integration/a.md"])).toEqual([]);
+    });
   });
 });
 

@@ -7832,7 +7832,12 @@ function lateGateChecks(pd: string, stage: GateStage, stateContent: string, arti
       .split(",").map((entry) => entry.trim().replace(/=.*$/, "")).filter((entry) => entry !== ""));
     let hashes: Record<string, string>;
     try {
-      hashes = JSON.parse(auditBlockField(row.block, "Checked Outputs") ?? "{}") as Record<string, string>;
+      // A five-phase release keyed each file at the folder the 8 to 10 step
+      // moved it from; the key is read at the folder it moved to, the hash
+      // compared exactly.
+      hashes = Object.fromEntries(Object.entries(
+        JSON.parse(auditBlockField(row.block, "Checked Outputs") ?? "{}") as Record<string, string>,
+      ).map(([path, hash]) => [sevenPhaseRecordPath(path), hash]));
     } catch {
       continue;
     }

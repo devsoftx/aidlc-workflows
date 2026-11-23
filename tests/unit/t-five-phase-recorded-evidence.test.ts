@@ -33,6 +33,7 @@ import {
   checkSummaryConfirmationEvidence,
   latestSensorResults,
   loadStageGraphAll,
+  recordAcceptedChanges,
   summaryOutputDescendsFrom,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { claimAuditRules } from "../../dist/claude/.claude/tools/aidlc-unit.ts";
@@ -185,6 +186,31 @@ describe("a summary confirmed on a five-phase release", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected refusal");
     expect(result.refusal?.code).toBe("SUMMARY_CONTENT_STALE");
+  });
+
+  test("an answer changed after it under Guard Policy off was said once on 2.11.4, and is not said again after the update", () => {
+    const proj = project();
+    const state = seededStateFile(proj);
+    writeFileSync(state, readFileSync(state, "utf-8").replace(/^- \*\*Change Control\*\*: .*$/m, "- **Guard Policy**: off (set by you)"));
+    const { artifact, questions } = paths(proj);
+    confirm(proj, questions);
+    writeFileSync(artifact, "# Requirements\n");
+    recordArtifactWriteViaHook(proj, artifact, "Write");
+    writeFileSync(questions, `${questionsBody("Looks correct")}\nA follow-up answer added after the confirmation.\n`);
+    const before = evidence(proj);
+    if (!before.ok) throw new Error(`expected the confirmation to hold: ${JSON.stringify(before)}`);
+    expect(before.acceptedChanges?.map((change) => change.changed)).toEqual([[relative(proj, questions).replaceAll("\\", "/")]]);
+    expect(recordAcceptedChanges(proj, before.acceptedChanges ?? [])).toHaveLength(1);
+    spelledAs(proj, SEVEN, FIVE);
+    const after = evidence(proj);
+    if (!after.ok) throw new Error(`expected the confirmation to hold: ${JSON.stringify(after)}`);
+    expect(after.acceptedChanges).toHaveLength(1);
+    expect(recordAcceptedChanges(proj, after.acceptedChanges ?? [])).toEqual([]);
+    // The same answer changed again is a new change, and said.
+    writeFileSync(questions, `${readFileSync(questions, "utf-8")}One more.\n`);
+    const again = evidence(proj);
+    if (!again.ok) throw new Error(`expected the confirmation to hold: ${JSON.stringify(again)}`);
+    expect(recordAcceptedChanges(proj, again.acceptedChanges ?? [])).toHaveLength(1);
   });
 
   test("a confirmation recorded for another stage's folder is not this one's", () => {
