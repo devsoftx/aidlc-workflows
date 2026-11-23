@@ -346,8 +346,9 @@ export const FIVE_PHASE_CONDITIONS: Readonly<Record<string, { fivePhase: string;
  * A stage's graph contract (the fields a stage receipt hashes) as a five-phase
  * release hashed the same contract: the stage's five-phase folder for its
  * phase, and the 2.11.4 wording of a condition the seven phases only reworded
- * (FIVE_PHASE_CONDITIONS). Null for a stage 2.11.4 did not ship
- * (fivePhaseGraphContracts gives a plugin's stage its forms). Every other
+ * (FIVE_PHASE_CONDITIONS). Null for a stage the frozen folder table does not
+ * hold (a plugin's, an Initialization or a Secure stage;
+ * fivePhaseGraphContracts gives those their forms). Every other
  * field is the contract as it is now, so a change to what the stage reads,
  * writes or runs on still reads as one.
  */

@@ -239,3 +239,15 @@ describe.skipIf(process.platform !== "linux" || process.getuid?.() === 0)("the a
     expect(unwritableFolderFor(recordDir, RENAME, "darwin")).toBe(RENAME.from);
   });
 });
+
+describe.skipIf(process.platform !== "linux" || process.getuid?.() !== 0)("an immutable folder renames nowhere on Linux", () => {
+  test("the access check names it even for a rename that keeps its parent, as the rename itself refuses", () => {
+    const { recordDir } = project();
+    const folder = join(recordDir, ".aidlc-sensors", "application-design");
+    mkdirSync(folder, { recursive: true });
+    lockFolder(folder);
+    const RENAME = { from: ".aidlc-sensors/application-design", to: ".aidlc-sensors/domain-design" };
+    expect(unwritableFolderFor(recordDir, RENAME, "linux")).toBe(RENAME.from);
+    expect(() => renameSync(folder, join(recordDir, ".aidlc-sensors", "domain-design"))).toThrow();
+  });
+});

@@ -545,7 +545,7 @@ describe("t328 (2) every legitimate action preserves the recorded decision", () 
   // Parking and resuming: the park row keeps the words the person typed before
   // it ("Approve Plan", the reply that stands behind the park), and the step that
   // resumes there carries them as parked_reply (the third member). And a new
-  // chat, which is handed the conductor persona on its own first step.
+  // chat, which is handed the conductor persona on its first run-stage.
   const cases: Array<
     [string, (p: Project) => number | undefined, { carriesReply?: true }?]
   > = [
