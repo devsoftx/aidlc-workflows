@@ -1544,7 +1544,17 @@ record as it was is kept beside it in the record dir as `aidlc-state.v8.md`
 file whose new folder already holds one of the same name, or a folder no stage
 owns) stays where it was, and `/aidlc --doctor` names it with the move to
 make. Each piece of work is brought up when AI-DLC first takes a step on it,
-so parked work waits until you pick it up again.
+so parked work waits until you pick it up again. Until then `/aidlc --status`
+and the status line already show it in the seven phases, and status says
+`Brought up: at AI-DLC's next step`. Finished stages keep their approvals
+through the move: a stage reads as changed only when your work or what the
+stage does really changed, never for a new phase name alone.
+
+Work a teammate set up with AI-DLC 2.12's team work is not carried on by a
+seven-phase release, and updating does not change that: AI-DLC says
+so and names the step that carries it on, pinning the project to the 2.12
+release your teammate uses (`aidlc config --pin <that version> --yes`, then
+`aidlc config --yes`), or, on a copied project, that release's copy runtime.
 
 On a shared project, everyone should update together. Once one person's
 AI-DLC has brought the work up and they commit it, a teammate still on 2.11.4
@@ -1672,7 +1682,7 @@ Previews are `main` as it stands, including project state-schema changes. A
 preview that raises the state schema writes project state a stable build does
 not understand. A build never advances work newer than it reads: on a native
 install it asks once whether to update AI-DLC and carry on ("This plan was set
-up with AI-DLC 2.12 or newer, and this computer has 2.11.5. Want me to update
+up with a newer AI-DLC, and this computer has 2.11.5. Want me to update
 AI-DLC now and carry on?"), and on yes runs `aidlc update` and the project's
 refresh and carries on with what you asked; a copied, pinned or
 package-managed install says its own one step instead. That project cannot be

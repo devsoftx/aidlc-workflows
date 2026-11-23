@@ -42069,15 +42069,15 @@ export function classifyStateVersion(stateContent: string): StateVersionClassifi
   // 9 is the version upstream AI-DLC 2.12 writes for team work, a layout this
   // release does not read; the step from 8 goes straight to 10, so 9 is never
   // an earlier record of this line, and every caller that refuses newer work
-  // refuses it.
+  // refuses it, with the step on 2.12 (newerStateStep, aidlc-state-upgrade.ts).
   if (v === "9") {
     return {
       kind: "future",
       version: v,
       message:
         "Incompatible workflow state: State Version 9 was set up with AI-DLC 2.12 team work, " +
-        "which this release does not read, so it cannot be advanced here. Carry it on with " +
-        "AI-DLC 2.12 or newer, or on the AI-DLC that set it up. " +
+        "which this release and the releases after it do not read, so it cannot be advanced here. " +
+        "Carry it on with the AI-DLC 2.12 release that set it up. " +
         `Run \`${entrySkillInvocation()} --doctor\` for the full diagnosis.`,
     };
   }

@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity
+// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:fivePhaseGraphContract
 //
 // The state-version gate and the bring-up beside it. v8 renamed the Inception
 // `application-design` stage to `domain-design` and added `contract-design`;
@@ -32,9 +32,15 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
-import { sevenPhaseRecordPath } from "../../dist/claude/.claude/tools/aidlc-five-phase-record.ts";
+import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
+import {
+  FIVE_PHASE_CONDITIONS,
+  fivePhaseGraphContract,
+  sevenPhaseRecordPath,
+} from "../../dist/claude/.claude/tools/aidlc-five-phase-record.ts";
+import { loadGraph } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { sevenPhaseStateText } from "../../dist/claude/.claude/tools/aidlc-seven-phase-upgrade.ts";
-import { inspectStageValidity } from "../../dist/claude/.claude/tools/aidlc-validity.ts";
+import { inspectStageValidity, stageValidationAuditFields } from "../../dist/claude/.claude/tools/aidlc-validity.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -135,9 +141,12 @@ describe("t282 state-version doctor gate", () => {
     const { status, out } = runDoctor("9");
     expect(out).toMatch(/state version compatible/);
     expect(out).not.toMatch(/state version current/);
-    // The release that writes it and this install's one step, in plain words.
-    expect(out).toContain("This plan was set up with AI-DLC 2.12 or newer");
+    // The release that wrote it and this install's one step on it, in plain
+    // words: no release of this line reads 9, so no update is named.
+    expect(out).toContain("This plan was set up with AI-DLC 2.12 team work, which ");
     expect(out).toContain("To carry on");
+    expect(out).toContain("the AI-DLC 2.12 release your teammate uses");
+    expect(out).not.toMatch(/or newer|aidlc update/);
     expect(out).not.toMatch(/Upgrade the framework|state schema/);
     // The past-version's archive path template ('mv aidlc aidlc.v9-archive')
     // MUST NOT appear — that would be the wrong remediation for a future state.
@@ -268,12 +277,14 @@ describe("t282 runtime state-version guard (next / report)", () => {
   });
 
   // A FUTURE numeric schema (v9) is one this build cannot read, but it does
-  // not "predate" v8: a copied project hears the release that writes it and its
-  // own step to carry on (t-newer-work-update-offer owns the native offer).
-  test("`next` on a FUTURE (v9) state names the newer release and the step, not a past-version refusal", () => {
+  // not "predate" v8: a copied project hears the release that wrote it and its
+  // own step on it (t-newer-work-update-offer owns every install's line).
+  test("`next` on a FUTURE (v9) state names the release that wrote it and the step, not a past-version refusal", () => {
     const r = runOrchestrate("next", "9");
     expect(r.kind).toBe("print");
-    expect(r.out).toContain("This plan was set up with AI-DLC 2.12 or newer");
+    expect(r.out).toContain("This plan was set up with AI-DLC 2.12 team work, which ");
+    expect(r.out).toContain("get the copy runtime of the AI-DLC 2.12 release your teammate uses");
+    expect(r.out).not.toMatch(/or newer|Update and carry on/);
     expect(r.out).not.toMatch(/predates the current|Upgrade the framework/);
   });
 
@@ -678,8 +689,9 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     // the project's own folder name, outside the record, so a record copied
     // into another project cannot carry them and only that stage reads as
     // changed here, as it would on 2.11.4.
-    expect(r.directive?.stage_validity?.directly_stale).toEqual(["reverse-engineering"]);
-    expect(r.directive?.stage_validity?.needs_revalidation).toEqual([]);
+    const validity = r.directive?.stage_validity as { directly_stale?: string[]; needs_revalidation?: string[] } | undefined;
+    expect(validity?.directly_stale).toEqual(["reverse-engineering"]);
+    expect(validity?.needs_revalidation).toEqual([]);
     const now = readFileSync(seededStateFile(proj), "utf-8");
     expect(now).toMatch(/^- \*\*Lifecycle Phase\*\*: OPERATE$/m);
     expect(now).toMatch(/^### OPERATE PHASE\n- \[-\] observability-setup \u2014 EXECUTE$/m);
@@ -762,16 +774,172 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     writeFileSync(seededStateFile(proj), v9, "utf-8");
     for (const args of [["next"], ["next", "--claim", "store"], ["next", "--release", "store"]]) {
       const r = engine(proj, args);
-      expect(r.out, args.join(" ")).toContain("This plan was set up with AI-DLC 2.12 or newer");
-      expect(r.out).not.toMatch(/predates the current/);
+      expect(r.out, args.join(" ")).toContain("This plan was set up with AI-DLC 2.12 team work, which ");
+      expect(r.out).not.toMatch(/predates the current|or newer/);
     }
     const claim = spawnSync(BUN, [join(AIDLC_SRC, "tools", "aidlc-unit.ts"), "claim", "store", "--project-dir", proj], {
       timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
     });
     expect(claim.status).not.toBe(0);
-    expect(`${claim.stdout}${claim.stderr}`).toContain("This plan was set up with AI-DLC 2.12 or newer");
+    expect(`${claim.stdout}${claim.stderr}`).toContain("This plan was set up with AI-DLC 2.12 team work, which ");
+    expect(`${claim.stdout}${claim.stderr}`).not.toContain("or newer");
     expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(v9);
     expect(existsSync(join(seededRecordDir(proj), "aidlc-state.v9.md"))).toBe(false);
     expect(upgradeRows(proj)).toBe(0);
+  });
+});
+
+// What the person reads about a v8 record before and after AI-DLC's first step
+// on it: status, the status line and doctor, run as the person runs them.
+function statusOf(proj: string): string {
+  const res = spawnSync(BUN, [UTIL, "status", "--project-dir", proj], {
+    timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+  });
+  return `${res.stdout ?? ""}${res.stderr ?? ""}`;
+}
+
+function statusLineOf(proj: string): string {
+  const res = spawnSync(BUN, [join(AIDLC_SRC, "hooks", "aidlc-statusline.ts")], {
+    timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+    input: JSON.stringify({ workspace: { project_dir: proj } }),
+  });
+  return `${res.stdout ?? ""}${res.stderr ?? ""}`;
+}
+
+function doctorOf(proj: string): string {
+  const res = spawnSync(BUN, [UTIL, "doctor", "--verbose", "--project-dir", proj], {
+    timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+  });
+  return `${res.stdout ?? ""}${res.stderr ?? ""}`;
+}
+
+// The resume context a new chat gets, as the session-start hook gives it.
+function sessionStartOf(proj: string): string {
+  const res = spawnSync(BUN, [join(AIDLC_SRC, "hooks", "aidlc-session-start.ts")], {
+    timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8",
+    input: JSON.stringify({ session_id: "v8-before-the-step", hook_event_name: "SessionStart", source: "startup" }),
+    env: { ...process.env, CLAUDE_PROJECT_DIR: proj },
+  });
+  return `${res.stdout ?? ""}${res.stderr ?? ""}`;
+}
+
+function statusLine(out: string, label: string): string {
+  return out.split("\n").find((row) => row.startsWith(label)) ?? "";
+}
+
+// The Phase Progress rows by phase and bar. The count beside a Unit walk's rows
+// is worded from the walk once the record is brought up, so it is left out.
+function phaseRows(out: string): string[] {
+  const section = out.split("\nPhase Progress:\n")[1]?.split("\n\n")[0] ?? "";
+  return section.split("\n").filter((row) => row.trim() !== "").map((row) => row.trim().split(/\s+/).slice(0, 2).join(" "));
+}
+
+function definitionChangedRows(proj: string): number {
+  const dir = seededAuditDir(proj);
+  return readdirSync(dir).reduce((n, f) =>
+    n + (readFileSync(join(dir, f), "utf-8").match(/\*\*Event\*\*: STAGE_DEFINITION_CHANGED$/gm)?.length ?? 0), 0);
+}
+
+const FIVE_PHASE_NAME = /\b(IDEATION|INCEPTION|CONSTRUCTION|OPERATION)\b/;
+const CHANGED_LINES = /changed after it finished|differently from when yours ran|Left where an earlier AI-DLC kept it/;
+
+describe("t282 before AI-DLC's first step on a v8 record, what the person reads shows the seven phases", () => {
+  for (const fixture of ["inception-gate", "unit-walk", "operation"]) {
+    test(`${fixture}: status, the status line, doctor and the Stop hook's probe read it as the next step brings it up, and nothing as changed`, () => {
+      const { proj, state, record, documents } = v8Project(fixture);
+      const status = statusOf(proj);
+      const line = statusLineOf(proj);
+      const doctor = doctorOf(proj);
+      const probe = v8Next(proj, [], { AIDLC_STOP_HOOK_PROBE: "1" });
+      const resume = sessionStartOf(proj);
+      expect(resume).toMatch(/Lifecycle Phase: (DESIGN|OPERATE)\b/);
+      expect(resume).not.toMatch(FIVE_PHASE_NAME);
+      // Reading wrote nothing: the record is as 2.11.4 left it.
+      expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
+      expect(stageDocuments(record)).toEqual(documents);
+      expect(existsSync(join(record, "aidlc-state.v8.md"))).toBe(false);
+      expect(upgradeRows(proj)).toBe(0);
+      // No finished stage reads as changed for documents the step has not moved yet.
+      for (const out of [status, line, doctor, probe.out]) expect(out).not.toMatch(CHANGED_LINES);
+      expect(probe.out).not.toContain("stage_validity");
+      for (const out of [status, line]) expect(out).not.toMatch(FIVE_PHASE_NAME);
+      // Said once, in plain words: the next step brings the work up to the seven phases.
+      expect(status.match(/^Brought up: .*$/gm)).toEqual([
+        "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven shown here",
+      ]);
+      expect(doctor).toContain("State Version: 8 (AI-DLC brings this record up to 10 at its next step)");
+      // Once the step has run, the work reads as status and the status line showed it before.
+      v8Next(proj);
+      const after = statusOf(proj);
+      for (const label of ["Phase:", "Current Stage:", "Completion:", "Last Completed:"]) {
+        expect(statusLine(status, label), label).toBe(statusLine(after, label));
+      }
+      expect(phaseRows(status)).toEqual(phaseRows(after));
+      expect(statusLine(status, "Phase:")).toMatch(/ (DESIGN|OPERATE)$/);
+      // A Next Stage is the one the brought-up work names, never the stale field of a Unit walk.
+      const next = statusLine(status, "Next Stage:");
+      if (next !== "") expect(next).toBe(statusLine(after, "Next Stage:"));
+      expect(line).toBe(statusLineOf(proj));
+    });
+  }
+
+  test("unit-walk: no stale Next Stage, and the status line counts the Units from the plan where 2.11.4 kept it", () => {
+    const { proj } = v8Project("unit-walk");
+    const status = statusOf(proj);
+    expect(status).not.toMatch(/^Next Stage: +NFR Requirements$/m);
+    expect(status).toMatch(/^ {2}DESIGN +\S+ Unit 1 of 2$/m);
+    expect(statusLineOf(proj)).toContain("DESIGN Unit 1 of 2 > Code Generation for store");
+  });
+});
+
+// 2.11.4 hashed each stage's graph contract with its own phase name, and three
+// conditions named its phases and stage numbers. Read through the frozen
+// five-to-seven table, a receipt whose contract changed only there holds; a
+// contract that changed what the stage reads still reads as AI-DLC's own change.
+describe("t282 a v8 record's stage receipts read in their seven-phase form", () => {
+  test("after the bring-up no finished stage reads as one AI-DLC now does differently, and no row says so", () => {
+    for (const fixture of ["inception-gate", "unit-walk", "operation"]) {
+      const { proj } = v8Project(fixture);
+      v8Next(proj);
+      v8Next(proj);
+      expect(statusOf(proj), fixture).not.toMatch(/differently from when yours ran/);
+      expect(definitionChangedRows(proj), fixture).toBe(0);
+      const validity = inspectStageValidity(proj, readFileSync(seededStateFile(proj), "utf-8"));
+      expect(validity.redefined, fixture).toEqual([]);
+      expect(validity.renewed, fixture).toEqual([]);
+    }
+  });
+
+  test("the five-phase form takes the old folder and only the condition wording this release ships", () => {
+    const stage = loadGraph().find((entry) => entry.slug === "delivery-planning");
+    if (stage === undefined) throw new Error("delivery-planning is missing from the graph");
+    const older = fivePhaseGraphContract(stage);
+    expect(older?.phase).toBe("inception");
+    expect(older?.condition).toBe(FIVE_PHASE_CONDITIONS["delivery-planning"]?.fivePhase);
+    expect(older?.consumes).toEqual(stage.consumes);
+    // A condition a later release words again is that release's change, never 2.11.4's.
+    expect(fivePhaseGraphContract({ ...stage, condition: "Runs when the team asks for it" })?.condition)
+      .toBe("Runs when the team asks for it");
+    // A stage 2.11.4 never shipped has no five-phase form.
+    expect(fivePhaseGraphContract({ ...stage, slug: "code-review", phase: "secure" })).toBeNull();
+  });
+
+  test("Performance Validation, whose inputs changed with the seven phases, still reads as redefined", () => {
+    const { proj } = v8Project("inception-gate");
+    v8Next(proj);
+    const graph = loadGraph();
+    const now = graph.find((stage) => stage.slug === "performance-validation");
+    if (now === undefined) throw new Error("performance-validation is missing from the graph");
+    // Its contract as 2.11.4 shipped it: in Operation, reading the dashboards.
+    const shipped = { ...now, phase: "operation", consumes: [...(now.consumes ?? []), { artifact: "dashboards", required: true }] };
+    const older = graph.map((stage) => (stage.slug === now.slug ? shipped : stage));
+    const state = readFileSync(seededStateFile(proj), "utf-8")
+      .replace(/^- \[ \] performance-validation —/m, "- [x] performance-validation —");
+    const fields = stageValidationAuditFields(proj, shipped, state, older);
+    // The hash 2.11.4's own graph contract fingerprint gives this stage.
+    expect(JSON.parse(fields["Validation Basis"] ?? "{}").graphContract)
+      .toBe("sha256:2862f2aab4a5c443171884d5f577a399b12f31352d20c9e5d8ade81a3a73f3d3");
+    appendAuditEntry("STAGE_COMPLETED", { Stage: now.slug, ...fields }, proj);
+    expect(inspectStageValidity(proj, state).redefined.map((entry) => entry.stage)).toEqual(["performance-validation"]);
   });
 });

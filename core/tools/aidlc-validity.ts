@@ -17,7 +17,7 @@ import { loadGraph } from "./aidlc-graph.ts";
 import { withdrawnTurnPositions } from "./aidlc-record-core.ts";
 import { SLUG_RE as STAGE_SLUG_RE } from "./aidlc-stage-schema.ts";
 import { artifactFilename } from "./aidlc-artifact-vocabulary.ts";
-import { fivePhaseRecordPath } from "./aidlc-five-phase-record.ts";
+import { fivePhaseGraphContract, fivePhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import {
   resolveArtifactInstances,
   type ArtifactResolutionOptions,
@@ -179,6 +179,12 @@ function canonicalJson(value: unknown): string {
  * requires_stage is excluded because v2 currently uses it for both semantic
  * and ordering constraints. Treating every such edge as invalidating would be
  * an unsound over-approximation until the graph carries an explicit kind.
+ *
+ * A five-phase release (up to 2.11.4) hashed the same contract with its own
+ * phase name and wording (fivePhaseGraphContract), so that hash is remembered
+ * against this one beside the documents' (FIVE_PHASE_BASES), and
+ * basisInCurrentForm reads its receipts as this release's: only a real change
+ * to the contract reads as AI-DLC doing the stage differently.
  */
 function graphContractFingerprint(stage: StageValidityNode): string {
   const contract = {
@@ -193,7 +199,10 @@ function graphContractFingerprint(stage: StageValidityNode): string {
     optional_produces: stage.optional_produces ?? [],
     produces_kinds: stage.produces_kinds ?? {},
   };
-  return `sha256:${sha256(canonicalJson(contract))}`;
+  const current = `sha256:${sha256(canonicalJson(contract))}`;
+  const older = fivePhaseGraphContract(contract);
+  if (older !== null) FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(older))}`, current);
+  return current;
 }
 
 interface InstanceFingerprint {
@@ -853,7 +862,12 @@ function basisInCurrentForm(basis: StageValidationBasis): StageValidationBasis {
       structureHash: FIVE_PHASE_BASES.get(item.structureHash) ?? item.structureHash,
       contentHash: FIVE_PHASE_BASES.get(item.contentHash) ?? currentFingerprintForm(item.contentHash) ?? item.contentHash,
     }));
-  return { ...basis, inputs: current(basis.inputs), outputs: current(basis.outputs) };
+  return {
+    ...basis,
+    graphContract: FIVE_PHASE_BASES.get(basis.graphContract) ?? basis.graphContract,
+    inputs: current(basis.inputs),
+    outputs: current(basis.outputs),
+  };
 }
 
 export function diffStageValidationBasis(
