@@ -1539,12 +1539,22 @@ nothing: every stage keeps its mark and every approval stays in the record,
 each stage's folder moves to its seven-phase folder (for example
 `inception/requirements-analysis` to `design/requirements-analysis`), and the
 record as it was is kept beside it in the record dir as `aidlc-state.v8.md`
-(`aidlc-state.v7.md` for work begun on 2.1.x to 2.3.0). `/aidlc --status` and
-`/aidlc --doctor` say when it was brought up. Anything it could not move (a
-file whose new folder already holds one of the same name, or a folder no stage
-owns) stays where it was, and `/aidlc --doctor` names it with the move to
-make. Each piece of work is brought up when AI-DLC first takes a step on it,
-so parked work waits until you pick it up again.
+(`aidlc-state.v7.md` for work begun on 2.1.x to 2.3.0; when that file is
+already there and holds something else, the next free number, such as
+`aidlc-state.v8.2.md`, so no kept copy is ever overwritten). `/aidlc --status`
+and `/aidlc --doctor` say when it was brought up and name the kept copy. A
+Unit's folders move with it whatever the Unit is called, even a stage's name.
+Anything it could not move (a file whose new folder already holds one of the
+same name, or a folder no stage owns) stays where it was, and `/aidlc --doctor`
+names it with the move to make; the files Finder and Windows Explorer leave in
+folders you browse (`.DS_Store`, `Thumbs.db`, `desktop.ini`) are not counted,
+and go with the old folders. If a program on your computer has one of the
+folders open (a dev server or test watcher, a terminal or an editor inside it,
+a file sync or backup app), AI-DLC changes nothing: it tells you which folder
+it could not move and stops, and once you have closed what holds it and ask it
+to carry on, it brings the work up whole and picks up where you were. Each
+piece of work is brought up when AI-DLC first takes a step on it, so parked
+work waits until you pick it up again.
 
 On a shared project, everyone should update together. Once one person's
 AI-DLC has brought the work up and they commit it, a teammate still on 2.11.4
@@ -1578,14 +1588,20 @@ back any work the newer release has already brought up
 taken a step on yet is unchanged, and the earlier release carries it on. Work
 it has brought up is recorded on the seven phases, which the earlier release
 does not read: it says the plan was set up with a newer AI-DLC. To carry that
-work on with 2.11.4, put its record back by hand, in the record dir: copy
-`aidlc-state.v8.md` over `aidlc-state.md`, then move each stage's folder back
-from its seven-phase folder to the five-phase folder it came from. The
+work on with 2.11.4, put its record back by hand, in the record dir: move
+(rename) the kept copy over `aidlc-state.md` rather than copying it, so no
+stale copy stays behind for a later update to find, then move each stage's
+folder back from its seven-phase folder to the five-phase folder it came from.
+The kept copy is the one `/aidlc --status` and `/aidlc --doctor` name
+(`aidlc-state.v8.md` unless the work was brought up more than once), and the
 record's audit lists every move the bring-up made (its `STATE_UPGRADED` entry,
-under `Moved`). The kept file holds the work only as it stood at the update,
-so anything done on the newer release after that is lost when you put it
-back; go back before you carry on, or stay on the newer release. On a shared
-project, everyone goes back together, as everyone updates together.
+under `Moved`). That entry stays in the audit, and 2.11.4 reads it, so its
+`/aidlc --status` and `/aidlc --doctor` go on saying the work was brought up
+on that date; that is the update you undid, and nothing else is affected. The
+kept file holds the work only as it stood at the update, so anything done on
+the newer release after that is lost when you put it back; go back before you
+carry on, or stay on the newer release. On a shared project, everyone goes
+back together, as everyone updates together.
 
 Releases before 2.8.0 have no native release, so `aidlc use` and
 `aidlc config --pin` cannot select them; they stop with `No published native
