@@ -47,6 +47,7 @@ import {
   setField,
   setPhaseProgress,
   stageIndex,
+  stagesOwedBehindCursor,
   sourceBaselineAuditFields,
   workspaceBaselineStageSlugs,
   toPosix,
@@ -260,14 +261,19 @@ export function backwardJumpNotice(
     `You can return to ${stageLabel(from, from.slug) ?? "where you were"} any time.`;
 }
 
-// The redo `next` names for Reverse Engineering owed behind the stage the
-// person is on (they said this is existing code) says what comes next. Kept
-// here, where it starts, so a skip asked for before it never hears it. It is
-// said before the person next replies, which is at that stage's gate while it
-// still waits on their approval, so it reads true before the documenting, at
-// the gate, and after a revise.
-export function reverseEngineeringRedoNotice(from: { slug: string; name: string; plugin?: string }): string {
-  return `Once you approve the code's documentation, we're back at ${stageLabel(from, from.slug) ?? "where we were"}.`;
+// The redo `next` names for a stage owed behind the stage the person is on
+// (Reverse Engineering, once they said this is existing code; a stage an
+// update's new order put behind it) says what comes next. Kept here, where it
+// starts, so a skip asked for before it never hears it. It is said before the
+// person next replies, which is at that stage's gate while it still waits on
+// their approval, so it reads true before the work, at the gate, and after a
+// revise.
+export function owedRedoNotice(
+  target: { slug: string; name: string; plugin?: string },
+  from: { slug: string; name: string; plugin?: string },
+): string {
+  const what = target.slug === "reverse-engineering" ? "the code's documentation" : stageLabel(target, target.slug) ?? "it";
+  return `Once you approve ${what}, we're back at ${stageLabel(from, from.slug) ?? "where we were"}.`;
 }
 
 if (import.meta.main) {
@@ -572,11 +578,12 @@ function handleResolve(args: string[]): void {
   );
 }
 
-// The state a jump to `targetSlug` leaves: the stages it skips (forward) or
-// resets (backward: the target and every later stage on the effective plan),
-// the target in progress, and Current Stage with its projections on the
-// target. `execute` writes it with its STAGE_JUMPED; a reopen from a later
-// stage writes it with the Units' own rejections instead.
+// The state a jump to `targetSlug` leaves: the stages it skips (forward, or a
+// redo of a stage behind the cursor: the passed-over ones between, less those
+// `owed` names) or resets (backward: the target and every later stage on the
+// effective plan), the target in progress, and Current Stage with its
+// projections on the target. `execute` writes it with its STAGE_JUMPED; a
+// reopen from a later stage writes it with the Units' own rejections instead.
 function movedState(
   content: string,
   targetSlug: string,
@@ -586,6 +593,7 @@ function movedState(
   suffixes: Map<string, "EXECUTE" | "SKIP">,
   scopeMapping: { stages: Record<string, string> },
   keepsUnitStages = false,
+  owed: readonly string[] = [],
 ): {
   content: string;
   stagesSkipped: string[];
@@ -677,6 +685,18 @@ function movedState(
       }
     }
   } else {
+    // A redo of a stage owed behind the cursor runs it and returns to the stage
+    // the work stood on: the stages between that the work had passed over stay
+    // passed over, now marked so, or approving the target would walk into them.
+    // One `next` goes back to as well (`owed`) is left for the walk to reach,
+    // and a Unit stage keeps to its Units' own walk.
+    for (let i = targetIdx + 1; i < stageIndex(currentSlug); i++) {
+      const slug = graph[i].slug;
+      if (effectiveAction(suffixes, scopeMapping, slug) !== "EXECUTE" || owed.includes(slug) || isPerUnitStage(graph[i])) continue;
+      if ((checkboxMap.get(slug) ?? "pending") !== "pending") continue;
+      content = setCheckbox(withStageProgressRow(content, slug), slug, "skipped");
+      stagesSkipped.push(slug);
+    }
     content = setCheckbox(content, targetSlug, "pending");
     stagesReset.push(targetSlug);
   }
@@ -721,11 +741,12 @@ function movedState(
   // PHASE_VERIFIED is emitted, so its row reads Verified; any phase jumped
   // over entirely reads Skipped, and each such phase the plan runs is the
   // jump's to record as skipped (phasesJumpedOver; one the plan leaves out
-  // already has its row from intent creation). Backward (or a
-  // caller-mis-specified redo that crosses a boundary): every phase after the
+  // already has its row from intent creation). Backward: every phase after the
   // target just had its EXECUTE stages reset to pending above, so those rows
   // return to Pending, leaving zero-EXECUTE phases in their initial Skipped
-  // state. Either way the target's phase is now the active one.
+  // state. A redo of a stage owed behind the cursor resets nothing after it,
+  // so those rows stay as they are for the walk's return. Either way the
+  // target's phase is now the active one.
   const phasesJumpedOver: string[] = [];
   if (crossesPhaseBoundary && currentStageForPhase) {
     const phaseIdx = (p: string): number =>
@@ -746,7 +767,7 @@ function movedState(
         content = setPhaseProgress(content, PHASES[i], "Skipped");
         if (runsOnPlan(PHASES[i])) phasesJumpedOver.push(PHASES[i]);
       }
-    } else {
+    } else if (direction === "backward") {
       for (let i = phaseIdx(targetStage.phase) + 1; i < PHASES.length; i++) {
         const p = PHASES[i];
         if (runsOnPlan(p)) content = setPhaseProgress(content, p, "Pending");
@@ -869,7 +890,12 @@ async function handleExecute(args: string[]): Promise<void> {
       // The line names the stages instead; the jump never fails for it.
     }
   }
-  const moved = movedState(content, targetSlug, targetStage, direction, scope, suffixes, scopeMapping, keepsUnitStages);
+  // A redo of a stage owed behind the cursor leaves the other stages `next`
+  // goes back to for the walk to reach.
+  const owed = direction === "redo" && stageIndex(targetSlug) < stageIndex(currentSlug)
+    ? stagesOwedBehindCursor(content, pd)
+    : [];
+  const moved = movedState(content, targetSlug, targetStage, direction, scope, suffixes, scopeMapping, keepsUnitStages, owed);
   content = moved.content;
   const { stagesSkipped, stagesReset, currentStageForPhase, crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp } = moved;
 
@@ -986,7 +1012,7 @@ async function handleExecute(args: string[]): Promise<void> {
   backInFlight(pd, stateBefore, content);
 
   // The jump is done, so its line (what it skipped and the way back, or what
-  // comes after an owed Reverse Engineering) can never fail it. The line is
+  // comes after a stage owed behind the cursor) can never fail it. The line is
   // kept for the next step the agent speaks from; when no chat can hold it, it
   // rides the tool's output instead.
   const from = graph.find((node) => node.slug === cameFrom);
@@ -997,8 +1023,8 @@ async function handleExecute(args: string[]): Promise<void> {
     // this checkout builds (teamRedoNarrowed), so the line names no way back.
     notice = forwardJumpNotice(targetStage, skipped, cameFrom, unitSteps, !keepsUnitStages) +
       (stillOpen ? ` ${stillOpen}` : "");
-  } else if (direction === "redo" && targetSlug === "reverse-engineering" && from && from.slug !== targetSlug) {
-    notice = reverseEngineeringRedoNotice(from);
+  } else if (direction === "redo" && stageIndex(targetSlug) < stageIndex(currentSlug) && from && from.slug !== targetSlug) {
+    notice = owedRedoNotice(targetStage, from);
   } else if (direction === "backward" && from && !addedBack) {
     notice = backwardJumpNotice(targetStage, from);
   }

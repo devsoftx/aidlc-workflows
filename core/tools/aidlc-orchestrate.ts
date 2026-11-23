@@ -14327,14 +14327,18 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
       return;
     }
   }
-  // Reverse Engineering went back on the plan behind the cursor (the person
-  // said this is existing code): run it now with a redo jump, which leaves the
-  // finished stages alone; once it is approved the walk returns here. The
-  // plan-approval guard reads the same move (owedJumpBack).
+  // A stage the plan runs is behind the cursor and owed: Reverse Engineering
+  // went back on the plan (the person said this is existing code), or an
+  // update's new stage order put one 2.11.4 would still have run there. Run it
+  // now with a redo jump, which leaves the finished stages alone; once it is
+  // approved the walk returns here. An open gate is settled first
+  // (owedJumpBack), and the plan-approval guard reads the same move. A
+  // plugin's stage is named by its slug (stageLabel), never its own text.
   const owed = owedJumpBack(stateContent, pd);
+  const owedName = owed === null ? "" : stageLabel(nodeForSlug(owed.target), owed.target) ?? "A stage";
   if (owed?.direction === "redo") {
     emit(printDirective(
-      `Reverse Engineering is on the plan and has not run. Run \`${aidlcToolInvocation("jump")} execute --target reverse-engineering --direction redo --scope ${scopeArg(scope)}\` ` +
+      `${owedName} is on the plan and has not run. Run \`${aidlcToolInvocation("jump")} execute --target ${owed.target} --direction redo --scope ${scopeArg(scope)}\` ` +
         `to run it now (finished stages stay finished, and the workflow returns to ${currentSlug} after it). ` +
         "When its output carries `notice`, tell the person that line once, as written. Then re-run `next` to continue.",
     ));
@@ -14347,7 +14351,7 @@ function routeNext(agentArgs: string[], projectDir: string | undefined): void {
   // first. A person's add said so in its own line; an update's says nothing.
   if (owed !== null) {
     emit(printDirective(
-      `${nodeForSlug(owed.target)?.name || owed.target} is on the plan and has not run. Run ` +
+      `${owedName} is on the plan and has not run. Run ` +
         `\`${aidlcToolInvocation("jump")} execute --target ${owed.target} --direction backward --scope ${scopeArg(scope)}\` ` +
         "to start it now, and do not show its output. Then re-run `next` to continue.",
     ));

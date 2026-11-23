@@ -1852,10 +1852,10 @@ function jumpIsPersonsMove(
 
 // The jump `next` names back to a stage on the plan the work has passed and
 // not run (owedJumpBack, the check `next` prints it from): Reverse Engineering
-// the person put back behind the cursor, or a stage they added after the work
-// had just passed over it. It is their own change carried out, leaving Code
-// Generation before anything of it is written, so it waits for no further turn
-// of theirs.
+// the person put back behind the cursor, a stage they added after the work had
+// just passed over it, or one their plan still ran that an update's new stage
+// order put behind it. It carries out their own plan, leaving Code Generation
+// before anything of it is written, so it waits for no further turn of theirs.
 function jumpNextNamesBack(projectDir: string, state: string, jump: JumpCommand): boolean {
   if (jump.verb !== "execute" || jump.target === undefined) return false;
   try {

@@ -93,6 +93,39 @@ export const FIVE_PHASE_UNIT_STAGES: readonly string[] = [
   "code-generation",
 ];
 
+// The order 2.11.4 walked its stages in after Initialization: the key order of
+// FIVE_PHASE_STAGE_FOLDER, which t-five-phase-record-paths pins against that
+// release's graph.
+export const FIVE_PHASE_STAGE_ORDER: readonly string[] = Object.freeze(Object.keys(FIVE_PHASE_STAGE_FOLDER));
+
+/**
+ * What the seven-phase order does to the stages around a five-phase record's
+ * cursor, from stage order alone. `behind`: the stages 2.11.4 would still have
+ * walked to that now come before the cursor (Performance Validation while the
+ * cursor is anywhere from CI Pipeline to Incident Response, Reverse
+ * Engineering from Scope Definition to Approval & Handoff). `ahead`: the ones
+ * its walk had already passed that now come after it. `order` is the current
+ * graph's stage order. A stage the frozen order does not know (Initialization's,
+ * one a later release added, a plugin's) stands where 2.11.4's walk would have
+ * reached it: just before the first stage after it in `order` that the frozen
+ * order knows. A cursor `order` does not hold moves nothing.
+ */
+export function stagesReorderedAround(order: readonly string[], cursor: string): { behind: string[]; ahead: string[] } {
+  const at = order.indexOf(cursor);
+  if (at < 0) return { behind: [], ahead: [] };
+  // Each stage's place in 2.11.4's walk, its current index breaking a tie
+  // between the stages that stand at one frozen stage's place.
+  const place = order.map((_, index) => {
+    const known = order.slice(index).find((slug) => FIVE_PHASE_STAGE_ORDER.includes(slug));
+    return known === undefined ? FIVE_PHASE_STAGE_ORDER.length : FIVE_PHASE_STAGE_ORDER.indexOf(known);
+  });
+  const walkedFirst = (a: number, b: number): boolean => place[a] < place[b] || (place[a] === place[b] && a < b);
+  return {
+    behind: order.filter((_, index) => index < at && walkedFirst(at, index)),
+    ahead: order.filter((_, index) => index > at && walkedFirst(index, at)),
+  };
+}
+
 function isFivePhase(segment: string): segment is FivePhase {
   return (FIVE_PHASE_FOLDERS as readonly string[]).includes(segment);
 }

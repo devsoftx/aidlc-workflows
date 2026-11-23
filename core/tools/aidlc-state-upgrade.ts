@@ -15,7 +15,7 @@ import { isReadOnlyEngineProbe, withAuditLock, writeFileAtomic } from "./aidlc-l
 import { auditBlockField, getField, readAuditShardEvents, setField, writeStateFile } from "./aidlc-record-core.ts";
 import { packageManagerForExecutable } from "./aidlc-install-paths.ts";
 import { releaseHostLabel } from "./aidlc-release.ts";
-import { moveFivePhaseFolders, sevenPhaseStateText } from "./aidlc-seven-phase-upgrade.ts";
+import { fivePhaseReorder, moveFivePhaseFolders, sevenPhaseStateText } from "./aidlc-seven-phase-upgrade.ts";
 import { aidlcInvocation, compiledExecutable, runtimeHarnessName, typedHarnessName } from "./aidlc-runtime-paths.ts";
 import { AIDLC_VERSION } from "./aidlc-version.ts";
 
@@ -44,6 +44,12 @@ interface StateUpgrade {
   text?: (content: string, added: readonly string[]) => string;
   // The step's own record-folder moves, after every rename's, and what they left behind.
   folders?: (recordDir: string) => { moved: string[]; left: string[] };
+  // What the step's new stage order does around the cursor, read from the
+  // state text the step starts from: the stages it puts behind the cursor that
+  // the work still owes (stagesOwedBehindCursor reads them from this step's
+  // audit row, as Stages moved behind, so `next` goes back to them), and the
+  // ones `text` marks skipped because the work had passed them over.
+  reorder?: (content: string) => { movedBehind: string[]; keptPassedOver: string[] };
 }
 
 // Keyed by the version a step starts from. 2.1.x to 2.3.0 wrote 7; 8 renamed
@@ -67,6 +73,7 @@ const STATE_UPGRADES: Readonly<Record<string, StateUpgrade>> = {
     added: ["code-review", "security-review", "conformance-review"],
     text: sevenPhaseStateText,
     folders: moveFivePhaseFolders,
+    reorder: fivePhaseReorder,
   },
 };
 
@@ -135,18 +142,26 @@ export function bringStateUpToDate(
   let version = verdict.version;
   const renamed: StageRename[] = [];
   const added: string[] = [];
+  const movedBehind: string[] = [];
+  const passedOver: string[] = [];
   const steps: StateUpgrade[] = [];
   while (hasStateUpgrade(version)) {
     const step = STATE_UPGRADES[version];
+    const reordered = step.reorder?.(text);
     text = upgradedText(text, step);
     renamed.push(...step.renamed);
     added.push(...step.added);
+    movedBehind.push(...(reordered?.movedBehind ?? []));
+    passedOver.push(...(reordered?.keptPassedOver ?? []));
     steps.push(step);
     version = step.to;
   }
-  // The next stage as this graph routes it (a stage the newer graph added comes
-  // first), which status reads; a scope the graph does not know keeps its field.
-  const after = nextInScopeStage(getField(text, "Current Stage") ?? "", getField(text, "Scope") ?? "", text);
+  // The stage the work goes to next, which status reads: one the new order put
+  // behind the cursor, which `next` goes back to at the next boundary, else the
+  // next one this graph routes to (a stage the newer graph added comes first);
+  // a scope the graph does not know keeps its field.
+  const after = (movedBehind.length > 0 ? findStageBySlug(movedBehind[0]) : undefined) ??
+    nextInScopeStage(getField(text, "Current Stage") ?? "", getField(text, "Scope") ?? "", text);
   if (after) text = setField(text, "Next Stage", after.slug);
   if (isReadOnlyEngineProbe()) return text;
   try {
@@ -177,6 +192,8 @@ export function bringStateUpToDate(
         To: version,
         Renamed: renamed.map((r) => `${r.from} to ${r.to}`).join(", "),
         "Stages added": added.join(", "),
+        "Stages moved behind": movedBehind.length > 0 ? movedBehind.join(", ") : "none",
+        "Stages passed over": passedOver.length > 0 ? passedOver.join(", ") : "none",
         Moved: moved.length > 0 ? moved.join(", ") : "none",
         "Left behind": left.length > 0 ? left.join(", ") : "none",
         Original: basename(kept),
