@@ -1239,11 +1239,14 @@ existing v2 markers without that field remain readable for migration.
 the marker's current part in constant time, revalidates state and route from the
 stored payload, and atomically replaces the cursor with the prepared successor
 (the next part, or the run-stage) before writing stdout. Two processes racing the
-same receipt therefore have exactly one winner. A receipt can start with `-`, so
-`continue -- <receipt>` reads the same as `continue <receipt>`.
+same receipt therefore have exactly one winner; a loser that read the part
+before the winner committed is answered with the winner's committed successor,
+byte for byte. A receipt can start with `-`, so `continue -- <receipt>` reads
+the same as `continue <receipt>`.
 
 An unmatched `continue` normally answers as a bare `next`: a mistyped or
-consumed receipt, a receipt presented after the run-stage, a race loser, or
+consumed receipt (a call that reads the cursor only after another committed is
+a replay, whenever it started), a receipt presented after the run-stage, or
 state or route that moved underneath. Stateful workflows route from their state
 file regardless of the stored route hint: the answer is what `next` would give,
 the run-stage when it carries its rules and part one again otherwise, since a
