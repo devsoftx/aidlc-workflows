@@ -1580,12 +1580,14 @@ reviews and CI Pipeline. If your plan still had one of them to run and your
 work is already past its new place, it runs once at the next stage boundary
 (after you settle a gate that is open), and then the work carries on from where
 it stood; nothing you finished runs again, and AI-DLC tells you which stage
-comes next once you approve it. If you skip it instead, you can undo the skip,
-and it runs at the next stage boundary as before. A stage your work had passed over on 2.11.4
+comes next once you approve it. If you skip it instead, you can undo the skip
+until the work is finished, and it runs at the next stage boundary as before.
+A stage your work had passed over on 2.11.4
 that now comes later stays passed over. Code Review and Security Review, the
 new Secure stages, stay passed over on work that had already started past
 them; if you had only just entered the stage that follows them, such as CI
-Pipeline, they run first.
+Pipeline, they run first. If you skip them there, you can undo that until work
+on that stage starts, even once Performance Validation has run in between.
 
 Work a teammate set up with AI-DLC 2.12's team work is not carried on by a
 seven-phase release, and updating does not change that: AI-DLC says

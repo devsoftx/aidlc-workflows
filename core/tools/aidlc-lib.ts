@@ -38428,15 +38428,26 @@ const STARTED_STATES: ReadonlySet<string> = new Set(["in-progress", "awaiting-ap
 // True once a unit-loop stage or an Operate stage has started. From then on the
 // folder holds code AI-DLC wrote, so the scan no longer tells new from
 // existing, and the workflow is not moved back into the stages before the unit loop.
-export function constructionHasStarted(content: string, workRecordDir?: string | null): boolean {
+export function constructionHasStarted(
+  content: string,
+  workRecordDir?: string | null,
+  moves: BringUpAhead["moves"] = [],
+): boolean {
   // Output of a unit-loop stage in the record (its own folder, or a Unit's) means
   // this work has built: a jump back resets its stages, but the code in the folder
   // is still its own. Only unit-loop folders count: design/ and build/ also hold
-  // stages that never meant construction had begun.
+  // stages that never meant construction had begun. Until a bring-up still to
+  // come moves such a folder there (`moves`), its files sit where it comes from.
+  const loop = (phase: string, slug?: string) =>
+    loadStageGraph().some((stage) => isUnitLoopStage(stage) && stage.slug === slug && stage.phase === phase);
   const holdsUnitWork = (record: string): boolean =>
     loadStageGraph().some((stage) => isUnitLoopStage(stage) && holdsAnyFile(join(record, stage.phase, stage.slug))) ||
     (require("./aidlc-graph.ts") as typeof import("./aidlc-graph.ts")).recordUnitNames(record).some((unit) =>
-      UNIT_RECORD_PHASES.some((phase) => holdsAnyFile(join(record, phase, unit))));
+      UNIT_RECORD_PHASES.some((phase) => holdsAnyFile(join(record, phase, unit)))) ||
+    moves.some(({ from, to }) => {
+      const [phase, ...rest] = to.split("/");
+      return rest.length <= 2 && loop(phase, rest.at(-1)) && holdsAnyFile(join(record, ...from.split("/")));
+    });
   if (workRecordDir && holdsUnitWork(workRecordDir)) return true;
   const states = new Map(parseCheckboxes(content).map((c) => [c.slug, c.state]));
   const started = loadStageGraph().filter((stage) =>
@@ -38458,7 +38469,11 @@ export function constructionHasStarted(content: string, workRecordDir?: string |
 // Reverse Engineering is on the plan and has not run, the workflow is past it,
 // and Construction has not started: it runs now and the workflow then returns
 // to the stage the person was on (`next` names that move; the jump says so).
-export function reverseEngineeringOwedBehindCursor(content: string, workRecordDir?: string | null): boolean {
+export function reverseEngineeringOwedBehindCursor(
+  content: string,
+  workRecordDir?: string | null,
+  moves: BringUpAhead["moves"] = [],
+): boolean {
   const graph = loadStageGraph();
   const reIndex = graph.findIndex((stage) => stage.slug === "reverse-engineering");
   const currentIndex = graph.findIndex((stage) => stage.slug === getField(content, "Current Stage"));
@@ -38468,7 +38483,7 @@ export function reverseEngineeringOwedBehindCursor(content: string, workRecordDi
     loadScopeMapping()[scope]?.stages["reverse-engineering"];
   return action === "EXECUTE" &&
     parseCheckboxes(content).find((c) => c.slug === "reverse-engineering")?.state === "pending" &&
-    !constructionHasStarted(content, workRecordDir);
+    !constructionHasStarted(content, workRecordDir, moves);
 }
 
 // The stages on the plan that the work has just passed over: behind the
@@ -38569,7 +38584,10 @@ export function addReachesPassedOver(
 // approval, and the jump it names is the engine's own move. A stage on the plan
 // behind the cursor with no such add (a plan whose rows say so from the start,
 // a scope change's) stays as it is. `pending`: the bring-up a record still
-// waits for, its row read as written now.
+// waits for, its row read as written now. A redo's return to the stage it was
+// run from (its STAGE_STARTED after a REDO jump from there) is no new entry:
+// the work carries on where it stood, so a skip's undo of such a stage still
+// holds after the redo.
 export function addedStagesPassedOver(
   content: string,
   projectDir: string,
@@ -38581,11 +38599,16 @@ export function addedStagesPassedOver(
   if (passed.length === 0) return [];
   const current = getField(content, "Current Stage")?.trim() ?? "";
   const rows = readAuditShardEvents(projectDir, intent, space);
-  const entered = rows
-    .filter((row) => row.event === "STAGE_STARTED" && auditBlockField(row.block, "Stage") === current)
-    .map((row) => row.timestamp)
-    .sort()
-    .at(-1) ?? "";
+  let entered = "";
+  let jump: (typeof rows)[number] | undefined;
+  for (const row of rows) {
+    if (row.event === "STAGE_JUMPED") jump = row;
+    if (row.event !== "STAGE_STARTED" || auditBlockField(row.block, "Stage") !== current) continue;
+    const back = jump?.shard === row.shard && auditBlockField(jump.block, "Direction") === "REDO" &&
+      auditBlockField(jump.block, "Source") === current && auditBlockField(jump.block, "Target") !== current;
+    if (!back && row.timestamp > entered) entered = row.timestamp;
+    jump = undefined;
+  }
   const addedSince = new Set([...rows
     .filter((row) => (row.event === "RECOMPOSED" || row.event === "STATE_UPGRADED") && row.timestamp >= entered)
     .flatMap((row) => (auditBlockField(row.block, "Stages added") ?? "").split(",").map((slug) => slug.trim())),
@@ -38625,7 +38648,7 @@ export function stagesOwedBehindCursor(
         stagesReorderedAround(order, auditBlockField(jump.block, "Target") ?? "").behind.includes(slug)));
   });
   const owed = new Set([
-    ...(reverseEngineeringOwedBehindCursor(content, recordDir(projectDir, intent, space)) ? ["reverse-engineering"] : []),
+    ...(reverseEngineeringOwedBehindCursor(content, recordDir(projectDir, intent, space), pending?.moves) ? ["reverse-engineering"] : []),
     ...addedStagesPassedOver(content, projectDir, intent, space, pending),
     ...movedBehind,
     ...(pending?.movedBehind ?? []),
@@ -38641,19 +38664,20 @@ export function stagesOwedBehindCursor(
 // for the gate to settle, as the project-type question does, so the gate the
 // person was reviewing is never set aside. The plan-approval guard lets exactly
 // this move through at Code Generation: it carries out the person's own change
-// before anything is built.
+// before anything is built. `pending`: as stagesOwedBehindCursor reads it.
 export function owedJumpBack(
   content: string,
   projectDir: string,
   intent?: string,
   space?: string,
+  pending?: BringUpAhead | null,
 ): { target: string; direction: "redo" | "backward" } | null {
   const current = getField(content, "Current Stage")?.trim() ?? "";
   const at = parseCheckboxes(content).find((c) => c.slug === current)?.state;
   if (at === "awaiting-approval" || at === "revising") return null;
-  const [target] = stagesOwedBehindCursor(content, projectDir, intent, space);
+  const [target] = stagesOwedBehindCursor(content, projectDir, intent, space, pending);
   if (target === undefined) return null;
-  const added = addedStagesPassedOver(content, projectDir, intent, space).includes(target);
+  const added = addedStagesPassedOver(content, projectDir, intent, space, pending).includes(target);
   return { target, direction: added ? "backward" : "redo" };
 }
 
