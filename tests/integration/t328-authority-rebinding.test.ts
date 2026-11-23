@@ -145,7 +145,7 @@ interface Project {
   runtimeFiles: () => string[];
   receipts: () => string[];
   next: (extra?: Record<string, string>, args?: string[]) => Run;
-  continueWith: (token: string) => Run;
+  continueWith: (token: string, extra?: Record<string, string>) => Run;
   stopHook: () => Run;
   humanTurn: (prompt: string) => Run;
 }
@@ -234,10 +234,10 @@ async function project(
         { ...env, ...extra },
         dir,
       ),
-    continueWith: (token: string) =>
+    continueWith: (token: string, extra = {}) =>
       spawn(
         [BUN, tool("orchestrate"), "continue", token, "--project-dir", dir],
-        env,
+        { ...env, ...extra },
         dir,
       ),
     stopHook: () =>
@@ -531,11 +531,9 @@ describe("t328 (1) the reported sequence: approve a plan and have it stick", () 
 });
 
 describe("t328 (2) every legitimate action preserves the recorded decision", () => {
-  // The third member marks an action after which the engine issues the step
-  // again with different bytes: here the park row keeps the words the person
-  // typed before it ("Approve Plan", the reply that stands behind the park), and
-  // the step that resumes there carries them as parked_reply. A new issuance
-  // moves the marker revision and the code-generation authority revision
+  // An act returns how many steps the engine issued anew during it, and nothing
+  // when it issued none. A new issuance moves the marker revision and the
+  // code-generation authority revision
   // (aidlc-lib.ts writeActiveDirectiveMarker: nextRevision = base.revision + 1;
   // the authority revision is kept only across swarm-planning re-issues with the
   // same Units), and the directive epoch hashes that revision
@@ -543,9 +541,13 @@ describe("t328 (2) every legitimate action preserves the recorded decision", () 
   // The epoch is provenance on the receipt (runtimeProvenance: "help a human
   // reading the store understand where a receipt came from"; aidlc-unit.ts checks
   // only that the field is present), so the approval and its one receipt hold
-  // while the epoch and revision move with the step's text.
+  // while the epoch and revision move with the step's text. Two acts issue anew.
+  // Parking and resuming: the park row keeps the words the person typed before
+  // it ("Approve Plan", the reply that stands behind the park), and the step that
+  // resumes there carries them as parked_reply (the third member). And a new
+  // chat, which is handed the conductor persona on its own first step.
   const cases: Array<
-    [string, (p: Project) => void, { carriesReply?: true }?]
+    [string, (p: Project) => number | undefined, { carriesReply?: true }?]
   > = [
     ["asking the engine twice for the same state", (p) => {
       p.next();
@@ -568,19 +570,46 @@ describe("t328 (2) every legitimate action preserves the recorded decision", () 
       expect(stateDigest(readFileSync(p.statePath, "utf-8"))).toBe(beforeDigest);
       const resumed = p.next({}, ["--resume"]);
       expect(resumed.code, resumed.stderr).toBe(0);
+      return 1;
     }, { carriesReply: true }],
     ["a new session", (p) => {
-      spawn(
+      // A new Claude Code chat on the work: its session start, then the steps
+      // its conductor takes up to the build. Its commands name it as Claude
+      // Code's do, set here rather than taken from whoever runs the suite:
+      // tests/run-tests.ts clears the chat variables but keeps CLAUDECODE, so an
+      // inherited one made this case read a different host inside a Claude Code
+      // chat than in CI. The chat was never handed the conductor persona, so
+      // the engine issues the step again for it, from its rules part one where
+      // they no longer fit beside the persona (chatNeedsPersona in
+      // aidlc-rules-held.ts; docs/reference/17-skill-system.md, the conductor
+      // persona delivery), and the build it reaches still reads approved.
+      const chatId = "01995000-0995-7000-8000-0000000000aa";
+      const chat = {
+        CLAUDECODE: "1",
+        CLAUDE_CODE_SESSION_ID: chatId,
+        CLAUDE_PID: String(process.pid),
+      };
+      const started = spawn(
         [BUN, p.hook("session-start")],
-        p.env,
+        { ...p.env, ...chat },
         p.dir,
         JSON.stringify({
           hook_event_name: "SessionStart",
-          session_id: "01995000-0995-7000-8000-0000000000aa",
+          session_id: chatId,
           source: "startup",
         }),
       );
-      p.next();
+      expect(started.code, started.stderr).toBe(0);
+      let step = JSON.parse(p.next(chat).stdout.trim()) as Record<string, unknown>;
+      let issued = 1;
+      while (step.kind === "load-steering" && typeof step.receipt === "string" && issued < 30) {
+        step = JSON.parse(p.continueWith(step.receipt, chat).stdout.trim()) as Record<string, unknown>;
+        issued += 1;
+      }
+      expect(step.kind).toBe("run-stage");
+      expect(typeof step.conductor_persona).toBe("string");
+      expect(step.plan_approval).toEqual({ status: "approved" });
+      return issued;
     }],
     ["a task-status sync", (p) => {
       const run = spawn(
@@ -624,7 +653,7 @@ describe("t328 (2) every legitimate action preserves the recorded decision", () 
       const beforeEpoch = authority(p, target).directiveEpoch;
       expect(p.receipts().length).toBe(1);
 
-      act(p);
+      const issued = act(p) ?? 0;
 
       expect(approval(p, target)).toEqual({ ok: true, reason: "approved" });
       expect(p.receipts().length).toBe(1);
@@ -634,8 +663,10 @@ describe("t328 (2) every legitimate action preserves the recorded decision", () 
         const audit = readdirSync(join(dirname(p.statePath), "audit"))
           .map((name) => readFileSync(join(dirname(p.statePath), "audit", name), "utf-8")).join("\n");
         expect(audit).toMatch(/\*\*Event\*\*: WORKFLOW_PARKED\n\*\*Stage\*\*: [^\n]+\n\*\*Person Reply\*\*: Approve Plan/);
+      }
+      if (issued > 0) {
         expect(p.marker()?.directive_sha256).toBeDefined();
-        expect(p.marker()?.revision).toBe(Number(beforeRevision ?? 0) + 1);
+        expect(p.marker()?.revision).toBe(Number(beforeRevision ?? 0) + issued);
         expect(authority(p, target).directiveEpoch).not.toBe(beforeEpoch);
       } else {
         expect(authority(p, target).directiveEpoch).toBe(beforeEpoch);
