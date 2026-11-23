@@ -47,11 +47,10 @@ import {
 } from "./aidlc-audit.ts";
 import {
   bringUpWaitsOn,
-  broughtUpStateText,
   hasStateUpgrade,
   newerStateStep,
+  pendingBringUp,
   stateUpgradeRecord,
-  waitsToBeBroughtUp,
 } from "./aidlc-state-upgrade.ts";
 import { rebuildEffectivePlanFields, withStageProgress, withUnreachedPhasesRederived } from "./aidlc-state-progress.ts";
 import { fivePhaseFolderFindings } from "./aidlc-seven-phase-upgrade.ts";
@@ -2098,8 +2097,9 @@ To get started:
   // Work an earlier AI-DLC set up reads as AI-DLC's next step brings it up, the
   // step the engine takes on its first read; until then its documents stay
   // where that release kept them, so nothing here reads them in the new layout.
-  const waiting = waitsToBeBroughtUp(recorded);
-  const content = waiting ? broughtUpStateText(recorded) : recorded;
+  const bringUp = pendingBringUp(recorded, dirname(sp));
+  const waiting = bringUp !== null;
+  const content = bringUp?.text ?? recorded;
   const graph = loadStageGraph();
 
   // Extract key fields
@@ -2299,9 +2299,12 @@ To get started:
   // the one list they read. A stage the person skipped is not work left to do:
   // it is counted out and named, the way a stage a plan change dropped already
   // is. Initialization's setup, done when the work was created, keeps its row
-  // below and stays out of the count.
+  // below and stays out of the count. Work still waiting to be brought up
+  // counts the stages that step's first move goes back to, as it will after it.
   const checkboxes = parseCheckboxes(content);
-  const work = selection.intent === null ? null : { projectDir, intent: selection.intent, space: selection.space };
+  const work = selection.intent === null
+    ? null
+    : { projectDir, intent: selection.intent, space: selection.space, pending: bringUp?.pending };
   const planned = new Set(plannedStages(content, scope, work).map((s) => s.slug));
   const setup = new Set(graph.filter((s) => s.phase === "initialization").map((s) => s.slug));
   const scopedCheckboxes = checkboxes.filter((c) =>
@@ -13251,10 +13254,11 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
       // lands as it would have before the approval that moved past it, and
       // its undo takes it off again before `next` gets there. A skip takes off
       // any stage `next` goes back to, one an update's new order put behind
-      // the cursor too (stagesOwedBehindCursor).
+      // the cursor too (stagesOwedBehindCursor), and the add that undoes it
+      // puts it back (addReachesPassedOver).
       const passedOver = skipping
         ? stagesOwedBehindCursor(content, projectDir, flags.intent, flags.space).includes(slug)
-        : addReachesPassedOver(content, slug, recordDir(projectDir, flags.intent, flags.space), addList);
+        : addReachesPassedOver(content, slug, { projectDir, intent: flags.intent, space: flags.space }, addList);
       if (!owedRe && !passedOver && currentIdx !== -1 && idx !== -1 && idx <= currentIdx) {
         if (putBack) reject(slug, `${frozen} ${runAlone(slug)}`);
         const instead = idx === currentIdx

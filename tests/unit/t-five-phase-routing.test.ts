@@ -1,4 +1,4 @@
-// covers: function:stagesReorderedAround, function:fivePhaseReorder, function:stagesOwedBehindCursor, function:owedJumpBack, function:owedRedoNotice, function:bringStateUpToDate, subcommand:aidlc-orchestrate:next, subcommand:aidlc-jump:execute, subcommand:aidlc-utility:recompose
+// covers: function:stagesReorderedAround, function:fivePhaseReorder, function:stagesOwedBehindCursor, function:addReachesPassedOver, function:owedJumpBack, function:owedRedoNotice, function:bringStateUpToDate, subcommand:aidlc-orchestrate:next, subcommand:aidlc-jump:execute, subcommand:aidlc-utility:recompose
 //
 // The seven phases walk two stages earlier than 2.11.4 did: Reverse
 // Engineering comes before Scope Definition (it came after Approval &
@@ -16,7 +16,8 @@
 //   - a stage 2.11.4 had passed over that now comes after the cursor stays
 //     passed over;
 //   - a forward jump since the update that 2.11.4 would have made past the
-//     owed stage passes it over, as 2.11.4's jump did, and a skip takes it off.
+//     owed stage passes it over, as 2.11.4's jump did, and a skip takes it off
+//     until its undo puts it back.
 // Each record is a real one 2.11.4 wrote (tests/fixtures/state-v8), made by
 // driving that release's own state tool, jump and scope change; the walks the
 // tests expect are the ones that release takes on the same record, with the
@@ -402,5 +403,47 @@ describe("the person's own move past an owed stage", () => {
     expect(after.kind).toBe("run-stage");
     expect(after.stage).toBe("deployment-execution");
     expect(existsSync(join(seededRecordDir(proj), "test", "performance-validation"))).toBe(false);
+  });
+
+  // The skip's line says it can be undone any time, and names the add that does it.
+  test("the skip's undo puts the owed stage back, and the walk is the one it would have been without the skip", () => {
+    const walks: Record<string, string[]> = {
+      "pv-deploy-entered": [
+        "performance-validation", "deployment-execution", "observability-setup", "incident-response", "feedback-optimization",
+      ],
+      "pv-ci-entered": [
+        "performance-validation", "code-review", "security-review", "ci-pipeline", "deployment-pipeline",
+        "environment-provisioning", "deployment-execution", "observability-setup", "incident-response", "feedback-optimization",
+      ],
+    };
+    for (const [fixture, stages] of Object.entries(walks)) {
+      const proj = v8Project(fixture);
+      expect(next(proj).kind).toBe("print");
+      const skipStep = runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, ["--skip", "performance-validation"], { env: ENV }).directive ?? {};
+      expect(String(skipStep.message), fixture).toContain("You can undo that any time.");
+      expect(String(skipStep.message), fixture).toContain("recompose --add performance-validation`");
+      const skip = tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "performance-validation", "--reason", "the person asked to skip it"]);
+      expect(skip.status, skip.out).toBe(0);
+      const undo = tool(proj, "aidlc-utility.ts", ["recompose", "--add", "performance-validation"]);
+      expect(undo.status, `${fixture}: ${undo.out}`).toBe(0);
+      expect(state(proj), fixture).toMatch(/^- \[ \] performance-validation — EXECUTE$/m);
+      const r = walk(proj);
+      expect(r.stages, fixture).toEqual(stages);
+      expect(r.ended, fixture).toBe("done");
+      expect(rowsSinceUpgrade(proj, "STAGE_STARTED", "performance-validation"), fixture).toBe(1);
+    }
+  });
+
+  test("adding the owed stage back through next carries on into it, as the add of a stage just passed over does", () => {
+    const proj = v8Project("pv-deploy-entered");
+    expect(next(proj).kind).toBe("print");
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--skip", "performance-validation"]).status).toBe(0);
+    const addStep = runOrchestrateNext(join(TOOLS, "aidlc-orchestrate.ts"), proj, ["--add", "performance-validation"], { env: ENV }).directive ?? {};
+    expect(String(addStep.message)).toContain("recompose --add performance-validation");
+    expect(String(addStep.message)).toContain("Then re-run `next` to carry on with the work.");
+    expect(tool(proj, "aidlc-utility.ts", ["recompose", "--add", "performance-validation"]).status).toBe(0);
+    const back = next(proj);
+    expect(back.kind).toBe("print");
+    expect(String(back.message)).toContain("execute --target performance-validation --direction redo");
   });
 });

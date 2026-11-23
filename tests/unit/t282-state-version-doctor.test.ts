@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:fivePhaseGraphContract, function:bringUpWaitsOn, function:unwritableFolderFor
+// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:pendingBringUp, function:fivePhaseGraphContract, function:bringUpWaitsOn, function:unwritableFolderFor
 //
 // The state-version gate and the bring-up beside it. v8 renamed the Inception
 // `application-design` stage to `domain-design` and added `contract-design`;
@@ -1186,6 +1186,40 @@ describe("t282 before AI-DLC's first step on a v8 record, what the person reads 
       const next = statusLine(status, "Next Stage:");
       if (next !== "") expect(next).toBe(statusLine(after, "Next Stage:"));
       expect(line).toBe(statusLineOf(proj));
+    });
+  }
+
+  // The step's first move goes back to Performance Validation, which the seven
+  // phases put behind the cursor, and on work that had only just entered CI
+  // Pipeline to the Secure reviews it had just passed: status counts them
+  // before the step as after it, reading the current stage's work where 2.11.4
+  // still keeps it (once CI Pipeline has a file, the reviews are not owed).
+  const owedCases: { fixture: string; ciFile?: boolean; completion: string; test: string; secure: string | null }[] = [
+    { fixture: "pv-deploy-entered", completion: "3/8 stages (38%)", test: "S░ 0/1", secure: null },
+    { fixture: "pv-incident-gate", completion: "5/8 stages (63%)", test: "S░ 0/1", secure: null },
+    { fixture: "pv-ci-entered", completion: "1/11 stages (9%)", test: "█░ 1/2", secure: "░░ 0/2" },
+    { fixture: "pv-ci-entered", ciFile: true, completion: "1/9 stages (11%)", test: "█░ 1/2", secure: null },
+  ];
+  for (const owed of owedCases) {
+    test(`${owed.fixture}${owed.ciFile ? " with CI Pipeline's work begun" : ""}: status counts the stages the step goes back to, before it as after it`, () => {
+      const { proj, record } = v8Project(owed.fixture);
+      if (owed.ciFile) {
+        mkdirSync(join(record, "construction", "ci-pipeline"), { recursive: true });
+        writeFileSync(join(record, "construction", "ci-pipeline", "pipeline.md"), "# CI pipeline\n\nBuild on every push.\n");
+      }
+      const before = statusOf(proj);
+      expect(upgradeRows(proj)).toBe(0);
+      v8Next(proj);
+      expect(upgradeRows(proj)).toBe(1);
+      const after = statusOf(proj);
+      for (const out of [before, after]) {
+        expect(statusLine(out, "Completion:")).toStartWith(`Completion:     ${owed.completion}`);
+        expect(out).toMatch(/^Next Stage: +Performance Validation$/m);
+        expect(out).toMatch(new RegExp(`^ {2}TEST +${owed.test}$`, "m"));
+        if (owed.secure === null) expect(out).not.toMatch(/^ {2}SECURE /m);
+        else expect(out).toMatch(new RegExp(`^ {2}SECURE +${owed.secure}$`, "m"));
+      }
+      expect(phaseRows(before)).toEqual(phaseRows(after));
     });
   }
 
