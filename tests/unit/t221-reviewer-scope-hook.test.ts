@@ -569,6 +569,7 @@ function scratchProject(): string {
     "aidlc-runtime-budget.ts",
     "aidlc-lock-line.ts",
     "aidlc-review-manifest.ts",
+    "aidlc-five-phase-record.ts",
     "aidlc-command.ts",
     // aidlc-lib.ts reads a plugin command leading a line with this.
     "aidlc-plugin-commands.ts",

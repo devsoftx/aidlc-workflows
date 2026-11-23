@@ -8,6 +8,7 @@
 // swarm referee consume the same contract.
 
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
+import { sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { gitCommonDirOf, gitSubmoduleNames } from "./aidlc-git.ts";
 import { markdownBlocks, withoutCommentBlocks } from "./aidlc-markdown.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
@@ -4204,6 +4205,10 @@ function runtimeProvenance(
   };
 }
 
+// `value` is the recorded identity (a receipt, a challenge, a row), `expected`
+// the current one. A questions file a five-phase release recorded names the
+// same file once read at the folder the 8 to 10 state step moved it to; every
+// other field, the prompt the person saw among them, still matches exactly.
 function runtimeIdentityMatches(
   value: PlanApprovalRuntimeIdentity,
   expected: PlanApprovalRuntimeIdentity,
@@ -4213,7 +4218,7 @@ function runtimeIdentityMatches(
     value.intentId === expected.intentId &&
     value.runFloor === expected.runFloor &&
     value.fingerprint === expected.fingerprint &&
-    value.questionsFile === expected.questionsFile &&
+    sameRecordPath(value.questionsFile, expected.questionsFile) &&
     value.promptSha256 === expected.promptSha256
   );
 }
@@ -4531,7 +4536,7 @@ function assertPlanApprovalBatchCurrent(
   const members = batch.members.map((member) => {
     const evidence = planApprovalQuestionEvidence(
       projectDir, codeGenerationAuthority(projectDir, { unit: member.unit }, batchPeers),
-      member.questionsFile, "Approve Plan", { breakGlass: true, use },
+      sevenPhaseRecordPath(member.questionsFile), "Approve Plan", { breakGlass: true, use },
     );
     const current = planApprovalBatchMember(evidence);
     const peer = readPlanApprovalReceipt(projectDir, current);
@@ -4542,7 +4547,10 @@ function assertPlanApprovalBatchCurrent(
       peer.choice !== "Approve Plan" || peer.override || peer.delegation ||
       peer.plannedSourceSha256 !== batch.context.sourceSha256
     ) throw new Error("Plan Approval batch has no complete set of matching protected receipts; re-present every plan");
-    return current;
+    // The group bound each member's questions file as it was recorded (a
+    // five-phase release's, before its folder moved); the file read is where it
+    // is now, and everything else binds as before.
+    return { ...current, questionsFile: member.questionsFile };
   });
   if (hashObject({ name: batch.name, members, context: batch.context }) !== batch.bindingSha256) {
     throw new Error("A reviewed Plan Approval batch member changed; re-present every plan");
@@ -5429,7 +5437,8 @@ function parentWorktreeApproval(parentDir: string, unit: string) {
     authority,
     fingerprint: receipt.fingerprint,
     questionsPath: artifacts.questionsPath,
-    questionsRelativePath: receipt.questionsFile,
+    // Where the plan record is now: the worktree copy goes there.
+    questionsRelativePath: sevenPhaseRecordPath(receipt.questionsFile),
     questionsSha256: createHash("sha256").update(artifacts.questions, "utf-8").digest("hex"),
     promptSha256: receipt.promptSha256,
     plannedSourceSha256: questionsFilePlannedSource(artifacts.questions) ?? UNBINDABLE_FINGERPRINT,

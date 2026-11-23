@@ -1,4 +1,5 @@
 import { constructionPolicyRecovery } from "./aidlc-guard-operation.ts";
+import { sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
 import { CHECKPOINT_GLOSS } from "./aidlc-guard-fences.ts";
@@ -7422,9 +7423,14 @@ export function completionChecksStep(
   const pairs = new Set(advisory.flatMap((sensor) =>
     gateSensorOutputs(sensor, paths, stage.slug).map((fire) => `${sensor.id}@${canonical(fire.outputPath)}`)
   ));
+  // A five-phase release's fire names the folder its output moved from.
+  const firedOn = (row: AuditShardEvent): string | null => {
+    const recorded = auditBlockField(row.block, "Output path");
+    return canonical(recorded === null ? null : sevenPhaseRecordPath(recorded));
+  };
   const firedInAttempt = view.allEvents.some((row) =>
     row.event === "SENSOR_FIRED" && auditBlockField(row.block, "Stage slug") === slug && inAttempt(row) &&
-    pairs.has(`${auditBlockField(row.block, "Sensor ID")}@${canonical(auditBlockField(row.block, "Output path"))}`)
+    pairs.has(`${auditBlockField(row.block, "Sensor ID")}@${firedOn(row)}`)
   );
   if (firedInAttempt) return null;
 

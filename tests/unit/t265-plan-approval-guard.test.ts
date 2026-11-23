@@ -528,6 +528,7 @@ function scratchProject(): string {
     "aidlc-runtime-budget.ts",
     "aidlc-lock-line.ts",
     "aidlc-review-manifest.ts",
+    "aidlc-five-phase-record.ts",
     "aidlc-guard-fences.ts",
     // The hook reads the plan approval setting when it refuses (the setting
     // decides the refusal's last clause); the setting resolver and what it imports.

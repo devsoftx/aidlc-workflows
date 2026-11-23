@@ -66,6 +66,7 @@ import {
   writeRecordFileNoFollow,
 } from "./aidlc-lib.js";
 import { aidlcDispatcherInvocation } from "./aidlc-runtime-paths.ts";
+import { sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import {
   checkpointGateStages,
   constructionCheckpointKind,
@@ -646,8 +647,9 @@ function gateAppliesToScope(
 }
 
 // Redo from scratch begins a new list for the scope it covers. The row carries
-// no Unit, so on a per-Unit stage the Units are read from its artifact paths; a
-// row naming no Unit's path covers every Unit.
+// no Unit, so on a per-Unit stage the Units are read from its artifact paths (a
+// five-phase release's at the folder it moved to); a row naming no Unit's path
+// covers every Unit.
 function redoAppliesToScope(
   event: AuditShardEvent,
   stageSlug: string,
@@ -664,7 +666,7 @@ function redoAppliesToScope(
   if (unit === undefined) return true;
   const units = (auditBlockField(event.block, "Artifacts") ?? "")
     .split(",")
-    .map((path) => pathUnit(toPosix(path.trim()), stageSlug))
+    .map((path) => pathUnit(sevenPhaseRecordPath(toPosix(path.trim())), stageSlug))
     .filter((pathUnitName) => pathUnitName !== undefined);
   return units.length === 0 || units.includes(unit);
 }
@@ -1801,9 +1803,10 @@ function parseFindingDispositionSpec(
 }
 
 // A selector names the finding the way it was said: the full path, a path
-// tail, the file name with or without .md, or no artifact at all.
+// tail, the file name with or without .md, or no artifact at all. A finding a
+// five-phase release recorded is named by the path its file moved to too.
 function selectorNamesArtifact(selector: string, artifact: string): boolean {
-  if (selector === "" || selector === artifact) return true;
+  if (selector === "" || selector === artifact || selector === sevenPhaseRecordPath(artifact)) return true;
   const file = selector.endsWith(".md") ? selector : `${selector}.md`;
   return artifact === file || artifact.endsWith(`/${file}`);
 }
@@ -2297,9 +2300,10 @@ export function reviewInvalidationDetails(
       }
       const file = auditBlockField(event.block, "File");
       if (!file) continue;
-      const normalized = toPosix(
+      // A five-phase release's write, read at the folder its file moved to.
+      const normalized = sevenPhaseRecordPath(toPosix(
         relative(projectDir, resolveAuditProjectPath(projectDir, file)),
-      );
+      ));
       if (currentArtifacts.has(normalized)) {
         const changedUnit = pathUnit(normalized, stage.slug);
         if (
