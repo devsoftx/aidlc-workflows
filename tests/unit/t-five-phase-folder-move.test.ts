@@ -3,7 +3,9 @@
 // The record-folder half of the 8 to 10 step, on a record folder laid out as
 // 2.11.4 lays one out. A Unit is a Unit whatever its name, a stage's included
 // (2.11.4 let a Unit take any name), and its stage folders go where every
-// reader of recorded evidence reads them (sevenPhaseRecordPath). The files an
+// reader of recorded evidence reads them (sevenPhaseRecordPath); a Unit named
+// like Build and Test or CI Pipeline gives that stage's own documents to the
+// stage's folder, as the readers read them too. The files an
 // OS drops in a folder the person browsed (.DS_Store, Thumbs.db, desktop.ini)
 // are no one's work: never named, and never what keeps an old folder. A move
 // the file system refuses is not a folder already there: the whole move is put
@@ -94,6 +96,39 @@ describe("a Unit named like a stage is a Unit", () => {
   });
 });
 
+describe("a Unit named like a stage-level Construction stage shares that stage's folder", () => {
+  // 2.11.4 kept a Unit's stages at construction/<unit>/<stage>/ and Build and
+  // Test and CI Pipeline at construction/build-and-test/ and
+  // construction/ci-pipeline/, so a Unit named like either shares one folder
+  // with that stage once it has run.
+  const layout = {
+    "construction/ci-pipeline/functional-design/functional-spec.md": "ci-pipeline unit spec\n",
+    "construction/ci-pipeline/code-generation/code-generation-plan.md": "ci-pipeline unit plan\n",
+    "construction/ci-pipeline/ci-config.md": "the stage's ci config\n",
+    "construction/ci-pipeline/quality-gates.md": "the stage's quality gates\n",
+    "construction/ci-pipeline/reviews/review-01.md": "the stage's review\n",
+    "construction/build-and-test/nfr-requirements/security-requirements.md": "build-and-test unit nfr\n",
+    "construction/build-and-test/build-instructions.md": "the stage's build instructions\n",
+    "construction/build-and-test/build-test-results.md": "the stage's results\n",
+  };
+
+  test("the stage's own documents go to the stage's folder and the Unit's to <phase>/<unit>/, where the readers look for each", () => {
+    const dir = record(layout);
+    const plan = fivePhaseFolderPlan(dir);
+    expect(plan.unplaced).toEqual([]);
+    expect(plan.moves).toContainEqual({ from: "construction/ci-pipeline/ci-config.md", to: "deploy/ci-pipeline/ci-config.md" });
+    expect(plan.moves).toContainEqual({ from: "construction/ci-pipeline/reviews", to: "deploy/ci-pipeline/reviews" });
+    expect(plan.moves).toContainEqual({ from: "construction/ci-pipeline/code-generation", to: "build/ci-pipeline/code-generation" });
+    expect(plan.moves).toContainEqual({ from: "construction/build-and-test/build-instructions.md", to: "test/build-and-test/build-instructions.md" });
+    expect(plan.moves).toContainEqual({ from: "construction/build-and-test/nfr-requirements", to: "design/build-and-test/nfr-requirements" });
+    const result = moveFivePhaseFolders(dir);
+    expect(result).toMatchObject({ left: [], failed: [] });
+    expect(files(dir)).toEqual(Object.fromEntries(Object.entries(layout).map(([path, text]) => [sevenPhaseRecordPath(path), text])));
+    expect(folders(dir)).toEqual(["build", "deploy", "design", "test"]);
+    expect(fivePhaseFolderFindings(dir, "rec")).toEqual([]);
+  });
+});
+
 describe("what an OS drops in a folder is no one's work", () => {
   const layout = {
     "ideation/intent-capture/intent-statement.md": "intent\n",
@@ -157,7 +192,8 @@ describe("a move the file system refuses holds the whole move back", () => {
     process.env.AIDLC_TEST = "1";
     process.env.AIDLC_TEST_FOLDER_MOVE_FAIL = "inception/requirements-analysis";
     const held = moveFivePhaseFolders(dir);
-    expect(held.failed).toEqual([{ from: "inception/requirements-analysis", to: "design/requirements-analysis" }]);
+    // The refusal keeps the file system's code, which says why the folder would not move.
+    expect(held.failed).toEqual([{ from: "inception/requirements-analysis", to: "design/requirements-analysis", code: "EBUSY" }]);
     expect(held.moved).toEqual([]);
     // The record is as 2.11.4 left it: no file moved, and no new folder made.
     expect(files(dir)).toEqual(layout);

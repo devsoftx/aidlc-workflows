@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "rough-mockups",
+  "unit": null,
+  "workflow": null,
+  "attempt": "2eca7fd8ded7a551",
+  "iteration": 1,
+  "reviewer": "aidlc-product-lead-agent",
+  "verdict": "READY",
+  "request_id": "review:1fb3f283c7fb16f7f114cd1f6c7e2b73",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:69a4582c357ddd5cbe177255fd851dae08f2603b6c5294e8a061b3762d72f5d3",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-product-lead-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T09:05:59Z"
+}

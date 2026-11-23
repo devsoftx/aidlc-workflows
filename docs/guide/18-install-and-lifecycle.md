@@ -1538,27 +1538,40 @@ work, it brings the record up to the seven phases in place, and asks you
 nothing: every stage keeps its mark and every approval stays in the record,
 each stage's folder moves to its seven-phase folder (for example
 `inception/requirements-analysis` to `design/requirements-analysis`), and the
-record as it was is kept beside it in the record dir as `aidlc-state.v8.md`
-(`aidlc-state.v7.md` for work begun on 2.1.x to 2.3.0; when that file is
-already there and holds something else, the next free number, such as
-`aidlc-state.v8.2.md`, so no kept copy is ever overwritten). `/aidlc --status`
-and `/aidlc --doctor` say when it was brought up and name the kept copy. A
-Unit's folders move with it whatever the Unit is called, even a stage's name.
+record as it stood just before is kept beside it in the record dir as
+`aidlc-state.v8.md` (`aidlc-state.v7.md` for work begun on 2.1.x to 2.3.0;
+when that file is already there and holds something else, the next free
+number, such as `aidlc-state.v8.2.md`, so no kept copy is ever overwritten).
+`/aidlc --status` and `/aidlc --doctor` say when it was brought up and name
+the kept copy. A Unit's folders move with it whatever the Unit is called, even
+a stage's name; a Unit named like Build and Test or CI Pipeline shared that
+stage's folder, and the stage's own documents go to the stage's new folder.
 Anything it could not move (a file whose new folder already holds one of the
 same name, or a folder no stage owns) stays where it was, and `/aidlc
 --doctor` names it with the move to make; the files Finder and Windows
 Explorer leave in folders you browse (`.DS_Store`, `Thumbs.db`, `desktop.ini`)
-are not counted, and go with the old folders. If a program on your computer
-has one of the folders open (a dev server or test watcher, a terminal or an
-editor inside it, a file sync or backup app), AI-DLC changes nothing: it tells
-you which folder it could not move and stops, and once you have closed what
-holds it and ask it to carry on, it brings the work up whole and picks up
-where you were. Each piece of work is brought up when AI-DLC first takes a
+are not counted, and go with the old folders.
+
+If a folder cannot be moved at all, AI-DLC changes nothing, keeps no copy, and
+stops with one line that names the folder and what frees it; once you have
+done that and ask it to carry on, it brings the work up whole and picks up
+where you were. On Windows a program can hold a folder open (a dev server or
+test watcher, a terminal or an editor inside it, a file sync or backup app),
+and the step is to close it. On every platform a folder your user cannot
+change (one `sudo` or a container made, or one on a read-only drive) holds the
+move back, and the step is to give your user write access to it. On Linux and
+macOS an open folder never stops the move, so there the line names the folder
+your user cannot change; Windows refuses the two alike, so there the line
+names both steps. Each piece of work is brought up when AI-DLC first takes a
 step on it, so parked work waits until you pick it up again. Until then
 `/aidlc --status` and the status line already show it in the seven phases, and
-status says `Brought up: at AI-DLC's next step`. Finished stages keep their
-approvals through the move: a stage reads as changed only when your work or
-what the stage does really changed, never for a new phase name alone.
+status says `Brought up: at AI-DLC's next step`. On Linux and macOS, while a
+folder your user cannot change holds the work back, status says
+`Brought up: waiting` instead and names that folder and the step, and
+`/aidlc --doctor` fails its State Version row with the same folder and step.
+Finished stages keep their approvals through the move: a stage reads as
+changed only when your work or what the stage does really changed, never for a
+new phase name alone.
 
 The seven phases run two stages earlier than 2.11.4 did: Reverse Engineering
 now comes before Scope Definition, and Performance Validation before the code

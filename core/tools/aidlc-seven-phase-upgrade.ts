@@ -11,8 +11,8 @@
 // The seven phases also walk two stages earlier than 2.11.4 did (Reverse
 // Engineering and Performance Validation); fivePhaseReorder says what that does
 // around the record's cursor, so the work goes on where 2.11.4 would take it.
-import { type Dirent, lstatSync, mkdirSync, readdirSync, rmdirSync, unlinkSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { accessSync, constants, type Dirent, lstatSync, mkdirSync, readdirSync, rmdirSync, unlinkSync } from "node:fs";
+import { basename, dirname, join, relative } from "node:path";
 import {
   FIVE_PHASE_FOLDERS,
   FIVE_PHASE_STAGE_FOLDER,
@@ -191,6 +191,8 @@ export interface FolderMove {
   // Record-relative, with `/` between segments.
   from: string;
   to: string;
+  // The file system's error code when it refused the move, which says why.
+  code?: string;
 }
 
 function entries(dir: string): Dirent[] {
@@ -291,9 +293,13 @@ function unitStageFolder(slug: string, graph: ReadonlyMap<string, StageEntry>): 
  * (2.11.4 let a Unit take any name, a stage's included, and
  * sevenPhaseRecordPath reads such a path as the Unit's): each of its stage
  * folders moves to `<phase>/<unit>/<slug>`, so one Unit splits across design/
- * and build/. Any other folder is a stage's when the frozen table keeps that
- * stage in this five-phase folder, or the graph knows it (a plugin's).
- * Byproducts, and folders holding nothing else, are neither moved nor named.
+ * and build/. A Unit named like a stage 2.11.4 kept at stage level there
+ * (Build and Test, CI Pipeline, a plugin's) shared that stage's folder once the
+ * stage ran: the rest of what the folder holds is the stage's own, and moves
+ * to the stage's folder, where sevenPhaseRecordPath reads it too. Any other
+ * folder is a stage's when the frozen table keeps that stage in this
+ * five-phase folder, or the graph knows it (a plugin's). Byproducts, and
+ * folders holding nothing else, are neither moved nor named.
  */
 export function fivePhaseFolderPlan(recordDir: string): { moves: FolderMove[]; unplaced: string[] } {
   const graph = new Map(loadStageGraphAll().map((stage) => [stage.slug, stage]));
@@ -309,9 +315,10 @@ export function fivePhaseFolderPlan(recordDir: string): { moves: FolderMove[]; u
       const unitDir = join(phaseDir, entry.name);
       const unit = old === "construction" && entry.isDirectory() ? entries(unitDir) : [];
       if (unit.some((child) => child.isDirectory() && unitStageFolder(child.name, graph) !== null)) {
+        const shared = stageFolder(entry.name, old, graph);
         for (const child of unit) {
           if (nobodys(unitDir, child)) continue;
-          const phase = child.isDirectory() ? unitStageFolder(child.name, graph) : null;
+          const phase = (child.isDirectory() ? unitStageFolder(child.name, graph) : null) ?? shared;
           if (phase === null) unplaced.push(`${from}/${child.name}`);
           else moves.push({ from: `${from}/${child.name}`, to: `${phase}/${entry.name}/${child.name}` });
         }
@@ -340,28 +347,79 @@ export interface FolderRename {
   made: string | undefined;
 }
 
+/** A move the file system refused, with its error code, which says why. */
+export interface FolderRefusal {
+  refused: string | undefined;
+}
+
+function errorCode(error: unknown): string | undefined {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === "string" ? code : undefined;
+}
+
+// AIDLC_TEST_FOLDER_MOVE_FAIL (with AIDLC_TEST=1) lists, comma-separated, the
+// record-relative labels of moves to refuse, each optionally `:<code>`
+// (EBUSY, the way a folder held open is refused on Windows, when none is
+// given), for the tests of a move that cannot finish.
+function testRefusal(label: string): string | undefined {
+  if (process.env.AIDLC_TEST !== "1") return undefined;
+  for (const entry of (process.env.AIDLC_TEST_FOLDER_MOVE_FAIL ?? "").split(",")) {
+    const [name, code] = entry.split(":");
+    if (name === label) return code || "EBUSY";
+  }
+  return undefined;
+}
+
 /**
  * The one rename the bring-up's folder moves make: `source` to a `target`
  * not there yet, its parent folders made first and removed again when the
  * file system refuses the move (a folder held open, one that cannot be
- * written). Returns the rename made, or null on that refusal.
- * AIDLC_TEST_FOLDER_MOVE_FAIL (with AIDLC_TEST=1) names the record-relative
- * `label` of a move refused the way a folder held open is on Windows, for the
- * tests of a move that cannot finish.
+ * written). Returns the rename made, or the refusal with its error code.
  */
-export function renameRecordFolder(source: string, target: string, label: string): FolderRename | null {
+export function renameRecordFolder(source: string, target: string, label: string): FolderRename | FolderRefusal {
   let made: string | undefined;
   try {
     made = mkdirSync(dirname(target), { recursive: true });
-    if (process.env.AIDLC_TEST === "1" && process.env.AIDLC_TEST_FOLDER_MOVE_FAIL === label) {
-      throw Object.assign(new Error(`EBUSY: resource busy or locked, rename '${source}'`), { code: "EBUSY" });
+    const refused = testRefusal(label);
+    if (refused !== undefined) {
+      throw Object.assign(new Error(`${refused}: refused, rename '${source}'`), { code: refused });
     }
     renameRetryingOnWindows(source, target);
     return { source, target, made };
-  } catch {
+  } catch (error) {
     if (made !== undefined) removeEmptyUpTo(dirname(target), made);
-    return null;
+    return { refused: errorCode(error) };
   }
+}
+
+/**
+ * The record folder (record-relative, "" for the record itself) a move has to
+ * change and this user may not, by the file system's own access check: the
+ * one the target goes into (the nearest folder already there, the target
+ * itself when the move merges into it), the one the source is in, then the
+ * source folder itself, which Linux needs writable to give it a new parent.
+ * Null when each is writable, and always on Windows, whose access check reads
+ * only a read-only attribute, which a folder ignores: a folder another user
+ * owns reads as writable there.
+ */
+export function unwritableFolderFor(
+  recordDir: string,
+  move: FolderMove,
+  platform: NodeJS.Platform = process.platform,
+): string | null {
+  if (platform === "win32") return null;
+  const source = join(recordDir, ...move.from.split("/"));
+  let into = join(recordDir, ...move.to.split("/"));
+  while (into.length > recordDir.length && !isDirectory(into)) into = dirname(into);
+  for (const dir of [into, dirname(source), source]) {
+    if (!isDirectory(dir)) continue;
+    try {
+      accessSync(dir, constants.W_OK);
+    } catch {
+      return relative(recordDir, dir).split("\\").join("/");
+    }
+  }
+  return null;
 }
 
 // One attempt's moves: each rename made (to undo them all when one fails),
@@ -380,9 +438,12 @@ interface MoveRun {
 function mergeFolder(source: string, target: string, move: FolderMove, run: MoveRun): boolean {
   if (!pathExists(target)) {
     const renamed = renameRecordFolder(source, target, move.from);
-    if (renamed === null) run.failed.push(move);
-    else run.renames.push(renamed);
-    return renamed !== null;
+    if ("refused" in renamed) {
+      run.failed.push({ ...move, code: renamed.refused });
+      return false;
+    }
+    run.renames.push(renamed);
+    return true;
   }
   if (!isDirectory(source) || !isDirectory(target)) {
     if (!isByproductAt(source)) run.left.push(move.from);
@@ -391,8 +452,8 @@ function mergeFolder(source: string, target: string, move: FolderMove, run: Move
   let inside: Dirent[];
   try {
     inside = readdirSync(source, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
-  } catch {
-    run.failed.push(move);
+  } catch (error) {
+    run.failed.push({ ...move, code: errorCode(error) });
     return false;
   }
   let moved = false;

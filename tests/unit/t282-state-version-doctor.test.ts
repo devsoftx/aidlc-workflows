@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:fivePhaseGraphContract
+// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity, function:broughtUpStateText, function:fivePhaseGraphContract, function:bringUpWaitsOn, function:unwritableFolderFor
 //
 // The state-version gate and the bring-up beside it. v8 renamed the Inception
 // `application-design` stage to `domain-design` and added `contract-design`;
@@ -9,11 +9,13 @@
 // tests/fixtures/state-v8) resume where they stood, approvals kept, every
 // document moved to its seven-phase folder, the original kept beside it, one
 // audit row, nothing said; doctor and status show it on purpose. A folder the
-// file system will not let move holds the whole bring-up back, said once, until
-// the next step can make it; a kept original is never overwritten. A version no
-// step brings up (below 7, 9 from upstream 2.12 team work, newer, unparseable)
-// is still refused by `next`, `report` and doctor alike, without the old
-// archive-and-start-again advice.
+// file system will not let move (held open, or one this user cannot change)
+// holds the whole bring-up back, said once with what frees it, until the next
+// step can make it; doctor and status name a folder this user cannot change
+// meanwhile, the held attempt keeps no copy, and a kept original is never
+// overwritten. A version no step brings up (below 7, 9 from upstream 2.12 team
+// work, newer, unparseable) is still refused by `next`, `report` and doctor
+// alike, without the old archive-and-start-again advice.
 
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
@@ -22,7 +24,7 @@ import {
 } from "../harness/test-budget.ts";
 import { describe, expect, test, afterEach, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import {
   AIDLC_SRC,
@@ -531,7 +533,8 @@ describe("t282 a v7 record is brought up in place and resumes", () => {
 // that release's own engine and state tool, with the record folder named as
 // the test project's: an open gate in Inception, a solo Unit walk partway
 // through its first Unit, the same walk with its Units named like stages
-// (code-review, then incident-response), and work in Operation. Each holds its
+// (code-review, then incident-response), one whose first Unit is named like CI
+// Pipeline with that stage finished, and work in Operation. Each holds its
 // stage documents, its review records and its audit as 2.11.4 left them.
 const V8 = join(REPO_ROOT, "tests", "fixtures", "state-v8");
 const SECURE = ["code-review", "security-review", "conformance-review"];
@@ -564,6 +567,21 @@ function stageDocuments(record: string): Map<string, string> {
     if (entry.isDirectory() && entry.name !== "audit" && !entry.name.startsWith(".")) walk(join(record, entry.name));
   }
   return out;
+}
+
+// Makes `dir` a folder this user cannot change, as one another user or a
+// container made is: read-only to its owner, and immutable for root, whom no
+// mode bit stops. Returns the step that frees it again.
+function lockFolder(dir: string): () => void {
+  if (process.getuid?.() !== 0) {
+    chmodSync(dir, 0o555);
+    return () => chmodSync(dir, 0o755);
+  }
+  const locked = spawnSync("chattr", ["+i", dir], { encoding: "utf-8" });
+  expect(locked.status, `chattr +i: ${locked.stderr}`).toBe(0);
+  return () => {
+    spawnSync("chattr", ["-i", dir]);
+  };
 }
 
 function v8Next(proj: string, args: string[] = [], env: Record<string, string> = {}) {
@@ -853,6 +871,141 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     ];
     expect(row).toContain(`\n**Moved**: ${moves.join(", ")}\n`);
     expect(row).toMatch(/^\*\*Left behind\*\*: none$/m);
+  });
+
+  test("a Unit named like CI Pipeline, with CI Pipeline finished: the stage's own documents go where it reads them, and nothing reads as changed", () => {
+    // 2.11.4 kept the ci-pipeline Unit's stages and CI Pipeline's own
+    // documents in the one folder construction/ci-pipeline/.
+    const { proj, record, documents } = v8Project("unit-named-ci-pipeline");
+    expect(documents.has("construction/ci-pipeline/ci-config.md")).toBe(true);
+    expect(documents.has("construction/ci-pipeline/functional-design/functional-spec.md")).toBe(true);
+    const r = v8Next(proj);
+    expect(r.directive?.stage_validity).toBeUndefined();
+    expect(r.out).not.toMatch(CHANGED_LINES);
+    expectDocumentsMoved(record, documents);
+    for (const file of ["ci-config.md", "ci-pipeline-questions.md", "quality-gates.md"]) {
+      expect(existsSync(join(record, "deploy", "ci-pipeline", file)), file).toBe(true);
+    }
+    expect(existsSync(join(record, "design", "ci-pipeline", "functional-design", "functional-spec.md"))).toBe(true);
+    expect(existsSync(join(record, "build", "ci-pipeline", "code-generation", "code-generation-plan.md"))).toBe(true);
+    expect(upgradeRow(proj)).toMatch(/^\*\*Left behind\*\*: none$/m);
+    for (const out of [statusOf(proj), doctorOf(proj)]) expect(out).not.toMatch(CHANGED_LINES);
+  });
+
+  test("a held attempt keeps no copy: work paused meanwhile is kept once, under the plain name, as it stood when it was brought up", () => {
+    const { proj, state, record } = v8Project("inception-gate");
+    const kept = () => readdirSync(record).filter((name) => /^aidlc-state\.v\d/.test(name)).sort();
+    v8Next(proj, [], { AIDLC_TEST: "1", AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/requirements-analysis" });
+    expect(kept()).toEqual([]);
+    // Meanwhile the person stops for the day, which the record keeps at State Version 8.
+    const park = spawnSync(BUN, [join(AIDLC_SRC, "tools", "aidlc-state.ts"), "park", "--person-asked", "--project-dir", proj], {
+      timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8", env: { ...process.env, ...V8_ENV },
+    });
+    expect(park.status, `${park.stdout}${park.stderr}`).toBe(0);
+    const parked = readFileSync(seededStateFile(proj), "utf-8");
+    expect(parked).not.toBe(state);
+    expect(parked).toMatch(/^- \*\*State Version\*\*: 8$/m);
+    v8Next(proj);
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toMatch(/^- \*\*State Version\*\*: 10$/m);
+    expect(kept()).toEqual(["aidlc-state.v8.md"]);
+    expect(readFileSync(join(record, "aidlc-state.v8.md"), "utf-8")).toBe(parked);
+    expect(upgradeRow(proj)).toMatch(/^\*\*Original\*\*: aidlc-state\.v8\.md$/m);
+    expect(statusOf(proj)).toMatch(/^Brought up: +from an older AI-DLC on \d{4}-\d{2}-\d{2} \(the record as it was: aidlc-state\.v8\.md\)$/m);
+  });
+
+  test("two folders held open are named together, in plain English", () => {
+    const { proj } = v8Project("inception-gate");
+    const held = v8Next(proj, [], {
+      AIDLC_TEST: "1",
+      AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/practices-discovery,inception/requirements-analysis",
+    });
+    expect(held.directive?.kind).toBe("print");
+    const message = String(held.directive?.message ?? "");
+    expect(message).toMatch(/AI-DLC could not move `[^`]+\/inception\/practices-discovery` and `[^`]+\/inception\/requirements-analysis` to where this release keeps them: a program on this computer has those folders open\. /);
+    expect(message).toContain("Close what has them open (");
+    expect(message).not.toMatch(/\bor them\b|has it open|that folder/);
+  });
+
+  test("a move refused as one this user may not make names the folder and the step that frees it", () => {
+    const { proj, state } = v8Project("inception-gate");
+    const held = v8Next(proj, [], { AIDLC_TEST: "1", AIDLC_TEST_FOLDER_MOVE_FAIL: "inception/requirements-analysis:EACCES" });
+    expect(held.directive?.kind).toBe("print");
+    const message = String(held.directive?.message ?? "");
+    expect(message).not.toMatch(/EACCES|State Version|STATE_UPGRADED/);
+    if (process.platform === "win32") {
+      // Windows refuses a folder held open the same way, so the line names both, and a step for each.
+      expect(message).toContain("has that folder open, or your user cannot change it. Your work is as it was. Close what has it open (");
+      expect(message).toContain("; if nothing has it open, give your user write access to it. Then ask me to carry on");
+    } else {
+      // An open folder never stops a move here: only the folder's access does.
+      expect(message).toMatch(/AI-DLC cannot change `aidlc\/spaces\/default\/intents\/[^/`]+\/inception\/requirements-analysis` \(another user or a container may own it, or it may be read-only\), so it could not move your work to where this release keeps it\. Your work is as it was\. Give your user write access to it, then ask me to carry on, /);
+      expect(message).not.toMatch(/Close what has|has that folder open/);
+    }
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
+    expect(upgradeRows(proj)).toBe(0);
+  });
+
+  // Linux refuses moving a folder this user may not write to a new parent,
+  // whatever its parent allows, so each locked folder is named.
+  test.skipIf(process.platform !== "linux")("two folders this user cannot change are named together, in plain English", () => {
+    const { proj, record } = v8Project("inception-gate");
+    const unlocks = ["practices-discovery", "requirements-analysis"].map((slug) => lockFolder(join(record, "inception", slug)));
+    let message = "";
+    try {
+      message = String(v8Next(proj).directive?.message ?? "");
+    } finally {
+      for (const unlock of unlocks) unlock();
+    }
+    expect(message).toMatch(/^Tell the person in one line: "AI-DLC cannot change `[^`]+\/inception\/practices-discovery` and `[^`]+\/inception\/requirements-analysis` \(another user or a container may own them, or they may be read-only\), so it could not move your work to where this release keeps it\. Your work is as it was\. Give your user write access to them, then ask me to carry on, /);
+    expect(message).not.toMatch(/\bor them\b|has it open|that folder/);
+  });
+
+  // Windows cannot tell a folder this user may not change from the outside
+  // (its access check reads only a read-only attribute, which folders ignore).
+  test.skipIf(process.platform === "win32")("a folder this user cannot change: the step names it and how to free it, doctor and status name it too, and once freed the next step brings the work up", () => {
+    const { proj, state, record, documents } = v8Project("inception-gate");
+    const unlock = lockFolder(join(record, "inception"));
+    let message = "";
+    let again = "";
+    let doctor = "";
+    let status = "";
+    try {
+      message = String(v8Next(proj).directive?.message ?? "");
+      again = String(v8Next(proj).directive?.message ?? "");
+      doctor = doctorOf(proj);
+      status = statusOf(proj);
+    } finally {
+      unlock();
+    }
+    const folder = /`(aidlc\/spaces\/default\/intents\/[^/`]+\/inception)`/.exec(message)?.[1] ?? "";
+    expect(folder).not.toBe("");
+    expect(message).toContain(
+      `AI-DLC cannot change \`${folder}\` (another user or a container may own it, or it may be read-only), so it ` +
+        "could not move your work to where this release keeps it. Your work is as it was. Give your user write access " +
+        "to it, then ask me to carry on, and AI-DLC finishes moving your work and picks up where you were.",
+    );
+    expect(message).not.toMatch(/Close what has|has that folder open|EACCES|EPERM/);
+    expect(again).toBe(message);
+    expect(readFileSync(seededStateFile(proj), "utf-8")).toBe(state);
+    expect(stageDocuments(record)).toEqual(documents);
+    expect(upgradeRows(proj)).toBe(0);
+    // Doctor and status say the bring-up waits on that folder, never that the next step makes it.
+    expect(doctor).not.toContain("AI-DLC brings this record up to 10 at its next step");
+    expect(doctor).toContain(`State Version: 8 (AI-DLC cannot bring this record up to 10 while it cannot change ${folder})`);
+    expect(doctor).toContain(
+      `give your user write access to ${folder} (another user or a container may own it, or it may be read-only), then ask AI-DLC to carry on`,
+    );
+    expect(status.match(/^Brought up: .*$/gm)).toEqual([
+      `Brought up:     waiting: AI-DLC cannot change ${folder} (another user or a container may own it, or it may be ` +
+        "read-only); give your user write access to it, then ask AI-DLC to carry on",
+    ]);
+    // Once it can be changed, the next step brings the record up whole and shows the open gate.
+    const r = v8Next(proj);
+    expect(r.directive?.kind).toBe("run-stage");
+    expect(r.directive?.stage).toBe("requirements-analysis");
+    expect(r.directive?.gate).toBe(true);
+    expectDocumentsMoved(record, documents);
+    expect(readFileSync(join(record, "aidlc-state.v8.md"), "utf-8")).toBe(state);
   });
 
   test("what Finder and Explorer leave in the old folders is no one's work: the old folders go, and doctor says nothing of it", () => {
