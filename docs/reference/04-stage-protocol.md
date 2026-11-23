@@ -1250,9 +1250,16 @@ through the one table in `aidlc-five-phase-record.ts`: a review receipt, a
 Unit's completion or checkpoint approval hashed under the five-phase logical
 paths matches the same documents, and a questions file, a written or kept
 output, or a check's output named at a five-phase path names the moved file.
-Only the recorded side is read so, and everything a record binds (the
-prompt, the plan, the questions file's content, the documents' bytes) is
-checked as before.
+So do the decisions a gate recorded on review findings, a Reverse Engineering
+handoff, the files a Unit's checkpoint checks read, the paths a backward jump
+named and a change already accepted under the summary confirmation. A folder
+under `construction/` holding a per-Unit stage's folder is a Unit whatever it
+is called, and a stage the table does not know (a plugin's) reads at its phase
+in the stage graph from whichever five-phase folder held it; since 2.11.4
+recorded no folder for it, its five-phase forms are one per five-phase folder,
+each over the same documents. Only the recorded side is read so, and
+everything a record binds (the prompt, the plan, the questions file's
+content, the documents' bytes) is checked as before.
 
 Reviewed outputs remain frozen. If `review_artifact` explicitly names a
 questions artifact, it remains fully byte-bound and frozen, including its

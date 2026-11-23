@@ -2,7 +2,13 @@ import { isUnitLoopStage, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
 import { lockFolderHeldGiveUpMs, lockFolderHeldLine } from "./aidlc-lock-line.ts";
 import { committedTextBytes, committedTextParts, reviewManifestForms } from "./aidlc-review-manifest.ts";
-import { fivePhaseLogicalPath, rememberFivePhaseFingerprint, sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
+import {
+  fivePhaseLogicalSpellings,
+  registerFivePhaseStageGraph,
+  rememberFivePhaseFingerprint,
+  sameRecordPath,
+  sevenPhaseRecordPath,
+} from "./aidlc-five-phase-record.ts";
 export { committedTextBytes } from "./aidlc-review-manifest.ts";
 import { withoutLearnedDate } from "./aidlc-learned-date.ts";
 import { claimedCheckoutReopens } from "./aidlc-unit-landing.ts";
@@ -16794,7 +16800,7 @@ function reviewArtifactContentsFingerprint(
   if (!matchedAppendix) return null;
   // Older forms include the same documents under the logical paths a
   // five-phase release recorded, before the 8 to 10 state step moved them.
-  const { fingerprint, raw, older, earlier } = reviewManifestForms(manifest, rawManifest, contents, fivePhaseLogicalPath);
+  const { fingerprint, raw, older, earlier } = reviewManifestForms(manifest, rawManifest, contents, fivePhaseLogicalSpellings);
   if (raw !== null) rememberRawFingerprint(raw, fingerprint);
   for (const form of older) RAW_FINGERPRINTS.set(form, fingerprint);
   if (earlier) rememberFivePhaseFingerprint(fingerprint, earlier);
@@ -18690,7 +18696,7 @@ export function reviewArtifactBytesSnapshot(
   }
   return {
     // The receipt's form, as reviewArtifactContentsFingerprint reads it.
-    fingerprint: reviewManifestForms(manifest, manifest, snapshot, fivePhaseLogicalPath).fingerprint,
+    fingerprint: reviewManifestForms(manifest, manifest, snapshot, fivePhaseLogicalSpellings).fingerprint,
     entries: snapshot,
   };
 }
@@ -34444,9 +34450,10 @@ function pipelineReceiptArtifactIsCurrent(
     return false;
   }
   // The record the receipt was written in: with no work selected, an
-  // isolated run's is the space's own.
+  // isolated run's is the space's own. A five-phase release's handoff is read
+  // at the folder the 8 to 10 step moved it to; its bytes are bound as before.
   const root = docsRoot(projectDir);
-  const path = resolvePath(projectDir, receipt.artifactPath);
+  const path = resolvePath(projectDir, sevenPhaseRecordPath(receipt.artifactPath));
   if (path !== root && !path.startsWith(`${root}${sep}`)) return false;
   try {
     const guardedPath = assertNoSymlinkInChainOrThrow(
@@ -36698,6 +36705,30 @@ export function loadStageGraphAll(): StageEntry[] {
   _stageGraphAll = parsed;
   return parsed;
 }
+
+// The 8 to 10 step's path translation (aidlc-five-phase-record.ts, a leaf)
+// reads a stage its frozen tables do not know, a plugin's, at its phase in
+// this graph: every stage the graph holds, as the step's folder move reads it.
+// Indexed once per graph read, since every recorded path a reader translates
+// asks it about each of its folders.
+registerFivePhaseStageGraph((() => {
+  let indexed: StageEntry[] | null = null;
+  let bySlug = new Map<string, { phase: string; perUnit: boolean }>();
+  return (slug: string) => {
+    let graph: StageEntry[];
+    try {
+      graph = loadStageGraphAll();
+    } catch {
+      return undefined;
+    }
+    if (graph !== indexed) {
+      indexed = graph;
+      bySlug = new Map(graph.filter((stage) => (PHASES as readonly string[]).includes(stage.phase))
+        .map((stage) => [stage.slug, { phase: stage.phase, perUnit: isUnitLoopStage(stage) }]));
+    }
+    return bySlug.get(slug);
+  };
+})());
 
 // Per-scope metadata read from each .claude/scopes/*.md frontmatter: identity,
 // defaults, routing metadata, and the optional review cap. Core scopes use
@@ -41670,9 +41701,12 @@ export function acceptedChangeFields(change: AcceptedChange): Record<string, str
 // and unit: the plan and review pairs are content digests, so the same pair is
 // the same change however many later rows list its paths. The summary pair is
 // a receipt id and a write stamp, shared by every output of one confirmation,
-// so the output path is part of that identity.
+// so the output path is part of that identity: a path a five-phase release
+// recorded is read at the folder the 8 to 10 step moved it to, so a change it
+// said once is not said again.
 function acceptedChangeMatchesRow(change: AcceptedChange, block: string): boolean {
   const fields = acceptedChangeFields(change);
+  const changed = auditBlockField(block, "Changed");
   return (
     auditBlockField(block, "Stage") === fields.Stage &&
     (auditBlockField(block, "Unit") ?? null) === (change.unit ?? null) &&
@@ -41680,7 +41714,8 @@ function acceptedChangeMatchesRow(change: AcceptedChange, block: string): boolea
     auditBlockField(block, "Recorded") === fields.Recorded &&
     auditBlockField(block, "Current") === fields.Current &&
     (change.checkpoint !== "summary-confirmation" ||
-      auditBlockField(block, "Changed") === fields.Changed)
+      (changed !== null && (changed === fields.Changed ||
+        changed.split(", ").map(sevenPhaseRecordPath).join(", ") === fields.Changed)))
   );
 }
 

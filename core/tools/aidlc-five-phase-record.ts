@@ -7,7 +7,10 @@
 // or reviewed before the update still holds after the move.
 //
 // The tables are frozen: a later release that moves a stage again adds its own
-// step and never changes what this one did. A leaf module: it imports nothing.
+// step and never changes what this one did. A stage they do not know (a
+// plugin's) is read at its phase in the stage graph, as the step's folder move
+// reads it. A leaf module: it imports nothing, and reads the graph through the
+// reader aidlc-lib.ts registers (registerFivePhaseStageGraph).
 
 type FivePhase = "ideation" | "inception" | "construction" | "operation";
 
@@ -97,36 +100,75 @@ function isFivePhase(segment: string): segment is FivePhase {
   return (FIVE_PHASE_FOLDERS as readonly string[]).includes(segment);
 }
 
+/** A stage as the stage graph has it: its phase, and whether it runs once per Unit. */
+export interface FivePhaseGraphStage {
+  phase: string;
+  perUnit: boolean;
+}
+
+let graphStage: (slug: string) => FivePhaseGraphStage | undefined = () => undefined;
+
+/**
+ * The stage graph's reading of a slug, for a stage the frozen tables do not
+ * know: every stage the graph holds, disabled ones too, at a seven-phase
+ * phase. aidlc-lib.ts registers it as it loads, from the graph the 8 to 10
+ * step's folder move reads.
+ */
+export function registerFivePhaseStageGraph(lookup: (slug: string) => FivePhaseGraphStage | undefined): void {
+  graphStage = lookup;
+}
+
+// The seven-phase folder of a stage the frozen tables do not know (a
+// plugin's), kept at stage level: its phase in the graph, whichever
+// five-phase folder 2.11.4 kept it in.
+function pluginStageFolder(slug: string): string | undefined {
+  return Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, slug) ? undefined : graphStage(slug)?.phase;
+}
+
+// The seven-phase folder a per-Unit stage's Unit folders go under: the frozen
+// table's for a stage 2.11.4 kept once per Unit, the graph's phase for a
+// plugin stage that runs once per Unit.
+function unitStageFolder(slug: string | undefined): string | undefined {
+  if (slug === undefined || slug === "") return undefined;
+  if (FIVE_PHASE_UNIT_STAGES.includes(slug)) return SEVEN_PHASE_STAGE_FOLDER[slug];
+  if (Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, slug)) return undefined;
+  const stage = graphStage(slug);
+  return stage?.perUnit ? stage.phase : undefined;
+}
+
 /**
  * The seven-phase spelling of a recorded path that a five-phase release wrote:
  * the last `<old phase>/<slug>/` or `construction/<unit>/<unit stage>/` segment
- * pair takes the stage's seven-phase folder. A path with no such segment comes
- * back unchanged. `pluginFolder` names the old and the seven-phase folder of a
- * stage the frozen tables do not know (a plugin stage), when the caller can
- * say. Separators are read as either `/` or `\`, and the path keeps its own.
- * For equality checks only: a translated path still has to equal the current
- * one, and the content the record binds (a prompt hash, a fingerprint) is
- * checked as before.
+ * run takes the stage's seven-phase folder. A Unit's run is read first, so a
+ * Unit reads as a Unit whatever it is called (a five-phase folder's name or a
+ * stage's included), as the 8 to 10 step moves its folder; a path whose last
+ * `<phase>/<slug>/` or `<phase>/<unit>/<unit stage>/` run is already
+ * seven-phase comes back as it is (a folder above it named like a five-phase
+ * one is the project's), and so does a path with no such run. Separators are
+ * read as either `/` or `\`, and the path keeps its own. For equality checks
+ * only: a translated path still has to equal the current one, and the content
+ * the record binds (a prompt hash, a fingerprint) is checked as before.
  */
-export function sevenPhaseRecordPath(
-  path: string,
-  pluginFolder?: (slug: string) => { old: string; current: string } | null | undefined,
-): string {
+export function sevenPhaseRecordPath(path: string): string {
   const sep = path.includes("/") || !path.includes("\\") ? "/" : "\\";
   const segments = path.split(/[\\/]/);
   for (let i = segments.length - 2; i >= 0; i--) {
-    const folder = segments[i];
-    if (!isFivePhase(folder)) continue;
-    const slug = segments[i + 1];
-    const unitStage = segments[i + 2];
-    let target: string | undefined;
-    if (FIVE_PHASE_STAGE_FOLDER[slug] === folder) target = SEVEN_PHASE_STAGE_FOLDER[slug];
-    else if (folder === "construction" && slug !== "" && unitStage !== undefined && FIVE_PHASE_UNIT_STAGES.includes(unitStage)) {
-      target = SEVEN_PHASE_STAGE_FOLDER[unitStage];
-    } else if (!(slug in FIVE_PHASE_STAGE_FOLDER)) {
-      const plugin = pluginFolder?.(slug);
-      if (plugin && plugin.old === folder) target = plugin.current;
+    const unitFolder = i > 0 && segments[i] !== "" ? unitStageFolder(segments[i + 1]) : undefined;
+    if (unitFolder !== undefined && segments[i - 1] === unitFolder) return path;
+    if (unitFolder !== undefined && segments[i - 1] === "construction") {
+      segments[i - 1] = unitFolder;
+      return segments.join(sep);
     }
+    const folder = segments[i];
+    const slug = segments[i + 1];
+    if (!isFivePhase(folder)) {
+      const seven = Object.hasOwn(SEVEN_PHASE_STAGE_FOLDER, slug) ? SEVEN_PHASE_STAGE_FOLDER[slug] : pluginStageFolder(slug);
+      if (seven !== undefined && seven === folder) return path;
+      continue;
+    }
+    const target = Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, slug)
+      ? FIVE_PHASE_STAGE_FOLDER[slug] === folder ? SEVEN_PHASE_STAGE_FOLDER[slug] : undefined
+      : pluginStageFolder(slug);
     if (target === undefined) continue;
     segments[i] = target;
     return segments.join(sep);
@@ -149,35 +191,75 @@ export function sameRecordPath(recorded: string, current: string): boolean {
  * (`<phase>/<slug>/<file>` or `<phase>/<unit>/<slug>/<file>`), the form a
  * five-phase release hashed into a review or Unit receipt; null when the entry
  * names no stage that release kept. Per-Unit entries go back to
- * `construction/<unit>/<slug>/`, stage-level ones to the stage's old folder.
+ * `construction/<unit>/<slug>/` (read first, whatever the Unit is called, as
+ * sevenPhaseRecordPath reads them), stage-level ones to the stage's old
+ * folder. A plugin stage's old folder was never recorded: `pluginFolder` names
+ * the one to spell it with (fivePhaseLogicalSpellings tries each), and without
+ * it such a stage-level entry has no five-phase form.
  */
-export function fivePhaseLogicalPath(logicalPath: string): string | null {
+export function fivePhaseLogicalPath(logicalPath: string, pluginFolder?: FivePhase): string | null {
   const segments = logicalPath.split("/");
   if (segments.length < 3) return null;
   const [phase, second, third] = segments;
-  if (FIVE_PHASE_UNIT_STAGES.includes(third ?? "") && SEVEN_PHASE_STAGE_FOLDER[third] === phase && !(second in FIVE_PHASE_STAGE_FOLDER)) {
-    return ["construction", ...segments.slice(1)].join("/");
-  }
-  const old = FIVE_PHASE_STAGE_FOLDER[second];
-  if (old && SEVEN_PHASE_STAGE_FOLDER[second] === phase) return [old, ...segments.slice(1)].join("/");
-  return null;
+  if (second !== "" && unitStageFolder(third) === phase) return ["construction", ...segments.slice(1)].join("/");
+  const old = Object.hasOwn(FIVE_PHASE_STAGE_FOLDER, second)
+    ? SEVEN_PHASE_STAGE_FOLDER[second] === phase ? FIVE_PHASE_STAGE_FOLDER[second] : undefined
+    : pluginFolder !== undefined && pluginStageFolder(second) === phase ? pluginFolder : undefined;
+  return old === undefined ? null : [old, ...segments.slice(1)].join("/");
 }
 
 /**
  * The five-phase spelling of a project-relative, `/`-separated path at the
  * seven-phase layout: the first `<phase>/<slug>/` or `<phase>/<unit>/<unit
  * stage>/` run a five-phase release kept elsewhere takes that release's folder
- * (fivePhaseLogicalPath); null when no run names one. Read from the start, so a
- * Unit named like a phase still reads as a Unit. For building the value a
- * five-phase release recorded for the same documents, never for reading one.
+ * (fivePhaseLogicalPath, with `pluginFolder` for a plugin stage); null when no
+ * run names one. Read from the start, so a Unit named like a phase still reads
+ * as a Unit. For building the value a five-phase release recorded for the same
+ * documents, never for reading one.
  */
-export function fivePhaseRecordPath(path: string): string | null {
+export function fivePhaseRecordPath(path: string, pluginFolder?: FivePhase): string | null {
   const segments = path.split("/");
   for (let i = 0; i + 3 <= segments.length; i++) {
-    const older = fivePhaseLogicalPath(segments.slice(i).join("/"));
+    const older = fivePhaseLogicalPath(segments.slice(i).join("/"), pluginFolder);
     if (older !== null) return [...segments.slice(0, i), older].join("/");
   }
   return null;
+}
+
+// Each distinct five-phase spelling of a list of paths, one per five-phase
+// folder a plugin stage among them could have been kept in (a list naming only
+// stages the frozen tables know spells the same in each); null where a path
+// kept its place, and no list when none moved.
+function fivePhaseSpellings(
+  paths: readonly string[],
+  spell: (path: string, pluginFolder: FivePhase) => string | null,
+): (string | null)[][] {
+  const seen = new Set<string>();
+  const spellings: (string | null)[][] = [];
+  for (const folder of FIVE_PHASE_FOLDERS) {
+    const spelled = paths.map((path) => spell(path, folder));
+    const key = JSON.stringify(spelled);
+    if (spelled.every((path) => path === null) || seen.has(key)) continue;
+    seen.add(key);
+    spellings.push(spelled);
+  }
+  return spellings;
+}
+
+/**
+ * Review manifest entries' logical paths as each record layout a five-phase
+ * release could have kept them in spelled them (fivePhaseLogicalPath): one
+ * layout for the stages the frozen tables know, one per five-phase folder for
+ * a plugin stage, whose 2.11.4 folder is not recorded. Every layout binds the
+ * same documents, so only the one 2.11.4 hashed can equal what it recorded.
+ */
+export function fivePhaseLogicalSpellings(logicalPaths: readonly string[]): (string | null)[][] {
+  return fivePhaseSpellings(logicalPaths, fivePhaseLogicalPath);
+}
+
+/** fivePhaseLogicalSpellings for project-relative paths (fivePhaseRecordPath). */
+export function fivePhaseRecordSpellings(paths: readonly string[]): (string | null)[][] {
+  return fivePhaseSpellings(paths, fivePhaseRecordPath);
 }
 
 // The five-phase forms of review fingerprints this process computed: the

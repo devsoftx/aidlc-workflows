@@ -1199,6 +1199,10 @@ function parseDispositionField(
   if (envelope.version !== 1 || !Array.isArray(envelope.dispositions)) {
     return [];
   }
+  // A decision a five-phase release recorded names its document at the
+  // folder the 8 to 10 step moved it from: it is read at the folder it moved
+  // to, so it attaches to the finding it was made on. The finding's own path
+  // is never translated, and its fingerprint is still compared exactly.
   return envelope.dispositions.filter((entry): entry is ReviewFindingDisposition => {
     if (!entry || typeof entry !== "object") return false;
     const row = entry as Partial<ReviewFindingDisposition>;
@@ -1228,6 +1232,9 @@ function parseDispositionField(
         )
       )
     );
+  }).map((entry) => {
+    const artifact = sevenPhaseRecordPath(entry.artifact);
+    return artifact === entry.artifact ? entry : { ...entry, artifact };
   });
 }
 
@@ -2416,15 +2423,16 @@ export function reviewInvalidationDetails(
   // upstream source as context for stages that still require re-check.
   const boundary = backwardJumpBoundary(attemptFrontier);
   if (boundary) {
-    const jumpChanged = parseAuditPathArray(
-      auditBlockField(boundary.block, "Changed Upstream Artifacts"),
-    );
-    const jumpArtifacts = parseAuditPathArray(
-      auditBlockField(boundary.block, "Invalidated Downstream Artifacts"),
-    );
-    const jumpReviews = parseAuditPathArray(
-      auditBlockField(boundary.block, "Invalidated Downstream Reviews"),
-    );
+    // A jump a five-phase release recorded names each path at the folder the
+    // 8 to 10 step moved it from, a review by its document's path and `#Review`.
+    const jumpPaths = (field: string): string[] =>
+      parseAuditPathArray(auditBlockField(boundary.block, field)).map((path) => {
+        const review = path.endsWith("#Review") ? "#Review" : "";
+        return `${sevenPhaseRecordPath(path.slice(0, path.length - review.length))}${review}`;
+      });
+    const jumpChanged = jumpPaths("Changed Upstream Artifacts");
+    const jumpArtifacts = jumpPaths("Invalidated Downstream Artifacts");
+    const jumpReviews = jumpPaths("Invalidated Downstream Reviews");
     const consumedArtifacts = new Set<string>();
     const consumedReviews = new Set<string>();
     for (const event of events) {
