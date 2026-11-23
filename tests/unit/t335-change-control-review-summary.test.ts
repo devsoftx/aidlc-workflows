@@ -1029,7 +1029,7 @@ describe("t335 (5) a team-owned Unit gate runs the same checkpoint", () => {
         "- **Project**: team unit change control test",
         "- **Project Type**: Greenfield",
         "- **Scope**: feature",
-        "- **State Version**: 8",
+        "- **State Version**: 10",
         "- **Skeleton Stance**: on",
         "",
         "## Runtime State",

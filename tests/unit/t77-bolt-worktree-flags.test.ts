@@ -91,7 +91,7 @@ function runBolt(args: string[]): Run {
 }
 
 /**
- * A v7 state fixture + the audit sample, optionally pre-creating the worktree
+ * A current-version state fixture + the audit sample, optionally pre-creating the worktree
  * dir so the fork primitive does not reject.
  */
 function setupV7Project(withWorktree?: string): string {

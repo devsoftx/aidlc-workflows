@@ -111,7 +111,7 @@ function project(policy: "strict" | "relaxed" = "strict"): string {
 - **Project**: resume an interrupted build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: ${policy} (set by you)
 
@@ -769,7 +769,7 @@ describe("a swarm batch keeps its own continuation rule", () => {
 - **Project**: Swarm continuation
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major

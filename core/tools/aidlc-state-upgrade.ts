@@ -15,6 +15,7 @@ import { isReadOnlyEngineProbe, withAuditLock, writeFileAtomic } from "./aidlc-l
 import { auditBlockField, getField, readAuditShardEvents, setField, writeStateFile } from "./aidlc-record-core.ts";
 import { packageManagerForExecutable } from "./aidlc-install-paths.ts";
 import { releaseHostLabel } from "./aidlc-release.ts";
+import { moveFivePhaseFolders, sevenPhaseStateText } from "./aidlc-seven-phase-upgrade.ts";
 import { aidlcInvocation, compiledExecutable, runtimeHarnessName, typedHarnessName } from "./aidlc-runtime-paths.ts";
 import { AIDLC_VERSION } from "./aidlc-version.ts";
 
@@ -34,16 +35,22 @@ interface StageRename {
 interface StateUpgrade {
   to: string;
   renamed: StageRename[];
-  // No row is written for an added stage: a record without one is the case the
-  // engine already places for a stage a newer release adds (a missing row reads
-  // as pending, and the move onto it writes it). addedStagesPassedOver reads
-  // them from this step's audit row, so work that had just passed one goes back
-  // to it.
+  // addedStagesPassedOver reads them from this step's audit row, so work that
+  // had just passed one goes back to it. A step without `text` writes no row
+  // for them: a missing row reads as pending, and the move onto the stage
+  // writes it beside its phase's rows.
   added: string[];
+  // The step's own rewrite of the state text, after the version line and the renames.
+  text?: (content: string, added: readonly string[]) => string;
+  // The step's own record-folder moves, after every rename's, and what they left behind.
+  folders?: (recordDir: string) => { moved: string[]; left: string[] };
 }
 
 // Keyed by the version a step starts from. 2.1.x to 2.3.0 wrote 7; 8 renamed
-// Application Design to Domain Design and added Contract Design.
+// Application Design to Domain Design and added Contract Design. 2.6.1 to
+// 2.11.4 wrote 8, five phases; 10 is the seven-phase layout, with the three
+// Secure stages added. The 8 step skips 9, which upstream AI-DLC 2.12 writes
+// for team work (classifyStateVersion reads it as newer work).
 const STATE_UPGRADES: Readonly<Record<string, StateUpgrade>> = {
   "7": {
     to: "8",
@@ -51,6 +58,15 @@ const STATE_UPGRADES: Readonly<Record<string, StateUpgrade>> = {
       { from: "application-design", to: "domain-design", fromName: "Application Design", toName: "Domain Design", fromPhase: "inception" },
     ],
     added: ["contract-design"],
+  },
+  "8": {
+    to: "10",
+    renamed: [],
+    // A missing row would stay missing here: no Secure stage has a row to
+    // be placed beside, so the step writes theirs.
+    added: ["code-review", "security-review", "conformance-review"],
+    text: sevenPhaseStateText,
+    folders: moveFivePhaseFolders,
   },
 };
 
@@ -73,7 +89,7 @@ function upgradedText(content: string, step: StateUpgrade): string {
     const skipped = getField(text, "Stages to Skip");
     if (skipped?.includes(`(${r.from}`)) text = setField(text, "Stages to Skip", skipped.replaceAll(`(${r.from}`, `(${r.to}`));
   }
-  return text;
+  return step.text ? step.text(text, step.added) : text;
 }
 
 // Whether an earlier State Version wrote this record, one a step brings up to
@@ -99,11 +115,12 @@ function moveRecordFolder(recordDir: string, from: string, to: string): string |
 // The content as the current State Version reads it. When the version is one
 // a step brings up, the state as it was is kept beside it first
 // (aidlc-state.v<N>.md), each renamed stage's record folders move to the new
-// name and phase folder, the state is written and one audit row says what
-// changed. A read-only engine probe gets the brought-up text and writes
-// nothing. A write that fails
-// leaves the original whole (the copy comes first, the state by rename) and
-// this step carries on with the brought-up text; the next one tries again.
+// name and phase folder, then each step's own folder moves run (the 8 step's
+// five-phase folders), the state is written and one audit row says what
+// changed and what was left behind. A read-only engine probe gets the
+// brought-up text and writes nothing. A write that fails leaves the original
+// whole (the copy comes first, the state by rename) and this step carries on
+// with the brought-up text; the next one tries again.
 export function bringStateUpToDate(
   projectDir: string,
   statePath: string,
@@ -118,11 +135,13 @@ export function bringStateUpToDate(
   let version = verdict.version;
   const renamed: StageRename[] = [];
   const added: string[] = [];
+  const steps: StateUpgrade[] = [];
   while (hasStateUpgrade(version)) {
     const step = STATE_UPGRADES[version];
     text = upgradedText(text, step);
     renamed.push(...step.renamed);
     added.push(...step.added);
+    steps.push(step);
     version = step.to;
   }
   // The next stage as this graph routes it (a stage the newer graph added comes
@@ -144,6 +163,13 @@ export function bringStateUpToDate(
         if (label) moved.push(label);
       }
     }
+    const left: string[] = [];
+    for (const step of steps) {
+      const result = step.folders?.(recordDir);
+      if (!result) continue;
+      moved.push(...result.moved);
+      left.push(...result.left);
+    }
     withAuditLock(projectDir, () => {
       writeStateFile(projectDir, text, intent, space);
       appendAuditEntryUnlocked("STATE_UPGRADED", {
@@ -152,6 +178,7 @@ export function bringStateUpToDate(
         Renamed: renamed.map((r) => `${r.from} to ${r.to}`).join(", "),
         "Stages added": added.join(", "),
         Moved: moved.length > 0 ? moved.join(", ") : "none",
+        "Left behind": left.length > 0 ? left.join(", ") : "none",
         Original: basename(kept),
       }, projectDir, intent, space);
     }, intent, space);

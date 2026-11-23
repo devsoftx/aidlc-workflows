@@ -103,7 +103,7 @@ function unitProject(...units: string[]): string {
 - **Project**: Per-Unit design
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: relaxed (set by you)
 - **Unit Ownership**: solo

@@ -124,7 +124,7 @@ function teamProject(findings: string[] = []): string {
 - **Project**: approval needs a reply test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State

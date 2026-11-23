@@ -54,7 +54,7 @@ function state(reviewOverride: string | null): string {
 - **Project**: checkpoint unit receipt step
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0

@@ -74,7 +74,7 @@ function fixture(ownership = "team", iteration = "unit-major", dag = true): stri
 - **Project**: Unit plan safety
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -377,7 +377,7 @@ function planAt(from: string, at: string, box = "?", extra = "", type = "Greenfi
 - **Project**: Unit plan safety
 - **Project Type**: ${type}
 - **Scope**: ${from}
-${extra}- **State Version**: 8
+${extra}- **State Version**: 10
 
 ## Scope Configuration
 - **Depth**: Minimal

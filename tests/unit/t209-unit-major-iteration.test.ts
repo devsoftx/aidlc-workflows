@@ -187,7 +187,7 @@ function constructionState(opts: {
 - **Project**: unit-major iteration test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ${stanceLine}
 ## Runtime State

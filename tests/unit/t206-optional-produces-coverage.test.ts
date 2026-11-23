@@ -152,7 +152,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 - **Project**: optional-produces coverage test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: ${skeletonStance}
 

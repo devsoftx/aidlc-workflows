@@ -931,7 +931,7 @@ describe("t188: human-presence approval gate (ledger-event design)", () => {
 - **Project**: combined late approval
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0

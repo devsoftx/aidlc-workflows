@@ -124,7 +124,7 @@ function fixture(grouped = false, approve = true): string {
 - **Project**: Lowered guard swarm continuation
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major

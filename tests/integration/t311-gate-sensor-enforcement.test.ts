@@ -193,7 +193,7 @@ function setupFixture(
       "# AI-DLC State Tracking",
       "",
       `- **Workflow**: ${scope}`,
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       `- **Scope**: ${scope}`,
       `- **Phase**: ${phase}`,
       "- **Current Stage**: probe",
@@ -1054,7 +1054,7 @@ describe("t311 a blocking check over every repository's files", () => {
       sensors_applicable: [{ id, path: `.claude/sensors/aidlc-${id}.md`, fire_on: "gate", default_severity: "blocking", category: "test", matches }],
     }], null, 2)}\n`, "utf-8");
     writeFileSync(seededStateFile(project), [
-      "# AI-DLC State Tracking", "", "- **Workflow**: bugfix", "- **State Version**: 8", "- **Scope**: bugfix",
+      "# AI-DLC State Tracking", "", "- **Workflow**: bugfix", "- **State Version**: 10", "- **Scope**: bugfix",
       "- **Phase**: discover", "- **Current Stage**: reverse-engineering", "", "- [-] reverse-engineering \u2014 EXECUTE", "",
     ].join("\n"), "utf-8");
     seedAuditFile(project);

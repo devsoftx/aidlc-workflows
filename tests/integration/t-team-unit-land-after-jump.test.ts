@@ -82,7 +82,7 @@ function leadsCheckout(): { lead: string; remote: string } {
 - **Project**: moving on while teams build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State

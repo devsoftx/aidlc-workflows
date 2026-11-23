@@ -31,8 +31,8 @@
 //     --notes; emits {Bolt slug, Strategy, Target branch, Confidence, Notes}.
 //     Each emits via appendAuditEntry → audit.md, then prints
 //     {"emitted":<EVENT>,"slug":<slug>} to stdout. Emit-only: no state mutation.
-//   - init: aidlc-utility.ts handleInit -> writeStateFile. The v7
-//     state template carries State Version 7 plus the three
+//   - init: aidlc-utility.ts handleInit -> writeStateFile. The creation
+//     state template carries the current State Version plus the three
 //     v0.4.0 fields: **Worktree Path**, **Bolt Refs**, **Practices Affirmed
 //     Timestamp**. setup_construction_project ran `init --force --scope <s>`.
 //
@@ -61,7 +61,7 @@
 //     Confidence=0.9 co-located with the slug (the .sh grepped only the event
 //     name), and the post-call ordering (RETURNED's block comes AFTER the
 //     INVOKED block in file order — the "brackets the dispatch" contract).
-//   - test 5 asserts State Version is exactly 7 in addition to the three field
+//   - test 5 asserts State Version is exactly CURRENT_STATE_VERSION in addition to the three field
 //     labels (the .sh checked only the three labels).
 //
 // SCOPE = "enterprise" throughout (the per-scope test's single scope, the .sh's
@@ -81,7 +81,7 @@ import {
 // aidlc/spaces/<space>/intents/<YYMMDD>-<slug>/ and audit is SHARDED per clone
 // under <record>/audit/. Read state through the resolved record dir and audit
 // through the shipped merge helper (default-resolves the active intent).
-import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { CURRENT_STATE_VERSION, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -275,7 +275,7 @@ describe("t60 Construction worktrees per scope — enterprise (cli)", () => {
   test("v7 state carries the three v0.4.0 fields after init --scope enterprise [.sh test 5]", () => {
     const proj = setupConstructionProject(SCOPE);
     const state = readFileSync(statePath(proj), "utf-8");
-    expect(state).toContain("**State Version**: 8");
+    expect(state).toContain(`**State Version**: ${CURRENT_STATE_VERSION}`);
     expect(state).toContain("**Worktree Path**:");
     expect(state).toContain("**Bolt Refs**:");
     expect(state).toContain("**Practices Affirmed Timestamp**:");

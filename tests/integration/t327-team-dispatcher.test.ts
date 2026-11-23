@@ -118,7 +118,7 @@ function teamState(): string {
 - **Project**: dispatcher fixture
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0

@@ -108,7 +108,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 - **Project**: unit-kind pruning test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: ${skeletonStance}
 ## Scope Configuration

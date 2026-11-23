@@ -86,7 +86,7 @@ function project(policy: "strict" | "relaxed" | "off", unit: string | null = UNI
 - **Project**: an approved plan that changes before its review
 - **Project Type**: Greenfield
 - **Scope**: ${unit === null ? "poc" : "feature"}
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: ${policy} (set by you)${unit === null ? "\n- **Plan Approval**: on (set by you)" : ""}${extraState}
 

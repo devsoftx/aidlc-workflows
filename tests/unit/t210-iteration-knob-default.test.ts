@@ -111,7 +111,7 @@ function constructionState(opts: {
 - **Project**: iteration knob default test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 ${autonomyLine}## Scope Configuration

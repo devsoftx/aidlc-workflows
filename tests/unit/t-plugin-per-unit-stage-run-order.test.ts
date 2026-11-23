@@ -203,7 +203,7 @@ function probeProject(ownership: "team" | "solo", units: string[]): Install {
 - **Project**: plugin per-Unit stage route test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Unit Ownership**: ${ownership}
 

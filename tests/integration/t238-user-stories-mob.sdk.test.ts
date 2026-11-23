@@ -110,7 +110,7 @@ function userStoriesState(projectDir: string): string {
 - **Project Type**: Greenfield
 - **Scope**: feature
 - **Start Date**: 2026-07-17T00:00:00Z
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: aidlc-product-agent
 - **Worktree Path**:
 - **Bolt Refs**:

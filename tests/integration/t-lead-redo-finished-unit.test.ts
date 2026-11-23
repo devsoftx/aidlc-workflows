@@ -50,7 +50,7 @@ function leadsCheckout(codeGeneration = "SKIP"): { lead: string; remote: string 
 - **Project**: two checkouts
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State

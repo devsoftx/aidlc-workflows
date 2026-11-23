@@ -97,7 +97,7 @@ function inceptionState(checkbox = "[?]"): string {
 - **Project**: ensemble evidence test
 - **Project Type**: Greenfield
 - **Scope**: enterprise
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all
@@ -129,7 +129,7 @@ function practicesState(
 - **Project**: practices ensemble evidence test
 - **Project Type**: Greenfield
 - **Scope**: enterprise
-- **State Version**: 8
+- **State Version**: 10
 - **Practices Affirmed Timestamp**: ${affirmedTimestamp}
 
 ## Scope Configuration

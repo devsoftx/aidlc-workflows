@@ -557,7 +557,7 @@ function groupedProject(changed: boolean, repos: string[] = []): { pd: string; q
   seedAidlcMemory(pd);
   writeFileSync(seededStateFile(pd), [
     "# State", "## Project Information", "- **Project**: Grouped plan approval", "- **Scope**: feature",
-    "- **Project Type**: Greenfield", "- **State Version**: 8", "## Runtime State",
+    "- **Project Type**: Greenfield", "- **State Version**: 10", "## Runtime State",
     "- **Construction Checkpoints**: enabled", "- **Construction Iteration**: stage-major",
     "- **Construction Execution**: swarm", "- **Construction Autonomy Mode**: gated", "- **Skeleton Stance**: off",
     "- **Unit Ownership**: solo", "- **Guard Policy**: strict (set by you)", "## Stage Progress",

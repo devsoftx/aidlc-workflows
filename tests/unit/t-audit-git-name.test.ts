@@ -120,7 +120,7 @@ function constructionProject(autonomy: "autonomous" | "gated", unitMajor: boolea
 - **Project**: Jumps under autonomy
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off

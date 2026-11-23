@@ -152,7 +152,7 @@ describe("one approval starts the build however the rules travel", () => {
 - **Project**: Add a --shout option to greet.py
 - **Project Type**: Brownfield
 - **Scope**: poc
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all
@@ -216,7 +216,7 @@ describe("one approval starts the build however the rules travel", () => {
 - **Project**: One-Unit build
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Scope Configuration

@@ -62,7 +62,7 @@ function project(discoveredRules: string): { proj: string; draftDir: string } {
 - **Project Type**: Greenfield
 - **Scope**: enterprise
 - **Collaborators**: off (set by you)
-- **State Version**: 8
+- **State Version**: 10
 - **Practices Affirmed Timestamp**:
 
 ## Scope Configuration

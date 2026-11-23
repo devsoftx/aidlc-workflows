@@ -112,7 +112,7 @@ function practicesInProgress(proj: string, space: string, teamPractices = TEAM_P
 - **Project Type**: Greenfield
 - **Scope**: enterprise
 - **Collaborators**: off (set by you)
-- **State Version**: 8
+- **State Version**: 10
 - **Practices Affirmed Timestamp**:
 
 ## Scope Configuration

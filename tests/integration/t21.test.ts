@@ -20,14 +20,14 @@
 //   `bun .claude/tools/aidlc.ts engine intent create --scope <scope> ...`
 // via Bash and prints its stdout VERBATIM. handleIntentCreate (aidlc-utility.ts)
 // does the scan + state-init in one deterministic tool call, then writes the
-// per-intent aidlc-state.md (the State-Version-8 template) and appends a fixed
+// per-intent aidlc-state.md (the creation template) and appends a fixed
 // audit event sequence (per-clone shard). The Bash tool_result carries the creation
 // stdout bytes; the files land in the created intent's record. We assert on both.
 //
 // ASSERTION MAP (literal cited from the SHIPPED handler):
 //   1 aidlc-state.md exists            -> existsSync(recordDirOf(proj)/aidlc-state.md) on disk
 //   2 audit shard exists               -> the created record's audit/ shard dir holds a *.md shard
-//   3 State Version                    -> assertStateField(r,"State Version","8") (creation template)
+//   3 State Version                    -> assertStateField(r,"State Version",CURRENT_STATE_VERSION) (creation template)
 //   3 state has Worktree Path field    -> readStateField(...,"Worktree Path") !== undefined
 //   3 state has Bolt Refs field        -> readStateField(...,"Bolt Refs") !== undefined
 //   3 state has Practices Affirmed ...  -> readStateField(...,"Practices Affirmed Timestamp") !== undefined
@@ -51,7 +51,7 @@
 // Known-answer literals (read from the SHIPPED handler, not guessed):
 //   - creation dispatch:         engine NAMES `intent create --scope <scope>` (aidlc-orchestrate.ts), conductor runs it
 //   - creation stdout anchors:   "Intent created:" / "State initialized:" / "Project type:" (utility.ts)
-//   - State Version value:    "8" (creation template)
+//   - State Version value:    CURRENT_STATE_VERSION (creation template)
 //   - 3 state fields:         Worktree Path / Bolt Refs / Practices Affirmed Timestamp
 //   - init-stage [x] markers: "[x] <slug>" for the 3 initialization stages, always EXECUTE/[x]
 //   - creation audit events:     WORKFLOW_STARTED / WORKSPACE_SCAFFOLDED / WORKSPACE_INITIALISED (utility.ts)
@@ -78,6 +78,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { driveAidlc, readStateField } from "../harness/sdk-drive.ts";
+import { CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // Creation writes the workflow record PER-INTENT under
 // aidlc/spaces/<space>/intents/<YYMMDD>-<slug>/ (state, audit/ shards, per-phase
@@ -163,9 +164,9 @@ describe("t21 /aidlc workflow creation (sdk)", () => {
         expect(readdirSync(auditDir).some((f) => f.endsWith(".md"))).toBe(true);
 
         expect(r.stateFile).toBeDefined();
-        assertStateField(r, "State Version", "8");
+        assertStateField(r, "State Version", CURRENT_STATE_VERSION);
 
-        // The State-Version-8 template has Worktree Path / Bolt Refs / Practices
+        // The creation template has Worktree Path / Bolt Refs / Practices
         // Affirmed Timestamp. They are empty-valued at init, so we assert the fields
         // PARSE (present) rather than asserting an empty value.
         for (const field of [

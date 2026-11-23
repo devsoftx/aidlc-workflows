@@ -136,7 +136,7 @@ function stateFile(shape: Shape): string {
 - **Project**: staffing question test
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 ${runtime}
@@ -175,7 +175,7 @@ ${runtime}
 - **Project**: staffing question test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 ${runtime}

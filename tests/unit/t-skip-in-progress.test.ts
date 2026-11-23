@@ -281,7 +281,7 @@ describe("a stage the person asks to skip at its own approval question is skippe
     };
     writeFileSync(seededStateFile(proj), [
       "# AI-DLC State Tracking", "", "## Project Information", "- **Project**: walk", "- **Project Type**: Greenfield",
-      "- **Scope**: feature", "- **State Version**: 8", "- **Unit Ownership**: solo", "- **Skeleton Stance**: on", "",
+      "- **Scope**: feature", "- **State Version**: 10", "- **Unit Ownership**: solo", "- **Skeleton Stance**: on", "",
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none", "- **Depth**: Standard",
       "- **Test Strategy**: Standard", "- **Summary Confirmation**: off (set by you)", "", "## Stage Progress", "",

@@ -94,7 +94,7 @@ const CONSTRUCTION_STATE = `# AI-DLC State Tracking
 - **Project**: unit lifecycle receipts test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major
@@ -1531,8 +1531,8 @@ describe("t260 the receipt waits for the Unit's review", () => {
     writeFileSync(
       path,
       readFileSync(path, "utf-8").replace(
-        "- **State Version**: 8",
-        "- **State Version**: 8\n- **Guard Policy**: off (set by you)",
+        "- **State Version**: 10",
+        "- **State Version**: 10\n- **Guard Policy**: off (set by you)",
       ),
       "utf-8",
     );

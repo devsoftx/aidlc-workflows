@@ -67,7 +67,7 @@ const STATE = `# AI-DLC State Tracking
 - **Project Type**: Brownfield
 - **Project Type Source**: workspace scan
 - **Scope**: bugfix
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: aidlc-developer-agent
 
 ## Scope Configuration

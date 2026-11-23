@@ -106,7 +106,7 @@ function state(autonomous = false): string {
 ## Project Information
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State

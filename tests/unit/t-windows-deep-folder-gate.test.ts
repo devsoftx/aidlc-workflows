@@ -136,7 +136,7 @@ const STATE = `# AI-DLC State Tracking
 - **Project**: deep folder at the Units Generation gate
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 
 ## Runtime State

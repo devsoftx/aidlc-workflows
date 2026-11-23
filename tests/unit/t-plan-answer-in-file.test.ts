@@ -578,7 +578,7 @@ describe("the same answer through Kiro CLI's userPromptSubmit hook", () => {
 - **Project**: Add a --shout option to greet.py
 - **Project Type**: Brownfield
 - **Scope**: poc
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all

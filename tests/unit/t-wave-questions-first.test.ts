@@ -71,7 +71,7 @@ function project(scope = "feature"): string {
 - **Project**: questions before the wave
 - **Project Type**: Greenfield
 - **Scope**: ${scope}
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 

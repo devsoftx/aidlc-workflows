@@ -78,7 +78,7 @@ function teamSeed(): { seed: string; remote: string } {
   const statePath = seededStateFile(made.seed);
   writeFileSync(
     statePath,
-    readFileSync(statePath, "utf-8").replace("- **State Version**: 8", "- **State Version**: 8\n- **Skeleton Stance**: on"),
+    readFileSync(statePath, "utf-8").replace("- **State Version**: 10", "- **State Version**: 10\n- **Skeleton Stance**: on"),
   );
   git(made.seed, ["commit", "-am", "skeleton stance"]);
   git(made.seed, ["push", "origin", "main"]);

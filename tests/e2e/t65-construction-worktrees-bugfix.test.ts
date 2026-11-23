@@ -4,7 +4,7 @@
 // plan 4). Mechanism = MIXED: two of the four assertions are pure compiled-data
 // reads (scope-grid.json, in-process require — mechanism none); the other two
 // drive the REAL shipped tools across the process boundary (aidlc-utility
-// intent-create scaffolds the v8 state, aidlc-bolt dispatch-event emits the
+// intent-create scaffolds the state, aidlc-bolt dispatch-event emits the
 // audit row - mechanism cli).
 //
 // SUBJECT: the Construction-worktrees per-scope contract for the `bugfix` scope -
@@ -19,7 +19,7 @@
 //       bugfix.stages["practices-discovery"] === "SKIP" (incremental scopes
 //       don't rebuild practices each workflow).
 //   dist/claude/.claude/tools/aidlc-utility.ts
-//     handleIntentCreateStateBuild's state template (State Version 8) writes the
+//     handleIntentCreateStateBuild's state template (the current State Version) writes the
 //       fields `- **Worktree Path**:` and `- **Bolt Refs**:` used by
 //       Construction worktrees + practices-discovery.
 //   dist/claude/.claude/tools/aidlc-bolt.ts
@@ -37,7 +37,7 @@
 //     `{ emitted, slug }` contract.
 //   - Assert 4 reads the two fields off the REAL intent-create-produced state
 //     file (not a fixture) and asserts each appears as a `- **<field>**:` bullet
-//     line, AND that the file carries `**State Version**: 8` - proving the fields
+//     line, AND that the file carries the current `**State Version**:` - proving the fields
 //     came from the current template, not a stale fixture.
 //
 // FIXTURE DISCIPLINE: the cli assertions share ONE freshly-scaffolded + inited
@@ -61,7 +61,7 @@ import {
 // under <record>/audit/. Read state through the resolved record dir and audit
 // through the shipped merge helper (default-resolves the active intent, falls
 // back to the space-level shard when no intent resolves).
-import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { CURRENT_STATE_VERSION, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -189,6 +189,6 @@ describe("t65 Construction-worktrees per-scope contract — bugfix (migrated fro
     expect(lines.some((l) => l.startsWith("- **Bolt Refs**:"))).toBe(true);
     // Pin the current template version, proving they came from the current
     // intent-create template rather than a stale state shape.
-    expect(state).toContain("**State Version**: 8");
+    expect(state).toContain(`**State Version**: ${CURRENT_STATE_VERSION}`);
   });
 });

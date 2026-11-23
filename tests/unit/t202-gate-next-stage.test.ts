@@ -129,7 +129,7 @@ function stateFile(
 - **Project**: gate next-stage test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Scope Configuration

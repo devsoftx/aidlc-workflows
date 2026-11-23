@@ -136,7 +136,7 @@ function unitProject(unit: string, policy: "relaxed" | "off" = "off"): string {
 - **Project**: Per-Unit build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: ${policy} (set by you)
 

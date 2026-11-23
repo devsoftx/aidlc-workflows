@@ -72,7 +72,7 @@ function fixture(options: { checkpoints?: boolean; current?: string; team?: bool
 - **Project Type Source**: you
 - **Scope**: feature
 ${options.sensorsOff ? "- **Sensors**: off (set by you)\n" : ""}- **Summary Confirmation**: off (set by you)
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off

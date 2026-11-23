@@ -87,7 +87,7 @@ function fixture(units: string[], options: Options = {}) {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: ${options.version ?? "8"}
+- **State Version**: ${options.version ?? "10"}
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -407,6 +407,16 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
   // reading the walk would bring it up in place, so status reads as before.
   test("status on a record an older AI-DLC wrote writes nothing and keeps the light count", () => {
     const p = fixture(SIX, { version: "7" });
+    cover(p, "u1");
+    approve(p, "u1", SIX);
+    const before = snapshot(p);
+    const row = line(status(p), WALK_ROW);
+    expect(snapshot(p)).toEqual(before);
+    expect(row).toEndWith("Unit 2 of 6");
+  });
+
+  test("status on a five-phase record (State Version 8) writes nothing and keeps the light count", () => {
+    const p = fixture(SIX, { version: "8" });
     cover(p, "u1");
     approve(p, "u1", SIX);
     const before = snapshot(p);

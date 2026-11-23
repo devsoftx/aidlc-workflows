@@ -54,7 +54,7 @@ const STATE = `# State
 - **Project**: Fresh project swarm
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major

@@ -67,7 +67,7 @@ function fixture(policy: string, reviewClass: "advisory" | "adversarial" = "advi
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off

@@ -225,7 +225,7 @@ export function stateBody(): string {
 - **Project**: inc3 merge
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0

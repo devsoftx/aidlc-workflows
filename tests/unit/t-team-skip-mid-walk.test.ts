@@ -135,8 +135,8 @@ function walk(units: string[], designed: boolean | number = true, rhythm: "unit-
     .replace(/- \*\*In Progress\*\*: .*/, "- **In Progress**: functional-design")
     .replace(/- \*\*Lifecycle Phase\*\*: .*/, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
     .replace(
-      "- **State Version**: 8",
-      `- **State Version**: 8\n- **Unit Ownership**: team\n- **Unit Gate Rhythm**: ${rhythm}\n- **Skeleton Stance**: on`,
+      "- **State Version**: 10",
+      `- **State Version**: 10\n- **Unit Ownership**: team\n- **Unit Gate Rhythm**: ${rhythm}\n- **Skeleton Stance**: on`,
     )
     .replace(/- \*\*Summary Confirmation\*\*: .*/, "- **Summary Confirmation**: off (set by you)"));
   writeFileSync(join(record, "runtime-graph.json"), `${JSON.stringify({

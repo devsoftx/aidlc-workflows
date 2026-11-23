@@ -3096,7 +3096,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     writeFileSync(seededStateFile(dir), [
       "# AI-DLC State Tracking", "",
       "## Project Information", "- **Project**: unit-major walk", "- **Project Type**: Greenfield",
-      "- **Scope**: feature", "- **State Version**: 8", "- **Skeleton Stance**: on", "",
+      "- **Scope**: feature", "- **State Version**: 10", "- **Skeleton Stance**: on", "",
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major",
       "- **Unit Ownership**: solo", "- **Summary Confirmation**: off (set by you)", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none",
@@ -3152,7 +3152,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     writeFileSync(seededStateFile(dir), [
       "# AI-DLC State Tracking", "",
       "## Project Information", "- **Project**: unit-major walk", "- **Project Type**: Greenfield",
-      "- **Scope**: feature", "- **State Version**: 8", "- **Skeleton Stance**: on", "",
+      "- **Scope**: feature", "- **State Version**: 10", "- **Skeleton Stance**: on", "",
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major",
       "- **Unit Ownership**: solo", "- **Summary Confirmation**: off (set by you)", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none",

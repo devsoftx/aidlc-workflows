@@ -95,7 +95,7 @@ function state(autonomous = false, iteration = "unit-major"): string {
 ## Project Information
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State

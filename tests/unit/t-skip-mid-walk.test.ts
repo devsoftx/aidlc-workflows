@@ -143,7 +143,7 @@ function walk(units: string[], designed: boolean | number = true): string {
     .replace(/- \*\*Current Stage\*\*: .*/, "- **Current Stage**: functional-design")
     .replace(/- \*\*In Progress\*\*: .*/, "- **In Progress**: functional-design")
     .replace(/- \*\*Lifecycle Phase\*\*: .*/, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
-    .replace("- **State Version**: 8", "- **State Version**: 8\n- **Unit Ownership**: solo\n- **Skeleton Stance**: on")
+    .replace("- **State Version**: 10", "- **State Version**: 10\n- **Unit Ownership**: solo\n- **Skeleton Stance**: on")
     .replace(/- \*\*Summary Confirmation\*\*: .*/, "- **Summary Confirmation**: off (set by you)"));
   writeFileSync(join(record, "runtime-graph.json"), `${JSON.stringify({
     bolt_dag: { units: units.map((name) => ({ name, depends_on: [] })), batches: [units] },

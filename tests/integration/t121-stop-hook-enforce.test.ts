@@ -993,7 +993,7 @@ function terminalConfigDispatch(proj: string): string {
   // The ordinary hook fixtures deliberately omit engine-only metadata; the
   // real dispatcher requires a current state version before reading modifiers.
   const statePath = seededStateFile(proj);
-  writeFileSync(statePath, `- **State Version**: 8\n${readFileSync(statePath, "utf-8")}`);
+  writeFileSync(statePath, `- **State Version**: 10\n${readFileSync(statePath, "utf-8")}`);
   const result = spawnSync(BUN, [
     join(dirname(UTILITY_TS), "aidlc-orchestrate.ts"),
     "next", "--guard-policy", "relaxed", "--project-dir", proj,
@@ -1010,7 +1010,7 @@ function terminalConfigDispatch(proj: string): string {
 // words of theirs; otherwise the print names the slot for them after it.
 function terminalModifierDispatch(proj: string, flags: string[], command: string, typed = true): string {
   const statePath = seededStateFile(proj);
-  writeFileSync(statePath, `- **State Version**: 8\n${readFileSync(statePath, "utf-8")}`);
+  writeFileSync(statePath, `- **State Version**: 10\n${readFileSync(statePath, "utf-8")}`);
   if (typed) recordTypedLine(proj, flags);
   const result = spawnSync(BUN, [
     join(dirname(UTILITY_TS), "aidlc-orchestrate.ts"),
@@ -1048,7 +1048,7 @@ function refusedModifierDispatch(
   refused: readonly [string, string] = [flags[0], flags[1]],
 ): string {
   const statePath = seededStateFile(proj);
-  writeFileSync(statePath, `- **State Version**: 8\n${readFileSync(statePath, "utf-8")}`);
+  writeFileSync(statePath, `- **State Version**: 10\n${readFileSync(statePath, "utf-8")}`);
   const result = spawnSync(BUN, [
     join(dirname(UTILITY_TS), "aidlc-orchestrate.ts"),
     "next", ...flags, "--project-dir", proj,

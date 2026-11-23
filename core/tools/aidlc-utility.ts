@@ -46,6 +46,8 @@ import {
   saySecretMaskedOnce,
 } from "./aidlc-audit.ts";
 import { hasStateUpgrade, newerStateStep, stateUpgradeRecord, waitsToBeBroughtUp } from "./aidlc-state-upgrade.ts";
+import { rebuildEffectivePlanFields, withStageProgress, withUnreachedPhasesRederived } from "./aidlc-state-progress.ts";
+import { fivePhaseFolderFindings } from "./aidlc-seven-phase-upgrade.ts";
 import {
   applyIntentSettings,
   applyReviewOverride,
@@ -5833,15 +5835,15 @@ export async function collectDoctorReport(
     // Lock-probe failure is non-fatal for the doctor report.
   }
 
-  // State version check — v8 reshapes the Inception design graph:
-  // `application-design` is renamed to `domain-design` and a new
-  // `contract-design` stage is inserted, so a pre-v8 state file carries
-  // stage-progress rows keyed by slugs that no longer exist in the graph.
-  // Advancing such a state hits `emitRunStageForSlug()` on a missing slug
-  // (or silently no-ops a checkbox while `Current Stage` moves on, then
-  // fails in `report`). A version aidlc-state-upgrade.ts has a step for is
-  // brought up at the engine's next read, so it passes here and says so; one
-  // with no step fails loud rather than look healthy.
+  // State version check. An older state file carries stage rows, phases and
+  // record folders the current graph no longer has (7 named Application
+  // Design; 8 kept five phases), and advancing it as it is would route on
+  // rows that are not there. A version aidlc-state-upgrade.ts has a step for
+  // is brought up at the engine's next read, so it passes here and says so;
+  // one with no step, and one a newer AI-DLC wrote (9 is upstream 2.12's team
+  // work), fails loud rather than look healthy. A current record that still
+  // holds five-phase folders (a move the step could not make, or a file an
+  // older chat wrote there afterwards) has each one named with its move.
   if (existsSync(stateMdPath)) {
     try {
       const stateContent = readFileSync(stateMdPath, "utf-8");
@@ -5882,6 +5884,10 @@ export async function collectDoctorReport(
             ? ` (brought up from ${upgrade.from} on ${upgrade.date}; the record as it was is ${upgrade.original})`
             : ""}`,
         });
+        const recordDir = dirname(stateMdPath);
+        const shownAs = relativeRecordDir(projectDir, doctorIntent, doctorSelection.space) ??
+          toPosix(relative(projectDir, recordDir));
+        for (const left of fivePhaseFolderFindings(recordDir, shownAs)) results.push({ pass: false, ...left });
       }
     } catch {
       // State-version check failure is non-fatal for doctor report
@@ -12789,41 +12795,18 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
       }
       const skippedNowSlugs = new Set(skippedNow.map((s) => s.slug));
       const existingMap = new Map(existingCheckboxes.map(c => [c.slug, c]));
-      const phaseMap: Record<string, typeof graph> = {};
-      for (const stage of graph) {
-        if (!phaseMap[stage.phase]) phaseMap[stage.phase] = [];
-        phaseMap[stage.phase].push(stage);
-      }
-      // The Per unit line sits under the header of the first phase holding a unit-loop stage.
-      const unitLoopPhase = graph.find((stage) => isUnitLoopStage(stage))?.phase;
-      let newStageProgress = "";
-      for (const phase of PHASES) {
-        const stages = phaseMap[phase] || [];
-        newStageProgress += `\n### ${PHASE_LABELS[phase]} PHASE\n`;
-        if (phase === unitLoopPhase) {
-          const perUnitMatch = content.match(/^Per unit:.*$/m);
-          if (perUnitMatch) newStageProgress += `${perUnitMatch[0]}\n`;
-        }
-        for (const stage of stages) {
-          const action = adjustedMapping[stage.slug] || "SKIP";
-          const existing = existingMap.get(stage.slug);
-          // Every checkbox state round-trips, including an open gate's [?]
-          // and a revision's [R]: collapsing those to [ ] would leave a gate
-          // the audit shows open reading as a stage that never started. A
-          // stage skipped with this change reads [S].
-          const marker = skippedNowSlugs.has(stage.slug)
-            ? CHECKBOX_MAP.skipped
-            : existing ? CHECKBOX_MAP[existing.state] : "[ ]";
-          const suffix = action === "EXECUTE" ? "EXECUTE" : "SKIP";
-          newStageProgress += `- ${marker} ${stage.slug} \u2014 ${suffix}\n`;
-        }
-      }
-      // A Windows clone checks the state file out with CRLF line endings, so
-      // the list is found with either ending and written back in its own.
-      const stageProgressRegex = /## Stage Progress\r?\n<!-- [^\r\n]* -->\r?\n([\s\S]*?)(?=\r?\n## (?!Stage Progress))/;
-      const stageProgressHeader = "## Stage Progress\n<!-- Checkbox states: [ ] not started, [-] in progress, [?] awaiting approval (gate open), [R] revising (user rejected gate), [x] completed, [S] skipped via --stage/--phase jump -->\n";
-      const stageProgressEol = stageProgressRegex.exec(content)?.[0].includes("\r\n") ? "\r\n" : "\n";
-      content = content.replace(stageProgressRegex, (stageProgressHeader + newStageProgress).replaceAll("\n", stageProgressEol));
+      content = withStageProgress(content, graph, (stage) => {
+        const action = adjustedMapping[stage.slug] || "SKIP";
+        const existing = existingMap.get(stage.slug);
+        // Every checkbox state round-trips, including an open gate's [?]
+        // and a revision's [R]: collapsing those to [ ] would leave a gate
+        // the audit shows open reading as a stage that never started. A
+        // stage skipped with this change reads [S].
+        const marker = skippedNowSlugs.has(stage.slug)
+          ? CHECKBOX_MAP.skipped
+          : existing ? CHECKBOX_MAP[existing.state] : "[ ]";
+        return [`- ${marker} ${stage.slug} \u2014 ${action === "EXECUTE" ? "EXECUTE" : "SKIP"}`];
+      });
       content = setField(content, "Scope", newScope);
       // The new scope's grid replaces any plan composed for this piece of work.
       content = removeField(content, PLAN_FIELD);
@@ -12855,16 +12838,7 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
       ).length;
       content = setField(content, "Completed", String(completedCount));
 
-      // Re-derive only not-yet-reached phases; Active/Verified rows are history.
-      for (const phase of PHASES) {
-        const label = phase.charAt(0).toUpperCase() + phase.slice(1);
-        const row = getField(content, label);
-        if (row !== "Pending" && row !== "Skipped") continue;
-        const hasExecute = graph.some(
-          (s) => s.phase === phase && (adjustedMapping[s.slug] || "SKIP") === "EXECUTE"
-        );
-        content = setPhaseProgress(content, phase, hasExecute ? "Pending" : "Skipped");
-      }
+      content = withUnreachedPhasesRederived(content, graph, (slug) => (adjustedMapping[slug] || "SKIP") === "EXECUTE");
 
       const oldScopeDef = scopeMapping[oldScope];
       // Switching back writes the old scope's own stages, so it is the way back
@@ -12987,84 +12961,6 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
 // flip lists. A run that never calls recompose is byte-identical to before -
 // the verb is inert when unused.
 // ---------------------------------------------------------------------------
-
-// Rebuild the plan's derived fields after stage suffix flips, against the
-// EFFECTIVE plan (suffix over scope grid): Stages to Execute / to Skip / Total
-// / Completed, the not-yet-reached Phase Progress rows, and Next Stage. Shared
-// by recompose and reclassify so both describe a plan the same way.
-// `skipLabel` renders a newly skipped stage's Stages to Skip entry.
-function rebuildEffectivePlanFields(
-  content: string,
-  scope: string,
-  scopeDef: { stages: Record<string, string> },
-  currentSlug: string,
-  skipLabel: (stage: StageEntry) => string = (stage) => `${stage.number} (${stage.slug})`,
-): { content: string; executeStages: string[]; completedCount: number } {
-  const graph = loadStageGraph();
-  const knownSlugs = new Set(graph.map((s) => s.slug));
-  const postSuffixes = parseStateStageSuffixes(content);
-  const eff = (slug: string): "EXECUTE" | "SKIP" => {
-    const v = postSuffixes.get(slug) ?? scopeDef.stages[slug];
-    return v === "EXECUTE" ? "EXECUTE" : "SKIP";
-  };
-  // The Stages to Skip row carries creation/scope-change annotations (entry
-  // shape "<number> (<slug>)", or the greenfield note GREENFIELD_RE_SKIP_LABEL
-  // puts on reverse-engineering) that a bare-slug rebuild would destroy. Preserve each existing entry
-  // VERBATIM, in its existing position, when its stage is still skipped;
-  // drop entries whose stage was promoted; append newly-skipped stages in
-  // graph order, rendered the way scope-change renders them. A skip+add
-  // round trip therefore leaves the row byte-identical.
-  const priorSkipRow = getField(content, "Stages to Skip") || "";
-  const priorTokens =
-    priorSkipRow.trim() === "" || priorSkipRow.trim() === "none"
-      ? []
-      : priorSkipRow.split(", ");
-  const slugOfSkipToken = (token: string): string => {
-    const m = /^\S+ \((.+)\)$/.exec(token);
-    const inner = m ? m[1] : token;
-    return inner.split(" \u2014 ")[0];
-  };
-  const executeStages: string[] = [];
-  const skipStages: string[] = [];
-  const preservedSlugs = new Set<string>();
-  for (const token of priorTokens) {
-    const slug = slugOfSkipToken(token);
-    if (knownSlugs.has(slug) && eff(slug) === "SKIP") {
-      skipStages.push(token);
-      preservedSlugs.add(slug);
-    }
-  }
-  for (const s of graph) {
-    if (eff(s.slug) === "EXECUTE") executeStages.push(`${s.number} (${s.slug})`);
-    else if (!preservedSlugs.has(s.slug)) skipStages.push(skipLabel(s));
-  }
-  let next = setField(content, "Stages to Execute", executeStages.join(", "));
-  next = setField(next, "Stages to Skip", skipStages.length > 0 ? skipStages.join(", ") : "none");
-  next = setField(next, "Total Stages", String(executeStages.length));
-  const completedCount = parseCheckboxes(next).filter(
-    (c) => c.state === "completed" && eff(c.slug) === "EXECUTE",
-  ).length;
-  next = setField(next, "Completed", String(completedCount));
-  // Re-derive not-yet-reached Phase Progress rows against the effective
-  // plan (scope-change's twin): a flip can empty a phase of EXECUTE stages
-  // (-> Skipped) or give a Skipped phase its first (-> Pending).
-  // Verified/Active rows are history and stay untouched.
-  for (const phase of PHASES) {
-    const phaseLabel = phase.charAt(0).toUpperCase() + phase.slice(1);
-    const row = getField(next, phaseLabel);
-    if (row !== "Pending" && row !== "Skipped") continue;
-    const hasExecute = graph.some(
-      (s) => s.phase === phase && eff(s.slug) === "EXECUTE",
-    );
-    next = setPhaseProgress(next, phase, hasExecute ? "Pending" : "Skipped");
-  }
-  // The Next Stage projection over the new plan (override-aware).
-  if (currentSlug) {
-    const after = nextInScopeStage(currentSlug, scope, next);
-    next = setField(next, "Next Stage", after ? after.slug : "none");
-  }
-  return { content: next, executeStages, completedCount };
-}
 
 // The stages this work's plan has skipped, as its own record holds them: the
 // plan picked at creation (WORKFLOW_STARTED) and every plan change since

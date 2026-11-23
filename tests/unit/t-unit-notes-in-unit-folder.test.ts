@@ -48,7 +48,7 @@ function project(iteration: "unit-major" | "stage-major", stance: boolean): stri
 - **Project**: unit notes
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ${stance ? "- **Skeleton Stance**: on\n" : ""}- **Construction Iteration**: ${iteration}
 - **Unit Ownership**: solo
 

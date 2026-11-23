@@ -1,6 +1,7 @@
 // covers: function:newerWorkOffer, function:takeUpdateAnswer, function:updateAnswerStep, function:newerStateStep, function:newerStateRelease, function:newerWorkInstall, function:refuseNewerWork
 //
-// Work a newer AI-DLC wrote (a State Version above the one this build reads):
+// Work a newer AI-DLC wrote (a State Version above the one this build reads, or
+// 9, which upstream AI-DLC 2.12 writes for team work):
 // on a native install the person meets one question, never a dead end. Yes
 // hands the agent the update, the project's refresh and the command that
 // carries on with what the person typed, kept under the question's id; Not now
@@ -203,11 +204,11 @@ describe("work a newer AI-DLC wrote: the update offer on a native install", () =
     const asked = run(NATIVE, proj, ["next", "--", "add a login page"], chat).step;
     const yes = answerArgs(asked.choices?.[0]?.command);
     // The update stands in: the release now running reads this record.
-    writeFileSync(seededStateFile(proj), stateWithVersion("8"), "utf-8");
+    writeFileSync(seededStateFile(proj), stateWithVersion("10"), "utf-8");
     const carried = run(NATIVE, proj, ["next", "--update-ai-dlc", "done", ...yes.slice(2)], chat).step;
     expect(carried.narration).toBe("Carrying on with your earlier request.");
     // The step is the one the words get when typed on work this build reads.
-    const typed = run(NATIVE, project("8"), ["next", "--", "add a login page"]).step;
+    const typed = run(NATIVE, project("10"), ["next", "--", "add a login page"]).step;
     const ids = (step: Step) => JSON.stringify({ ...step, narration: undefined }).replace(/--request [0-9a-f]{8}/g, "--request <id>");
     expect(ids(carried)).toBe(ids(typed));
     const again = run(NATIVE, proj, ["next", "--update-ai-dlc", "done", ...yes.slice(2)], chat).step;
@@ -233,7 +234,7 @@ describe("work a newer AI-DLC wrote: the update offer on a native install", () =
   });
 
   test("a State Version no release on this build's list writes says a newer AI-DLC", () => {
-    const { step } = run(NATIVE, project("10"), ["next"]);
+    const { step } = run(NATIVE, project("11"), ["next"]);
     expect(step.question).toStartWith("This plan was set up with a newer AI-DLC, and this computer has ");
   });
 

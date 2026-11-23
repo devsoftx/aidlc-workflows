@@ -86,7 +86,7 @@ function codekbStoreProject(): string {
       "# AI-DLC State Tracking",
       "",
       "- **Workflow**: bugfix",
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       "- **Scope**: bugfix",
       "- **Phase**: inception",
       "- **Current Stage**: reverse-engineering",

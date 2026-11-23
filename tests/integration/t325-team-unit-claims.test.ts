@@ -85,7 +85,7 @@ function stateBody(
 - **Project**: inc2 claims
 - **Project Type**: Greenfield
 - **Scope**: ${scope}
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: ${stance}
 
 ## Runtime State

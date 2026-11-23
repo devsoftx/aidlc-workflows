@@ -336,7 +336,7 @@ describe("t-gate-names-failed-checks: a team's Unit gate names that Unit's outpu
 - **Project**: team unit gate test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -539,7 +539,7 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 - **Project**: one evaluation per folder
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0

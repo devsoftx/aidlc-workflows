@@ -67,7 +67,7 @@ function shardDir(): string {
 }
 
 /** Seed the minimal per-intent layout: registry + active-space/intent cursors +
- *  a record dir with the genuine v8 construction-stage state file (it carries
+ *  a record dir with a genuine construction-stage state file (it carries
  *  the Worktree Path + Bolt Refs fields handleFork's setFieldStrict requires). */
 function seedLayout(): void {
   const intentsDir = join(proj, "aidlc", "spaces", SPACE, "intents");

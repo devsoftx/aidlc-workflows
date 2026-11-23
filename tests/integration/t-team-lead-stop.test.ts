@@ -288,7 +288,7 @@ function soloAtBuildAndTest(): string {
 - **Project**: solo stop
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0

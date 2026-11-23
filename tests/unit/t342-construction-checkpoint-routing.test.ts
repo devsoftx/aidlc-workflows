@@ -83,7 +83,7 @@ function fixture(options: Options = {}) {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: ${options.scope ?? "feature"}
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0

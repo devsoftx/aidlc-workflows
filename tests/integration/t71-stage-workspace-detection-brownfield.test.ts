@@ -57,7 +57,7 @@
 //   5 Languages lists TypeScript       -> assertStateFieldContains "Languages" "TypeScript" (state write; LANG_BY_EXT .ts/.tsx)
 //   6 audit has WORKSPACE_SCANNED      -> assertAuditEvent "WORKSPACE_SCANNED"              (handleIntentCreate:2144; aidlc-audit.ts)
 //   7 [x] count >= 3 (all init stages) -> on disk: count of `^- [x]` >= 3                   (3 init stages marked [x])
-//   8 State Version is 7               -> assertStateField "State Version" === "7"          (creation state template)
+//   8 State Version is current         -> assertStateField "State Version" === CURRENT_STATE_VERSION (creation state template)
 //   9 Languages field present          -> readStateField "Languages" !== undefined          (state write)
 //  10 Frameworks field present         -> readStateField "Frameworks" !== undefined          (state write)
 //
@@ -96,6 +96,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { driveAidlc, readStateField } from "../harness/sdk-drive.ts";
+import { CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // ---------------------------------------------------------------------------
 // The case and file own the work budget; each SDK call uses what remains.
@@ -112,7 +113,7 @@ const PROJECT_TYPE = "Brownfield"; // scan.projectType, creation state write / s
 const LANGUAGES = "TypeScript"; // scan.languages, creation state write / stdout (handleIntentCreateStateBuild)
 const FRAMEWORKS = "Vite, React"; // scan.frameworks, creation state write / stdout (handleIntentCreateStateBuild)
 const BUILD_SYSTEM = "npm (package.json)"; // scan.buildSystem, creation state write / stdout (handleIntentCreateStateBuild)
-const STATE_VERSION = "8"; // creation state template
+const STATE_VERSION = CURRENT_STATE_VERSION; // creation state template
 const WORKSPACE_SCANNED = "WORKSPACE_SCANNED"; // handleIntentCreateStateBuild
 // Verbatim creation stdout block lines (handleIntentCreateStateBuild) - the
 // deterministic surface that proves the creation dispatch ran.

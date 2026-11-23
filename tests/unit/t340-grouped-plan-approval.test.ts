@@ -192,7 +192,7 @@ function fixture(options: {
 - **Project**: Grouped Plan Approval
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 ## Runtime State
 ${options.legacy ? "" : "- **Construction Checkpoints**: enabled\n- **Construction Execution**: swarm"}

@@ -104,7 +104,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 - **Project**: bolt dag self heal test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: ${skeletonStance}
 
@@ -144,7 +144,7 @@ function inceptionState(current: string): string {
 - **Project**: bolt dag self heal test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 
 ## Scope Configuration

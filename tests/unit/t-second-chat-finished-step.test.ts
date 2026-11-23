@@ -53,7 +53,7 @@ const CONSTRUCTION_STAGES = ["functional-design", "nfr-requirements", "nfr-desig
 const STAGE_MAJOR_STATE = [
   "# AI-DLC State Tracking", "",
   "## Project Information",
-  "- **Project**: Add saved searches", "- **Project Type**: Greenfield", "- **Scope**: feature", "- **State Version**: 8", "",
+  "- **Project**: Add saved searches", "- **Project Type**: Greenfield", "- **Scope**: feature", "- **State Version**: 10", "",
   "## Runtime State",
   "- **Revision Count**: 0", "- **Skeleton Stance**: off", "- **Construction Iteration**: stage-major",
   "- **Unit Ownership**: solo", "- **Construction Checkpoints**: enabled", "- **Construction Execution**: serial",

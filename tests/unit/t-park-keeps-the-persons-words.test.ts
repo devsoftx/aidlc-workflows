@@ -560,7 +560,7 @@ describe("a Unit's step never carries them", () => {
 - **Project**: a park in a unit-major walk
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 

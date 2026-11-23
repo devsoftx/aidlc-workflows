@@ -1932,7 +1932,7 @@ function unitProject(...units: string[]): string {
 - **Project**: Per-Unit build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: relaxed (set by you)
 
@@ -2579,7 +2579,7 @@ function swarmFixture(plans: boolean, group: string[] = GROUP, planApproval: "on
 - **Project**: Grouped plan approval
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major

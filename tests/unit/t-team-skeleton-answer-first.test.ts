@@ -100,7 +100,7 @@ function stateFile(at: "delivery-planning" | "functional-design", ownership: "te
 - **Project**: team skeleton answer test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0

@@ -8,7 +8,7 @@
 //     JSON and assert the cell. The contract is the data, so we read it directly
 //     with zero process spawn.
 //   - Assertions 2 + 4 are process-boundary contracts: `aidlc-utility.ts
-//     intent-create` must WRITE a v8 state file with the two fields, and
+//     intent-create` must WRITE a state file with the two fields, and
 //     `aidlc-bolt.ts dispatch-event` must EMIT a real MERGE_DISPATCH_INVOKED
 //     audit row into that initialized project. Mechanism cli: spawnSync the
 //     real tools via BUN against the .ts paths and assert on the bytes they
@@ -27,7 +27,7 @@
 //       MERGE_DISPATCH_INVOKED -> "Merge Dispatch Invoked"; the **Event**:
 //       and **Bolt slug**: lines land in the audit shards.
 //   - aidlc-utility.ts handleIntentCreateStateBuild writes the record's
-//       aidlc-state.md from the v8 template, which carries `- **Worktree Path**:`
+//       aidlc-state.md from the creation template, which carries `- **Worktree Path**:`
 //       and `- **Bolt Refs**:` (the Construction-worktree fields).
 //
 // Also pinned:

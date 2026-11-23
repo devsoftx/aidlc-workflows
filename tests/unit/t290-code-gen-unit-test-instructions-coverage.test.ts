@@ -68,7 +68,7 @@ function constructionStateAtCodeGen(strategy: string): string {
 - **Project**: unit-test-instructions coverage test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Scope Configuration

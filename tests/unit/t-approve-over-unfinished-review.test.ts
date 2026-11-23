@@ -301,7 +301,7 @@ describe("Code Generation: the person's approval goes over a review of changed s
 - **Project**: A bug fix with changed source
 - **Project Type**: Brownfield
 - **Scope**: bugfix
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Guard Policy**: strict (set by you)
@@ -431,7 +431,7 @@ describe("a Unit's recovery review that never finished, at unit complete and at 
 - **Project**: Unit recovery reviews
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major

@@ -1637,7 +1637,7 @@ describe("AttemptView projections and refusal streaks", () => {
     const stateContent = [
       "# AI-DLC State",
       "- **Scope**: feature",
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       "- **Unit Ownership**: team",
       "- **Unit Gate Rhythm**: per-stage",
       "- **Construction Iteration**: stage-major",

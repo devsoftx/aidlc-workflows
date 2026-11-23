@@ -42000,9 +42000,8 @@ export function filterProducesByKind(
 // State-schema-version classification (shared by runtime + doctor)
 // -----------------------------------------------------------------------------
 // The persisted `aidlc-state.md` carries a `- **State Version**: N` line naming
-// the state-graph schema the workflow was created under. v8 renamed the Inception
-// `application-design` stage to `domain-design` and inserted `contract-design`,
-// so a pre-v8 state file's stage rows no longer match the compiled graph. The
+// the state-graph schema the workflow was created under. 10 is the seven-phase
+// layout (Discover through Operate); 8 and 7 were five-phase records. The
 // engine's state read brings a version a step covers up in place
 // (aidlc-state-upgrade.ts); a state no step covers must be refused up front by
 // BOTH runtime commands (aidlc-orchestrate.ts `next`/`report`) and by
@@ -42012,7 +42011,7 @@ export function filterProducesByKind(
 // so a new schema bump only touches CURRENT_STATE_VERSION in this file.
 
 /** The current state-graph schema version. Bump when the graph adds/renames/removes rows. */
-export const CURRENT_STATE_VERSION = "8";
+export const CURRENT_STATE_VERSION = "10";
 
 export type StateVersionClassification =
   | { kind: "ok" }
@@ -42049,6 +42048,21 @@ export function classifyStateVersion(stateContent: string): StateVersionClassifi
   const v = versionMatch[1];
   if (!/^\d+$/.test(v)) return { kind: "unparseable", message: unparseableMessage };
   if (v === CURRENT_STATE_VERSION) return { kind: "ok" };
+  // 9 is the version upstream AI-DLC 2.12 writes for team work, a layout this
+  // release does not read; the step from 8 goes straight to 10, so 9 is never
+  // an earlier record of this line, and every caller that refuses newer work
+  // refuses it.
+  if (v === "9") {
+    return {
+      kind: "future",
+      version: v,
+      message:
+        "Incompatible workflow state: State Version 9 was set up with AI-DLC 2.12 team work, " +
+        "which this release does not read, so it cannot be advanced here. Carry it on with " +
+        "AI-DLC 2.12 or newer, or on the AI-DLC that set it up. " +
+        `Run \`${entrySkillInvocation()} --doctor\` for the full diagnosis.`,
+    };
+  }
   if (Number(v) > Number(CURRENT_STATE_VERSION)) {
     return {
       kind: "future",
@@ -42066,10 +42080,9 @@ export function classifyStateVersion(stateContent: string): StateVersionClassifi
     version: v,
     message:
       `Incompatible workflow state: State Version ${v} predates the current ` +
-      `v${CURRENT_STATE_VERSION} stage graph. v8 renamed the Inception ` +
-      "`application-design` stage to `domain-design` and inserted " +
-      "`contract-design`, so this state's stage rows no longer match the graph " +
-      "and cannot be advanced safely. Finish this workflow on the prior shell. " +
+      `v${CURRENT_STATE_VERSION} stage graph, and no step brings a record that old up: ` +
+      "its stages were renamed and moved since, so its rows no longer match the graph " +
+      "and cannot be advanced safely. Finish this workflow on the AI-DLC release that set it up. " +
       `Run \`${entrySkillInvocation()} --doctor\` for the full diagnosis.`,
   };
 }

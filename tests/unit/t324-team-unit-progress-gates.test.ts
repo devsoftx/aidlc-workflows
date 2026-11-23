@@ -165,7 +165,7 @@ function constructionState(opts: {
 - **Project**: team unit progress test
 - **Project Type**: Greenfield
 - **Scope**: ${opts.scope ?? "feature"}
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State

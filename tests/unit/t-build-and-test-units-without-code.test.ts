@@ -72,7 +72,7 @@ function atBuildAndTest(built: string[], scope = "feature", planned: string[] = 
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: ${scope}
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0

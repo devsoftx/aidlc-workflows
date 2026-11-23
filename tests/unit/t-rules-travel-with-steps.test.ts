@@ -115,7 +115,7 @@ function constructionProject(skeletonStance?: string): string {
 - **Project**: rules travel with the steps
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ${skeletonStance ? `- **Skeleton Stance**: ${skeletonStance}\n` : ""}
 ## Scope Configuration

@@ -12,7 +12,7 @@
 // under a headless auto-approve mode the refactor kills. The .sh's subject is
 // "state file INTEGRITY: checkbox counts, stage ordering, field updates" — and the
 // state file's STRUCTURE + all its fields are written DETERMINISTICALLY by
-// explicit init (`aidlc-utility.ts init`, the State-Version-8 template,
+// explicit init (`aidlc-utility.ts init`, the creation template,
 // utility.ts), BEFORE any gate. So this sdk twin drives the init turn,
 // stops the instant the init stdout lands, and asserts the deterministic state STRUCTURE + the
 // counter↔checkbox invariant on the landed file. The FULL multi-stage progression
@@ -26,7 +26,7 @@
 // THE JOURNEY. `/aidlc --scope bugfix <description>` on a fresh
 // `--no-aidlc-docs` project routes through intent creation and
 // `aidlc-utility.ts init --scope bugfix` (SKILL.md), which writes the full
-// State-Version-8 aidlc-state.md: the 3
+// aidlc-state.md at the current State Version: the 3
 // init stages marked [x], every other in-scope stage [ ], the Completed counter
 // synced to the [x] count, and the Lifecycle Phase / Status / Last Updated /
 // Active Agent / State Version fields. Init STOPs (print-terminal).
@@ -44,7 +44,7 @@
 //   7 Status field present           -> readStateField(state,"Status") defined.
 //   8 Last Updated has ISO timestamp -> the Last Updated field matches YYYY-MM-DDThh:mm:ss.
 //   9 Active Agent field present     -> readStateField(state,"Active Agent") defined.
-//   10 State Version is 8            -> readStateField(state,"State Version") === "8".
+//   10 State Version is current      -> readStateField(state,"State Version") === CURRENT_STATE_VERSION.
 //   2/3 (>4 completed / advanced past init): NOT asserted here - those require
 //       running the workflow to completion; the deep-progression surface is the tui
 //       t50 journey. At the deterministic init landing the 3 init stages ARE [x]
@@ -53,8 +53,8 @@
 //
 // Known-answer literals (read from the SHIPPED tool, not guessed):
 //   - init dispatch:           SKILL.md -> `aidlc-utility.ts init --scope bugfix`
-//   - State-Version-8 template: aidlc-utility.ts (all the fields above)
-//   - State Version literal 8:  aidlc-utility.ts
+//   - creation template:        aidlc-utility.ts (all the fields above)
+//   - State Version value:      CURRENT_STATE_VERSION (aidlc-lib.ts)
 //   - init-stage [x] markers:   aidlc-utility.ts
 //   - State initialized summary: aidlc-utility.ts
 //
@@ -71,6 +71,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { auditDirFor, type DriveResult, driveAidlc, readStateField, stateFilePathFor } from "../harness/sdk-drive.ts";
+import { CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // AIDLC_TEST_TIMEOUT bounds the entire case, including setup and cleanup.
 const TIMEOUT_S = Number(process.env.AIDLC_TEST_TIMEOUT);
@@ -163,7 +164,7 @@ function reportInitFailure(projectDir: string, result: DriveResult | undefined):
 
 describe("t52 /aidlc --scope bugfix state-file integrity (sdk)", () => {
   // -------------------------------------------------------------------------
-  // Fresh project: the full State-Version-8 file lands at intent creation. Assert
+  // Fresh project: the full state file lands at intent creation. Assert
   // its structure (counter-to-checkbox invariant, ordering, every field) on the
   // landed file. Deep progression is the tui t50 journey's surface.
   // -------------------------------------------------------------------------
@@ -217,7 +218,7 @@ describe("t52 /aidlc --scope bugfix state-file integrity (sdk)", () => {
         expect(lastUpdated).toBeDefined();
         expect(lastUpdated as string).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 
-        expect(readStateField(state, "State Version")).toBe("8");
+        expect(readStateField(state, "State Version")).toBe(CURRENT_STATE_VERSION);
 
         // The 3 init stages ARE [x]; Current Stage is a populated field. Deep
         // progression past init is the tui t50 journey's surface (see header), not

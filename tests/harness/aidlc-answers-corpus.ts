@@ -158,7 +158,7 @@ function constructionFixture(proj: string, current = "functional-design"): void 
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -240,7 +240,7 @@ async function swarmFixture(proj: string, units: string[][]): Promise<void> {
 ## Project Information
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State
@@ -447,7 +447,7 @@ export async function buildQuestion(proj: string, question: Question): Promise<v
 - **Project**: Answers corpus
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major
 - **Unit Ownership**: solo

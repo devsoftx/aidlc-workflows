@@ -183,7 +183,7 @@ function constructionState(opts: {
 - **Project**: late design gates test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State

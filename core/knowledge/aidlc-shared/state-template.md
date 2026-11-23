@@ -19,7 +19,7 @@ Authoritative generated views:
 - **Scope**: [scope slug from compiled scope grid]
 - **Plan**: [present only for a plan composed for this piece of work: its name as the gate showed it (`--plan-name`), or `tailored plan`; its stage changes are the Stage Progress suffixes, and a scope change removes the line]
 - **Start Date**: [ISO 8601 timestamp]
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: [current lead agent slug]
 - **Worktree Path**: [empty when not in a worktree]
 - **Bolt Refs**: [empty list or comma-separated bolt slugs]

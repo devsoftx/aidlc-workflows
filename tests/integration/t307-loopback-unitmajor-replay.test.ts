@@ -65,7 +65,7 @@ function stateContent(unitMajor: boolean): string {
 - **Project**: autonomous unit-major loop-back replay
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State

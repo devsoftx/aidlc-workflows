@@ -167,7 +167,7 @@ function probeProject(units: string[], stages: Record<string, string> = PLUGIN_S
 - **Project**: plugin stage added mid-work test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Unit Ownership**: solo
 

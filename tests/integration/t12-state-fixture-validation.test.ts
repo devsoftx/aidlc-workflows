@@ -24,6 +24,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC, FIXTURES_DIR } from "../harness/fixtures.ts";
+import { CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 const MID = readFileSync(join(FIXTURES_DIR, "state-mid-ideation.md"), "utf-8");
 const INIT = readFileSync(
@@ -83,8 +84,8 @@ describe("t12 state-fixture structural meta-test (migrated from t12-state-fixtur
     expect(MID.includes("**Current Stage**:")).toBe(true);
     expect(TEMPLATE.includes("**Current Stage**:")).toBe(true);
 
-    expect(MID.includes("**State Version**: 8")).toBe(true);
-    expect(TEMPLATE.includes("**State Version**: 8")).toBe(true);
+    expect(MID.includes(`**State Version**: ${CURRENT_STATE_VERSION}`)).toBe(true);
+    expect(TEMPLATE.includes(`**State Version**: ${CURRENT_STATE_VERSION}`)).toBe(true);
 
     expect(MID.includes("**Worktree Path**:")).toBe(true);
     expect(TEMPLATE.includes("**Worktree Path**:")).toBe(true);
