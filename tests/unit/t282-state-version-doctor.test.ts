@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate
+// covers: subcommand:aidlc-utility:doctor, function:classifyStateVersion, function:bringStateUpToDate, function:inspectStageValidity
 //
 // The state-version gate and the bring-up beside it. v8 renamed the Inception
 // `application-design` stage to `domain-design` and added `contract-design`;
@@ -34,6 +34,7 @@ import {
 } from "../harness/fixtures.ts";
 import { sevenPhaseRecordPath } from "../../dist/claude/.claude/tools/aidlc-five-phase-record.ts";
 import { sevenPhaseStateText } from "../../dist/claude/.claude/tools/aidlc-seven-phase-upgrade.ts";
+import { inspectStageValidity } from "../../dist/claude/.claude/tools/aidlc-validity.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -703,11 +704,14 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
   test("a document edited after the move still reads as changed: only the recorded paths are read in their seven-phase form", () => {
     const { proj, record } = v8Project("inception-gate");
     expect(v8Next(proj).directive?.stage_validity).toBeUndefined();
+    const inspect = () => inspectStageValidity(proj, readFileSync(seededStateFile(proj), "utf-8"));
+    expect(inspect().issues).toEqual([]);
+    // Feature runs with Guard Policy off, which accepts an edit to a finished
+    // document, so next says nothing; the receipt check itself still sees it.
     const statement = join(record, "discover", "intent-capture", "intent-statement.md");
     writeFileSync(statement, `${readFileSync(statement, "utf-8")}\nA line added after the update.\n`);
-    const r = v8Next(proj);
-    expect(r.directive?.stage_validity?.directly_stale).toEqual(["intent-capture"]);
-    expect(r.directive?.stage_validity?.earliest_affected_stage).toBe("intent-capture");
+    const issue = inspect().issues.find((entry) => entry.stage === "intent-capture");
+    expect(issue).toMatchObject({ status: "stale", direct: true, reasons: ["output:intent-statement"], edited: true });
   });
 
   test("the text step is the same on CRLF, on a record a hook already gave a seven-phase Lifecycle Phase, and on its own output", () => {
