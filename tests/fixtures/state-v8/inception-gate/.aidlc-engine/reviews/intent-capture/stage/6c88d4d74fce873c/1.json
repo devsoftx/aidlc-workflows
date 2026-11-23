@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "intent-capture",
+  "unit": null,
+  "workflow": null,
+  "attempt": "6c88d4d74fce873c",
+  "iteration": 1,
+  "reviewer": "aidlc-product-lead-agent",
+  "verdict": "READY",
+  "request_id": "review:14489b5702a835abb0d356ea8cd42582",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:c8a02c162442bf9e7b20d1d91b146dd60bfb07c53728c8a7cf51039db60801c4",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-product-lead-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T03:07:18Z"
+}

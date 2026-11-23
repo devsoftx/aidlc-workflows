@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "units-generation",
+  "unit": null,
+  "workflow": null,
+  "attempt": "e3e8a914490f49ee",
+  "iteration": 1,
+  "reviewer": "aidlc-architecture-reviewer-agent",
+  "verdict": "READY",
+  "request_id": "review:cfa3a87281e53275826be29c477b38ef",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:f562e4ac21f810eee78785e4cc9396fd60c0cf24e63fcba96256029d80620d3b",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T03:08:05Z"
+}

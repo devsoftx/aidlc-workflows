@@ -615,8 +615,13 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     expect(row).toMatch(/^\*\*Moved\*\*: .*ideation\/intent-capture to discover\/intent-capture, .*inception\/requirements-analysis to design\/requirements-analysis$/m);
     expect(row).toMatch(/^\*\*Left behind\*\*: none$/m);
     expect(row).toMatch(/^\*\*Original\*\*: aidlc-state\.v8\.md$/m);
-    // next stays on the gate 2.11.4 left open, and never moves on past it.
-    expect(String(r.directive?.stage ?? r.directive?.message ?? "")).toContain("requirements-analysis");
+    // next shows the gate 2.11.4 left open, as 2.11.4 does: its review still
+    // holds at the moved paths, no finished stage reads as changed, and it
+    // never moves on past it.
+    expect(r.directive?.kind).toBe("run-stage");
+    expect(r.directive?.stage).toBe("requirements-analysis");
+    expect(r.directive?.gate).toBe(true);
+    expect(r.directive?.stage_validity).toBeUndefined();
     expect(JSON.stringify(r.directive)).not.toContain("user-stories");
     expect(now).toMatch(/^- \[\?\] requirements-analysis \u2014 EXECUTE$/m);
     // A second read finds it current: nothing more moves or is written for the step.
@@ -635,6 +640,8 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     expect(r.directive?.kind).toBe("run-stage");
     expect(r.directive?.stage).toBe("code-generation");
     expect(r.directive?.unit).toBe("store");
+    // Every stage and Unit finished on 2.11.4 still holds at its moved paths.
+    expect(r.directive?.stage_validity).toBeUndefined();
     const now = readFileSync(seededStateFile(proj), "utf-8");
     expect(now).toMatch(/^- \*\*State Version\*\*: 10$/m);
     expectSevenPhaseHeadings(now);
@@ -665,6 +672,13 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
     const r = v8Next(proj);
     expect(r.directive?.kind).toBe("run-stage");
     expect(r.directive?.stage).toBe("observability-setup");
+    // Every stage finished on 2.11.4 still holds at its moved paths. Reverse
+    // Engineering's documents live in the space's code knowledge base under
+    // the project's own folder name, outside the record, so a record copied
+    // into another project cannot carry them and only that stage reads as
+    // changed here, as it would on 2.11.4.
+    expect(r.directive?.stage_validity?.directly_stale).toEqual(["reverse-engineering"]);
+    expect(r.directive?.stage_validity?.needs_revalidation).toEqual([]);
     const now = readFileSync(seededStateFile(proj), "utf-8");
     expect(now).toMatch(/^- \*\*Lifecycle Phase\*\*: OPERATE$/m);
     expect(now).toMatch(/^### OPERATE PHASE\n- \[-\] observability-setup \u2014 EXECUTE$/m);
@@ -684,6 +698,16 @@ describe("t282 a v8 record (2.11.4, five phases) is brought up to 10 in place an
       "deploy/deployment-execution/deployment-log.md",
       "operate/observability-setup/dashboards.md",
     ]) expect(existsSync(join(record, ...path.split("/"))), path).toBe(true);
+  });
+
+  test("a document edited after the move still reads as changed: only the recorded paths are read in their seven-phase form", () => {
+    const { proj, record } = v8Project("inception-gate");
+    expect(v8Next(proj).directive?.stage_validity).toBeUndefined();
+    const statement = join(record, "discover", "intent-capture", "intent-statement.md");
+    writeFileSync(statement, `${readFileSync(statement, "utf-8")}\nA line added after the update.\n`);
+    const r = v8Next(proj);
+    expect(r.directive?.stage_validity?.directly_stale).toEqual(["intent-capture"]);
+    expect(r.directive?.stage_validity?.earliest_affected_stage).toBe("intent-capture");
   });
 
   test("the text step is the same on CRLF, on a record a hook already gave a seven-phase Lifecycle Phase, and on its own output", () => {

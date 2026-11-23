@@ -163,6 +163,23 @@ export function fivePhaseLogicalPath(logicalPath: string): string | null {
   return null;
 }
 
+/**
+ * The five-phase spelling of a project-relative, `/`-separated path at the
+ * seven-phase layout: the first `<phase>/<slug>/` or `<phase>/<unit>/<unit
+ * stage>/` run a five-phase release kept elsewhere takes that release's folder
+ * (fivePhaseLogicalPath); null when no run names one. Read from the start, so a
+ * Unit named like a phase still reads as a Unit. For building the value a
+ * five-phase release recorded for the same documents, never for reading one.
+ */
+export function fivePhaseRecordPath(path: string): string | null {
+  const segments = path.split("/");
+  for (let i = 0; i + 3 <= segments.length; i++) {
+    const older = fivePhaseLogicalPath(segments.slice(i).join("/"));
+    if (older !== null) return [...segments.slice(0, i), older].join("/");
+  }
+  return null;
+}
+
 // The five-phase forms of review fingerprints this process computed: the
 // manifest of the same documents under the logical paths a five-phase release
 // hashed (fivePhaseLogicalPath), over committed text and over raw bytes,

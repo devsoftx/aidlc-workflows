@@ -1,5 +1,5 @@
 // covers: function:sevenPhaseRecordPath, function:sameRecordPath, function:fivePhaseLogicalPath,
-// function:rememberFivePhaseFingerprint, function:fivePhaseFingerprintForm
+// function:fivePhaseRecordPath, function:rememberFivePhaseFingerprint, function:fivePhaseFingerprintForm
 //
 // A five-phase AI-DLC (State Version 8, up to 2.11.4) kept each stage's record
 // under ideation/, inception/, construction/ or operation/, and a Unit's work
@@ -14,6 +14,7 @@ import {
   FIVE_PHASE_STAGE_FOLDER,
   fivePhaseFingerprintForm,
   fivePhaseLogicalPath,
+  fivePhaseRecordPath,
   rememberFivePhaseFingerprint,
   sameRecordPath,
   SEVEN_PHASE_STAGE_FOLDER,
@@ -147,6 +148,37 @@ describe("a seven-phase review manifest entry in the form a five-phase release h
     ]) {
       expect(fivePhaseLogicalPath(path)).toBeNull();
     }
+  });
+});
+
+describe("a project-relative seven-phase path in the spelling a five-phase release recorded", () => {
+  test("stage-level and per-Unit paths go back to their five-phase folder, and back again", () => {
+    const cases: Array<[string, string]> = [
+      [`${RECORD}/design/requirements-analysis/requirements.md`, `${RECORD}/inception/requirements-analysis/requirements.md`],
+      [`${RECORD}/discover/intent-capture/intent-statement.md`, `${RECORD}/ideation/intent-capture/intent-statement.md`],
+      [`${RECORD}/design/store/functional-design/functional-spec.md`, `${RECORD}/construction/store/functional-design/functional-spec.md`],
+      [`${RECORD}/build/store/code-generation/code-generation-plan.md`, `${RECORD}/construction/store/code-generation/code-generation-plan.md`],
+      [`${RECORD}/test/performance-validation/report.md`, `${RECORD}/operation/performance-validation/report.md`],
+    ];
+    for (const [seven, five] of cases) {
+      expect(fivePhaseRecordPath(seven)).toBe(five);
+      expect(sevenPhaseRecordPath(five)).toBe(seven);
+    }
+  });
+
+  test("a Unit named like a phase still reads as a Unit", () => {
+    expect(fivePhaseRecordPath(`${RECORD}/design/design/functional-design/spec.md`))
+      .toBe(`${RECORD}/construction/design/functional-design/spec.md`);
+  });
+
+  test("a path that names no stage a five-phase release kept has no five-phase spelling", () => {
+    for (const path of [
+      `${RECORD}/secure/code-review/code-review-report.md`,
+      `${RECORD}/design/requirements-analysis`,
+      `${RECORD}/test/functional-design/spec.md`,
+      "aidlc/spaces/default/codekb/app/architecture.md",
+      "src/design/widget.ts",
+    ]) expect(fivePhaseRecordPath(path), path).toBeNull();
   });
 });
 

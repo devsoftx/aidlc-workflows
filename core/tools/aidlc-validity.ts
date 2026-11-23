@@ -17,6 +17,7 @@ import { loadGraph } from "./aidlc-graph.ts";
 import { withdrawnTurnPositions } from "./aidlc-record-core.ts";
 import { SLUG_RE as STAGE_SLUG_RE } from "./aidlc-stage-schema.ts";
 import { artifactFilename } from "./aidlc-artifact-vocabulary.ts";
+import { fivePhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import {
   resolveArtifactInstances,
   type ArtifactResolutionOptions,
@@ -332,6 +333,8 @@ function aggregateArtifactBasis(
     }));
     rememberRawFingerprint(`sha256:${sha256(canonicalJson(form))}`, contentHash);
   }
+  const structureHash = `sha256:${sha256(canonicalJson(structure))}`;
+  rememberFivePhaseBasis(fingerprints, structureHash, contentHash);
 
   return {
     artifact,
@@ -339,9 +342,44 @@ function aggregateArtifactBasis(
     required,
     instanceCount: fingerprints.length,
     presentCount: fingerprints.filter((item) => item.present).length,
-    structureHash: `sha256:${sha256(canonicalJson(structure))}`,
+    structureHash,
     contentHash,
   };
+}
+
+// A receipt a five-phase release (State Version 8, up to 2.11.4) wrote hashed
+// each document at the folder the 8 to 10 step moved it from. The same
+// documents and content under those paths, in that release's order, are
+// remembered against the hashes read now, so basisInCurrentForm reads such a
+// receipt as this one. Only documents read in this process are here, and only
+// the recorded side is mapped: a changed document still differs.
+const FIVE_PHASE_BASES = new Map<string, string>();
+
+function rememberFivePhaseBasis(
+  fingerprints: readonly InstanceFingerprint[],
+  structureHash: string,
+  contentHash: string,
+): void {
+  const older = fingerprints.map((fingerprint) => fivePhaseRecordPath(fingerprint.instance.relativePath));
+  if (older.every((path) => path === null)) return;
+  const pathAt = (index: number): string => older[index] ?? fingerprints[index].instance.relativePath;
+  const keyAt = (index: number): string =>
+    [fingerprints[index].instance.unit ?? "", fingerprints[index].instance.unitKind ?? "", pathAt(index)].join("\u0000");
+  const order = fingerprints.map((_, index) => index).sort((left, right) => keyAt(left).localeCompare(keyAt(right)));
+  const structure = order.map((index) => ({
+    path: pathAt(index),
+    unit: fingerprints[index].instance.unit,
+    unitKind: fingerprints[index].instance.unitKind,
+  }));
+  FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(structure))}`, structureHash);
+  for (const digest of ["sha256", "committedSha256", "rawSha256"] as const) {
+    const content = order.map((index) => ({
+      path: pathAt(index),
+      sha256: fingerprints[index][digest] ?? fingerprints[index].sha256,
+      present: fingerprints[index].present,
+    }));
+    FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(content))}`, contentHash);
+  }
 }
 
 function producersByArtifact(
@@ -810,7 +848,11 @@ function changesExplainedBy(before: StageValidationBasis, after: StageValidation
 
 function basisInCurrentForm(basis: StageValidationBasis): StageValidationBasis {
   const current = (items: ArtifactBasis[]): ArtifactBasis[] =>
-    items.map((item) => ({ ...item, contentHash: currentFingerprintForm(item.contentHash) ?? item.contentHash }));
+    items.map((item) => ({
+      ...item,
+      structureHash: FIVE_PHASE_BASES.get(item.structureHash) ?? item.structureHash,
+      contentHash: FIVE_PHASE_BASES.get(item.contentHash) ?? currentFingerprintForm(item.contentHash) ?? item.contentHash,
+    }));
   return { ...basis, inputs: current(basis.inputs), outputs: current(basis.outputs) };
 }
 
