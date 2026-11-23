@@ -46,6 +46,7 @@ import {
   saySecretMaskedOnce,
 } from "./aidlc-audit.ts";
 import {
+  bringUpWaitsOn,
   broughtUpStateText,
   hasStateUpgrade,
   newerStateStep,
@@ -2481,8 +2482,14 @@ To get started:
     : `Also open:      ${others.join(", ")} (ask to switch to ${others.length === 1 ? "it" : "one"})\n`;
   // Work an older AI-DLC recorded, brought up to this one in place, or shown
   // here as the next step brings it up: said here on purpose, never in chat.
+  // A folder this user cannot change keeps that step from making the move, so
+  // the line names it and the step that frees it instead.
   const upgrade = stateUpgradeRecord(projectDir, selection.intent ?? undefined, selection.space);
-  const upgradedLine = waiting
+  const waitsOn = waiting ? bringUpWaitsOn(projectDir, sp, recorded) : null;
+  const upgradedLine = waitsOn !== null
+    ? `Brought up:     waiting: AI-DLC cannot change ${waitsOn.folders} (${waitsOn.why}); give your user write ` +
+      `access to ${waitsOn.it}, then ask AI-DLC to carry on\n`
+    : waiting
     ? "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the seven shown here\n"
     : upgrade === null
     ? ""
@@ -5885,10 +5892,20 @@ export async function collectDoctorReport(
           fix: verdict.message,
         });
       } else if (verdict.kind === "past" && hasStateUpgrade(verdict.version)) {
-        results.push({
-          pass: true,
-          label: `State Version: ${verdict.version} (AI-DLC brings this record up to ${CURRENT_STATE_VERSION} at its next step)`,
-        });
+        // A folder this user cannot change holds that step back every time
+        // (Windows cannot tell one from here; the step's own line names it).
+        const waitsOn = bringUpWaitsOn(projectDir, stateMdPath, stateContent);
+        results.push(waitsOn === null
+          ? {
+            pass: true,
+            label: `State Version: ${verdict.version} (AI-DLC brings this record up to ${CURRENT_STATE_VERSION} at its next step)`,
+          }
+          : {
+            pass: false,
+            label: `State Version: ${verdict.version} (AI-DLC cannot bring this record up to ${CURRENT_STATE_VERSION} ` +
+              `while it cannot change ${waitsOn.folders})`,
+            fix: `give your user write access to ${waitsOn.folders} (${waitsOn.why}), then ask AI-DLC to carry on`,
+          });
       } else if (verdict.kind === "past") {
         results.push({
           pass: false,

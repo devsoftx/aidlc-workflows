@@ -19,12 +19,15 @@ import { packageManagerForExecutable } from "./aidlc-install-paths.ts";
 import { releaseHostLabel } from "./aidlc-release.ts";
 import {
   type FolderMove,
+  type FolderRefusal,
   type FolderRename,
+  fivePhaseFolderPlan,
   fivePhaseReorder,
   moveFivePhaseFolders,
   putFolderMovesBack,
   renameRecordFolder,
   sevenPhaseStateText,
+  unwritableFolderFor,
 } from "./aidlc-seven-phase-upgrade.ts";
 import { aidlcInvocation, compiledExecutable, runtimeHarnessName, typedHarnessName } from "./aidlc-runtime-paths.ts";
 import { AIDLC_VERSION } from "./aidlc-version.ts";
@@ -56,6 +59,9 @@ interface StateUpgrade {
   // what they left behind, and what the file system would not let move (the
   // step has put its own moves back then).
   folders?: (recordDir: string) => { moved: string[]; left: string[]; failed: FolderMove[] };
+  // The moves `folders` would make on the record as it is, written nowhere,
+  // for doctor and status to find a folder that keeps them from being made.
+  plan?: (recordDir: string) => FolderMove[];
   // What the step's new stage order does around the cursor, read from the
   // state text the step starts from: the stages it puts behind the cursor that
   // the work still owes (stagesOwedBehindCursor reads them from this step's
@@ -85,6 +91,7 @@ const STATE_UPGRADES: Readonly<Record<string, StateUpgrade>> = {
     added: ["code-review", "security-review", "conformance-review"],
     text: sevenPhaseStateText,
     folders: moveFivePhaseFolders,
+    plan: (recordDir) => fivePhaseFolderPlan(recordDir).moves,
     reorder: fivePhaseReorder,
   },
 };
@@ -172,16 +179,25 @@ export function broughtUpStateText(content: string): string {
   return verdict.kind === "past" && hasStateUpgrade(verdict.version) ? upgradePlan(content, verdict.version).text : content;
 }
 
+// A renamed stage's record folders, record-relative: its stage folder when
+// the current graph places the new name, then its sensor folder.
+function renamedFolders(r: StageRename): FolderMove[] {
+  const toPhase = findStageBySlug(r.to)?.phase;
+  const folders: FolderMove[] = [{ from: `.aidlc-sensors/${r.from}`, to: `.aidlc-sensors/${r.to}` }];
+  if (toPhase) folders.unshift({ from: `${r.fromPhase}/${r.from}`, to: `${toPhase}/${r.to}` });
+  return folders;
+}
+
 // Moves one record folder to its new path. Nothing moves when the source is
 // absent or the target already exists, so a repeated step is a no-op and no
 // folder is overwritten or deleted; the target's parent folders are created.
-// Returns the rename made, null when nothing moved, or "failed" when the file
-// system would not let it move.
-function moveRecordFolder(recordDir: string, from: string, to: string): FolderRename | null | "failed" {
+// Returns the rename made, null when nothing moved, or the file system's
+// refusal.
+function moveRecordFolder(recordDir: string, from: string, to: string): FolderRename | FolderRefusal | null {
   const source = join(recordDir, ...from.split("/"));
   const target = join(recordDir, ...to.split("/"));
   if (!existsSync(source) || existsSync(target)) return null;
-  return renameRecordFolder(source, target, from) ?? "failed";
+  return renameRecordFolder(source, target, from);
 }
 
 // The state as it was, kept beside it: aidlc-state.v<N>.md, or, when that
@@ -207,45 +223,139 @@ let heldBack: string | null = null;
 
 /**
  * The person's one line when the bring-up the last state read tried could
- * not move a record folder (one held open, or one that cannot be written),
- * naming the folders; null otherwise. The record is then as the earlier
- * release left it, still at its State Version, and the next read makes the
- * whole bring-up again; next (a claim or release too) and report say the line
- * and stop, so nothing is asked and no stage is routed against folders that
- * did not move.
+ * not move a record folder (one held open, or one this user cannot change),
+ * naming the folders and the step that frees them (heldBackLine); null
+ * otherwise. The record is then as the earlier release left it, still at its
+ * State Version, and the next read makes the whole bring-up again; next (a
+ * claim or release too) and report say the line and stop, so nothing is asked
+ * and no stage is routed against folders that did not move.
  */
 export function heldBackBringUp(): string | null {
   return heldBack;
 }
 
-function heldBackLine(projectDir: string, recordDir: string, failed: readonly FolderMove[]): string {
-  const shown = (path: string) => `\`${relative(projectDir, join(recordDir, ...path.split("/"))).split("\\").join("/")}\``;
+// Why the file system refused a folder move, as the person can act on it. On
+// Linux and macOS an open folder never stops a rename, so a refusal there is a
+// folder this user cannot change (EACCES, EPERM, EROFS), apart from EBUSY,
+// which a folder in use as a mount point gives. Windows refuses a folder held
+// open with EBUSY or EPERM, and one the user may not change with EPERM or
+// EACCES, so those cannot be told apart there. EROFS is a read-only drive
+// everywhere.
+type Refusal = "held open" | "cannot change" | "either";
+
+function refusalOf(code: string | undefined, platform: NodeJS.Platform): Refusal {
+  if (code === "EBUSY") return "held open";
+  if (code === "EROFS" || platform !== "win32") return "cannot change";
+  return "either";
+}
+
+// A record-relative path as the person finds it from the project, `/`-separated.
+function projectPath(projectDir: string, recordDir: string, path: string): string {
+  return relative(projectDir, join(recordDir, ...path.split("/"))).split("\\").join("/");
+}
+
+function listed(names: readonly string[]): string {
+  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+// The folders this user cannot change, as shown, why that may be, and the
+// pronoun that stands for them: the one wording the held line, doctor and
+// status share.
+function cannotChange(folders: readonly string[]) {
+  const one = folders.length === 1;
+  return {
+    folders: listed(folders),
+    why: one
+      ? "another user or a container may own it, or it may be read-only"
+      : "another user or a container may own them, or they may be read-only",
+    it: one ? "it" : "them",
+  };
+}
+
+/**
+ * The held line for `failed`, the moves the file system refused, on
+ * `platform`: a folder this user cannot change is named (the one the access
+ * check finds, else the move's own) with the write access that frees it; a
+ * folder held open with what to close; and where Windows cannot tell the two
+ * apart, both, with a step for each.
+ */
+export function heldBackLine(
+  projectDir: string,
+  recordDir: string,
+  failed: readonly FolderMove[],
+  platform: NodeJS.Platform = process.platform,
+): string {
+  const kinds = new Set(failed.map((move) => refusalOf(move.code, platform)));
+  const kind: Refusal = kinds.size === 1 ? [...kinds][0] : "either";
+  const shown = (path: string) => `\`${projectPath(projectDir, recordDir, path)}\``;
+  const carryOn = "ask me to carry on, and AI-DLC finishes moving your work and picks up where you were.";
+  if (kind === "cannot change") {
+    const folders = [...new Set(failed.map((move) => unwritableFolderFor(recordDir, move, platform) ?? move.from))];
+    const words = cannotChange(folders.map(shown));
+    return `AI-DLC cannot change ${words.folders} (${words.why}), so it could not move your work to where this ` +
+      `release keeps it. Your work is as it was. Give your user write access to ${words.it}, then ${carryOn}`;
+  }
   const one = failed.length === 1;
   const names = failed.map((move) => shown(move.from));
   const where = one
     ? `${names[0]} to ${shown(failed[0].to)}, where this release keeps it`
-    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)} to where this release keeps them`;
+    : `${listed(names)} to where this release keeps them`;
+  const those = one ? "that folder" : "those folders";
   const it = one ? "it" : "them";
-  return `AI-DLC could not move ${where}: a program on this computer has ${one ? "that folder" : "those folders"} ` +
-    `open, or ${it} cannot be changed. Your work is as it was. Close what has ${it} open (a dev server or test ` +
-    "watcher still running over the project, a terminal or an editor inside, a file sync or backup app), then ask " +
-    "me to carry on, and AI-DLC finishes moving your work and picks up where you were.";
+  const close = `Close what has ${it} open (a dev server or test watcher still running over the project, a ` +
+    "terminal or an editor inside, a file sync or backup app)";
+  if (kind === "held open") {
+    return `AI-DLC could not move ${where}: a program on this computer has ${those} open. Your work is as it was. ` +
+      `${close}, then ${carryOn}`;
+  }
+  return `AI-DLC could not move ${where}: a program on this computer has ${those} open, or your user cannot ` +
+    `change ${it}. Your work is as it was. ${close}; if nothing has ${it} open, give your user write access to ` +
+    `${it}. Then ${carryOn}`;
+}
+
+/**
+ * For doctor and status, which write nothing: the folders this user cannot
+ * change that the bring-up of a record still waiting for it has to move,
+ * named as the held line names them, with why that may be and the pronoun
+ * for them; null when there is none. Windows cannot tell such a folder from
+ * the outside (unwritableFolderFor), so there only the step's own line names
+ * one.
+ */
+export function bringUpWaitsOn(
+  projectDir: string,
+  statePath: string,
+  content: string,
+): { folders: string; why: string; it: string } | null {
+  const verdict = classifyStateVersion(content);
+  if (verdict.kind !== "past" || !hasStateUpgrade(verdict.version)) return null;
+  const recordDir = dirname(statePath);
+  const moves: FolderMove[] = [];
+  for (let version = verdict.version; hasStateUpgrade(version); version = STATE_UPGRADES[version].to) {
+    const step = STATE_UPGRADES[version];
+    moves.push(...step.renamed.flatMap(renamedFolders), ...(step.plan?.(recordDir) ?? []));
+  }
+  const folders = [...new Set(moves.flatMap((move) => {
+    const blocked = existsSync(join(recordDir, ...move.from.split("/"))) ? unwritableFolderFor(recordDir, move) : null;
+    return blocked === null ? [] : [blocked];
+  }))];
+  return folders.length === 0 ? null : cannotChange(folders.map((folder) => projectPath(projectDir, recordDir, folder)));
 }
 
 // The content as the current State Version reads it. When the version is one
-// a step brings up, the state as it was is kept beside it first
-// (keepOriginal), each renamed stage's record folders move to the new name
+// a step brings up, each renamed stage's record folders move to the new name
 // and phase folder, then each step's own folder moves run (the 8 step's
-// five-phase folders), the state is written and one audit row says what
+// five-phase folders); once every move is made, the state as it was is kept
+// beside it (keepOriginal), the state is written and one audit row says what
 // changed and what was left behind. A read-only engine probe gets the
 // brought-up text and writes nothing. A folder the file system will not let
-// move holds the whole bring-up back: every move is put back, the state stays
-// at its version, no row is written and this read gets the record as it is
-// (so nothing in this command writes a brought-up state over folders that did
-// not move), and the next read makes the whole move again, its row listing
-// every move (heldBackBringUp names the folder meanwhile). A write that fails
-// leaves the original whole (the copy comes first, the state by rename) and
-// this step carries on with the brought-up text; the next one tries again.
+// move holds the whole bring-up back: every move is put back, nothing is kept
+// or written, the state stays at its version and this read gets the record as
+// it is (so nothing in this command writes a brought-up state over folders
+// that did not move), and the next read makes the whole move again, its row
+// listing every move and its copy keeping the state as it stands then
+// (heldBackBringUp names the folder meanwhile). A write that fails leaves the
+// original whole (the copy comes first, the state by rename) and this step
+// carries on with the brought-up text; the next one tries again.
 export function bringStateUpToDate(
   projectDir: string,
   statePath: string,
@@ -261,21 +371,16 @@ export function bringStateUpToDate(
   if (isReadOnlyEngineProbe()) return text;
   try {
     const recordDir = dirname(statePath);
-    const kept = keepOriginal(recordDir, verdict.version, content);
     const moved: string[] = [];
     const renames: FolderRename[] = [];
     const failed: FolderMove[] = [];
-    for (const r of renamed) {
-      const toPhase = findStageBySlug(r.to)?.phase;
-      const folders: [string, string][] = [[`.aidlc-sensors/${r.from}`, `.aidlc-sensors/${r.to}`]];
-      if (toPhase) folders.unshift([`${r.fromPhase}/${r.from}`, `${toPhase}/${r.to}`]);
-      for (const [from, to] of folders) {
-        const result = moveRecordFolder(recordDir, from, to);
-        if (result === "failed") failed.push({ from, to });
-        else if (result !== null) {
-          renames.push(result);
-          moved.push(`${from} to ${to}`);
-        }
+    for (const { from, to } of renamed.flatMap(renamedFolders)) {
+      const result = moveRecordFolder(recordDir, from, to);
+      if (result === null) continue;
+      if ("refused" in result) failed.push({ from, to, code: result.refused });
+      else {
+        renames.push(result);
+        moved.push(`${from} to ${to}`);
       }
     }
     const left: string[] = [];
@@ -291,6 +396,7 @@ export function bringStateUpToDate(
       heldBack = heldBackLine(projectDir, recordDir, failed);
       return content;
     }
+    const kept = keepOriginal(recordDir, verdict.version, content);
     withAuditLock(projectDir, () => {
       writeStateFile(projectDir, text, intent, space);
       appendAuditEntryUnlocked("STATE_UPGRADED", {
