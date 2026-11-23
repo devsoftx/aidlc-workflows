@@ -2,6 +2,7 @@
 
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
 import { LAUNCHER_GLOBAL_FLAGS, UNIT_GRAMMAR } from "./aidlc-command.ts";
+import { sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -1553,8 +1554,9 @@ function transportedAuditViolation(
     ) {
       return `${event.event} row belongs to attempt generation ${eventGeneration}`;
     }
-    const file = (auditBlockField(event.block, "File") ?? "")
-      .replace(/\\/g, "/");
+    // A five-phase release's row names the folder its file moved from.
+    const file = sevenPhaseRecordPath((auditBlockField(event.block, "File") ?? "")
+      .replace(/\\/g, "/"));
     const unitArtifactRoots = UNIT_RECORD_PHASES.map((phase) => `${phase}/${unit}/`);
     if (
       !unitArtifactRoots.some((root) => file.startsWith(root) || file.includes(`/${root}`))
@@ -2147,6 +2149,7 @@ function candidateEvidence(
       .update(questions, "utf-8")
       .digest("hex");
     const promptSha256 = planApprovalPromptSha256(questions);
+    const recordedQuestions = approvalEvent ? auditBlockField(approvalEvent.block, "Questions File") : null;
     if (
       fingerprint &&
       instructions.trim().length > 0 &&
@@ -2160,8 +2163,8 @@ function candidateEvidence(
         claim.payload.intent_uuid &&
       auditBlockField(approvalEvent.block, "Approval Fingerprint") ===
         fingerprint &&
-      auditBlockField(approvalEvent.block, "Questions File") ===
-        questionsPath &&
+      // Approved on a five-phase release, before its folder moved: the same file.
+      recordedQuestions !== null && sameRecordPath(recordedQuestions, questionsPath) &&
       auditBlockField(approvalEvent.block, "Questions SHA-256") ===
         questionsSha256 &&
       auditBlockField(approvalEvent.block, "Prompt SHA-256") ===

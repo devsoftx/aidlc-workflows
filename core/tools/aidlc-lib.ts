@@ -2,6 +2,7 @@ import { isUnitLoopStage, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
 import { lockFolderHeldGiveUpMs, lockFolderHeldLine } from "./aidlc-lock-line.ts";
 import { committedTextBytes, committedTextParts, reviewManifestForms } from "./aidlc-review-manifest.ts";
+import { fivePhaseLogicalPath, rememberFivePhaseFingerprint, sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 export { committedTextBytes } from "./aidlc-review-manifest.ts";
 import { withoutLearnedDate } from "./aidlc-learned-date.ts";
 import { claimedCheckoutReopens } from "./aidlc-unit-landing.ts";
@@ -12090,7 +12091,8 @@ export function blockingSensorPicks(
 }
 
 // The latest terminal result of each of a stage's sensors on each output, by
-// `id@path` (the Output path its row records), from the SENSOR_PASSED,
+// `id@path` (the Output path its row records, a five-phase release's in its
+// seven-phase spelling: the folder the file moved to), from the SENSOR_PASSED,
 // SENSOR_FAILED and SENSOR_COULD_NOT_RUN rows given; nothing is re-fired. A
 // check that could not run, or a pass that carries a note (the tool was
 // unavailable), evaluated nothing: it does not clear the failure recorded
@@ -12122,8 +12124,9 @@ export function latestSensorResults(rows: ReadonlyArray<AuditShardEvent>, slug: 
     if (kind === null) continue;
     if (auditBlockField(row.block, "Stage slug") !== slug) continue;
     const id = auditBlockField(row.block, "Sensor ID");
-    const output = auditBlockField(row.block, "Output path");
-    if (id === null || output === null) continue;
+    const recorded = auditBlockField(row.block, "Output path");
+    if (id === null || recorded === null) continue;
+    const output = sevenPhaseRecordPath(recorded);
     const key = `${id}@${output}`;
     const seen = latest.get(key);
     if (seen && (seen.ts > row.timestamp || (seen.ts === row.timestamp && seen.pos > row.pos))) continue;
@@ -13874,7 +13877,8 @@ function summaryReceiptFor(
   ) {
     return false;
   }
-  return auditBlockField(entry.block, "Questions File") === questionRelative;
+  const recorded = auditBlockField(entry.block, "Questions File");
+  return recorded !== null && sameRecordPath(recorded, questionRelative);
 }
 
 /**
@@ -14021,7 +14025,7 @@ export function keptSummaryOutputs(
     const isolated = readSummaryAuthorization(projectDir, stage.slug, null);
     if (isolated === null || isolated.workflow !== `single-stage:${stage.slug}`) return null;
     const question = summaryQuestionFiles(projectDir, stage, null)
-      .find((candidate) => toPosix(relative(projectDir, candidate.path)) === isolated.questions_file);
+      .find((candidate) => sameRecordPath(isolated.questions_file, toPosix(relative(projectDir, candidate.path))));
     if (question === undefined) return null;
     if (options.unit !== undefined && question.unit !== null && question.unit !== options.unit) return null;
     const outputs = summaryArtifactPaths(stage, question)
@@ -14068,7 +14072,11 @@ function keptUnderConfirmation(
     row.event === "ARTIFACT_REUSED" &&
     auditBlockField(row.block, "Decision") === "keep" &&
     auditBlockField(row.block, SUMMARY_AUTHORIZATION_FIELD) === authorization &&
-    (auditBlockField(row.block, KEPT_OUTPUTS_FIELD) ?? "").split(";").some((kept) => kept.trim() === entry)
+    (auditBlockField(row.block, KEPT_OUTPUTS_FIELD) ?? "").split(";").some((kept) => {
+      // `<sha256> <record-relative path>`: a five-phase path names the file where it is now.
+      const [sha, ...path] = kept.trim().split(" ");
+      return kept.trim() === entry || `${sha} ${sevenPhaseRecordPath(path.join(" "))}` === entry;
+    })
   );
 }
 
@@ -14927,7 +14935,7 @@ export function checkSummaryConfirmationEvidence(
     if (receiptFile !== null) {
       const matched = questions.find(
         (question) =>
-          toPosix(relative(projectDir, question.path)) === receiptFile,
+          sameRecordPath(receiptFile, toPosix(relative(projectDir, question.path))),
       );
       if (matched) questions = [{ ...matched, unit: null }];
     } else if (questions.length === 1) {
@@ -15954,10 +15962,12 @@ export function parseParkedStampInstant(stamp: string): number | null {
 // tail; the leading slash prevents a partial match.
 export function auditRowWritesFile(projectDir: string, row: { event: string; block: string }, abs: string): boolean {
   if (row.event !== "ARTIFACT_CREATED" && row.event !== "ARTIFACT_UPDATED") return false;
-  const file = auditBlockField(row.block, "File");
-  if (file === null) return false;
-  return resolveAuditProjectPath(projectDir, file) === abs ||
-    file.replace(/\\/g, "/").endsWith("/" + toPosix(relative(projectDir, abs)));
+  const recorded = auditBlockField(row.block, "File");
+  if (recorded === null) return false;
+  // A five-phase release's write names the file at the folder it moved from.
+  return [recorded, sevenPhaseRecordPath(recorded)].some((file) =>
+    resolveAuditProjectPath(projectDir, file) === abs ||
+    file.replace(/\\/g, "/").endsWith("/" + toPosix(relative(projectDir, abs))));
 }
 
 // --- Fresh review receipts (the §12a completion precondition's scan) -----------
@@ -16782,9 +16792,12 @@ function reviewArtifactContentsFingerprint(
     rawManifest.push([entry.logicalPath, `sha256:${createHash("sha256").update(fingerprintedBody).digest("hex")}`]);
   }
   if (!matchedAppendix) return null;
-  const { fingerprint, raw, older } = reviewManifestForms(manifest, rawManifest, contents);
+  // Older forms include the same documents under the logical paths a
+  // five-phase release recorded, before the 8 to 10 state step moved them.
+  const { fingerprint, raw, older, earlier } = reviewManifestForms(manifest, rawManifest, contents, fivePhaseLogicalPath);
   if (raw !== null) rememberRawFingerprint(raw, fingerprint);
   for (const form of older) RAW_FINGERPRINTS.set(form, fingerprint);
+  if (earlier) rememberFivePhaseFingerprint(fingerprint, earlier);
   return fingerprint;
 }
 
@@ -18676,7 +18689,8 @@ export function reviewArtifactBytesSnapshot(
     }
   }
   return {
-    fingerprint: `sha256:${createHash("sha256").update(JSON.stringify(manifest)).digest("hex")}`,
+    // The receipt's form, as reviewArtifactContentsFingerprint reads it.
+    fingerprint: reviewManifestForms(manifest, manifest, snapshot, fivePhaseLogicalPath).fingerprint,
     entries: snapshot,
   };
 }
@@ -20034,9 +20048,11 @@ export function candidateReviewCoverageProjection(
 ): { coverage: "ready" | "approved"; approval: string | null } | null {
   // A team Unit keeps its stage diary in this folder, and the learnings step
   // writes it after the review: it is not reviewed work.
-  const reviewedWork = (file: string): boolean =>
-    file.includes(options.artifactPrefix) &&
-    !file.endsWith(`${options.artifactPrefix}memory.md`);
+  // A five-phase release's write is read at the folder its file moved to.
+  const reviewedWork = (recorded: string): boolean => {
+    const file = sevenPhaseRecordPath(recorded);
+    return file.includes(options.artifactPrefix) && !file.endsWith(`${options.artifactPrefix}memory.md`);
+  };
   const events = sortAttemptEvents(rows);
   const relevantByTimestamp = new Map<string, Set<string>>();
   for (const event of events) {
@@ -20539,8 +20555,10 @@ export function freshReviewReceipts(
       continue;
     }
     if (e.event === "ARTIFACT_CREATED" || e.event === "ARTIFACT_UPDATED") {
-      const file = auditBlockField(e.block, "File");
-      if (!file) continue;
+      const recorded = auditBlockField(e.block, "File");
+      if (!recorded) continue;
+      // A five-phase release's write, read at the folder its file moved to.
+      const file = sevenPhaseRecordPath(recorded);
       const targetUnit = reviewedArtifactUnit(stage, file, recordedRepos);
       if (targetUnit === undefined) continue;
       // The governed input change: a produces[] write after a terminal receipt

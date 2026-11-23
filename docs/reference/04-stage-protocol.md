@@ -1241,6 +1241,19 @@ raw line endings; `reviewManifestForms` in `aidlc-review-manifest.ts`). An
 optional output that appears, changes or goes away after the review is still
 a change.
 
+**Five-phase records.** A release with five phases (State Version 8, up to
+2.11.4) kept stage work under `ideation/`, `inception/`, `construction/` and
+`operation/`, and a Unit's under `construction/<unit>/<stage>/`. The 8 to 10
+state step moves those folders and rewrites no record, so every reader of
+recorded evidence takes the five-phase spelling as the folder it moved to,
+through the one table in `aidlc-five-phase-record.ts`: a review receipt, a
+Unit's completion or checkpoint approval hashed under the five-phase logical
+paths matches the same documents, and a questions file, a written or kept
+output, or a check's output named at a five-phase path names the moved file.
+Only the recorded side is read so, and everything a record binds (the
+prompt, the plan, the questions file's content, the documents' bytes) is
+checked as before.
+
 Reviewed outputs remain frozen. If `review_artifact` explicitly names a
 questions artifact, it remains fully byte-bound and frozen, including its
 confirmation answer; stages without `summary_confirmation` have no question

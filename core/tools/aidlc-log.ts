@@ -7,6 +7,7 @@
 // because they fire per-question / per-review, not per state transition.
 
 import { constructionPolicyRecovery } from "./aidlc-guard-operation.ts";
+import { sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
 import { CHANGE_NOTICES_NOTE, otherWorkNote, reviewRequestNote, reviewVerdictNote } from "./aidlc-directive.ts";
 import { spawnSync } from "node:child_process";
@@ -1000,7 +1001,9 @@ function revisedSummaryNote(
         (auditBlockField(row.block, "Workflow") ?? undefined) !== workflow) continue;
       if (receipt === undefined || row.timestamp >= receipt.timestamp) receipt = row;
     }
-    questionsFile = receipt === undefined ? null : auditBlockField(receipt.block, "Questions File");
+    // The file where it is now: a five-phase release recorded the folder it moved from.
+    const recorded = receipt === undefined ? null : auditBlockField(receipt.block, "Questions File");
+    questionsFile = recorded === null ? null : sevenPhaseRecordPath(recorded);
     if (questionsFile !== null && !pendingSummaryDecision(pd, stage.slug, unit, workflow, questionsFile).changeRequested) {
       questionsFile = null;
     }
@@ -1043,7 +1046,7 @@ function summaryAnswerPutBack(content: string): string | null {
 function summaryConfirmedOnRecord(pd: string, stage: string, unit: string | null, questions: string): boolean {
   const authorization = unit === null ? summaryAuthorizationThisAttempt(pd, stage) : readSummaryAuthorization(pd, stage, unit);
   return authorization !== null && authorization.choice === "Looks correct" &&
-    authorization.questions_file.replaceAll("\\", "/") === questions;
+    sameRecordPath(authorization.questions_file.replaceAll("\\", "/"), questions);
 }
 
 // A stage's own question asked or answered while its gate waits (a chat that
@@ -1752,7 +1755,8 @@ function hasPendingDecisionAtGate(pd: string, stage: string): boolean {
 }
 
 // A row of this summary's question or its confirmation: the stage, Unit, workflow
-// and questions file it was asked for.
+// and questions file it was asked for (`questionsFile` is the current path; a
+// row's five-phase spelling names it too).
 function summaryRow(
   pd: string,
   entry: { block: string },
@@ -1761,11 +1765,12 @@ function summaryRow(
   workflow: string | undefined,
   questionsFile: string,
 ): boolean {
+  const recorded = auditBlockField(entry.block, "Questions File");
   return auditBlockField(entry.block, "Stage") === stage &&
     auditBlockField(entry.block, "Checkpoint") === SUMMARY_CONFIRMATION_CHECKPOINT &&
     (auditBlockField(entry.block, "Unit") ?? undefined) === unit &&
     (auditBlockField(entry.block, "Workflow") ?? undefined) === workflow &&
-    auditBlockField(entry.block, "Questions File") === questionsFile &&
+    recorded !== null && sameRecordPath(recorded, questionsFile) &&
     (unit === undefined || eventMatchesClaimAttempt(pd, entry.block, unit));
 }
 

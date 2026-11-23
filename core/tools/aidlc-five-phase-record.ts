@@ -162,3 +162,23 @@ export function fivePhaseLogicalPath(logicalPath: string): string | null {
   if (old && SEVEN_PHASE_STAGE_FOLDER[second] === phase) return [old, ...segments.slice(1)].join("/");
   return null;
 }
+
+// The five-phase forms of review fingerprints this process computed: the
+// manifest of the same documents under the logical paths a five-phase release
+// hashed (fivePhaseLogicalPath), over committed text and over raw bytes,
+// keyed by the current fingerprint. reviewArtifactContentsFingerprint in
+// aidlc-lib.ts fills it as it maps each five-phase form back to the current one
+// for currentFingerprintForm; evidence that embeds a review fingerprint (a Unit
+// checkpoint's) reads it to rebuild the value a five-phase release recorded.
+// Only documents read in this process are here.
+const FIVE_PHASE_FINGERPRINTS = new Map<string, { fingerprint: string; raw: string }>();
+
+export function rememberFivePhaseFingerprint(current: string, forms: { fingerprint: string; raw: string }): void {
+  FIVE_PHASE_FINGERPRINTS.set(current, forms);
+}
+
+/** The five-phase form of a current review fingerprint read here (its raw-bytes form with `raw`), or null. */
+export function fivePhaseFingerprintForm(current: string, raw = false): string | null {
+  const forms = FIVE_PHASE_FINGERPRINTS.get(current);
+  return forms === undefined ? null : raw ? forms.raw : forms.fingerprint;
+}

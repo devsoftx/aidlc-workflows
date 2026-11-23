@@ -79,6 +79,7 @@
 // invert the whole thesis).
 
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
+import { sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import {
   createHash,
   randomBytes,
@@ -4453,7 +4454,9 @@ function openQuestionAnswer(
   // `[Answer]:` tag holds the choice first (stage-protocol-summary.md). Each
   // choice has its own command: one whose --details named what they asked to
   // change left a bare Request changes unrecorded while the agent asked what.
-  const summaryFile = checkpoint === SUMMARY_CONFIRMATION_CHECKPOINT ? auditBlockField(block, "Questions File") : null;
+  // Where the file is now: a five-phase release recorded the folder it moved from.
+  const recordedFile = checkpoint === SUMMARY_CONFIRMATION_CHECKPOINT ? auditBlockField(block, "Questions File") : null;
+  const summaryFile = recordedFile === null ? null : sevenPhaseRecordPath(recordedFile);
   const summaryAnswer = (choice: string) => `\`${summaryConfirmationCommands({
     stage, unit, questionsFile: summaryFile,
     single: auditBlockField(block, "Workflow")?.startsWith("single-stage:") === true,
@@ -4617,7 +4620,8 @@ function openQuestionAgainDirective(
   const choices = questionOptions(block);
   const listed = choices.length > 0 ? `, with the choices ${choices.map((choice) => JSON.stringify(choice)).join(", ")}` : "";
   const command = checkpoint === VERIFICATION_COMMAND_CHECKPOINT ? auditBlockField(block, "Command Label") : null;
-  const summaryFile = checkpoint === SUMMARY_CONFIRMATION_CHECKPOINT ? auditBlockField(block, "Questions File") : null;
+  const recordedFile = checkpoint === SUMMARY_CONFIRMATION_CHECKPOINT ? auditBlockField(block, "Questions File") : null;
+  const summaryFile = recordedFile === null ? null : sevenPhaseRecordPath(recordedFile);
   const again = afterAnswer === undefined ? " again" : "";
   // The summary the person confirms is read from the file it was asked from.
   const shown = summaryFile !== null
