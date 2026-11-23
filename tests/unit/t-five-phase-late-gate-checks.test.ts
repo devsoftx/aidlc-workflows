@@ -63,7 +63,8 @@ beforeAll(() => {
   writeFileSync(join(scripts, `aidlc-sensor-${CHECK}.ts`), [
     'import { appendFileSync } from "node:fs";',
     "export function main(argv: string[]): void {",
-    '  appendFileSync(process.env.AIDLC_TEST_CHECK_LOG!, `${argv[argv.indexOf("--output-path") + 1].replaceAll("\\\\", "/")}\\n`);',
+    '  const outputPath = argv[argv.indexOf("--output-path") + 1].replaceAll("\\\\", "/");',
+    '  appendFileSync(process.env.AIDLC_TEST_CHECK_LOG!, outputPath + "\\n");',
     '  console.log(JSON.stringify({ pass: true, findings: [], findings_count: 0 }));',
     "}",
     "if (import.meta.main) main(process.argv.slice(2));",
