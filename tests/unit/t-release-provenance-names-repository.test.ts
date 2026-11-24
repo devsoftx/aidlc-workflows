@@ -3,7 +3,8 @@
 // A release whose provenance does not verify says which repository and signer
 // workflow it was checked against. When AIDLC_RELEASE_REPOSITORY is not set it
 // also says where to get the release, then how to point the check at another
-// repository; when it is set, it adds nothing. A fork's release checked against the default repository fails
+// repository; when it is set, it adds nothing. A stable release before 3.0.0
+// is checked against upstream, which published it. A fork's release checked against the default repository fails
 // with only gh's own line ("verifying with issuer \"sigstore.dev\""), which
 // names neither, so the person cannot tell an installation setting from a
 // tampered release.
@@ -12,7 +13,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ReleaseManifest, verifyReleaseProvenance } from "../../core/tools/aidlc-release.ts";
+import {
+  DEFAULT_RELEASE_REPOSITORY,
+  type ReleaseManifest,
+  UPSTREAM_RELEASE_REPOSITORY,
+  verifyReleaseProvenance,
+} from "../../core/tools/aidlc-release.ts";
 
 const VERSION = "2.11.4-preview.20261105.101";
 const GH_FAILURE = 'Error: verifying with issuer "sigstore.dev"';
@@ -87,12 +93,24 @@ describe.skipIf(process.platform === "win32")("a provenance failure names what i
     expect(message).toContain("AIDLC_RELEASE_REPOSITORY=<owner>/<name>");
   });
 
+  test("a stable release before 3.0.0 is checked against upstream, which published it", () => {
+    const { directory, manifest } = refusingRelease();
+    delete process.env.AIDLC_RELEASE_REPOSITORY;
+    const message = failure(directory, { ...manifest, version: "2.11.4", sourceRef: "refs/tags/v2.11.4" });
+    expect(message).toContain(GH_FAILURE);
+    expect(message).toContain("awslabs/aidlc-workflows/.github/workflows/release.yml");
+    expect(message).toContain("Get the release from awslabs/aidlc-workflows");
+    expect(message).not.toContain(`${DEFAULT_RELEASE_REPOSITORY}/`);
+  });
+
   test("the repository AIDLC_RELEASE_REPOSITORY names", () => {
     const { directory, manifest } = refusingRelease();
     process.env.AIDLC_RELEASE_REPOSITORY = "alice/aidlc-workflows";
     const message = failure(directory, manifest);
     expect(message).toContain("alice/aidlc-workflows/.github/workflows/preview-release.yml");
-    expect(message).not.toContain("awslabs/");
+    // Neither repository the rule picks without the setting leaks into it.
+    expect(message).not.toContain(`${DEFAULT_RELEASE_REPOSITORY}/`);
+    expect(message).not.toContain(`${UPSTREAM_RELEASE_REPOSITORY}/`);
     expect(message).not.toContain("AIDLC_RELEASE_REPOSITORY");
   });
 });

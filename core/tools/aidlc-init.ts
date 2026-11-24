@@ -13987,7 +13987,7 @@ export async function main(
     let askedConfirm = false;
     if (need) {
       activeNeed = need;
-      const host = releaseHostLabel(releaseSettings.baseUrl);
+      const host = releaseHostLabel(releaseSettings.baseUrl, need.version);
       let approved = argv.includes("--download");
       if (!approved && !dryRun && options.mode === "human" && configInputIsTty() && !options.yes) {
         process.stdout.write(`${releaseNeedSentence(need)}\n`);

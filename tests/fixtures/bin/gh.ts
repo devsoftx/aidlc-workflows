@@ -27,12 +27,19 @@ const sourceDigest = valueAfter("--source-digest");
 const repository = valueAfter("--repo");
 const signerWorkflow = valueAfter("--signer-workflow");
 const hostname = valueAfter("--hostname");
-const expectedRepository =
-  process.env.AIDLC_RELEASE_REPOSITORY?.trim() || "devsoftx/aidlc-workflows";
 const manifestPath = join(dirname(args[2]), "version.json");
 const manifestVersion = existsSync(manifestPath)
   ? (JSON.parse(readFileSync(manifestPath, "utf-8")) as { version?: string }).version
   : undefined;
+// The repository the caller must check against: the rule of
+// releaseRepositoryFor in core/tools/aidlc-release.ts (a stable release before
+// 3.0.0 is upstream's, everything else is this repository's). It is written
+// out here so the stub starts without loading the lifecycle modules;
+// t-release-repository-rule keeps the two in step.
+const upstreamStable = /^[012]\.\d+\.\d+$/.test(manifestVersion ?? "");
+const expectedRepository =
+  process.env.AIDLC_RELEASE_REPOSITORY?.trim() ||
+  (upstreamStable ? "awslabs/aidlc-workflows" : "devsoftx/aidlc-workflows");
 const expectedWorkflowName = manifestVersion?.includes("-preview.")
   ? "preview-release.yml"
   : "release.yml";

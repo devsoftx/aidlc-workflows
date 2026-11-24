@@ -18,6 +18,7 @@ import {
   PREVIEW_CHANNEL,
   PREVIEW_VERSION,
   requireVersion,
+  STABLE_CHANNEL,
 } from "./aidlc-channel.ts";
 import { resolvedReleaseSettings } from "./aidlc-machine-config.ts";
 import { typedHarnessName } from "./aidlc-runtime-paths.ts";
@@ -131,18 +132,62 @@ const MAX_RELEASE_LIST_PAGE_BYTES = 4 * 1024 * 1024;
 const MAX_RELEASE_LIST_PAGES = 25;
 const PROGRESS_WIDTH = 72;
 const PROVENANCE_BUNDLE = "aidlc-release.intoto.jsonl";
-const DEFAULT_RELEASE_REPOSITORY = "devsoftx/aidlc-workflows";
-// Where a person picks a preview id by hand when the release list cannot be read.
-export const DEFAULT_RELEASES_PAGE = `https://github.com/${DEFAULT_RELEASE_REPOSITORY}/releases`;
+export const DEFAULT_RELEASE_REPOSITORY = "devsoftx/aidlc-workflows";
+// Stable releases before UPSTREAM_STABLE_BEFORE were published by the upstream
+// project alone: this repository never republishes them, and their attestations
+// name upstream's release workflow, so a way back to one, or a project pinned
+// to one, is downloaded from and verified against upstream.
+export const UPSTREAM_RELEASE_REPOSITORY = "awslabs/aidlc-workflows";
+export const UPSTREAM_STABLE_BEFORE = "3.0.0";
 const GITHUB_API_HEADERS = {
   Accept: "application/vnd.github+json",
   "User-Agent": "aidlc-native-lifecycle",
   "X-GitHub-Api-Version": "2022-11-28",
 };
 
-function releaseTrust(version: string): { repository: string; workflow: string } {
-  const repository =
-    process.env.AIDLC_RELEASE_REPOSITORY ?? DEFAULT_RELEASE_REPOSITORY;
+// The one rule for which repository a release comes from, for its download and
+// its provenance alike: AIDLC_RELEASE_REPOSITORY for every version when set;
+// otherwise upstream for a stable release before UPSTREAM_STABLE_BEFORE, and
+// the default repository for every preview, every later stable release, and
+// the newest release when no version is named. scripts/install.sh and
+// scripts/install.ps1 cannot import it and carry the same rule (their
+// release_repository_for / Get-ReleaseRepository), as does the test gh stub;
+// t-release-repository-rule fails when one of them drifts.
+export function releaseRepositoryFor(version?: string): string {
+  return process.env.AIDLC_RELEASE_REPOSITORY ?? publishedFrom(version);
+}
+
+// The repository that published a release, settings aside.
+function publishedFrom(version?: string): string {
+  return version !== undefined &&
+      parseVersion(version).channel === STABLE_CHANNEL &&
+      compareVersions(version, UPSTREAM_STABLE_BEFORE) < 0
+    ? UPSTREAM_RELEASE_REPOSITORY
+    : DEFAULT_RELEASE_REPOSITORY;
+}
+
+// What a 404 says for an upstream release that a setting sent elsewhere: it is
+// published, just not there. Host labels only, so a mirror's credentials,
+// query or path never print. Undefined for every other version and base.
+function upstreamReleaseNotHere(
+  version: string | undefined,
+  baseUrl: string,
+  mirrorSet: boolean,
+): string | undefined {
+  if (version === undefined || publishedFrom(version) !== UPSTREAM_RELEASE_REPOSITORY) return undefined;
+  if (baseUrl.replace(/\/+$/, "") === `https://github.com/${UPSTREAM_RELEASE_REPOSITORY}/releases`) return undefined;
+  const settings = [
+    ...(process.env.AIDLC_RELEASE_REPOSITORY !== undefined ? ["AIDLC_RELEASE_REPOSITORY"] : []),
+    ...(mirrorSet ? ["the release mirror setting"] : []),
+  ];
+  return `AI-DLC ${version} is not published at ${releaseHostLabel(baseUrl)}. Releases before ` +
+    `${UPSTREAM_STABLE_BEFORE} are published at github.com/${UPSTREAM_RELEASE_REPOSITORY}, where AI-DLC ` +
+    `gets them when no release repository or mirror is set: run this again without ${settings.join(" and ")}, ` +
+    "or pass --from <release-directory>.";
+}
+
+export function releaseTrust(version: string): { repository: string; workflow: string } {
+  const repository = releaseRepositoryFor(version);
   const workflowName = parseVersion(version).channel === PREVIEW_CHANNEL
     ? "preview-release.yml"
     : "release.yml";
@@ -152,9 +197,8 @@ function releaseTrust(version: string): { repository: string; workflow: string }
   return { repository, workflow };
 }
 
-function defaultReleaseBaseUrl(): string {
-  const repository =
-    process.env.AIDLC_RELEASE_REPOSITORY ?? DEFAULT_RELEASE_REPOSITORY;
+export function defaultReleaseBaseUrl(version?: string): string {
+  const repository = releaseRepositoryFor(version);
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
     throw new Error("AIDLC_RELEASE_REPOSITORY must be owner/name");
   }
@@ -674,6 +718,7 @@ async function download(
   maxBytes = MAX_ASSET_BYTES,
   contentTypes: readonly string[] = [],
   reportedTimeoutMs = timeoutMs,
+  notFound?: string,
 ): Promise<void> {
   // Every metadata file is fetched under the metadata size cap.
   const metadata = maxBytes <= MAX_METADATA_BYTES;
@@ -685,6 +730,7 @@ async function download(
       maxBytes,
       contentTypes,
       reportedTimeoutMs,
+      ...(notFound ? { notFound } : {}),
     });
     writeFileSync(path, bytes);
     progress(url, true, metadata);
@@ -739,7 +785,7 @@ export async function resolvePreviewVersion(options: {
         throw new ReleaseUnavailableError(
           `could not list ${PREVIEW_CHANNEL} releases: the release list is too large ` +
             `to download. To update now, run \`aidlc update --version <id>\` with a ` +
-            `${PREVIEW_CHANNEL} id from ${DEFAULT_RELEASES_PAGE}`,
+            `${PREVIEW_CHANNEL} id from ${releasesPage(baseUrl)}`,
           "preview-list-too-large",
         );
       }
@@ -809,7 +855,7 @@ export async function fetchReleaseMetadata(options: {
   // acquireRelease keeps provenance verification enabled by default.
   const verifyProvenance = options.verifyProvenance ?? true;
   const version = options.version ? requireVersion(options.version) : undefined;
-  const baseUrl = settings.baseUrl || defaultReleaseBaseUrl();
+  const baseUrl = settings.baseUrl || defaultReleaseBaseUrl(version);
   const metadataTimeoutMs = options.metadataTimeoutMs ?? LONG_SUBPROCESS_TIMEOUT_MS;
   const metadataDeadline = Date.now() + metadataTimeoutMs;
   const temporary = mkdtempSync(join(tmpdir(), "aidlc-release-metadata-"));
@@ -822,6 +868,7 @@ export async function fetchReleaseMetadata(options: {
       MAX_METADATA_BYTES,
       ["application/json", "text/json", "application/octet-stream", "binary/octet-stream", "text/plain"],
       metadataTimeoutMs,
+      upstreamReleaseNotHere(version, baseUrl, Boolean(settings.baseUrl)),
     );
     await download(
       releaseUrl(baseUrl, version, "checksums.txt"),
@@ -943,10 +990,11 @@ export async function acquireRelease(options: {
       }
       const local = () => options.onMachine?.(manifest, asset.name) ?? null;
       if (assetFromMachine(local, asset, join(temporary, asset.name))) continue;
+      // The assets come from where fetchReleaseMetadata read the metadata.
       await download(
         releaseUrl(
           settings.baseUrl ||
-            defaultReleaseBaseUrl(),
+            defaultReleaseBaseUrl(version),
           version || manifest.version,
           asset.name,
         ),
@@ -1022,7 +1070,7 @@ export async function acquireCopyRuntime(options: {
       );
     }
     const settings = resolvedReleaseSettings(options);
-    const baseUrl = settings.baseUrl || defaultReleaseBaseUrl();
+    const baseUrl = settings.baseUrl || defaultReleaseBaseUrl(version);
     const name = releaseCopyRuntimeAsset(version);
     const archive = join(directory, name);
     await download(
@@ -1066,9 +1114,9 @@ export async function acquireCopyRuntime(options: {
 // release pages and a bare origin are printed whole; any other mirror shows
 // its origin alone. Plain HTTP is never offered for a download, except on
 // loopback.
-function displayableReleaseBase(baseUrl?: string): { url: string; whole: boolean } | null {
+function displayableReleaseBase(baseUrl?: string, version?: string): { url: string; whole: boolean } | null {
   const settings = resolvedReleaseSettings({ baseUrl });
-  const raw = settings.baseUrl || defaultReleaseBaseUrl();
+  const raw = settings.baseUrl || defaultReleaseBaseUrl(version);
   let url: URL;
   try {
     url = new URL(raw);
@@ -1086,7 +1134,7 @@ function displayableReleaseBase(baseUrl?: string): { url: string; whole: boolean
 // Where the copy runtime for a release is published, for a person to fetch by
 // hand when this machine cannot.
 export function copyRuntimeUrl(version: string, baseUrl?: string): string {
-  const base = displayableReleaseBase(baseUrl);
+  const base = displayableReleaseBase(baseUrl, version);
   const asset = releaseCopyRuntimeAsset(version);
   if (!base) return `${asset} from the configured release mirror`;
   return base.whole
@@ -1095,12 +1143,25 @@ export function copyRuntimeUrl(version: string, baseUrl?: string): string {
 }
 
 // The release host a download prompt names: the URL without its scheme and
-// release path, so the user sees whose releases they are fetching.
-export function releaseHostLabel(baseUrl?: string): string {
-  const base = displayableReleaseBase(baseUrl);
+// release path, so the user sees whose releases they are fetching. With a
+// version, the host that release comes from.
+export function releaseHostLabel(baseUrl?: string, version?: string): string {
+  const base = displayableReleaseBase(baseUrl, version);
   if (!base) return "the configured release mirror";
   const url = new URL(base.url);
   return `${url.host}${url.pathname.replace(/\/+$/, "").replace(/\/releases$/, "")}`;
+}
+
+// Where a person picks a preview id by hand when the release list cannot be
+// read: the releases of the configured repository or mirror, shown only as
+// displayableReleaseBase allows. It reads only local settings and never
+// throws, because it is said inside another failure.
+export function releasesPage(baseUrl?: string): string {
+  try {
+    return displayableReleaseBase(baseUrl)?.url ?? "the configured release mirror";
+  } catch {
+    return "the configured release mirror";
+  }
 }
 
 export function copyReleaseSubset(

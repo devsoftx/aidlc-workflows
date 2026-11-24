@@ -24,8 +24,11 @@ export type Dictionary = { entries: Entry[]; skipped?: Entry[]; secretRulesFrom?
 export const PERSON_KINDS: ReadonlySet<string> = new Set(["named", "report-only"]);
 
 // AI-DLC's own public locations stay readable: they are the same for everyone. The host (or repository)
-// must end there, and a query or fragment, which can carry a tenant or a ticket, is dropped.
-export const PUBLIC_URL = /^https?:\/\/(?:github\.com\/awslabs\/aidlc-workflows|kiro\.dev|docs\.github\.com|code\.claude\.com)(?=[/?#]|$)/i;
+// must end there, and a query or fragment, which can carry a tenant or a ticket, is dropped. Both
+// repositories are AI-DLC's: devsoftx publishes its releases, and upstream (awslabs) keeps the issues and
+// the releases before 3.0.0 that core/tools/aidlc-release.ts still downloads.
+export const PUBLIC_URL =
+  /^https?:\/\/(?:github\.com\/(?:awslabs|devsoftx)\/aidlc-workflows|kiro\.dev|docs\.github\.com|code\.claude\.com)(?=[/?#]|$)/i;
 
 // The labels this skill and AI-DLC's own redaction write. A dictionary name is never looked for inside one
 // (a Unit called `email` would break `<email>`); any other `<…>` is ordinary text, `List<Contoso>` included.

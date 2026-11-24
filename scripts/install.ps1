@@ -20,14 +20,10 @@ param(
   [Parameter()]
   [switch]$Offline,
 
+  # Given neither way, the releases of the repository that publishes the
+  # version asked for (Get-ReleaseRepository below).
   [Parameter()]
-  [string]$ReleaseBaseUrl = $(if ($env:AIDLC_RELEASE_BASE_URL) {
-    $env:AIDLC_RELEASE_BASE_URL
-  } elseif ($env:AIDLC_RELEASE_REPOSITORY) {
-    "https://github.com/$($env:AIDLC_RELEASE_REPOSITORY)/releases"
-  } else {
-    'https://github.com/devsoftx/aidlc-workflows/releases'
-  }),
+  [string]$ReleaseBaseUrl = $env:AIDLC_RELEASE_BASE_URL,
 
   [Parameter()]
   [string]$CaBundle = $env:AIDLC_CA_BUNDLE,
@@ -57,10 +53,22 @@ $PackagedVersion = ''
 if (-not $PSBoundParameters.ContainsKey('Version') -and -not $From) {
   $Version = $PackagedVersion
 }
-$releaseRepository = if ($env:AIDLC_RELEASE_REPOSITORY) {
-  $env:AIDLC_RELEASE_REPOSITORY
-} else {
-  'devsoftx/aidlc-workflows'
+
+# The repository a release comes from, for its download and its provenance:
+# AIDLC_RELEASE_REPOSITORY for every version when set; otherwise upstream for a
+# stable release before 3.0.0, and this repository for every preview, every
+# later stable release, and the newest release (no version). PowerShell copy of
+# releaseRepositoryFor in core/tools/aidlc-release.ts; keep the two in step.
+function Get-ReleaseRepository {
+  param([string]$ForVersion)
+  if ($env:AIDLC_RELEASE_REPOSITORY) { return $env:AIDLC_RELEASE_REPOSITORY }
+  if ($ForVersion -cmatch '-preview\.') { return 'devsoftx/aidlc-workflows' }
+  if ($ForVersion -cmatch '^[012]\.') { return 'awslabs/aidlc-workflows' }
+  return 'devsoftx/aidlc-workflows'
+}
+
+if (-not $ReleaseBaseUrl -and -not $PSBoundParameters.ContainsKey('ReleaseBaseUrl')) {
+  $ReleaseBaseUrl = "https://github.com/$(Get-ReleaseRepository -ForVersion $Version)/releases"
 }
 $releaseWorkflow = $env:AIDLC_RELEASE_WORKFLOW
 
@@ -552,6 +560,7 @@ try {
     Stop-Install -Code 4 -Status 'failed' `
       -Message 'version.json has an invalid schema or version'
   }
+  $releaseRepository = Get-ReleaseRepository -ForVersion $manifest.version
   if (-not $releaseWorkflow) {
     $workflowName = if ($manifest.version -match '-preview\.') {
       'preview-release.yml'
