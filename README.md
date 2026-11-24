@@ -38,6 +38,10 @@ current-process PATH changes, use
 [`-NoModifyPath`](docs/guide/18-install-and-lifecycle.md#windows-powershell).
 Windows uninstall removes only the User PATH entry recorded as installer-owned.
 On macOS, Linux, or WSL, follow the installer's PATH instruction if needed.
+Already have `aidlc` from `awslabs/aidlc-workflows`? Its `aidlc update` stays
+there: run the installer above once, or run
+`AIDLC_RELEASE_REPOSITORY=devsoftx/aidlc-workflows aidlc update` once
+([Moving from awslabs/aidlc-workflows](docs/guide/18-install-and-lifecycle.md#moving-from-awslabsaidlc-workflows)).
 
 Prefer to manage the project files yourself, or cannot install a native
 executable? The manual-copy path is the one place Bun is needed: install

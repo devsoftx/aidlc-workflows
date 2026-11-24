@@ -19,8 +19,8 @@ import {
   updateCachePath,
 } from "./aidlc-machine-config.ts";
 import {
-  DEFAULT_RELEASES_PAGE,
   fetchReleaseMetadata,
+  releasesPage,
   ReleaseUnavailableError,
   resolvePreviewVersion,
 } from "./aidlc-release.ts";
@@ -322,7 +322,7 @@ export async function refreshUpdateState(
         message =
           `update refresh unavailable; the ${PREVIEW_CHANNEL} release list is too large to ` +
           `download. To update now, run \`aidlc update --version <id>\` with a ` +
-          `${PREVIEW_CHANNEL} id from ${DEFAULT_RELEASES_PAGE}`;
+          `${PREVIEW_CHANNEL} id from ${releasesPage(settings.baseUrl)}`;
       }
     }
     return {

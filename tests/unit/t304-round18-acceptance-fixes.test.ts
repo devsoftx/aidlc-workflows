@@ -28,7 +28,7 @@ import {
   providerDoctorCheck,
 } from "../../core/tools/aidlc-config-diagnostics.ts";
 import { firstRunPathRemediation } from "../../core/tools/aidlc-init.ts";
-import { acquireRelease, digest } from "../../core/tools/aidlc-release.ts";
+import { acquireRelease, digest, releaseRepositoryFor } from "../../core/tools/aidlc-release.ts";
 import { quoteCommandArgument as quoteForShell } from "../../core/tools/aidlc-runtime-paths.ts";
 import { serveReleaseFixture, writeReleaseFixture } from "../harness/release-fixture.ts";
 import { AIDLC_VERSION } from "../../core/tools/aidlc-version.ts";
@@ -537,8 +537,10 @@ describe("t304 copied projection configuration", () => {
     expect(back.stdout).toContain(
       `error: .claude no longer has the MCP server list for ${AIDLC_VERSION}\n`,
     );
+    // The repository that publishes this release: upstream for one before
+    // 3.0.0 (t-release-repository-rule pins the rule).
     expect(back.stdout).toContain(
-      `offline: get https://github.com/devsoftx/aidlc-workflows/releases/download/v${AIDLC_VERSION}/aidlc-copy-runtime-${AIDLC_VERSION}.tar.gz and its .sha256 into one folder, then add --from <that file>`,
+      `offline: get https://github.com/${releaseRepositoryFor(AIDLC_VERSION)}/releases/download/v${AIDLC_VERSION}/aidlc-copy-runtime-${AIDLC_VERSION}.tar.gz and its .sha256 into one folder, then add --from <that file>`,
     );
     expect(fixLine(back.stdout)).toBe(
       "bun .claude/tools/aidlc.ts config project --mcp defaults --yes --download",

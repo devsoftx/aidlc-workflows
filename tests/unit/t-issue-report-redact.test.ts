@@ -167,6 +167,24 @@ describe("secrets over lines, names in identifiers, labels and tool folders", ()
     expect(gate("https://kiro.dev.acme-corp.example/x", empty).length).toBeGreaterThan(0);
   });
 
+  test("the release URLs a failed install or update prints stay readable, from either AI-DLC repository", () => {
+    const fork = "https://github.com/devsoftx/aidlc-workflows/releases/download/v3.0.0/aidlc-copy-runtime-3.0.0.tar.gz";
+    const upstream = "https://github.com/awslabs/aidlc-workflows/releases/download/v2.11.4/aidlc-copy-runtime-2.11.4.tar.gz";
+    expect(redact(`offline: get ${fork} and its .sha256 into one folder`, empty)).toBe(
+      `offline: get ${fork} and its .sha256 into one folder`,
+    );
+    expect(redact(`To go back: get ${upstream}`, empty)).toBe(`To go back: get ${upstream}`);
+    expect(redact("https://github.com/devsoftx/aidlc-workflows/releases?token=abc", empty)).toBe(
+      "https://github.com/devsoftx/aidlc-workflows/releases",
+    );
+    // The check passes the repository's own plain-words pages as it does upstream's.
+    expect(gate("https://github.com/devsoftx/aidlc-workflows/releases", empty)).toEqual([]);
+    expect(gate("https://github.com/devsoftx/aidlc-workflows-private/releases", empty).length).toBeGreaterThan(0);
+    // A look-alike repository under either owner is not AI-DLC's.
+    expect(redact("https://github.com/devsoftx/aidlc-workflows-private/releases", empty)).toBe("<url>");
+    expect(redact("https://github.com/devsoftx/other/releases", empty)).toBe("<url>");
+  });
+
   test("under a tool's chat-log folders, where folder names encode the person's paths, only the folder stays", () => {
     const dict: Dictionary = { entries: [{ value: "/Users/jdoe", label: "~", kind: "path" }] };
     expect(redact("/Users/jdoe/.claude/projects/-Users-jdoe-clients-acme/s.jsonl", dict)).toBe("~/.claude/projects/<path>");

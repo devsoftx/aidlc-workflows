@@ -1,8 +1,9 @@
 #!/bin/sh
 set -eu
 
-RELEASE_REPOSITORY=${AIDLC_RELEASE_REPOSITORY:-devsoftx/aidlc-workflows}
-BASE_URL=${AIDLC_RELEASE_BASE_URL:-https://github.com/$RELEASE_REPOSITORY/releases}
+RELEASE_REPOSITORY=
+BASE_URL=${AIDLC_RELEASE_BASE_URL:-}
+BASE_URL_GIVEN=0
 RELEASE_WORKFLOW=${AIDLC_RELEASE_WORKFLOW:-}
 GH_BIN=${AIDLC_GH_BIN:-}
 PROVENANCE_VERIFIER_AVAILABLE=0
@@ -20,6 +21,23 @@ case "${AIDLC_ALLOW_ROOT:-}" in 1|true) ALLOW_ROOT=1 ;; esac
 # x.y.z-preview.YYYYMMDD.N. Shell literal of PREVIEW_CHANNEL / VERSION_ID in
 # core/tools/aidlc-channel.ts; keep the two in step.
 VERSION_PATTERN='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-preview\.[0-9]{8}\.[1-9][0-9]*)?$'
+
+# The repository a release comes from, for its download and its provenance:
+# AIDLC_RELEASE_REPOSITORY for every version when set; otherwise upstream for a
+# stable release before 3.0.0, and this repository for every preview, every
+# later stable release, and the newest release (no version). Shell copy of
+# releaseRepositoryFor in core/tools/aidlc-release.ts; keep the two in step.
+release_repository_for() {
+  if [ -n "${AIDLC_RELEASE_REPOSITORY:-}" ]; then
+    printf '%s\n' "$AIDLC_RELEASE_REPOSITORY"
+    return 0
+  fi
+  case "$1" in
+    *-preview.*) printf '%s\n' devsoftx/aidlc-workflows ;;
+    [012].*) printf '%s\n' awslabs/aidlc-workflows ;;
+    *) printf '%s\n' devsoftx/aidlc-workflows ;;
+  esac
+}
 
 clear_progress() {
   if [ "$PROGRESS_ACTIVE" -eq 1 ]; then
@@ -111,7 +129,7 @@ while [ "$#" -gt 0 ]; do
     --version) [ "$#" -ge 2 ] || usage; VERSION=$2; shift 2 ;;
     --from) [ "$#" -ge 2 ] || usage; FROM=$2; OFFLINE=1; shift 2 ;;
     --offline) OFFLINE=1; shift ;;
-    --release-base-url) [ "$#" -ge 2 ] || usage; BASE_URL=$2; shift 2 ;;
+    --release-base-url) [ "$#" -ge 2 ] || usage; BASE_URL=$2; BASE_URL_GIVEN=1; shift 2 ;;
     --ca-bundle) [ "$#" -ge 2 ] || usage; CA_BUNDLE=$2; shift 2 ;;
     --profile) [ "$#" -ge 2 ] || usage "--profile requires a startup file"; PROFILE=$2; shift 2 ;;
     --json) MODE=json; shift ;;
@@ -153,6 +171,9 @@ if [ -n "$VERSION" ] && ! printf '%s\n' "$VERSION" | grep -Eq "$VERSION_PATTERN"
 fi
 [ "$OFFLINE" -eq 0 ] || [ -n "$FROM" ] ||
   fail 3 unavailable "--offline requires --from <release-directory>"
+if [ -z "$BASE_URL" ] && [ "$BASE_URL_GIVEN" -eq 0 ]; then
+  BASE_URL="https://github.com/$(release_repository_for "$VERSION")/releases"
+fi
 if [ -z "$FROM" ]; then
   case "$BASE_URL" in
     *\?*|*\#*) fail 4 failed "release URL must not include credentials, a query, or a fragment" ;;
@@ -398,6 +419,7 @@ candidate_version=$(sed -n 's/.*"version":[[:space:]]*"\([0-9][0-9A-Za-z.-]*\)".
 printf '%s\n' "$candidate_version" |
   grep -Eq "$VERSION_PATTERN" ||
   fail 4 failed "version.json has no valid version."
+RELEASE_REPOSITORY=$(release_repository_for "$candidate_version")
 if [ -z "$RELEASE_WORKFLOW" ]; then
   case "$candidate_version" in
     *-preview.*) RELEASE_WORKFLOW="$RELEASE_REPOSITORY/.github/workflows/preview-release.yml" ;;

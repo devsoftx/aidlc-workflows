@@ -243,11 +243,15 @@ installation uses `status: "failed"`, exit code 1, `data.installed: true`, and
 `AIDLC_RELEASE_BASE_URL` and `AIDLC_CA_BUNDLE` provide installer defaults;
 explicit options win. `AIDLC_RELEASE_REPOSITORY` selects both the GitHub
 repository used for default downloads and the repository trusted by provenance
-verification. It defaults to `devsoftx/aidlc-workflows`.
+verification, for every version. Without it, the repository follows the
+version: stable releases before 3.0.0 come from `awslabs/aidlc-workflows`,
+which published them, and every preview, every stable release from 3.0.0 on,
+and the latest release come from `devsoftx/aidlc-workflows`. The installers and
+the `aidlc` command apply the same rule.
 `AIDLC_RELEASE_WORKFLOW` overrides the trusted signer workflow. By default,
-installers select `<AIDLC_RELEASE_REPOSITORY>/.github/workflows/release.yml`
+installers select `<repository>/.github/workflows/release.yml`
 for stable versions and
-`<AIDLC_RELEASE_REPOSITORY>/.github/workflows/preview-release.yml` for preview
+`<repository>/.github/workflows/preview-release.yml` for preview
 versions. Set the override explicitly for a fork or mirror whose workflow path
 differs, together with its release base URL; changing the download URL alone
 does not change the provenance trust root. `AIDLC_GH_BIN` selects an explicit
@@ -1514,6 +1518,25 @@ registered project pin, then prunes older unprotected versions automatically.
 There is no separate rollback or retained-version management command; to go
 back, see [Go Back to an Earlier Version](#go-back-to-an-earlier-version).
 
+### Moving from awslabs/aidlc-workflows
+
+An `aidlc` installed from `awslabs/aidlc-workflows` updates from that
+repository, so its `aidlc update` never reaches this one. Move the machine once,
+either by running this repository's installer again
+([macOS and Linux](#macos-and-linux), [Windows PowerShell](#windows-powershell)),
+or with one update that names this repository:
+
+```bash
+AIDLC_RELEASE_REPOSITORY=devsoftx/aidlc-workflows aidlc update
+```
+
+In PowerShell, set `$env:AIDLC_RELEASE_REPOSITORY = 'devsoftx/aidlc-workflows'`,
+run `aidlc update`, then `Remove-Item Env:AIDLC_RELEASE_REPOSITORY`. Either way,
+the release it installs updates from this repository from then on. Then run
+`aidlc config` in each project, as after any update. Releases before 3.0.0 still come from `awslabs/aidlc-workflows`, so
+going back to one, or a project pinned to one, needs no setting
+([Go Back to an Earlier Version](#go-back-to-an-earlier-version)).
+
 ### Projects on 2.8.0 to 2.11.0
 
 AI-DLC runs seven phases: Discover, Design, Build, Test, Secure, Deploy and
@@ -1651,6 +1674,16 @@ the newer release after that is lost when you put it back; go back before you
 carry on, or stay on the newer release. On a shared project, everyone goes
 back together, as everyone updates together.
 
+Releases before 3.0.0 were published by `awslabs/aidlc-workflows`, and AI-DLC
+downloads them from there and checks their attestation against that
+repository's release workflow: `aidlc use 2.11.4`, `aidlc config --pin 2.11.4`,
+the "To go back" line `aidlc config` prints, and a committed `.aidlc-version`
+that names one all work without a setting. Previews and every release from
+3.0.0 on come from `devsoftx/aidlc-workflows`. With `AIDLC_RELEASE_REPOSITORY`
+or a release mirror set, that one is used for every version; a release before
+3.0.0 it does not have stops with a line that names `awslabs/aidlc-workflows`
+and the setting to leave out.
+
 Releases before 2.8.0 have no native release, so `aidlc use` and
 `aidlc config --pin` cannot select them; they stop with `No published native
 release is available yet`. A copied project goes back with the earlier
@@ -1781,18 +1814,24 @@ while work is open; when the project's files are on another version than the
 one it now follows (or on a release from before versions were recorded), the
 reply ends with "Run `aidlc config` to finish updating this project."
 
-A fresh clone or CI runner installs the committed version before config:
+A fresh clone or CI runner installs the committed version before config. A
+stable release before 3.0.0 is published by `awslabs/aidlc-workflows`, so the
+recipe picks the repository from the version, as `aidlc` itself does:
 
 ```bash
 version=$(cat .aidlc-version)
 tag="v$version"
+case "$version" in
+  [012].*) repository=awslabs/aidlc-workflows ;;
+  *) repository=devsoftx/aidlc-workflows ;;
+esac
 tmp="$(mktemp -d)"
-gh release download "$tag" --repo github.com/devsoftx/aidlc-workflows --dir "$tmp" \
+gh release download "$tag" --repo "github.com/$repository" --dir "$tmp" \
   --pattern install.sh --pattern aidlc-release.intoto.jsonl
 gh attestation verify "$tmp/install.sh" \
   --bundle "$tmp/aidlc-release.intoto.jsonl" \
-  --repo devsoftx/aidlc-workflows \
-  --signer-workflow devsoftx/aidlc-workflows/.github/workflows/release.yml \
+  --repo "$repository" \
+  --signer-workflow "$repository/.github/workflows/release.yml" \
   --hostname github.com \
   --source-ref "refs/tags/$tag"
 sh "$tmp/install.sh" --version "$version" --quiet --yes
@@ -2115,7 +2154,12 @@ tag=vX.Y.Z
 tmp="$(mktemp -d)"
 runtime_asset="aidlc-copy-runtime-${tag#v}.tar.gz"
 runtime_checksum="${runtime_asset}.sha256"
-source_repo="${AIDLC_RELEASE_REPOSITORY:-devsoftx/aidlc-workflows}"
+# A stable release before 3.0.0 is published by awslabs/aidlc-workflows.
+case "${tag#v}" in
+  [012].*) published_by=awslabs/aidlc-workflows ;;
+  *) published_by=devsoftx/aidlc-workflows ;;
+esac
+source_repo="${AIDLC_RELEASE_REPOSITORY:-$published_by}"
 release_workflow="${AIDLC_RELEASE_WORKFLOW:-$source_repo/.github/workflows/release.yml}"
 gh release download "$tag" --repo "github.com/$source_repo" --dir "$tmp" \
   --pattern "$runtime_asset" \
