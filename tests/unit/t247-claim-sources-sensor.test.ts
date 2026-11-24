@@ -22,6 +22,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AIDLC_SRC, FIXTURES_DIR } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { PROJECT_DESCRIPTION_FILE } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { seededRecordDir } from "../harness/fixtures.ts";
 import { cleanupTuiProject, setupTuiProject } from "../harness/tui-fixtures.ts";
@@ -177,7 +178,7 @@ describe("t247 claim-sources sensor", () => {
       });
       // Keep the older display title to prove this is sidecar authority, not fallback.
       expect(readFileSync(join(record, "aidlc-state.md"), "utf8")).toContain("- **Project**: React Todo App");
-      const stage = join(record, "ideation", "intent-capture");
+      const stage = join(record, phaseFor("intent-capture"), "intent-capture");
       mkdirSync(stage, { recursive: true });
       const sources = `# Questions\n\n## Sources\n\n- [desc] Initial description: ${JSON.stringify(description)}\n- [scope] Workflow-selected scope: \`feature\`.\n`;
       writeFileSync(join(stage, "intent-capture-questions.md"), sources);

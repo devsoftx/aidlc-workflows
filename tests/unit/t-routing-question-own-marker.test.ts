@@ -44,6 +44,7 @@ import {
   seededStateFile,
 } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { kiroCliPrompt, kiroCliRecord, kiroCliToolResults } from "../harness/kiro-cli-record.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
@@ -105,13 +106,13 @@ function project(policy: Policy): string {
     .replace("- [-] requirements-analysis ", "- [x] requirements-analysis ")
     .replace("- [ ] code-generation ", "- [-] code-generation ")
     .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation")
-    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
-    .replace("- **Inception**: Active", "- **Inception**: Verified")
-    .replace("- **Construction**: Pending", "- **Construction**: Active");
+    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}`)
+    .replace("- **Design**: Active", "- **Design**: Verified")
+    .replace("- **Build**: Pending", "- **Build**: Active");
   writeFileSync(seededStateFile(proj), state, "utf-8");
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "todo.ts"), "export const todo = (title: string) => title;\n", "utf-8");
-  const requirements = join(seededRecordDir(proj), "inception", "requirements-analysis");
+  const requirements = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(requirements, { recursive: true });
   writeFileSync(join(requirements, "requirements.md"), "# Requirements\n\n- FR-1: a blank title is refused.\n", "utf-8");
   const dir = stageDir(proj);
@@ -124,7 +125,7 @@ function project(policy: Policy): string {
   return proj;
 }
 
-const stageDir = (proj: string) => join(seededRecordDir(proj), "construction", "code-generation");
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 
 // Production guards, as a person's run has them: the fixture profile skips the
 // human-presence check these cases are about.
@@ -536,7 +537,7 @@ function checkpointProject(policy: Policy): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -553,11 +554,14 @@ function checkpointProject(policy: Policy): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${UNIT_STAGES.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} \u2014 EXECUTE`).join("\n")}
+### DESIGN PHASE
+${UNIT_STAGES.slice(0, 4).map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} \u2014 EXECUTE`).join("\n")}
+### BUILD PHASE
+${UNIT_STAGES.slice(4).map((stage) => `- [ ] ${stage} \u2014 EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -572,7 +576,7 @@ ${UNIT_STAGES.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] $
 
 function coverStage(proj: string, slug: string): void {
   const stage = findStageBySlug(slug)!;
-  const output = join(seededRecordDir(proj), "construction", "alpha", slug);
+  const output = join(seededRecordDir(proj), phaseFor(slug), "alpha", slug);
   mkdirSync(output, { recursive: true });
   for (const name of stage.produces ?? []) {
     const file = join(output, artifactFilename(name));
@@ -756,7 +760,7 @@ function gateProject(policy: Policy, started = false): string {
   expect(next(proj).kind).toBe("run-stage");
   if (started) appendAuditEntry("STAGE_STARTED", { Stage: "feasibility" }, proj);
   const stage = findStageBySlug("feasibility")!;
-  const dir = join(seededRecordDir(proj), "ideation", "feasibility");
+  const dir = join(seededRecordDir(proj), phaseFor("feasibility"), "feasibility");
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n## Summary\n\nWritten for this case.\n`, "utf-8");
@@ -895,7 +899,7 @@ describe("an answer to the routing question is no answer to the stage's own ques
     created.push(proj);
     writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8")
       .replace("- **Change Control**: strict (from scope bugfix)", "- **Guard Policy**: off (from scope bugfix)"), "utf-8");
-    const dir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+    const dir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "requirements-analysis-questions.md"),
       "# Requirements Questions\n\n## Question 1\n\nWhich titles count as blank?\n\n[Answer]:\n", "utf-8");

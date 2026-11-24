@@ -1,12 +1,10 @@
 // covers: subcommand:aidlc-orchestrate:next, subcommand:aidlc-learnings:surface, subcommand:aidlc-runtime:compile
 //
-// A per-Unit stage's notes (its memory.md diary) sat in a stage-named folder
-// directly under `construction/`, beside the Unit folders, so the record showed
-// every per-Unit stage's name twice and people opened the wrong one. A solo
-// run now keeps each Unit's notes in the Unit's own `construction/<unit>/<stage>/`,
-// as a team-owned Unit and a wave Unit already did. A diary older work left at
-// `construction/<stage>/memory.md` stays where it is and is still read, by the
-// learnings step and by the runtime graph's counts.
+// A per-Unit stage's notes (its memory.md diary) live in that Unit's own folder,
+// `<record>/<phase>/<unit>/<stage>/`, so the record lists each per-Unit stage name
+// once. The phase is the stage's own phase from the compiled stage graph (phaseFor).
+// A stage-level diary with no Unit folder, `<record>/<phase>/<stage>/memory.md`, is
+// still read by the learnings step and by the runtime graph's counts.
 
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
@@ -27,6 +25,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 process.env.AIDLC_DISABLE_SENSORS = "1";
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -49,7 +48,7 @@ function project(iteration: "unit-major" | "stage-major", stance: boolean): stri
 - **Project**: unit notes
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ${stance ? "- **Skeleton Stance**: on\n" : ""}- **Construction Iteration**: ${iteration}
 - **Unit Ownership**: solo
 
@@ -73,7 +72,7 @@ ${row(" ", "code-generation")}
 ${row(" ", "build-and-test")}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -93,7 +92,7 @@ function next(p: string) {
 }
 
 function diary(p: string, ...parts: string[]): string {
-  return join(seededRecordDir(p), "construction", ...parts, "memory.md");
+  return join(seededRecordDir(p), phaseFor(parts[parts.length - 1]), ...parts, "memory.md");
 }
 
 function write(path: string, lines: string[]): void {
@@ -117,9 +116,9 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     const p = project("unit-major", true);
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "alpha" });
-    expect(directive.memory_path).toBe(`${RP}/construction/alpha/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${RP}/design/alpha/functional-design/memory.md`);
     expect(existsSync(diary(p, "alpha", "functional-design"))).toBe(true);
-    expect(existsSync(join(seededRecordDir(p), "construction", "functional-design"))).toBe(false);
+    expect(existsSync(join(seededRecordDir(p), phaseFor("functional-design"), "functional-design"))).toBe(false);
     // The diary's one line for the person says what is true: the step after the
     // stage asks about corrections, never about these notes.
     const made = readFileSync(diary(p, "alpha", "functional-design"), "utf-8").split(/\r?\n/);
@@ -132,8 +131,8 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
-    expect(directive.memory_path).toBe(`${RP}/construction/alpha/functional-design/memory.md`);
-    expect(existsSync(join(seededRecordDir(p), "construction", "functional-design"))).toBe(false);
+    expect(directive.memory_path).toBe(`${RP}/design/alpha/functional-design/memory.md`);
+    expect(existsSync(join(seededRecordDir(p), phaseFor("functional-design"), "functional-design"))).toBe(false);
   });
 
   test("the stage's learnings step counts every Unit's notes and the notes older work left in the stage diary", () => {
@@ -147,7 +146,7 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     write(diary(p, "alpha", "functional-design"), ["## Tradeoffs", `- 2026-11-05T10:00:00Z ${DASH} one list over a grid; fewer clicks`]);
     write(diary(p, "beta", "functional-design"), ["## Deviations", `- 2026-11-05T11:00:00Z ${DASH} kept the old route; the person asked`]);
     const out = surface(p);
-    expect(out.phase).toBe("construction");
+    expect(out.phase).toBe("design");
     expect(out.memory_entries_total).toBe(3);
   });
 
@@ -174,7 +173,7 @@ describe("t-unit-notes-in-unit-folder a solo Unit keeps its stage notes in its o
     expect(compiled.status, compiled.stderr).toBe(0);
     const graph = JSON.parse(readFileSync(join(seededRecordDir(p), "runtime-graph.json"), "utf-8"));
     const row = graph.stages.find((s: { stage_slug: string }) => s.stage_slug === "functional-design");
-    expect(row.memory_path).toBe(`${RP}/construction/functional-design/memory.md`);
+    expect(row.memory_path).toBe(`${RP}/design/functional-design/memory.md`);
     expect(row.memory_entries).toBe(3);
     expect(row.memory_breakdown).toMatchObject({ interpretations: 2, tradeoffs: 1 });
   });

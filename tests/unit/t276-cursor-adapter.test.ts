@@ -75,6 +75,7 @@ import {
   seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const CURSOR_DIST = join(REPO_ROOT, "dist", "cursor", ".cursor");
@@ -383,7 +384,7 @@ function projectWithReadyReview(): { project: string; artifact: string } {
   seedStateFile(project, join(FIXTURES_DIR, "state-mid-inception.md"));
   const artifact = join(
     seededRecordDir(project),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
     "requirements.md",
   );
@@ -513,7 +514,7 @@ describe("t276 cursor adapter payload conversion", () => {
     };
     const code = (proj: string) => join(proj, "src", "blocked.ts");
     const plan = (proj: string) =>
-      join(seededRecordDir(proj), "construction", "code-generation", "code-generation-plan.md");
+      join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
 
     // Code before the plan is approved: refused, with the same way on.
     const editCode = guard(edit, code);
@@ -531,7 +532,7 @@ describe("t276 cursor adapter payload conversion", () => {
       const proj = installedProject();
       seedStateFile(proj, "state-construction.md");
       seedAuditFile(proj);
-      const dir = join(seededRecordDir(proj), "construction", "functional-design");
+      const dir = join(seededRecordDir(proj), phaseFor("functional-design"), "functional-design");
       mkdirSync(dir, { recursive: true });
       const artifact = join(dir, "design.md");
       writeFileSync(artifact, "# design b\n");
@@ -664,7 +665,7 @@ describe("t276 cursor adapter payload conversion", () => {
     const record = seededRecordDir(proj);
     clearLedger(proj);
     writeFileSync(join(proj, "aidlc", "active-space"), "ghost\n");
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -685,7 +686,7 @@ describe("t276 cursor adapter payload conversion", () => {
       proj,
       "guards",
       payload("preToolUseSubagentRead", proj, {
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(JSON.parse(sibling.stdout).permission).toBe("deny");
@@ -698,7 +699,7 @@ describe("t276 cursor adapter payload conversion", () => {
     clearLedger(proj);
     // 12a step-1: the conductor's dispatch record scopes the reviewer to
     // unit-a; unit-b is a sibling.
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -732,7 +733,7 @@ describe("t276 cursor adapter payload conversion", () => {
       payload("preToolUseSubagentRead", proj, {
         conversation_id: "11111111-2222-4333-8444-555555555555",
         session_id: "11111111-2222-4333-8444-555555555555",
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(unrelated.code).toBe(0);
@@ -743,7 +744,7 @@ describe("t276 cursor adapter payload conversion", () => {
       proj,
       "guards",
       payload("preToolUseSubagentRead", proj, {
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(sibling.code).toBe(0);
@@ -760,7 +761,7 @@ describe("t276 cursor adapter payload conversion", () => {
       proj,
       "guards",
       payload("preToolUseSubagentRead", proj, {
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(JSON.parse(whileDispatched.stdout).permission).toBe("deny");
@@ -770,7 +771,7 @@ describe("t276 cursor adapter payload conversion", () => {
       proj,
       "guards",
       payload("preToolUseSubagentRead", proj, {
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(afterDispatch.code).toBe(0);
@@ -783,8 +784,8 @@ describe("t276 cursor adapter payload conversion", () => {
     // The audit-logger never auto-creates the trail (orchestrator-owned) -
     // seed the shard the way a running workflow would have.
     seedAuditFile(proj);
-    const artifact = join(seededRecordDir(proj), "construction", "functional-design", "design.md");
-    mkdirSync(join(seededRecordDir(proj), "construction", "functional-design"), {
+    const artifact = join(seededRecordDir(proj), phaseFor("functional-design"), "functional-design", "design.md");
+    mkdirSync(join(seededRecordDir(proj), phaseFor("functional-design"), "functional-design"), {
       recursive: true,
     });
     writeFileSync(artifact, "# design\n");
@@ -1030,7 +1031,7 @@ describe("t276 cursor adapter payload conversion", () => {
     setCurrentStage(proj, "functional-design");
     const record = seededRecordDir(proj);
     clearLedger(proj);
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -1047,7 +1048,7 @@ describe("t276 cursor adapter payload conversion", () => {
         proj,
         "guards",
         payload("preToolUseSubagentRead", proj, {
-          tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+          tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
           ...extra,
         }),
       );
@@ -1303,7 +1304,7 @@ describe("t276 cursor adapter payload conversion", () => {
     seedStateFile(proj, "state-construction.md");
     const record = seededRecordDir(proj);
     clearLedger(proj);
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -1327,7 +1328,7 @@ describe("t276 cursor adapter payload conversion", () => {
       "guards",
       payload("preToolUseSubagentRead", proj, {
         tool_name: "Delete",
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(del.code).toBe(0);
@@ -1336,13 +1337,13 @@ describe("t276 cursor adapter payload conversion", () => {
     expect(out.agent_message ?? "").toContain("unit-a");
 
     // The reviewer's OWN unit stays deletable - the bound is scope, not a ban.
-    mkdirSync(join(record, "construction", "unit-a"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-a"), { recursive: true });
     const own = runAdapter(
       proj,
       "guards",
       payload("preToolUseSubagentRead", proj, {
         tool_name: "Delete",
-        tool_input: { file_path: join(record, "construction", "unit-a", "scratch.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-a", "scratch.md") },
       }),
     );
     expect(own.code).toBe(0);
@@ -1635,7 +1636,7 @@ describe("t276 cursor adapter payload conversion", () => {
     seedAuditFile(proj);
     clearLedger(proj);
     const record = seededRecordDir(proj);
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -1682,7 +1683,7 @@ describe("t276 cursor adapter payload conversion", () => {
       proj,
       "guards",
       payload("preToolUseSubagentRead", proj, {
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     expect(JSON.parse(sibling.stdout).permission).toBe("deny");
@@ -1767,7 +1768,7 @@ describe("t276 cursor adapter payload conversion", () => {
     seedStateFile(proj, "state-construction.md");
     const record = seededRecordDir(proj);
     clearLedger(proj);
-    const unitB = join(record, "construction", "unit-b");
+    const unitB = join(record, phaseFor("functional-design"), "unit-b");
     mkdirSync(unitB, { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
@@ -1910,7 +1911,7 @@ if (import.meta.main) {
     seedStateFile(proj, "state-construction.md");
     const record = seededRecordDir(proj);
     clearLedger(proj);
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     const dispatch = join(record, ".aidlc-engine/reviewer-dispatch.json");
     mkdirSync(dirname(dispatch), { recursive: true });
     writeFileSync(
@@ -2117,7 +2118,7 @@ if (import.meta.main) {
       payload("preToolUseSubagentRead", proj, {
         conversation_id: "reviewer-after-ledger-loss",
         session_id: "reviewer-after-ledger-loss",
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     const lostOut = JSON.parse(afterLoss.stdout) as {
@@ -2134,7 +2135,7 @@ if (import.meta.main) {
     setCurrentStage(proj, "functional-design");
     const record = seededRecordDir(proj);
     clearLedger(proj);
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -2194,7 +2195,7 @@ if (import.meta.main) {
       payload("preToolUseSubagentRead", proj, {
         conversation_id: "reviewer-after-partial-ledger-loss",
         session_id: "reviewer-after-partial-ledger-loss",
-        tool_input: { file_path: join(record, "construction", "unit-b", "design.md") },
+        tool_input: { file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md") },
       }),
     );
     const out = JSON.parse(unknown.stdout) as {
@@ -2282,7 +2283,7 @@ if (import.meta.main) {
     seedStateFile(proj, "state-construction.md");
     const record = seededRecordDir(proj);
     clearLedger(proj);
-    mkdirSync(join(record, "construction", "unit-b"), { recursive: true });
+    mkdirSync(join(record, phaseFor("functional-design"), "unit-b"), { recursive: true });
     mkdirSync(dirname(join(record, ".aidlc-engine/reviewer-dispatch.json")), { recursive: true });
     writeFileSync(
       join(record, ".aidlc-engine/reviewer-dispatch.json"),
@@ -2318,7 +2319,7 @@ if (import.meta.main) {
         conversation_id: resumedMain,
         session_id: resumedMain,
         tool_input: {
-          file_path: join(record, "construction", "unit-b", "design.md"),
+          file_path: join(record, phaseFor("functional-design"), "unit-b", "design.md"),
         },
       }),
     );
@@ -4902,7 +4903,7 @@ describe("t276 guards run the four guards in the adapter's own process", () => {
         name: "a write to a requirements file whose review is READY",
         project: () => projectWithReadyReview().project,
         input: (dir) => {
-          const artifact = join(seededRecordDir(dir), "inception", "requirements-analysis", "requirements.md");
+          const artifact = join(seededRecordDir(dir), phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md");
           return payload("preToolUseShell", dir, {
             cwd: "",
             tool_input: { command: "printf change >> requirements.md", cwd: dirname(artifact) },
@@ -4915,12 +4916,12 @@ describe("t276 guards run the four guards in the adapter's own process", () => {
         project: () => {
           const proj = installedProject();
           activateReviewer(proj);
-          mkdirSync(join(seededRecordDir(proj), "construction", "unit-b"), { recursive: true });
+          mkdirSync(join(seededRecordDir(proj), phaseFor("functional-design"), "unit-b"), { recursive: true });
           return proj;
         },
         input: (dir) => payload("preToolUseSubagentRead", dir, {
           tool_name: "Delete",
-          tool_input: { file_path: join(seededRecordDir(dir), "construction", "unit-b", "design.md") },
+          tool_input: { file_path: join(seededRecordDir(dir), phaseFor("functional-design"), "unit-b", "design.md") },
         }),
         permission: "deny",
       },

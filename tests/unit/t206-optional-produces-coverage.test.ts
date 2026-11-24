@@ -45,6 +45,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
@@ -73,7 +74,7 @@ function logReviewReady(proj: string, stage: string, reviewer: string, unit?: st
   appendFileSync(
     join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor(stage),
       unit ?? "alpha",
       stage,
       "functional-spec.md",
@@ -151,7 +152,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 - **Project**: optional-produces coverage test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: ${skeletonStance}
 
@@ -163,26 +164,28 @@ function constructionState(current: string, skeletonStance = "on"): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
+- [-] domain-design — EXECUTE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation — EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 
-### INCEPTION PHASE
-- [-] domain-design — EXECUTE
-
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: ${current}
 - **Status**: Running
 `;
 }
 
 function coverUnit(proj: string, unit: string, slug: string, names: string[]): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of names) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -245,7 +248,7 @@ describe("t206 optional_produces exempt from per-unit coverage", () => {
       review_state: "outstanding",
       required_produces: FD_REQUIRED.map(
         (name) =>
-          `${RP}/construction/alpha/functional-design/${artifactFilename(name)}`,
+          `${RP}/design/alpha/functional-design/${artifactFilename(name)}`,
       ),
     });
     expect(
@@ -361,10 +364,10 @@ describe("t206 optional_produces exempt from per-unit coverage", () => {
     const d = runNext(proj);
     expect(d.unit).toBe("alpha");
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/functional-design/${FD_OPTIONAL}.md`,
+      `${RP}/design/alpha/functional-design/${FD_OPTIONAL}.md`,
     );
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/functional-design/functional-spec.md`,
+      `${RP}/design/alpha/functional-design/functional-spec.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 });

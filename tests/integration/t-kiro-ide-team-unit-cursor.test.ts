@@ -48,7 +48,7 @@ function teamSeed(): string {
   const statePath = seededStateFile(seed);
   writeFileSync(
     statePath,
-    readFileSync(statePath, "utf-8").replace("- **State Version**: 8", "- **State Version**: 8\n- **Skeleton Stance**: on"),
+    readFileSync(statePath, "utf-8").replace("- **State Version**: 10", "- **State Version**: 10\n- **Skeleton Stance**: on"),
   );
   appendFileSync(
     join(seededAuditDir(seed), auditShardName(seed)),

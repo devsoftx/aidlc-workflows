@@ -1,40 +1,36 @@
-// covers: file:memory/phases/ideation.md, file:memory/phases/inception.md, file:memory/phases/construction.md, file:memory/phases/operation.md, stage:ideation/feasibility, stage:inception/requirements-analysis, stage:construction/build-and-test, stage:operation/deployment-execution
+// covers: file:memory/phases/discover.md, file:memory/phases/design.md, file:memory/phases/build.md, file:memory/phases/test.md, file:memory/phases/secure.md, file:memory/phases/deploy.md, file:memory/phases/operate.md, stage:discover/feasibility, stage:design/requirements-analysis, stage:test/build-and-test, stage:deploy/deployment-execution
 //
-// t16 — shipped phase-rules file STRUCTURE contract. Migrated from
-// tests/unit/t16-phase-rules-structure.sh (TAP plan 12 — 3 distinct
-// invariants across the 4 phase rule files). The .sh resolved
-//   RULES_DIR  = $AIDLC_SRC/rules
+// t16 — shipped phase-rules file STRUCTURE contract: 3 invariants across the
+// seven phase rule files (21 checks). It resolves
+//   PHASES_DIR = <repo>/dist/claude/aidlc/spaces/default/memory/phases
 //   STAGES_DIR = $AIDLC_SRC/aidlc-common/stages
 // where $AIDLC_SRC = <repo>/dist/claude/.claude (fixtures.ts), and for
-// each of the four non-initialization phases asserted three things:
-//   Part 1 (.sh L17-19): rules/aidlc-phase-<phase>.md EXISTS.
-//   Part 2 (.sh L25-28): that file is NON-EMPTY (wc -c > 0).
-//   Part 3 (.sh L34-64): the file REFERENCES at least one stage slug that
-//                        exists on disk for that phase — either an exact
-//                        substring of the slug, or (fallback) any 4+ char
-//                        hyphen-separated word from a slug, matched
-//                        case-insensitively.
+// each of the seven phases asserts three things:
+//   Part 1: memory/phases/<phase>.md EXISTS.
+//   Part 2: that file is NON-EMPTY (and not whitespace-only).
+//   Part 3: the file REFERENCES at least one stage slug that
+//           exists on disk for that phase — either an exact
+//           substring of the slug, or (fallback) any 4+ char
+//           hyphen-separated word from a slug, matched
+//           case-insensitively.
 //
 // Mechanism: none. This is a pure structural/file-inspection check over the
-// shipped bytes — do the four phase rule files exist, carry content, and
+// shipped bytes — do the seven phase rule files exist, carry content, and
 // mention their phase's stages? No process boundary, no argv/exit/stdout
-// seam, no LLM, zero tokens. We resolve the SAME trees the .sh resolved
+// seam, no LLM, zero tokens. We resolve the shipped trees
 // (AIDLC_SRC = <repo>/dist/claude/.claude, fixtures.ts), enumerate the
 // real stage `.md` files per phase from disk, and read the real rule-file
 // bytes in-process.
 //
-// Part-3 algorithm parity (.sh L34-64): the .sh iterated the phase's stage
-// files in shell-glob order, testing exact-substring first (`grep -qF`), then
-// falling back to per-word case-insensitive match for any hyphen-segment of
-// length >= 4, stopping at the FIRST slug that matched. It does NOT require
-// every slug to be referenced — only that AT LEAST ONE is. This twin
-// reproduces that exact predicate (referencesAnyStage) over the same bytes,
-// which is equal-or-stronger: it asserts the same "at least one stage
-// referenced" contract AND additionally pins, per phase, the specific slug +
-// matched word the current shipped files satisfy it through (caught from the
-// live disk at authoring time: feasibility[exact] / requirements[word] /
-// test[word] / deployment[word]) so a silent edit that drops the reference
-// is caught with a precise message.
+// Part-3 predicate: iterate the phase's stage files in sorted order, testing
+// exact-substring first, then falling back to per-word case-insensitive match
+// for any hyphen-segment of length >= 4, stopping at the FIRST slug that
+// matched. It does NOT require every slug to be referenced — only that AT
+// LEAST ONE is (firstReferencedStage). The test additionally pins, per phase,
+// the specific slug + matched word the current shipped files satisfy it
+// through (feasibility[exact] / requirements[word] / code[word] / test[word] /
+// security[word] / deployment[word] / incident[word]) so a silent edit that
+// drops the reference is caught with a precise message.
 //
 
 import { describe, expect, test } from "bun:test";
@@ -49,9 +45,9 @@ import { AIDLC_SRC } from "../harness/fixtures.ts";
 const PHASES_DIR = join(AIDLC_SRC, "..", "aidlc", "spaces", "default", "memory", "phases");
 const STAGES_DIR = join(AIDLC_SRC, "aidlc-common", "stages");
 
-// The four non-initialization phases (initialization has no
+// The seven phases (initialization has no
 // phases/initialization.md rule file).
-const PHASES = ["ideation", "inception", "construction", "operation"] as const;
+const PHASES = ["discover", "design", "build", "test", "secure", "deploy", "operate"] as const;
 
 const phaseRuleFile = (phase: string): string =>
   join(PHASES_DIR, `${phase}.md`);
@@ -88,15 +84,15 @@ function firstReferencedStage(
   return null;
 }
 
-describe("t16 phase-rules file structure (migrated from t16-phase-rules-structure.sh, plan 12)", () => {
-  test("each phase rule file exists [.sh Part 1 ×4]", () => {
+describe("t16 phase-rules file structure (3 invariants x 7 phase rule files)", () => {
+  test("each phase rule file exists [Part 1 ×7]", () => {
     for (const phase of PHASES) {
       const f = phaseRuleFile(phase);
       expect(existsSync(f), `missing memory/phases/${phase}.md`).toBe(true);
     }
   });
 
-  test("each phase rule file is non-empty [.sh Part 2 ×4]", () => {
+  test("each phase rule file is non-empty [Part 2 ×7]", () => {
     for (const phase of PHASES) {
       const f = phaseRuleFile(phase);
       const bytes = statSync(f).size;
@@ -106,7 +102,7 @@ describe("t16 phase-rules file structure (migrated from t16-phase-rules-structur
     }
   });
 
-  test("each phase rule file references at least one of its stage slugs [.sh Part 3 ×4]", () => {
+  test("each phase rule file references at least one of its stage slugs [Part 3 ×7]", () => {
     // The specific slug+word each phase satisfies the predicate through. This pins
     // WHICH stage is referenced so a future edit that drops the cited mention
     // produces a precise failure rather than a silent pass-by-coincidence on a
@@ -115,10 +111,13 @@ describe("t16 phase-rules file structure (migrated from t16-phase-rules-structur
       (typeof PHASES)[number],
       { slug: string; word: string | null }
     > = {
-      ideation: { slug: "feasibility", word: null }, // exact substring
-      inception: { slug: "requirements-analysis", word: "requirements" },
-      construction: { slug: "build-and-test", word: "test" },
-      operation: { slug: "deployment-execution", word: "deployment" },
+      discover: { slug: "feasibility", word: null }, // exact substring
+      design: { slug: "requirements-analysis", word: "requirements" },
+      build: { slug: "code-generation", word: "code" },
+      test: { slug: "build-and-test", word: "test" },
+      secure: { slug: "security-review", word: "security" },
+      deploy: { slug: "deployment-execution", word: "deployment" },
+      operate: { slug: "incident-response", word: "incident" },
     };
 
     for (const phase of PHASES) {
@@ -149,16 +148,19 @@ describe("t16 phase-rules file structure (migrated from t16-phase-rules-structur
   });
 
   // Re-count to guard against a phase being silently dropped from the roster
-  // (3 invariants x 4 phases = 12 rows).
-  test("covers EXACTLY 4 phases × 3 invariants = 12 assertions (TAP plan parity)", () => {
-    expect(PHASES.length).toBe(4);
+  // (3 invariants x 7 phases = 21 rows).
+  test("covers EXACTLY 7 phases × 3 invariants = 21 assertions", () => {
+    expect(PHASES.length).toBe(7);
     const INVARIANTS_PER_PHASE = 3;
-    expect(PHASES.length * INVARIANTS_PER_PHASE).toBe(12);
+    expect(PHASES.length * INVARIANTS_PER_PHASE).toBe(21);
     expect([...PHASES]).toEqual([
-      "ideation",
-      "inception",
-      "construction",
-      "operation",
+      "discover",
+      "design",
+      "build",
+      "test",
+      "secure",
+      "deploy",
+      "operate",
     ]);
   });
 });

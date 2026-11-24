@@ -22,7 +22,7 @@
 //       Strategy, "Target branch", Confidence, Notes
 //     emit-only: no state mutation, no spawn; pure audit emission via emitAudit.
 //   dist/claude/.claude/tools/aidlc-utility.ts handleIntentCreateStateBuild
-//     - the State Version 8 template carries the Construction-worktrees fields
+//     - the creation state template carries the Construction-worktrees fields
 //       `- **Worktree Path**:` and `- **Bolt Refs**:`.
 //
 // Assertion shape:
@@ -53,7 +53,7 @@ import {
 // aidlc/spaces/<space>/intents/<YYMMDD>-<slug>/ and audit is SHARDED per clone
 // under <record>/audit/. Read state through the resolved record dir and audit
 // through the shipped merge helper (default-resolves the active intent).
-import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { CURRENT_STATE_VERSION, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -213,10 +213,10 @@ describe("t61 construction worktrees — feature (migrated from t61-construction
 
   test("5: v7 init state carries the v0.4.0 worktree fields", () => {
     const lines = readFileSync(statePath(), "utf-8").split("\n");
-    // Both land as proper `- **<field>**:` state lines (the v8 template at
+    // Both land as proper `- **<field>**:` state lines (the creation template at
     // aidlc-utility.ts handleIntentCreateStateBuild), not bare substrings anywhere.
     expect(lines.some((l) => l.startsWith("- **Worktree Path**:"))).toBe(true);
     expect(lines.some((l) => l.startsWith("- **Bolt Refs**:"))).toBe(true);
-    expect(lines).toContain("- **State Version**: 8");
+    expect(lines).toContain(`- **State Version**: ${CURRENT_STATE_VERSION}`);
   });
 });

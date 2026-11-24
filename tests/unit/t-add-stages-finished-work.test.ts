@@ -1,7 +1,7 @@
 // covers: subcommand:aidlc-orchestrate:next, subcommand:aidlc-utility:recompose, function:plansReopeningFinishedWork
 //
 // Issue #3207. A piece of work is finished (Status Completed) on a plan that
-// skipped stages after its last one (stock: poc, which ends at Build and Test),
+// skipped stages after its last one (stock: poc, which ends at Security Review),
 // and the person asks for more of them ("I want to add the operation phase").
 // Its own plan takes no more stages: recompose refuses finished work. The
 // request reached the in-flight composer, which had nothing it could land, and
@@ -12,7 +12,7 @@
 // refusal names the same plans for the stages it was asked to add. One helper
 // decides both, from the predicate the scope change itself reads.
 
-import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -28,6 +28,22 @@ import {
   runOrchestrateNext,
 } from "../harness/fixtures.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 const TOOLS = join(import.meta.dir, "..", "..", "dist", "claude", ".claude", "tools");
@@ -38,7 +54,13 @@ const LIB = join(TOOLS, "aidlc-lib.ts");
 
 // No chat names itself to the tools: a run from inside a host's own chat would
 // otherwise lend the tools that chat.
-const env: Record<string, string | undefined> = { ...process.env, AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS: "1" };
+// The fixture project has no hooks running (no heartbeat), so `next` would stop on the hooks-off step
+// without the presence guard skipped, as every fixture run does.
+const env: Record<string, string | undefined> = {
+  ...process.env,
+  AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS: "1",
+  AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1",
+};
 for (const key of ["AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE", "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID"]) {
   delete env[key];
 }
@@ -96,7 +118,7 @@ async function finished(scope: string): Promise<string> {
 }
 
 const OPERATION = "Deployment Pipeline, Environment Provisioning, Deployment Execution, Observability Setup, " +
-  "Incident Response, Performance Validation, Feedback & Optimization";
+  "Incident Response, Feedback & Optimization";
 
 describe("t-add-stages-finished-work: more stages for finished work reopen it on a plan that runs them (#3207)", () => {
   test("compose over finished work names the plans that reopen it, with their stages, and dispatches no composer", async () => {
@@ -108,12 +130,13 @@ describe("t-add-stages-finished-work: more stages for finished work reopen it on
     expect(said).not.toContain("aidlc-composer-agent");
     expect(said).not.toContain("recompose");
     expect(said).not.toMatch(/start a new (workflow|intent)/i);
-    expect(said).toContain("after Build and Test");
+    expect(said).toContain("after Security Review");
     expect(said).toContain(`feature (CI Pipeline, ${OPERATION})`);
     expect(said).toContain("express (Deployment Pipeline, Deployment Execution, Observability Setup)");
     expect(said).toContain("mvp (CI Pipeline)");
-    // classic runs nothing after Build and Test, and poc is the work's own plan.
-    expect(said).not.toContain("classic (");
+    // classic runs Conformance Review after Security Review, so it reopens the work too;
+    // poc is the work's own plan.
+    expect(said).toContain("classic (Conformance Review)");
     expect(said).not.toContain("poc (");
     // Their words beside the plan would start new work over finished work.
     expect(said).toContain("next --scope <plan>` (their words beside it would start new work)");
@@ -145,7 +168,7 @@ describe("t-add-stages-finished-work: more stages for finished work reopen it on
     const proj = await finished("poc");
     const plans = utility.plansReopeningFinishedWork(state(proj));
     expect(plans.map((plan) => plan.scope)).toEqual(
-      ["bugfix", "enterprise", "express", "feature", "infra", "mvp", "refactor", "security-patch", "workshop"],
+      ["bugfix", "classic", "enterprise", "express", "feature", "infra", "mvp", "refactor", "security-patch", "workshop"],
     );
     const said = next(proj, ["compose"]).message ?? "";
     for (const { scope, stages } of plans) {
@@ -166,7 +189,7 @@ describe("t-add-stages-finished-work: more stages for finished work reopen it on
     const refused = run(UTILITY, proj, ["recompose", "--add", "deployment-pipeline,deployment-execution"]);
     expect(refused.rc).not.toBe(0);
     expect(refused.out).toContain("this work is finished");
-    expect(refused.out).toContain("after Build and Test");
+    expect(refused.out).toContain("after Security Review");
     expect(refused.out).toContain("bugfix, enterprise, express, feature, infra, refactor, security-patch, workshop");
     expect(refused.out).toContain("--scope <plan>");
     expect(refused.out).not.toMatch(/start a new (workflow|intent)/i);

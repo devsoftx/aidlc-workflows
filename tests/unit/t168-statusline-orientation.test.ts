@@ -49,6 +49,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -79,7 +80,7 @@ function runStatusline(p: string, sessionId?: string): string {
 }
 
 /**
- * Create an intent in `space` and write a CONSTRUCTION-phase state body into its
+ * Create an intent in `space` and write a DEPLOY-phase state body into its
  * record dir so the statusline reaches the orientation render branch. The state
  * body mirrors the t61 seedState shape (a phase + stage so
  * phaseProgress/extractField resolve a non-"ready" line).
@@ -92,7 +93,7 @@ function seedIntent(p: string, slug: string, space: string): void {
     stateFilePath(p, created.dirName, space),
     `# AI-DLC State Tracking
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DEPLOY
 - **Current Stage**: ci-pipeline
 - **Active Agent**: aidlc-developer-agent
 - **Status**: Running
@@ -107,7 +108,7 @@ describe("t168 statusline orientation prefix (mechanism cli — spawned hook + p
     // is suppressed; the intent slug still renders.
     seedIntent(proj, "auth-service", "default");
     const out = runStatusline(proj);
-    expect(out).toContain("auth-service · CONSTRUCTION");
+    expect(out).toContain("auth-service · DEPLOY");
     // The single-team user never sees the word "space" or the "default ·" token.
     expect(out).not.toContain("default · auth-service");
   });
@@ -120,7 +121,7 @@ describe("t168 statusline orientation prefix (mechanism cli — spawned hook + p
     seedIntent(proj, "export-bug", "team-b");
     setActiveSpaceCursor(proj, "team-b");
     const out = runStatusline(proj);
-    expect(out).toContain("team-b · export-bug · CONSTRUCTION");
+    expect(out).toContain("team-b · export-bug · DEPLOY");
   });
 
   test("empty state (no record) paints the bare `[AIDLC] ready` — no prefix leak", () => {
@@ -152,32 +153,32 @@ describe("t168 statusline orientation prefix (mechanism cli — spawned hook + p
     const out = runStatusline(proj);
     expect(out).toContain("[AIDLC] ready");
     expect(out).not.toContain("retired-work");
-    expect(out).not.toContain("CONSTRUCTION");
+    expect(out).not.toContain("DEPLOY");
   });
 
   test("an archived binding paints `[AIDLC] ready` beside a space-root workflow", () => {
     const created = createIntent(proj, "retired-work", "default", "feature");
     writeFileSync(
       stateFilePath(proj, created.dirName, "default"),
-      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Status**: Archived\n",
+      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: DEPLOY\n- **Status**: Archived\n",
       "utf-8",
     );
     // A workflow at the space root, the selection a binding to no record also names.
     writeFileSync(
       join(proj, "aidlc", "spaces", "default", "intents", "aidlc-state.md"),
-      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: INCEPTION\n- **Current Stage**: requirements-analysis\n- **Status**: Running\n",
+      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: DESIGN\n- **Current Stage**: requirements-analysis\n- **Status**: Running\n",
       "utf-8",
     );
     const session = "01995100-0000-7000-8000-000000000168";
     writeSessionBinding(proj, session, "default", created.dirName, "switch");
     expect(runStatusline(proj, session)).toContain("[AIDLC] ready");
-    expect(runStatusline(proj, session)).not.toContain("INCEPTION");
+    expect(runStatusline(proj, session)).not.toContain("DESIGN");
     writeSessionBinding(proj, session, "default", null, "archive");
     expect(runStatusline(proj, session)).toContain("[AIDLC] ready");
-    expect(runStatusline(proj, session)).not.toContain("INCEPTION");
+    expect(runStatusline(proj, session)).not.toContain("DESIGN");
     // A session that has chosen no record still sees the space-root workflow.
     writeSessionBinding(proj, session, "default", null, "none");
-    expect(runStatusline(proj, session)).toContain("INCEPTION");
+    expect(runStatusline(proj, session)).toContain("DESIGN");
   });
 
   test("a binding naming a record with a DEL or C1 control character is not displayed", () => {
@@ -187,7 +188,7 @@ describe("t168 statusline orientation prefix (mechanism cli — spawned hook + p
     const plain = createIntent(proj, "plain-work", "default", "feature");
     writeFileSync(
       stateFilePath(proj, plain.dirName, "default"),
-      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: INCEPTION\n- **Current Stage**: requirements-analysis\n- **Status**: Running\n",
+      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: DESIGN\n- **Current Stage**: requirements-analysis\n- **Status**: Running\n",
       "utf-8",
     );
     for (const [i, named] of ["del\u007fname", "nel\u0085name", "csi\u009bname"].entries()) {
@@ -195,7 +196,7 @@ describe("t168 statusline orientation prefix (mechanism cli — spawned hook + p
       renameSync(join(intents, created.dirName), join(intents, named));
       writeFileSync(
         join(intents, named, "aidlc-state.md"),
-        "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: ci-pipeline\n- **Status**: Running\n",
+        "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: DEPLOY\n- **Current Stage**: ci-pipeline\n- **Status**: Running\n",
         "utf-8",
       );
       // Written by hand: the engine refuses to bind such a name.
@@ -207,8 +208,8 @@ describe("t168 statusline orientation prefix (mechanism cli — spawned hook + p
       // The binding does not count, so the cursor's record shows instead.
       setActiveIntentCursor(proj, plain.dirName, "default");
       const out = runStatusline(proj, session);
-      expect(out).toContain("INCEPTION");
-      expect(out).not.toContain("CONSTRUCTION");
+      expect(out).toContain("DESIGN");
+      expect(out).not.toContain("DEPLOY");
       expect(out).not.toContain(named);
     }
   });
@@ -223,7 +224,7 @@ describe("t168 statusline names the step the person is on", () => {
     const state = stateFilePath(p, created.dirName, "default");
     writeFileSync(
       state,
-      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n" +
+      "# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: DESIGN\n" +
         "- **Current Stage**: functional-design\n- **Active Agent**: aidlc-architect-agent\n" +
         "- **Construction Iteration**: unit-major\n- **Status**: Running\n",
       "utf-8",
@@ -276,10 +277,11 @@ describe("t168 statusline counts Units in a Unit walk", () => {
   const stateBody = (iteration: string, codeGen = "[ ]") =>
     "# AI-DLC State Tracking\n## Runtime State\n" +
     `- **Construction Iteration**: ${iteration}\n` +
-    "## Stage Progress\n### CONSTRUCTION PHASE\n" +
+    "## Stage Progress\n### DESIGN PHASE\n" +
     "- [-] functional-design \u2014 EXECUTE\n" +
+    "### BUILD PHASE\n" +
     `- ${codeGen} code-generation \u2014 EXECUTE\n` +
-    "## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: functional-design\n" +
+    "## Current Status\n- **Lifecycle Phase**: DESIGN\n- **Current Stage**: functional-design\n" +
     "- **Active Agent**: aidlc-architect-agent\n- **Status**: Running\n";
 
   function seedWalk(p: string, iteration: string, approved: string[]): string {
@@ -287,9 +289,9 @@ describe("t168 statusline counts Units in a Unit walk", () => {
     const state = stateFilePath(p, created.dirName, "default");
     writeFileSync(state, stateBody(iteration), "utf-8");
     const record = dirname(state);
-    mkdirSync(join(record, "inception", "units-generation"), { recursive: true });
+    mkdirSync(join(record, phaseFor("units-generation"), "units-generation"), { recursive: true });
     writeFileSync(
-      join(record, "inception", "units-generation", "unit-of-work-dependency.md"),
+      join(record, phaseFor("units-generation"), "units-generation", "unit-of-work-dependency.md"),
       "# Unit Dependency DAG\n\n## Machine-Readable Edge Block\n\n```yaml\nunits:\n" +
         "  - name: u1-note-store\n    kind: library\n    depends_on: []\n" +
         "  - name: u2-note-tags\n    kind: library\n    depends_on: [u1-note-store]\n```\n",
@@ -314,21 +316,21 @@ describe("t168 statusline counts Units in a Unit walk", () => {
   test("with Unit 1 approved, the line reads Unit 2 of 2 and the step", () => {
     seedWalk(proj, "unit-major", ["u1-note-store"]);
     const out = runStatusline(proj);
-    expect(out).toContain("CONSTRUCTION Unit 2 of 2 > Code Generation for u2-note-tags");
-    expect(out).not.toContain("0/2");
+    expect(out).toContain("DESIGN Unit 2 of 2 > Code Generation for u2-note-tags");
+    expect(out).not.toContain("0/1");
   });
 
   test("a stage-by-stage walk keeps the stage bar and count", () => {
     seedWalk(proj, "stage-major", ["u1-note-store"]);
     const out = runStatusline(proj);
-    expect(out).toContain("0/2");
+    expect(out).toContain("0/1");
     expect(out).not.toContain("Unit 2 of 2");
   });
 
   test("once every Unit is approved the stage bar is back", () => {
     seedWalk(proj, "unit-major", ["u1-note-store", "u2-note-tags"]);
     const out = runStatusline(proj);
-    expect(out).toContain("0/2");
+    expect(out).toContain("0/1");
     expect(out).not.toContain(" of 2 ");
   });
 });

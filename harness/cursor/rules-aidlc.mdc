@@ -12,7 +12,7 @@ alwaysApply: true
   Cursor rules do not expand @-import lines (live-verified), so unlike the
   Claude harness stub this rule cannot inline the method files by reference.
   Instead it instructs the agent to read the standing org/team/project layers.
-  The four phase pointers beside this file are agent-decided rules, so phase
+  The seven phase pointers beside this file are agent-decided rules, so phase
   guidance is loaded when relevant instead of on every Cursor turn. The paths
   name aidlc/active-memory/, AI-DLC's git-ignored copy of the ACTIVE
   space's memory files, which the engine writes at session start, on a space

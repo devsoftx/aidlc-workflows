@@ -84,6 +84,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   pipelineAttemptStartedAt,
   readAllAuditShards,
@@ -177,7 +178,7 @@ let reviewPass = 0;
 
 function recordReview(proj: string, slug: string, iteration: number): void {
   const reviewer = "aidlc-product-lead-agent";
-  const dir = join(seededRecordDir(proj), "inception", slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), slug);
   if (slug === "requirements-analysis") {
     mkdirSync(dir, { recursive: true });
     for (const name of [
@@ -251,7 +252,7 @@ function recordPipelineLinks(proj: string, repos: string[] = []): void {
       if (link === "aidlc-developer-agent") {
         const artifact = join(
           seededRecordDir(proj),
-          "inception",
+          phaseFor("reverse-engineering"),
           "reverse-engineering",
           repo ? `developer-scan-${repo}.md` : "developer-scan.md",
         );
@@ -305,7 +306,7 @@ function fireArtifact(proj: string, absFile: string): void {
 }
 
 function feasibilityArtifact(proj: string, name: string): string {
-  return join(seededRecordDir(proj), "ideation", "feasibility", `${name}.md`);
+  return join(seededRecordDir(proj), phaseFor("feasibility"), "feasibility", `${name}.md`);
 }
 
 // The unit fixture already seeds the production registry and active-intent
@@ -466,7 +467,7 @@ describe("t205: approve-time gate-revision backstop", () => {
       proj,
       join(
         seededRecordDir(proj),
-        "inception",
+        phaseFor("requirements-analysis"),
         "requirements-analysis",
         "requirements.md",
       ),

@@ -8,8 +8,8 @@
 //   - org.md's per-scope test floors name the same scopes as the Testing
 //     Contract (combineTestObligations): classic, the default scope, adds no
 //     floor in either;
-//   - the Inception phase rule asks no trace to an Ideation document, which
-//     the default scope never writes;
+//   - the Design phase's Traceability rule asks no trace to a Discover
+//     document, which the default scope never writes;
 //   - the empty team and project templates still read as holding no rule, in
 //     today's header and in the earlier one a team's own files keep;
 //   - `aidlc config` on an existing project keeps its own rule files byte for
@@ -18,7 +18,7 @@
 // Read from every shipped tree's memory and knowledge, and one config run.
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
@@ -81,7 +81,10 @@ describe("t-rule-layers-say-what-the-engine-does", () => {
         combineTestObligations(scope, "standard").scope_floor.some((line) => line.includes("80% line-coverage")),
       ).sort();
       expect(named).toEqual(withFloor);
-      expect(read(join(memory, "phases", "inception.md"))).not.toContain("trace back to an ideation artifact");
+      const phasesDir = join(memory, "phases");
+      for (const name of readdirSync(phasesDir).filter((file) => file.endsWith(".md"))) {
+        expect(read(join(phasesDir, name)), name).not.toMatch(/trace back to an? (ideation|discover) artifact/);
+      }
     },
   );
 

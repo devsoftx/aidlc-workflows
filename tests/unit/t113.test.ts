@@ -57,7 +57,7 @@ function runStage(): Record<string, unknown> {
   return {
     kind: "run-stage",
     stage: "application-design",
-    phase: "inception",
+    phase: "design",
     lead_agent: "aidlc-architect-agent",
     support_agents: ["aidlc-aws-platform-agent", "aidlc-design-agent"],
     mode: "inline",
@@ -67,13 +67,13 @@ function runStage(): Record<string, unknown> {
       ".claude/agents/aidlc-design-agent.md",
     ],
     gate: true,
-    memory_path: "aidlc-docs/inception/application-design/memory.md",
-    consumes: ["aidlc-docs/inception/requirements/requirements.md"],
-    produces: ["aidlc-docs/inception/application-design/decisions.md"],
+    memory_path: "aidlc-docs/design/application-design/memory.md",
+    consumes: ["aidlc-docs/design/requirements/requirements.md"],
+    produces: ["aidlc-docs/design/application-design/decisions.md"],
     rules_in_context: ["aidlc-org.md", "aidlc-team.md"],
     sensors_applicable: ["required-sections"],
     ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
-    stage_file: ".claude/skills/aidlc/stages/inception/application-design.md",
+    stage_file: ".claude/skills/aidlc/stages/design/application-design.md",
   };
 }
 
@@ -89,14 +89,14 @@ function wave() {
         review_state: "outstanding",
         review_iteration: 1,
         unit_memory_path:
-          "aidlc-docs/construction/auth/functional-design/memory.md",
-        consumes: ["aidlc-docs/inception/requirements/requirements.md"],
+          "aidlc-docs/design/auth/functional-design/memory.md",
+        consumes: ["aidlc-docs/design/requirements/requirements.md"],
         consumes_absent: [],
         produces: [
-          "aidlc-docs/construction/auth/functional-design/business-logic-model.md",
+          "aidlc-docs/design/auth/functional-design/business-logic-model.md",
         ],
         required_produces: [
-          "aidlc-docs/construction/auth/functional-design/business-logic-model.md",
+          "aidlc-docs/design/auth/functional-design/business-logic-model.md",
         ],
       },
     ],
@@ -107,21 +107,21 @@ function dispatchSubagent(): Record<string, unknown> {
   return {
     kind: "dispatch-subagent",
     stage: "code-generation",
-    phase: "construction",
+    phase: "build",
     lead_agent: "aidlc-developer-agent",
     support_agents: ["aidlc-quality-agent"],
     mode: "subagent",
     inline_context_paths: [],
     gate: false,
-    memory_path: "aidlc-docs/construction/auth/code-generation/memory.md",
+    memory_path: "aidlc-docs/build/auth/code-generation/memory.md",
     consumes: [
-      "aidlc-docs/construction/auth/functional-design/functional-design.md",
+      "aidlc-docs/design/auth/functional-design/functional-design.md",
     ],
-    produces: ["aidlc-docs/construction/auth/code-generation/code-manifest.md"],
+    produces: ["aidlc-docs/build/auth/code-generation/code-manifest.md"],
     rules_in_context: ["aidlc-org.md"],
     sensors_applicable: ["linter"],
     ceremony: { sensors: "on", learnings: "on", summary_confirmation: "on", plan_approval: "on", collaborators: "on" },
-    stage_file: ".claude/skills/aidlc/stages/construction/code-generation.md",
+    stage_file: ".claude/skills/aidlc/stages/build/code-generation.md",
     worker: "code-generation",
   };
 }
@@ -131,7 +131,7 @@ function invokeSwarm(): Record<string, unknown> {
     kind: "invoke-swarm",
     units: ["auth", "billing"],
     stage: "code-generation",
-    stage_file: ".claude/aidlc-common/stages/construction/code-generation.md",
+    stage_file: ".claude/aidlc-common/stages/build/code-generation.md",
     reviewer: "aidlc-architecture-reviewer-agent",
     review_artifact: "code-generation-plan",
     reviewer_max_iterations: 2,
@@ -142,8 +142,8 @@ function presentGate(): Record<string, unknown> {
   return {
     kind: "present-gate",
     stage: "application-design",
-    phase: "inception",
-    memory_path: "aidlc-docs/inception/application-design/memory.md",
+    phase: "design",
+    memory_path: "aidlc-docs/design/application-design/memory.md",
   };
 }
 
@@ -1094,8 +1094,8 @@ describe("t113 directive-schema — validateDirective (migrated from t113-direct
       errs({
         ...runStage(),
         consumes_absent: [
-          { path: "aidlc-docs/inception/units-generation/unit-of-work.md", expected: true },
-          { path: "aidlc-docs/inception/requirements/requirements.md", expected: false },
+          { path: "aidlc-docs/design/units-generation/unit-of-work.md", expected: true },
+          { path: "aidlc-docs/design/requirements/requirements.md", expected: false },
         ],
       }),
     ).toBe("VALID");

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "stage": "requirements-analysis",
+  "unit": null,
+  "workflow": null,
+  "attempt": "8240f4c8968f7f43",
+  "iteration": 1,
+  "reviewer": "aidlc-product-lead-agent",
+  "verdict": "READY",
+  "request_id": "review:346107d022e4bb95adbb1ad2207d1446",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:8c041189fedbe3f9ce2c52226c9d944517f706065db777c0e8d7d49f9b0752de",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [
+    {
+      "id": "R-01",
+      "severity": "Minor",
+      "location": "aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md > FR-1",
+      "finding": "Deadline is missing",
+      "required_action": "Add a delivery date",
+      "status": "New"
+    }
+  ],
+  "derived_findings": [
+    {
+      "id": "R-01",
+      "severity": "Minor",
+      "location": "aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md > FR-1",
+      "finding": "Deadline is missing",
+      "required_action": "Add a delivery date",
+      "status": "New",
+      "introduced_in_review": true
+    }
+  ],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-product-lead-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n| Minor | aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md > FR-1 | Deadline is missing | Add a delivery date |\n\n### Summary\n\nReady, with one minor finding.\n",
+  "recorded_at": "2026-11-23T04:50:14Z"
+}

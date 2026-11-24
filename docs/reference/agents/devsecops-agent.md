@@ -15,8 +15,9 @@
 
 ### Lead Stages
 
-This agent has no lead stages. It operates exclusively in a support role across
-multiple stages in the Inception, Construction, and Operation phases.
+| Stage | Name | What This Agent Does |
+|-------|------|----------------------|
+| security-review | Security Review | Maps the attack surface and checks authentication, authorization, secrets, encryption, dependencies and infrastructure settings; records each finding with its severity and a fix, and lists the findings that block deployment |
 
 ### Support Stages
 
@@ -36,7 +37,7 @@ multiple stages in the Inception, Construction, and Operation phases.
 
 | Source | Artifacts |
 |--------|-----------|
-| aidlc-compliance-agent | Regulatory requirements from Ideation (constraint register, RAID log) |
+| aidlc-compliance-agent | Regulatory requirements from Discover (constraint register, RAID log) |
 | aidlc-architect-agent | System design, component boundaries for threat modelling |
 
 ### Hands Off To

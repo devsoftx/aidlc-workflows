@@ -76,6 +76,7 @@ import {
   setupWorktreeFixture,
 } from "../harness/fixtures.ts";
 import { approveSuppliedCheckCommand } from "../harness/verification-command.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -86,7 +87,7 @@ setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
 const ROOT = join(import.meta.dir, "..", "..");
 const PROTOCOL = join(ROOT, "core", "aidlc-common", "protocols");
-const STAGE = join(ROOT, "core", "aidlc-common", "stages", "construction", "code-generation.md");
+const STAGE = join(ROOT, "core", "aidlc-common", "stages", "build", "code-generation.md");
 const LOG = join(AIDLC_SRC, "tools", "aidlc-log.ts");
 const STATE = join(AIDLC_SRC, "tools", "aidlc-state.ts");
 const UTILITY = join(AIDLC_SRC, "tools", "aidlc-utility.ts");
@@ -129,7 +130,7 @@ function fixture(repos: string[] = []): { project: string; record: string } {
 }
 
 function manifest(record: string, unit: string, value: unknown): string {
-  const dir = join(record, "construction", unit, "code-generation"); mkdirSync(dir, { recursive: true });
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation"); mkdirSync(dir, { recursive: true });
   const path = join(dir, "source-manifest.json"); writeFileSync(path, `${JSON.stringify(value)}\n`); return path;
 }
 
@@ -1106,7 +1107,7 @@ function runtimeFixture(): { project: string; record: string } {
     .replace("- [ ] units-generation \u2014 EXECUTE", "- [x] units-generation \u2014 EXECUTE")
     .replace("- [ ] code-generation — EXECUTE", "- [?] code-generation — EXECUTE");
   writeFileSync(join(record, "aidlc-state.md"), state, "utf-8");
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(join(dag, "unit-of-work-dependency.md"), "```yaml\nunits:\n  - name: alpha\n    depends_on: []\n  - name: beta\n    depends_on: []\n```\n");
   const listing = workspaceSourceListing(project);
@@ -1127,7 +1128,7 @@ function runtimeFixture(): { project: string; record: string } {
 }
 
 function seedArtifacts(record: string, unit: string): string {
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md", "traceability.json"])
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), name.endsWith(".json") ? "{}\n" : `# ${name}\n`);
@@ -1136,8 +1137,8 @@ function seedArtifacts(record: string, unit: string): string {
 
 function reviewArtifact(record: string, unit?: string): string {
   const dir = unit
-    ? join(record, "construction", unit, "code-generation")
-    : join(record, "construction", "code-generation");
+    ? join(record, phaseFor("code-generation"), unit, "code-generation")
+    : join(record, phaseFor("code-generation"), "code-generation");
   return join(dir, "code-generation-plan.md");
 }
 
@@ -1280,10 +1281,14 @@ function swarmFixture(
   if (process.platform === "win32") git(project, ["config", "core.longpaths", "true"]);
   git(project, ["config", "user.email", "t@test"]);
   git(project, ["config", "user.name", "t"]);
+  // units-generation is completed, as runtimeFixture does: while it is pending the
+  // engine takes the stage-level artifact path, not the settled-swarm one.
   const state = readFileSync(
     join(FIXTURES_DIR, "state-construction-with-worktree.md"),
     "utf-8",
-  ).replace(/^(- \*\*Bolt Refs\*\*: ).*$/m, "$1");
+  )
+    .replace(/^(- \*\*Bolt Refs\*\*: ).*$/m, "$1")
+    .replace("- [ ] units-generation — EXECUTE", "- [x] units-generation — EXECUTE");
   writeFileSync(seededStateFile(project), state);
   mkdirSync(seededAuditDir(project), { recursive: true });
   writeFileSync(
@@ -1334,7 +1339,7 @@ function writeAuthoredDag(
 ): void {
   const dir = join(
     seededRecordDir(project),
-    "inception",
+    phaseFor("units-generation"),
     "units-generation",
   );
   mkdirSync(dir, { recursive: true });
@@ -1554,7 +1559,7 @@ describe("t305 real receipt and guard flows", () => {
     appendReviewAppendix(reviewArtifact(record, "alpha"), "1");
     const path = join(
       record,
-      "construction",
+      phaseFor("code-generation"),
       "alpha",
       "code-generation",
       "source-manifest.json",
@@ -1605,7 +1610,7 @@ describe("t305 real receipt and guard flows", () => {
     const result = review(project, record, "alpha", [{ path: "src/" }]);
     expect(result.request.rc).toBe(0);
     expect(result.verdict.rc).toBe(0);
-    const stage = { slug: "code-generation", phase: "construction", for_each: "unit-of-work", reviewer: REVIEWER, review_artifact: "code-generation-plan", reviewer_max_iterations: 2, workspace_requires: true, produces: ["code-generation-plan", "unit-test-instructions", "code-summary", "traceability"] };
+    const stage = { slug: "code-generation", phase: "build", for_each: "unit-of-work", reviewer: REVIEWER, review_artifact: "code-generation-plan", reviewer_max_iterations: 2, workspace_requires: true, produces: ["code-generation-plan", "unit-test-instructions", "code-summary", "traceability"] };
     const state = readFileSync(join(record, "aidlc-state.md"), "utf-8");
     writeFileSync(join(project, "src/main.js.map"), "{\"generated\":true}\n");
     const fresh = freshReviewReceipts(project, state, stage);
@@ -1676,11 +1681,11 @@ describe("t305 real receipt and guard flows", () => {
     const fail = runtimeFixture(); writeFileSync(join(fail.project, "shared.ts"), "export const s=1\n");
     review(fail.project, fail.record, "alpha", [{ path: "shared.ts" }]); writeFileSync(join(fail.project, "shared.ts"), "export const s=2\n"); review(fail.project, fail.record, "beta", [{ path: "shared.ts" }]); writeFileSync(join(fail.project, "shared.ts"), "export const s=3\n");
     const r=approve(fail.project); expect(r.rc).toBe(1); expect(r.out).toContain("project source changed after aidlc-architecture-reviewer-agent reviewed it");
-    const state=readFileSync(join(fail.record,"aidlc-state.md"),"utf-8"); const receipts=freshReviewReceipts(fail.project,state,{slug:"code-generation",phase:"construction",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]}); expect([...receipts.unitStale].sort()).toEqual(["alpha","beta"]);
+    const state=readFileSync(join(fail.record,"aidlc-state.md"),"utf-8"); const receipts=freshReviewReceipts(fail.project,state,{slug:"code-generation",phase:"build",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]}); expect([...receipts.unitStale].sort()).toEqual(["alpha","beta"]);
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
   test("4b a shared path holding exactly a newer review's bytes is that Unit's own reviewed build", () => {
-    const stage = {slug:"code-generation",phase:"construction",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]};
+    const stage = {slug:"code-generation",phase:"build",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]};
     const { project, record } = runtimeFixture(); writeFileSync(join(project, "shared.ts"), "export const s=1\n");
     review(project, record, "alpha", [{ path: "shared.ts" }]); writeFileSync(join(project, "shared.ts"), "export const s=2\n"); review(project, record, "beta", [{ path: "shared.ts" }]);
     const state = readFileSync(join(record, "aidlc-state.md"), "utf-8");
@@ -1785,7 +1790,7 @@ describe("t305 real receipt and guard flows", () => {
     writeFileSync(join(late.project,"late.ts"),"export const late=1\n");
     const now=workspaceSourceListing(late.project)!; appendAuditEntry("STAGE_STARTED",{Workflow:"single-stage:code-generation",Stage:"code-generation",Agent:"aidlc-developer-agent","Source Baseline":writeBaselineSourceSnapshot(late.project,"code-generation",now)},late.project);
     const syntheticSecond=Math.floor(Date.now()/1000); while(Math.floor(Date.now()/1000)===syntheticSecond){}
-    review(late.project,late.record,"alpha",[{path:"app.ts"}]); review(late.project,late.record,"beta",[]); const lateState=readFileSync(state,"utf-8"); const lateReceipts=freshReviewReceipts(late.project,lateState,{slug:"code-generation",phase:"construction",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]}); expect(lateReceipts.sourceBaseline.state).toBe("ready"); if (lateReceipts.sourceBaseline.state === "ready") expect(lateReceipts.sourceBaseline.listing.has("\0late.ts")).toBe(false); expect(approve(late.project).out).toContain("late.ts");
+    review(late.project,late.record,"alpha",[{path:"app.ts"}]); review(late.project,late.record,"beta",[]); const lateState=readFileSync(state,"utf-8"); const lateReceipts=freshReviewReceipts(late.project,lateState,{slug:"code-generation",phase:"build",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]}); expect(lateReceipts.sourceBaseline.state).toBe("ready"); if (lateReceipts.sourceBaseline.state === "ready") expect(lateReceipts.sourceBaseline.listing.has("\0late.ts")).toBe(false); expect(approve(late.project).out).toContain("late.ts");
     const destroyed=runtimeFixture(); review(destroyed.project,destroyed.record,"alpha",[{path:"app.ts"}]); review(destroyed.project,destroyed.record,"beta",[]);
     const audit=readAllAuditShards(destroyed.project); const hash=/\*\*Source Baseline\*\*: sha256:([0-9a-f]{64})/.exec(audit)![1]; rmSync(join(destroyed.record,".aidlc-engine/source-review","code-generation",`baseline-${hash.slice(0,12)}.tsv`)); const carried=approve(destroyed.project); expect(carried.rc,carried.out).toBe(0); expect(carried.out).toContain("I could not check Code Generation for files changed outside the units on this machine; carrying on.");
     const changed=runtimeFixture(); review(changed.project,changed.record,"alpha",[{path:"app.ts"}]); review(changed.project,changed.record,"beta",[]);
@@ -1799,7 +1804,7 @@ describe("t305 real receipt and guard flows", () => {
 
   test("9 fieldless per-unit bindings preserve legacy global policy and 11 zero-unit stays manifest-free", () => {
     const legacy=runtimeFixture(); review(legacy.project,legacy.record,"alpha",[{path:"app.ts"}]); review(legacy.project,legacy.record,"beta",[]); stripUnitBindings(legacy.project); expect(approve(legacy.project).rc).toBe(0);
-    const zero=runtimeFixture(); rmSync(join(zero.record,"inception"),{recursive:true,force:true});
+    const zero=runtimeFixture(); rmSync(join(zero.record,phaseFor("units-generation"),"units-generation"),{recursive:true,force:true});
     const zeroArtifact=reviewArtifact(zero.record); mkdirSync(join(zeroArtifact,".."),{recursive:true}); writeFileSync(zeroArtifact,"# code-generation-plan.md\n");
     const args=["review","--stage","code-generation","--reviewer",REVIEWER,"--iteration","1"]; expect(cli(LOG,args,zero.project).rc).toBe(0); appendReviewAppendix(zeroArtifact,"1"); expect(cli(LOG,[...args,"--verdict","READY"],zero.project).rc).toBe(0); expect(approve(zero.project).rc).toBe(0);
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -1817,7 +1822,7 @@ describe("t305 real receipt and guard flows", () => {
     expect(
       freshReviewReceipts(modern.project, modernState, {
         slug: "code-generation",
-        phase: "construction",
+        phase: "build",
         for_each: "unit-of-work",
         reviewer: REVIEWER,
         review_artifact: "code-generation-plan",
@@ -1858,7 +1863,7 @@ describe("t305 real receipt and guard flows", () => {
       rmSync(
         join(
           legacy.record,
-          "construction",
+          phaseFor("code-generation"),
           unit,
           "code-generation",
           "source-manifest.json",
@@ -1873,7 +1878,7 @@ describe("t305 real receipt and guard flows", () => {
     expect(
       freshReviewReceipts(legacy.project, legacyState, {
         slug: "code-generation",
-        phase: "construction",
+        phase: "build",
         for_each: "unit-of-work",
         reviewer: REVIEWER,
         review_artifact: "code-generation-plan",
@@ -1931,13 +1936,13 @@ describe("t305 real receipt and guard flows", () => {
       "other\n",
     );
     mkdirSync(
-      join(other, "construction", "other", "code-generation"),
+      join(other, phaseFor("code-generation"), "other", "code-generation"),
       { recursive: true },
     );
     writeFileSync(
       join(
         other,
-        "construction",
+        phaseFor("code-generation"),
         "other",
         "code-generation",
         "source-manifest.json",
@@ -1989,7 +1994,7 @@ describe("t305 real receipt and guard flows", () => {
   test("cross-shard baseline ties accept identical values and refuse differing values", () => {
     const stage = {
       slug: "code-generation",
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       reviewer: REVIEWER,
       review_artifact: "code-generation-plan",
@@ -2539,7 +2544,7 @@ describe("t305 real receipt and guard flows", () => {
     const ghost=cli(LOG,["review","--stage","code-generation","--reviewer",REVIEWER,"--unit","ghost","--iteration","1"],project);
     expect(ghost.rc).toBe(1); expect(ghost.out).toContain("not present in the authoritative unit DAG");
     const forgedState=readFileSync(join(record,"aidlc-state.md"),"utf-8");
-    const receipts=freshReviewReceipts(project,forgedState,{slug:"code-generation",phase:"construction",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]});
+    const receipts=freshReviewReceipts(project,forgedState,{slug:"code-generation",phase:"build",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]});
     expect(receipts.freshUnitClaims.has("ghost")).toBe(false);
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -2592,7 +2597,7 @@ describe("t305 real receipt and guard flows", () => {
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
   test("calls freshReviewReceipts directly for a modern unit chain", () => {
-    const {project,record}=runtimeFixture(); review(project,record,"alpha",[{path:"app.ts"}]); review(project,record,"beta",[]); const state=readFileSync(join(record,"aidlc-state.md"),"utf-8"); const receipts=freshReviewReceipts(project,state,{slug:"code-generation",phase:"construction",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]}); expect(receipts.unitVerdicts.size).toBe(2);
+    const {project,record}=runtimeFixture(); review(project,record,"alpha",[{path:"app.ts"}]); review(project,record,"beta",[]); const state=readFileSync(join(record,"aidlc-state.md"),"utf-8"); const receipts=freshReviewReceipts(project,state,{slug:"code-generation",phase:"build",for_each:"unit-of-work",reviewer:REVIEWER,review_artifact:"code-generation-plan",reviewer_max_iterations:2,workspace_requires:true,produces:["code-generation-plan","unit-test-instructions","code-summary","traceability"]}); expect(receipts.unitVerdicts.size).toBe(2);
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 });
 
@@ -3859,12 +3864,12 @@ describe("t305 stage and protocol source-attribution requirements", () => {
     expect(stage).toContain("never dispatch the reviewer before the Step 5 files exist");
     // The manifest is a Unit-only Step 5 file (readUnitSourceManifest needs a
     // Unit); zero-Unit Step 5 files are the stage-level summary and traceability.
-    expect(stage).not.toContain("Create `<record>/construction/{unit-name}/code-generation/source-manifest.json`");
+    expect(stage).not.toContain("Create `<record>/build/{unit-name}/code-generation/source-manifest.json`");
     expect(stage).toContain("For a Unit (`directive.unit` present), write `source-manifest.json` in Step 5, before the review");
-    expect(stage).toContain("For a Unit (`directive.unit` present), create\n`<record>/construction/<directive.unit>/code-generation/source-manifest.json`");
+    expect(stage).toContain("For a Unit (`directive.unit` present), create\n`<record>/build/<directive.unit>/code-generation/source-manifest.json`");
     expect(stage).toContain("Zero-Unit work writes no `source-manifest.json`");
     expect(stage).toContain("A zero-Unit directive (`directive.unit` absent) writes no\n`source-manifest.json`");
-    expect(stage).toContain("Its Step 5 files are\n`<record>/construction/code-generation/code-summary.md` and\n`<record>/construction/code-generation/traceability.json`.");
+    expect(stage).toContain("Its Step 5 files are\n`<record>/build/code-generation/code-summary.md` and\n`<record>/build/code-generation/traceability.json`.");
     const step3=stage.indexOf("### Step 3: Plan Approval"); const step5=stage.indexOf("### Step 5:"); const step6=stage.indexOf("### Step 6:"); const step7=stage.indexOf("### Step 7:");
     const review=stage.indexOf("When `directive.protocol_modules` lists `reviewer`, run the review now");
     expect(step3).toBeGreaterThan(0); expect(step5).toBeGreaterThan(step3); expect(step6).toBeGreaterThan(step5);

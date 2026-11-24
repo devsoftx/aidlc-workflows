@@ -23,17 +23,17 @@ and gate counts; named alone, it first asks what the work is for.
 
 | Workflow profile | Best for | Stages | Depth | Test strategy | Start with |
 |------------------|----------|--------|-------|---------------|------------|
-| **Classic** | V1-style ceremony through Inception and Construction, ending at Build and Test | 15 / 30 | Standard | Standard | `/aidlc classic` |
-| **Express** | The lightest requirements-to-code-and-test path | 7 / 30 | Minimal | Minimal | `/aidlc express` |
-| **Feature** | A production feature using the complete lifecycle | 30 / 30 | Standard | Standard | `/aidlc feature` |
-| **Enterprise** | Regulated or high-assurance work with full traceability | 30 / 30 | Comprehensive | Comprehensive | `/aidlc enterprise` |
-| **MVP** | A real first product increment without the Operation phase | 20 / 30 | Standard | Standard | `/aidlc mvp` |
-| **Proof of concept** | Testing feasibility with the smallest useful implementation path | 5 / 30 | Minimal | Minimal | `/aidlc poc` |
-| **Bugfix** | A known defect that needs a focused fix and regression test | 6 / 30 | Minimal | Minimal | `/aidlc bugfix` |
-| **Refactor** | Improving existing code without changing product behavior | 7 / 30 | Minimal | Minimal | `/aidlc refactor` |
-| **Infrastructure** | Environments, IaC, deployment foundations, or cost work | 12 / 30 | Standard | Standard | `/aidlc infra` |
-| **Security patch** | A CVE or focused vulnerability response | 7 / 30 | Minimal | Minimal | `/aidlc security-patch` |
-| **Workshop** | A facilitated training or group delivery session | 23 / 30 | Standard | Minimal | `/aidlc workshop` |
+| **Classic** | V1-style ceremony through Design, Build, Test, and Secure; Deploy and Operate are left out | 18 / 33 | Standard | Standard | `/aidlc classic` |
+| **Express** | The lightest requirements-to-code-and-test path | 9 / 33 | Minimal | Minimal | `/aidlc express` |
+| **Feature** | A production feature using the complete lifecycle | 32 / 33 | Standard | Standard | `/aidlc feature` |
+| **Enterprise** | Regulated or high-assurance work with full traceability | 33 / 33 | Comprehensive | Comprehensive | `/aidlc enterprise` |
+| **MVP** | A real first product increment without the Operate phase | 22 / 33 | Standard | Standard | `/aidlc mvp` |
+| **Proof of concept** | Testing feasibility with the smallest useful implementation path | 7 / 33 | Minimal | Minimal | `/aidlc poc` |
+| **Bugfix** | A known defect that needs a focused fix and regression test | 8 / 33 | Minimal | Minimal | `/aidlc bugfix` |
+| **Refactor** | Improving existing code without changing product behavior | 9 / 33 | Minimal | Minimal | `/aidlc refactor` |
+| **Infrastructure** | Environments, IaC, deployment foundations, or cost work | 15 / 33 | Standard | Standard | `/aidlc infra` |
+| **Security patch** | A CVE or focused vulnerability response | 10 / 33 | Minimal | Minimal | `/aidlc security-patch` |
+| **Workshop** | A facilitated training or group delivery session | 25 / 33 | Standard | Minimal | `/aidlc workshop` |
 
 Stage counts describe the static route. They count the stages after
 Initialization's three setup stages, which every profile runs first: the count
@@ -44,12 +44,12 @@ greenfield project. For the exact stage-by-profile matrix, see
 
 ## `classic`
 
-**Choose Classic when:** you want v1-style ceremony: Inception with one human
-approval per stage, and Construction built Unit by Unit, where you approve each
+**Choose Classic when:** you want v1-style ceremony: Design with one human
+approval per stage, and Build done Unit by Unit, where you approve each
 Unit's code plan and, if you chose **Review each checkpoint**, its checkpoint (a
 Unit's design stages have no stop of their own; team-owned Units keep their own
-per-stage or end-of-Unit gates). It skips Ideation and leaves Operation as a
-placeholder. Stage-declared execution modes and support agents are unchanged.
+per-stage or end-of-Unit gates). It skips most of Discover (Reverse Engineering runs only on existing code)
+and leaves Deploy and Operate out. Stage-declared execution modes and support agents are unchanged.
 
 Classic is the implicit engine default when neither you nor
 `AWS_AIDLC_DEFAULT_SCOPE` names another profile. In the conversational cold-start
@@ -79,7 +79,7 @@ Feature or Enterprise instead.
 the shortest supported path through requirements, implementation, tests, and an
 optional deploy tail.
 
-Express skips Ideation, the design pass, Unit decomposition, Delivery Planning,
+Express skips the Discover stages except Reverse Engineering, the design pass, Unit decomposition, Delivery Planning,
 and CI Pipeline. It disables stage reviewer dispatch and uses Minimal artifacts
 and requirement-driven tests. Reverse Engineering and deployment stages remain
 conditional.
@@ -102,17 +102,17 @@ work. Its speed comes from intentionally removing those decision surfaces.
 **Choose Feature when:** you are building a production feature and want the
 complete lifecycle at practical depth.
 
-Feature runs all 30 stages after setup at Standard depth, from intent discovery through
-design, implementation, deployment, and feedback. It gives the workflow the
-widest opportunity to surface unknowns without the heavier documentation floor
-of Enterprise.
+Feature runs 32 of the 33 stages after setup at Standard depth, skipping only
+Conformance Review, from intent discovery through design, implementation,
+deployment, and feedback. It gives the workflow the widest opportunity to
+surface unknowns without the heavier documentation floor of Enterprise.
 
 ## `enterprise`
 
 **Choose Enterprise when:** the work is regulated, high risk, audit-sensitive,
 or requires formal compliance and operational evidence.
 
-Enterprise runs all 30 stages after setup at Comprehensive depth. It retains market,
+Enterprise runs all 33 stages after setup at Comprehensive depth. It retains market,
 compliance, security, design, observability, incident-response, and performance
 work because the cost of an undocumented decision is higher than the cost of
 the additional ceremony.
@@ -122,8 +122,8 @@ the additional ceremony.
 **Choose MVP when:** you are shipping a real first product increment, not merely
 testing whether an idea is possible.
 
-MVP keeps the full Inception and Construction design/build path at Standard
-depth. It trims selected Ideation ceremony and skips the Operation phase. Move
+MVP keeps the full Design and Build path at Standard
+depth. It trims selected Discover ceremony and skips the Operate phase. Move
 to Feature or Enterprise when the product needs production operations and the
 full feedback lifecycle.
 
@@ -132,7 +132,7 @@ full feedback lifecycle.
 **Choose Proof of Concept when:** the primary question is whether an approach can
 work.
 
-PoC uses 5 stages at Minimal depth. It gets to requirements, code, and tests
+PoC uses 7 stages at Minimal depth. It gets to requirements, code, and tests
 quickly while omitting most product, design, and operational ceremony. A PoC is
 evidence for a later decision; it is not the production-readiness profile.
 
@@ -141,9 +141,9 @@ evidence for a later decision; it is not the production-readiness profile.
 **Choose Bugfix when:** the defect is known and the desired outcome is a focused
 repair with verification.
 
-Bugfix uses 6 stages at Minimal depth. It preserves workspace understanding,
+Bugfix uses 8 stages at Minimal depth. It preserves workspace understanding,
 requirements, Code Generation, Build and Test, and the deployment path while
-dropping discovery, broad design, and unrelated Operation work.
+dropping discovery, broad design, and unrelated Operate work.
 
 Bugfix also turns learnings and summary confirmation off, so no stage keeps a
 diary or asks "Keep that for next time?" after a correction. Sensors, stage approvals, and plan
@@ -154,7 +154,7 @@ approval stay on.
 **Choose Refactor when:** behavior should stay stable while internal structure,
 maintainability, or technical debt improves.
 
-Refactor uses 7 stages at Minimal depth. It emphasizes understanding the
+Refactor uses 9 stages at Minimal depth. It emphasizes understanding the
 existing code, defining the internal change, implementing it, proving behavior
 did not regress, and carrying the verified result through deployment. Use
 Feature instead if the work changes user-visible behavior.
@@ -164,7 +164,7 @@ Feature instead if the work changes user-visible behavior.
 **Choose Infrastructure when:** the outcome is an environment, IaC change,
 deployment foundation, platform capability, or cost optimization.
 
-Infrastructure uses 12 stages at Standard depth. It removes user-facing product
+Infrastructure uses 15 stages at Standard depth. It removes user-facing product
 ceremony and concentrates on requirements, NFRs, infrastructure design, CI/CD,
 deployment, and observability. Code Generation writes the IaC under Plan
 Approval, and Build and Test runs its checks (for example `terraform validate`
@@ -175,7 +175,7 @@ or `cdk synth`) before Environment Provisioning applies it.
 **Choose Security Patch when:** you are responding to a known CVE, vulnerability,
 or narrowly scoped security defect.
 
-Security Patch uses 7 stages at Minimal depth. It keeps the security-relevant
+Security Patch uses 10 stages at Minimal depth. It keeps the security-relevant
 requirements, verification, implementation, and deployment path while avoiding
 unrelated product ceremony. Use Enterprise for a broader security or compliance
 program rather than a focused patch.
@@ -185,8 +185,9 @@ program rather than a focused patch.
 **Choose Workshop when:** a facilitator is leading a training lab or coordinated
 group session.
 
-Workshop skips Ideation because the facilitator supplies the exercise, then runs
-the Inception-through-Operation lifecycle at Standard depth. It deliberately
+Workshop skips the Discover stages except Reverse Engineering because the
+facilitator supplies the exercise, then runs Design through Operate at Standard
+depth. It deliberately
 uses a Minimal test strategy to keep a teaching session moving and caps normal
 reviews at one advisory pass. The multi-participant operating recipe is in
 [Workshop Mode](workshop-mode.md).
@@ -212,7 +213,7 @@ You can force that path with:
 /aidlc compose "harden the deployment pipeline and add observability"
 ```
 
-## Construction approvals and execution
+## Unit approvals and execution
 
 New source-producing solo Unit workflows default to building one Unit at a
 time, serially, with verified completion checkpoints. This requires Unit
@@ -225,9 +226,9 @@ With skeleton-on, the first Unit is planned as the smallest working integrated
 slice. Its applicable design work and Code Generation finish, a real integrated
 check passes, and you approve the skeleton before later Units start. A first
 design document is not a working skeleton. Skeleton-off offers **Continue
-automatically** / **Review each checkpoint** at Construction entry; skeleton-on
+automatically** / **Review each checkpoint** when unit-by-unit work starts; skeleton-on
 offers it after the skeleton checkpoint. A recorded choice is not repeated,
-and you can explicitly grant or revoke autonomy during Construction.
+and you can explicitly grant or revoke autonomy during unit-by-unit work.
 
 Approval policy and execution are separate. To fan out eligible Code Generation
 batches, explicitly choose stage-major order and swarm execution; guided and

@@ -27,6 +27,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { expectedStages, sourceStages } from "../harness/scope-run.ts";
+import { PHASE_LABELS } from "../../core/tools/aidlc-phases.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -95,7 +96,11 @@ function completion(out: string): string {
 
 // The stages each Phase Progress row after Initialization counts, added up.
 function rowsTotal(out: string): number {
-  const rows = [...out.matchAll(/^ {2}(IDEATION|INCEPTION|CONSTRUCTION|OPERATION) +\S+ (\d+)\/(\d+)$/gm)];
+  const labels = Object.entries(PHASE_LABELS)
+    .filter(([phase]) => phase !== "initialization")
+    .map(([, label]) => label)
+    .join("|");
+  const rows = [...out.matchAll(new RegExp(`^ {2}(${labels}) +\\S+ (\\d+)/(\\d+)$`, "gm"))];
   return rows.reduce((sum, row) => sum + Number(row[3]), 0);
 }
 

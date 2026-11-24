@@ -55,12 +55,14 @@ import {
   REPO_ROOT,
   cleanupTestProject,
   createTestProject,
+  markGreenfieldReverseEngineeringSkipped,
   resetAidlcEnv,
   seededAuditShard,
   seededRecordDir,
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { type Dirent, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import {
   auditBlockField,
@@ -92,6 +94,16 @@ const ORCHESTRATE = join(AIDLC_SRC, "tools", "aidlc-orchestrate.ts");
 const LOG = join(AIDLC_SRC, "tools", "aidlc-log.ts");
 const MINT_HOOK = join(AIDLC_SRC, "tools", "aidlc.ts");
 const MID_IDEATION = "state-mid-ideation.md"; // Current Stage: feasibility
+
+// The mid-ideation fixture is Greenfield but still reads reverse-engineering
+// EXECUTE, which the engine writes SKIP for a Greenfield project. Without that
+// row, approving feasibility moves the gate to reverse-engineering, a pipeline
+// stage whose gate-start needs recorded handoffs; with it, the next stage is
+// scope-definition, which runs inline.
+function seedMidIdeation(project: string): void {
+  seedStateFile(project, MID_IDEATION);
+  markGreenfieldReverseEngineeringSkipped(join(seededRecordDir(project), "aidlc-state.md"));
+}
 
 // Drive a state subcommand with the PRESENCE guard ENABLED (clear the suite's
 // presence-bypass var) but the ARTIFACT guard still bypassed (a separate
@@ -254,7 +266,7 @@ function setAutonomous(proj: string): void {
 function summaryQuestions(proj: string, answer = ""): string {
   const path = join(
     seededRecordDir(proj),
-    "ideation",
+    phaseFor("feasibility"),
     "feasibility",
     "feasibility-questions.md",
   );
@@ -282,7 +294,7 @@ describe("t188: human-presence approval gate (ledger-event design)", () => {
   beforeEach(() => {
     resetAidlcEnv();
     proj = createTestProject();
-    seedStateFile(proj, MID_IDEATION); // Current Stage: feasibility
+    seedMidIdeation(proj); // Current Stage: feasibility
   });
 
   afterEach(() => cleanupTestProject(proj));
@@ -919,7 +931,7 @@ describe("t188: human-presence approval gate (ledger-event design)", () => {
 - **Project**: combined late approval
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0
@@ -979,7 +991,7 @@ describe("t188: human-presence approval gate (ledger-event design)", () => {
   });
 
   // --- Scenario D: AUTONOMY carve-out is Construction-only -------------------
-  test("D: a Construction autonomy field does NOT waive an Ideation gate", () => {
+  test("D: a Construction autonomy field does NOT waive a Discover gate", () => {
     const slug = field(proj, "Current Stage");
     guarded(proj, ["checkbox", `${slug}=in-progress`]);
     setAutonomous(proj);
@@ -1367,7 +1379,7 @@ describe("t188: human-presence approval gate (ledger-event design)", () => {
       expect(stage).toBeDefined();
       const questions = join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "api",
         "functional-design",
         "functional-design-questions.md",
@@ -2072,7 +2084,7 @@ describe("t188: a late-logged question takes the reply that answered it", () => 
   beforeEach(() => {
     resetAidlcEnv();
     proj = createTestProject();
-    seedStateFile(proj, MID_IDEATION);
+    seedMidIdeation(proj);
   });
   afterEach(() => cleanupTestProject(proj));
 
@@ -2389,7 +2401,7 @@ describe("t188: what the person's message asks for outlives the approval given i
   beforeEach(() => {
     resetAidlcEnv();
     proj = createTestProject();
-    seedStateFile(proj, MID_IDEATION); // Current Stage: feasibility
+    seedMidIdeation(proj); // Current Stage: feasibility
   });
 
   afterEach(() => cleanupTestProject(proj));

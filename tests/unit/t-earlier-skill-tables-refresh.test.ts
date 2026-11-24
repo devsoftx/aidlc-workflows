@@ -4,9 +4,9 @@
 // skill, and a plugin sync there rewrote them in place. The record still holds
 // the skill config wrote, so the next release's `aidlc config` stopped on it
 // ("locally modified or unowned", exit 4) on every harness, native and copy.
-// With its tables put back to the ones this release ships, the skill is the
-// file the record says AI-DLC wrote, so the refresh takes it as AI-DLC's. An
-// edit outside the tables is still the person's to resolve.
+// With its tables put back to the scope grid and stage graph those releases
+// shipped, the skill is the file the record says AI-DLC wrote, so the refresh
+// takes it as AI-DLC's. An edit outside the tables is still the person's to resolve.
 
 import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -15,10 +15,26 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync,
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { EARLIER_SKILL_SCOPE_GRID_BODY } from "../../core/tools/aidlc-init.ts";
+import { EARLIER_SKILL_SCOPE_GRID_BODY, EARLIER_SKILL_STAGE_GRAPH_BODY } from "../../core/tools/aidlc-init.ts";
 import { EARLIER_RELEASE_REGIONS } from "../../scripts/earlier-release-regions.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { typedHarnessName } from "../../core/tools/aidlc-runtime-paths.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -106,7 +122,7 @@ function region(text: string, noun: string): { start: number; open: number; clos
 }
 
 // The release as 2.11.0 shipped it: the scope and stage tables inside the
-// skill itself, holding the tables this release ships. tables.md stays: the
+// skill itself, holding the ones 2.9.0 to 2.11.0 shipped. tables.md stays: the
 // release's own list of its files names it.
 function earlierRelease(harness: Harness): string {
   const prior = join(temp(`aidlc-t-earlier-tables-${harness}-prior-`), harness);
@@ -115,12 +131,10 @@ function earlierRelease(harness: Harness): string {
   const skillPath = join(prior, rel);
   const tablesPath = join(dirname(skillPath), "tables.md");
   const tables = lf(readFileSync(tablesPath, "utf-8"));
-  // The stage graph is this release's; the scope grid is the one those
-  // releases shipped, which this release's no longer is.
+  const earlier = { "scope grid": EARLIER_SKILL_SCOPE_GRID_BODY, "stage graph": EARLIER_SKILL_STAGE_GRAPH_BODY } as const;
   const inline = TABLES.map((noun) => {
     const at = region(tables, noun);
-    if (noun !== "scope grid") return tables.slice(at.start, at.end);
-    return `${tables.slice(at.start, at.open)}${EARLIER_SKILL_SCOPE_GRID_BODY}${tables.slice(at.close, at.end)}`;
+    return `${tables.slice(at.start, at.open)}${earlier[noun]}${tables.slice(at.close, at.end)}`;
   }).join("\n\n");
   const shipped = lf(readFileSync(skillPath, "utf-8")).replace(`${EARLIER_RELEASE_REGIONS}\n`, "");
   writeFileSync(skillPath, `${shipped.trimEnd()}\n\n${inline}\n`);
@@ -155,25 +169,15 @@ function composedProject(harness: Harness): { project: string; rel: string } {
 }
 
 describe("a skill whose tables an earlier release's plugin sync rewrote refreshes as AI-DLC's", () => {
-  // The proof puts this release's stage graph back, so it holds only while it
-  // is the one those releases shipped. The scope grid has changed since, so
-  // earlierSkillTablesOnly also carries the one they shipped.
+  // The prior skill holds the scope grid and stage graph those releases shipped,
+  // and earlierSkillTablesOnly puts both back, so this release's own tables can
+  // change without the proof changing with them.
   test("the scope grid earlierSkillTablesOnly puts back is the one 2.9.0 to 2.11.0 shipped", () => {
     expect(createHash("sha256").update(EARLIER_SKILL_SCOPE_GRID_BODY).digest("hex")).toBe(EARLIER_BODIES["scope grid"]);
   });
 
-  test.each(Object.keys(HARNESS_DIRS) as Harness[])("%s: the stage graph this release ships is the one 2.9.0 to 2.11.0 shipped", (harness) => {
-    const tablesPath = join(dirname(join(release(harness), skillRel(release(harness), harness))), "tables.md");
-    const tables = lf(readFileSync(tablesPath, "utf-8"));
-    const noun = "stage graph";
-    const at = region(tables, noun);
-    const body = createHash("sha256").update(tables.slice(at.open, at.close)).digest("hex");
-    expect(
-      body,
-      `the core ${noun} in ${tablesPath} is no longer the one 2.9.0 to 2.11.0 kept in their /aidlc skill, so ` +
-        "earlierSkillTablesOnly (core/tools/aidlc-init.ts) cannot prove those projects' skills and their config stops " +
-        `again: give it that ${noun} body (sha256 ${EARLIER_BODIES[noun]}) to put back as well, as it does the scope grid`,
-    ).toBe(EARLIER_BODIES[noun]);
+  test("the stage graph earlierSkillTablesOnly puts back is the one 2.9.0 to 2.11.0 shipped", () => {
+    expect(createHash("sha256").update(EARLIER_SKILL_STAGE_GRAPH_BODY).digest("hex")).toBe(EARLIER_BODIES["stage graph"]);
   });
 
   for (const harness of Object.keys(HARNESS_DIRS) as Harness[]) {

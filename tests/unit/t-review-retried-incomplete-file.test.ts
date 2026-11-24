@@ -26,6 +26,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -101,7 +102,7 @@ function project(policy: "strict" | "off" = "strict"): string {
     expect(getField(state, GUARD_POLICY_FIELD)).toBe("off (set by you)");
     writeFileSync(statePath, state);
   }
-  const dir = join(seededRecordDir(p), "inception", STAGE);
+  const dir = join(seededRecordDir(p), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "requirements.md"), "# Requirements\n");
   writeFileSync(join(dir, "requirements-analysis-questions.md"), "# Requirements Questions\n");

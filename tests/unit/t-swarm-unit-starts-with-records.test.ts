@@ -27,7 +27,7 @@ setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 afterEach(cleanupCheckpointFixtures);
 
 const CONTRACTS = "inception/application-design/component-contracts.md";
-const RULES = "construction/alpha/functional-design/business-rules.md";
+const RULES = "design/alpha/functional-design/business-rules.md";
 
 type Finalized = {
   units: Array<{ unit: string; status: string; change_notices?: string[] }>;
@@ -82,7 +82,7 @@ function prepared(pd: string, units = ["alpha"]): void {
 
 const notices = (finalized: Finalized, unit: string) =>
   finalized.units.find((row) => row.unit === unit)?.change_notices ?? [];
-const notMerged = (pd: string, unit: string) => record(pd, `construction/${unit}/code-generation/not-merged`);
+const notMerged = (pd: string, unit: string) => record(pd, `build/${unit}/code-generation/not-merged`);
 
 describe("a side-by-side Unit starts with the intent's design records as the project has them", () => {
   test("a record never committed and one changed since its commit are in the Unit's folder as the project has them", () => {
@@ -140,13 +140,13 @@ describe("a side-by-side Unit starts with the intent's design records as the pro
 
   test("the state, the audit, AI-DLC's own files and every Unit's Code Generation folder are not copied", () => {
     const pd = fixture(["alpha", "beta"]);
-    write(pd, "construction/beta/code-generation/beta-notes.md", "# beta's own notes\n");
+    write(pd, "build/beta/code-generation/beta-notes.md", "# beta's own notes\n");
     write(pd, ".aidlc-engine/project-only.json", "{}\n");
-    write(pd, "construction/alpha/code-generation/alpha-scratch.md", "# alpha's scratch in the project\n");
+    write(pd, "build/alpha/code-generation/alpha-scratch.md", "# alpha's scratch in the project\n");
     prepared(pd, ["alpha"]);
-    expect(existsSync(record(wt(pd), "construction/beta/code-generation/beta-notes.md"))).toBe(false);
+    expect(existsSync(record(wt(pd), "build/beta/code-generation/beta-notes.md"))).toBe(false);
     expect(existsSync(record(wt(pd), ".aidlc-engine/project-only.json"))).toBe(false);
-    expect(existsSync(record(wt(pd), "construction/alpha/code-generation/alpha-scratch.md"))).toBe(false);
+    expect(existsSync(record(wt(pd), "build/alpha/code-generation/alpha-scratch.md"))).toBe(false);
     expect(read(wt(pd), "aidlc-state.md")).not.toBe(read(pd, "aidlc-state.md"));
   });
 });

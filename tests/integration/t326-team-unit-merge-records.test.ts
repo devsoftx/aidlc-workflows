@@ -1,6 +1,7 @@
 // covers: subcommand:aidlc-unit:claim, subcommand:aidlc-unit:publish, subcommand:aidlc-unit:adopt, subcommand:aidlc-unit:land, function:transportedAuditViolation
 
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -97,7 +98,7 @@ function typedTurn(checkout: string, sessionId: string): void {
 // One Unit receipt pin takes: the hook's row for an artifact the agent wrote
 // in the Unit's folder.
 function artifactWrite(checkout: string, unit: string, details: string): void {
-  const path = join(seededRecordDir(checkout), "construction", unit, "functional-design", "business-logic-model.md");
+  const path = join(seededRecordDir(checkout), phaseFor("functional-design"), unit, "functional-design", "business-logic-model.md");
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `# Business Logic Model\n\n${details}\n`);
   fireHook(WRITE_AUDIT_HOOK, checkout, {

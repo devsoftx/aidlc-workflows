@@ -1,4 +1,4 @@
-// covers: function:workspaceSourceState, function:sameWorkspaceSource, function:recordedSourceListingUnderCurrentBoundary, function:shapeSourceSnapshotIndex, function:codekbSourceFingerprint, file:aidlc-common/stages/inception/reverse-engineering.md, file:knowledge/aidlc-developer-agent/code-analysis-guide.md
+// covers: function:workspaceSourceState, function:sameWorkspaceSource, function:recordedSourceListingUnderCurrentBoundary, function:shapeSourceSnapshotIndex, function:codekbSourceFingerprint, file:aidlc-common/stages/discover/reverse-engineering.md, file:knowledge/aidlc-developer-agent/code-analysis-guide.md
 //
 // A .NET build rewrites bin/ and obj/ beside the project file. When those
 // folders counted as source, a rebuild after a review or plan approval read as
@@ -9,7 +9,7 @@
 // recorded before the change, the swarm snapshot, the CodeKB fallback, and the
 // scan instruction the developer agent reads.
 
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -24,6 +24,22 @@ import {
   shapeSourceSnapshotIndex,
   workspaceSourceState,
 } from "../../core/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
 const created: string[] = [];
@@ -357,7 +373,7 @@ describe("t-dotnet-build-outputs", () => {
 
   test("the developer brief and guide say to list with file tools, follow .gitignore, only read, and skip build outputs", () => {
     const prose = (...parts: string[]) => readFileSync(join(REPO_ROOT, "core", ...parts), "utf-8").replace(/\s+/g, " ");
-    const stage = prose("aidlc-common", "stages", "inception", "reverse-engineering.md");
+    const stage = prose("aidlc-common", "stages", "discover", "reverse-engineering.md");
     const step2 = stage.slice(stage.indexOf("### Step 2:"), stage.indexOf("### Step 3:"));
     // Listing with file tools and reading .gitignore asks the person for no git command.
     expect(step2).toContain("find the files with its file tools, one folder at a time, reading the repo's `.gitignore` files and leaving out what they ignore");

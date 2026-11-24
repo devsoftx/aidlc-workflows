@@ -19,7 +19,9 @@ import {
   loadAgents,
   scopedReviewCopyName,
 } from "../../core/tools/aidlc-lib.ts";
-import { REPO_ROOT } from "../harness/fixtures.ts";
+import { pointAtCompiledData, REPO_ROOT } from "../harness/fixtures.ts";
+
+pointAtCompiledData();
 
 const STABLE = "2.11.0";
 const REVIEWER = "aidlc-architecture-reviewer-agent";
@@ -89,21 +91,27 @@ describe("the copy's text", () => {
     const front = copy!.split("\n---\n")[0];
     expect(front).toContain(`\nname: ${COPY}\n`);
     expect(front).toContain('\ndisplay_name: "Architecture Reviewer (this review)"\n');
-    expect(front.endsWith([
+    expect(front).toContain([
       "    - capability: fs_read",
       "      effect: deny",
       "      match:",
-      '        - "aidlc/spaces/*/intents/*/construction/**"',
-      '        - ".aidlc/worktrees/*/aidlc/spaces/*/intents/*/construction/**"',
+      '        - "aidlc/spaces/*/intents/*/design/**"',
+      '        - ".aidlc/worktrees/*/aidlc/spaces/*/intents/*/design/**"',
+      '        - "aidlc/spaces/*/intents/*/build/**"',
+      '        - ".aidlc/worktrees/*/aidlc/spaces/*/intents/*/build/**"',
       "      exclude:",
-      // Only this intent's folder of the Unit: a Unit of the same name in another
-      // intent, or in a batch's worktree, stays denied.
-      `        - "${RECORD}/construction/alpha"`,
-      `        - "${RECORD}/construction/alpha/**"`,
-    ].join("\n"))).toBe(true);
+      // Only this intent's folder of the Unit, in each unit phase: a Unit of the
+      // same name in another intent, or in a batch's worktree, stays denied.
+      `        - "${RECORD}/design/alpha"`,
+      `        - "${RECORD}/design/alpha/**"`,
+      `        - "${RECORD}/build/alpha"`,
+      `        - "${RECORD}/build/alpha/**"`,
+    ].join("\n"));
+    // The stage folders beside the Units stay readable in this intent's record.
+    expect(front).toContain(`        - "${RECORD}/design/requirements-analysis/**"`);
     // Everything else is the installed file as it was.
     const added = copy!.split("\n").filter((line) => !shipped.split("\n").includes(line));
-    expect(added.filter((line) => !/fs_read|effect: deny|match:|exclude:|construction|^name:|^display_name:/.test(line)))
+    expect(added.filter((line) => !/fs_read|effect: deny|match:|exclude:|^\s+- "|^name:|^display_name:/.test(line)))
       .toEqual([]);
     expect(copy!.slice(copy!.indexOf("\n---\n"))).toBe(shipped.slice(shipped.indexOf("\n---\n")));
   });

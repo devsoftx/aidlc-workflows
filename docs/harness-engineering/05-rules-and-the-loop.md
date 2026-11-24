@@ -36,9 +36,10 @@ the end of the file the plugin names (or the one chosen at install) and of the
 phase file they are for, and the team's own rules stay in the sections above
 it. See [Authoring a Plugin](10-authoring-a-plugin.md).
 
-The four phase files are `phases/ideation.md`, `phases/inception.md`,
-`phases/construction.md`, and `phases/operation.md` (initialization is
-bootstrap-only and ships no rule file). A fifth layer — per-stage rules
+The seven phase files are `phases/discover.md`, `phases/design.md`,
+`phases/build.md`, `phases/test.md`, `phases/secure.md`, `phases/deploy.md`,
+and `phases/operate.md` (initialization is bootstrap-only and ships no rule
+file). A fifth layer — per-stage rules
 (`aidlc-stage-<slug>.md`) — is reserved for a future release; you cannot author
 one yet.
 

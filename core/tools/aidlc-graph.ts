@@ -1,3 +1,4 @@
+import { isUnitLoopStage, UNIT_RECORD_PHASES } from "./aidlc-phases.ts";
 // Stage-graph library + CLI. Exports the 8-function API consumed by
 // the doctor collector (see aidlc-utility.ts collectDoctorReport) and the
 // runtime resolution layer (lib.ts's nextInScopeStage,
@@ -5,7 +6,7 @@
 // require).
 //
 // Architectural model (see docs/reference/15-stage-definition.md):
-//   - The graph is structural truth: 31 stage definitions + every
+//   - The graph is structural truth: 36 stage definitions + every
 //     requires_stage / produces / consumes edge they declare = the
 //     complete DAG. Compiled from YAML into stage-graph.json.
 //   - A scope is a sub-DAG: scope-mapping.json's EXECUTE slice +
@@ -46,7 +47,7 @@
 //
 // See docs/reference/16-artifact-vocabulary.md for artifact naming.
 
-import { constants as fsConstants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { constants as fsConstants, copyFileSync, type Dirent, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -123,6 +124,8 @@ import {
   escapeRegex,
   getField,
   parseCheckboxes,
+  PLAN_FIELD,
+  parseStateStageSuffixes,
 } from "./aidlc-lib.ts";
 import {
   parseRuleFrontmatter,
@@ -202,7 +205,7 @@ export interface GraphStage extends StageEntry {
   // produces_kinds - per-kind applicability map (artifact name to unit kinds).
   // Lives on stage YAML, round-trips through parse/emit, and compiles into
   // stage-graph.json. The engine's produces filter reads it to prune the
-  // per-unit construction matrix; an unlisted artifact applies to all kinds.
+  // per-unit matrix; an unlisted artifact applies to all kinds.
   produces_kinds?: Record<string, string[]>;
   consumes: Consume[];
   // cites - the consumes the stage marks `cited: true`: its deliverables cite
@@ -445,7 +448,7 @@ function rulesDir(): string {
  *  memory/org.md"). Replaces the old per-harness "<harness>/<rulesSubdir>/<f>"
  *  display form: the method now lives at the neutral aidlc/ roof, identical on
  *  every harness, so the baked path is harness-neutral too. `rel` is the file's
- *  sub-path under memory/ (e.g. "org.md" or "phases/construction.md"). */
+ *  sub-path under memory/ (e.g. "org.md" or "phases/design.md"). */
 function memoryDisplayPath(rel: string): string {
   return toPosix(join(...MEMORY_SEGMENTS, rel));
 }
@@ -1075,7 +1078,7 @@ const FIELD_ORDER = [
 //
 // Per-stage chain: org → team → project → phase. Pull authoring puts
 // the phase→stage relationship on the stage's existing `phase:`
-// declaration; the resolver attaches the matching aidlc-phase-<name>.md
+// declaration; the resolver attaches the matching phases/<name>.md
 // file with no rule-side glob filter. A confirmed learning is a PRACTICE
 // (vision §6): the §13 gate appends it under a topical heading in
 // team.md / project.md directly — there is no parallel `*-learnings.md`
@@ -1188,7 +1191,7 @@ export function loadRules(): RuleFile[] {
   if (!existsSync(dir)) return [];
 
   // Each candidate: the absolute on-disk path to read, the display sub-path
-  // (relative to aidlc/memory/, e.g. "org.md" or "phases/construction.md")
+  // (relative to aidlc/memory/, e.g. "org.md" or "phases/design.md")
   // baked into the RuleResolution, the resolved scope, and the phase name when
   // scope === "phase". The method tree is shallow: top-level layered files plus
   // one nested phases/ dir, so the walk is two explicit reads (no recursion).
@@ -1439,13 +1442,29 @@ export function withStageProgressRow(content: string, slug: string): string {
 }
 
 // True when `slug` runs before the first per-Unit stage of `stages` (a graph in
-// run order): Inception and earlier, where the Unit plan itself is made. A team
-// that goes back there is changing its Unit plan, which leaves each Unit's own
-// work to its claim. False for a slug the graph does not know.
+// run order): Discover and the Design stages before the per-Unit block, where
+// the Unit plan itself is made. A team that goes back there is changing its
+// Unit plan, which leaves each Unit's own work to its claim. False for a slug
+// the graph does not know.
 export function beforePerUnitBlock(stages: readonly { slug: string; for_each?: string }[], slug: string): boolean {
   const at = stages.findIndex((stage) => stage.slug === slug);
   const firstPerUnit = stages.findIndex((stage) => isPerUnitStage(stage));
   return at !== -1 && firstPerUnit !== -1 && at < firstPerUnit;
+}
+
+// True when `slug` lies in the Unit's walk: from the first per-Unit stage of the
+// graph through the stage right after the last one (Build and Test after Code
+// Generation). Five-phase Construction held that span whole; the seven phases
+// split it across design, build and test, so no single phase name can say it.
+// False for a slug the graph does not know.
+export function inUnitWalk(slug: string, stages: readonly { slug: string; for_each?: string }[] = loadGraph()): boolean {
+  const at = stages.findIndex((stage) => stage.slug === slug);
+  const first = stages.findIndex((stage) => isPerUnitStage(stage));
+  let last = -1;
+  stages.forEach((stage, index) => {
+    if (isPerUnitStage(stage)) last = index;
+  });
+  return at !== -1 && first !== -1 && at >= first && at <= last + 1;
 }
 
 /** Stages that produce the given artifact. Empty array = orphan
@@ -2750,7 +2769,7 @@ export function compileStageGraph(): {
 
       // Wrap parse in filename context — parseStageFrontmatter's default
       // error messages don't include the file path, which makes debugging
-      // a bad YAML edit across 31 stage files painful.
+      // a bad YAML edit across 36 stage files painful.
       let parsed: Record<string, unknown>;
       try {
         parsed = parseStageFrontmatter(raw) as Record<string, unknown>;
@@ -2844,9 +2863,9 @@ export function compileStageGraph(): {
       // invariant, so the batch is ordered by its edges first.
       const prefix = PHASES.indexOf(phase as Phase);
       if (prefix < 0) {
-        // A stage directory whose name is not one of the five canonical
-        // phases can't be placed on the numeric spine, fail loud rather
-        // than invent a prefix.
+        // A stage directory whose name is not one of PHASES (Initialization
+        // and the seven delivery phases) can't be placed on the numeric
+        // spine, fail loud rather than invent a prefix.
         throw new Error(
           `Stage "${slug}" (${filePath}) is in an unknown phase directory ` +
             `"${phase}". Stage phase directories must be one of: ${PHASES.join(", ")}.`
@@ -2995,7 +3014,7 @@ export function compileStageGraph(): {
 
   // Edge-local invariant: for every edge A in B.requires_stage,
   // numericOrder(A) < numericOrder(B). Topological sort is non-unique
-  // in the presence of fan-out (Construction's NFR and functional-
+  // in the presence of fan-out (Design's NFR and functional-
   // design branches are independent); sort-equivalence would be
   // tautological. The edge-local check captures the real failure mode.
   const numberLookup = new Map(stages.map((s) => [s.slug, s.number]));
@@ -3037,16 +3056,15 @@ export function compileStageGraph(): {
 
   // Swarm-trigger guard (advisory): the autonomous Construction swarm fires
   // on a field match — for_each: unit-of-work + mode: subagent (see
-  // SWARM_FOR_EACH / SWARM_MODE in aidlc-orchestrate.ts). A per-unit
-  // Construction stage carrying any OTHER mode silently falls off the swarm
-  // path and builds its units serially, which is legal (the topology is the
+  // SWARM_FOR_EACH / SWARM_MODE in aidlc-orchestrate.ts). A per-unit stage
+  // carrying any OTHER mode silently falls off the swarm path and builds its
+  // units serially, which is legal (the topology is the
   // author's call) but easy to do by accident when retuning modes. Warn on
   // stderr; never fail — warnings do not affect the emitted JSON, so
   // compile --check parity is untouched.
   for (const stage of stages) {
     if (
-      stage.phase === "construction" &&
-      stage.for_each === "unit-of-work" &&
+      isUnitLoopStage(stage) &&
       stage.workspace_requires === true &&
       stage.mode !== "subagent"
     ) {
@@ -3632,7 +3650,7 @@ export function computeArs(
     }
   }
   // Pass 2 - a phase-gate executes iff other work in its phase executes or
-  // already ran (persona: approval-handoff is "Always at ideation->inception
+  // already ran (persona: approval-handoff is "Always at discover->design
   // boundary"; when the whole phase folds away, the boundary does not exist).
   // Activity is read from non-gate stages only: a gate, pending or already
   // completed, marks a boundary and is not work, so gates in an otherwise
@@ -4570,3 +4588,57 @@ export async function main(argv: string[]): Promise<void> {
 }
 
 if (import.meta.main) void main(process.argv.slice(2));
+
+// The Unit folders of a record: each per-unit phase's directories, less the stage
+// folders that sit beside them, so a stage folder is never read as a Unit.
+export function recordUnitNames(record: string): string[] {
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const names = new Set<string>();
+  for (const phase of UNIT_RECORD_PHASES) {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(join(record, phase), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory() && !stageSlugs.has(entry.name)) names.add(entry.name);
+    }
+  }
+  return [...names].sort();
+}
+
+// The first stage that `matches`. With no state, or a state whose plan is not
+// composed for one piece of work, that is the first match on the scope's path.
+// A plan composed for one piece of work (its state carries a Plan line) is
+// defined by its state file's EXECUTE/SKIP suffixes, so it anchors on its own
+// first stage. Recompose refuses to move the unit-loop anchor, so the scope
+// grid stays the answer for every other workflow.
+export function firstStageWhere(
+  scope: string,
+  stateContent: string | null | undefined,
+  matches: (stage: StageEntry) => boolean,
+): StageEntry | null {
+  const mapping = loadScopeMapping()[scope];
+  if (!mapping) return null;
+  if (!stateContent || getField(stateContent, PLAN_FIELD) === null) {
+    for (const stage of subgraphForScope(scope)) {
+      if (matches(stage)) return stage;
+    }
+    return null;
+  }
+  const suffixes = parseStateStageSuffixes(stateContent);
+  return loadStageGraph().find((stage) =>
+    matches(stage) &&
+    (suffixes.get(stage.slug) ?? mapping.stages[stage.slug]) === "EXECUTE"
+  ) ?? null;
+}
+
+// The first unit-loop stage the workflow's approved plan runs, in whichever phase
+// it sits.
+export function firstPlannedUnitLoopStage(
+  scope: string,
+  stateContent?: string | null,
+): StageEntry | null {
+  return firstStageWhere(scope, stateContent, (stage) => isUnitLoopStage(stage));
+}

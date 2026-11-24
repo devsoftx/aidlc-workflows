@@ -51,6 +51,7 @@ import {
   removeWorkspaceRecord,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 
 setDefaultTimeout(120_000);
@@ -231,7 +232,7 @@ describe("a system package install nobody asked for", () => {
     const single = ["--stage", "code-generation", "--single", "--scope", "enterprise"];
     expect(reply(proj, "/aidlc --stage code-generation --single").status).toBe(0);
     expect(next(proj, single).plan_approval?.status).toBe("plan");
-    const dir = join(proj, "aidlc", "spaces", "default", "intents", "construction", "code-generation");
+    const dir = join(proj, "aidlc", "spaces", "default", "intents", phaseFor("code-generation"), "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "code-generation-plan.md"),

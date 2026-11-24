@@ -1,4 +1,4 @@
-// covers: stage:ideation/approval-handoff
+// covers: stage:discover/approval-handoff
 //
 // t-tui-t101-memory-lifecycle.serial.test.ts — drive the per-stage memory.md
 // START→APPROVAL lifecycle through a REAL Claude TUI. The shared answer-gate
@@ -9,7 +9,7 @@
 // WHAT IT PROVES (the memory.md lifecycle bootstrapDirectiveMemory drives):
 //   - init-from-template fires at stage START - the engine copies
 //     knowledge/aidlc-shared/memory-template.md into the stage's
-//     <record>/ideation/approval-handoff/memory.md (file exists, non-empty).
+//     <record>/discover/approval-handoff/memory.md (file exists, non-empty).
 //   - the created file carries all FOUR canonical `## ` H2 headings
 //     (## Interpretations / ## Deviations / ## Tradeoffs / ## Open questions).
 //   - the ownership header is the VERBATIM template blockquote, asserted
@@ -49,6 +49,7 @@ import { join } from "node:path";
 // under bun on every platform.
 import { parseMemoryHeadings } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTuiProjectAfterKill,
   setupTuiProject,
@@ -92,7 +93,7 @@ function remainingCleanupMs(): number {
 // The stage artifact the journey inspects (relative to the active intent
 // RECORD dir). Created at stage start; its existence + content is the
 // lifecycle contract.
-const MEM_RELPATH = join("ideation", "approval-handoff", "memory.md");
+const MEM_RELPATH = join(phaseFor("approval-handoff"), "approval-handoff", "memory.md");
 
 // The verbatim template ownership blockquote (knowledge/aidlc-shared/
 // memory-template.md). The init is an engine-owned copy of that template
@@ -145,8 +146,8 @@ describe("t-tui-t101 (memory.md start→approval lifecycle through a driven gate
     `approval-handoff stage creates a faithful memory.md and renders its gate${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
       const session = `aidlc_tui_t101_${process.pid}`;
-      // Mid-ideation state + seeded audit, target the approval-handoff gate stage (a
-      // lightweight gate, ideation phase - the t24 timeout-avoidance choice).
+      // Mid-discover state + seeded audit, target the approval-handoff gate stage (a
+      // lightweight gate, discover phase - the t24 timeout-avoidance choice).
       const sandbox = setupTuiProject({
         withState: "state-mid-ideation.md",
         withAudit: true,
@@ -185,12 +186,12 @@ describe("t-tui-t101 (memory.md start→approval lifecycle through a driven gate
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*IDEATION", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", "\\[AIDLC\\].*DISCOVER", "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
-        // Seeded mid-ideation state -> the statusline paints the WORKFLOW line
-        // ([AIDLC] IDEATION), not the no-workflow "ready" line.
-        expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 800)).toBe(true);
+        // Seeded mid-discover state -> the statusline paints the WORKFLOW line
+        // ([AIDLC] DISCOVER), not the no-workflow "ready" line.
+        expect(waitFor(session, "\\[AIDLC\\].*DISCOVER", remainingWorkMs(), 800)).toBe(true);
 
         // --- jump to the approval-handoff gate stage -------------------------
         // Slash command has spaces -> send literally with no auto-Enter, then
@@ -207,11 +208,11 @@ describe("t-tui-t101 (memory.md start→approval lifecycle through a driven gate
         ]);
         drive(["send", "--session", session, "--keys", "Enter", "--no-enter"]);
 
-        // Confirm the jump kicked off a live turn (statusline still IDEATION;
+        // Confirm the jump kicked off a live turn (statusline still DISCOVER;
         // the stage name moves toward Approval & Handoff as the orchestrator
         // works). --stable-ms 0: the screen is streaming, so match the instant
         // the marker appears.
-        expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 0)).toBe(true);
+        expect(waitFor(session, "\\[AIDLC\\].*DISCOVER", remainingWorkMs(), 0)).toBe(true);
 
         // Answer preparatory menus, then stop with the actual approval menu
         // painted and unanswered. A generic footer is insufficient evidence:

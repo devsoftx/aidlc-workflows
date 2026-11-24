@@ -23,6 +23,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -100,7 +101,7 @@ function singleRequirementsAuditShard(): string {
 }
 
 function seedSingleSummaryQuestions(): void {
-  const dir = join(seededRecordDir(project), "inception", "requirements-analysis");
+  const dir = join(seededRecordDir(project), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "requirements-analysis-questions.md"),
@@ -146,7 +147,7 @@ function swarmDirective(): Record<string, unknown> {
 - **Scope**: feature
 - **Construction Autonomy Mode**: autonomous
 - **Skeleton Stance**: off
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all
@@ -156,16 +157,20 @@ function swarmDirective(): Record<string, unknown> {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
+
+### BUILD PHASE
 - [-] code-generation — EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}
 - **Current Stage**: code-generation
 - **Status**: Running
 `,
@@ -485,7 +490,7 @@ describe("t302 learnings: the one question after a correction", () => {
 describe("t302 construction branches live in their own modules", () => {
   const MOVED: Array<[string, string]> = [
     ["checkpoint", "### Checkpoint verification and approval"],
-    ["loopback", "### Build-and-Test failure loop-back (3.6 \u2192 3.5)"],
+    ["loopback", "### Build-and-Test failure loop-back (4.1 \u2192 3.1)"],
     ["wave", "**Per-unit batch waves (optional, stage-major only).**"],
     ["swarm", "### 12b. Autonomous Code Generation Plan Contract"],
     ["collaborators", "### Collaborator contribution files (ensemble topologies)"],

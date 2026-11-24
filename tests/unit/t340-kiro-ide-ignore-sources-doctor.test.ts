@@ -57,8 +57,8 @@ const READS = [
   "skills/aidlc/question-rendering.md",
   "aidlc-common/protocols/stage-protocol.md",
   "aidlc-common/protocols/stage-protocol-construction.md",
-  "aidlc-common/stages/ideation/intent-capture.md",
-  "aidlc-common/stages/construction/code-generation.md",
+  "aidlc-common/stages/discover/intent-capture.md",
+  "aidlc-common/stages/build/code-generation.md",
   "knowledge/aidlc-shared/glossary.md",
   "knowledge/aidlc-architect-agent/patterns.md",
 ];
@@ -76,14 +76,14 @@ const NON_READS = [
 ];
 type GraphNode = { slug: string; phase: string; mode: string; lead_agent: string; support_agents: string[]; plugin?: string };
 const GRAPH: GraphNode[] = [
-  { slug: "intent-capture", phase: "ideation", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
-  { slug: "code-generation", phase: "construction", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
+  { slug: "intent-capture", phase: "discover", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
+  { slug: "code-generation", phase: "build", mode: "inline", lead_agent: "aidlc-architect-agent", support_agents: [] },
 ];
 // A folder-drop style plugin with no ownership record: its stage, inline
 // persona and knowledge, and the file beside its runner skill are reads; its
 // runner SKILL.md, sensor, and tool are not.
 const PLUGIN_FILES = [
-  "aidlc-common/stages/construction/test-pro-integration.md",
+  "aidlc-common/stages/build/test-pro-integration.md",
   "agents/test-pro-metrics-agent.md",
   "knowledge/test-pro-metrics-agent/methodology.md",
   "skills/test-pro-integration/SKILL.md",
@@ -93,7 +93,7 @@ const PLUGIN_FILES = [
 ];
 const PLUGIN_NODE: GraphNode = {
   slug: "test-pro-integration",
-  phase: "construction",
+  phase: "build",
   mode: "inline",
   plugin: "test-pro",
   lead_agent: "aidlc-architect-agent",
@@ -521,7 +521,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
     // default Standard depth still loads it, so it stays a read.
     const cases: [rule: string, folder: string][] = [
       [".kiro/knowledge/aidlc-architect-agent/", ".kiro/knowledge/"],
-      [".kiro/aidlc-common/stages/construction/", ".kiro/aidlc-common/"],
+      [".kiro/aidlc-common/stages/build/", ".kiro/aidlc-common/"],
       ["stage-protocol-construction.md", ".kiro/aidlc-common/"],
       [".kiro/skills/aidlc/question-rendering.md", ".kiro/skills/"],
       [".kiro/agents/aidlc-architect-agent.md", ".kiro/agents/"],
@@ -558,7 +558,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
       ".kiro/agents/aidlc-aidlc.md",
       ".kiro/skills/aidlc/SKILL.md",
       ".kiro/aidlc-common/protocols/stage-protocol.md",
-      ".kiro/aidlc-common/stages/ideation/intent-capture.md",
+      ".kiro/aidlc-common/stages/discover/intent-capture.md",
       "",
     ].join("\n"));
 
@@ -590,7 +590,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
       [".kiro/agents/test-pro-*", ".kiro/agents/"],
       [".kiro/knowledge/test-pro-metrics-agent/", ".kiro/knowledge/"],
       [".kiro/skills/test-pro-*/", ".kiro/skills/"],
-      [".kiro/aidlc-common/stages/construction/test-pro-*", ".kiro/aidlc-common/"],
+      [".kiro/aidlc-common/stages/build/test-pro-*", ".kiro/aidlc-common/"],
     ];
     for (const record of [null, '{"schemaVersion": 1, "name": "test-pro", "files": [{"path": ".kiro/agents/te']) {
       // A malformed or truncated ownership record changes nothing: the files are read folders.
@@ -618,7 +618,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
 
     writeData(project, "harness.json", { plugins: ["aidlc"] });
     for (const rule of [
-      ".kiro/aidlc-common/stages/construction/test-pro-*",
+      ".kiro/aidlc-common/stages/build/test-pro-*",
       ".kiro/agents/test-pro-*",
       ".kiro/knowledge/test-pro-metrics-agent/",
       ".kiro/skills/test-pro-*/",
@@ -740,7 +740,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
     writeData(project, "harness.json", { plugins: [" aidlc ", " test-pro "] });
 
     for (const [rule, folder] of [
-      [".kiro/aidlc-common/stages/construction/code-generation.md", ".kiro/aidlc-common/"],
+      [".kiro/aidlc-common/stages/build/code-generation.md", ".kiro/aidlc-common/"],
       [".kiro/agents/test-pro-*", ".kiro/agents/"],
       [".kiro/knowledge/test-pro-metrics-agent/", ".kiro/knowledge/"],
     ] as const) {
@@ -761,7 +761,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
     // stage from the roster; as a symlink it is refused and every stage stands in.
     const external = join(home, "external-graph.json");
     writeFileSync(external, `${JSON.stringify([GRAPH[0]])}\n`);
-    writeFileSync(globalFile, ".kiro/aidlc-common/stages/construction/code-generation.md\n");
+    writeFileSync(globalFile, ".kiro/aidlc-common/stages/build/code-generation.md\n");
 
     const graphTargets: Array<[name: string, place: (path: string) => void]> = [
       ["FIFO", (path) => symlinkSync(fifo, path)],
@@ -836,7 +836,7 @@ describe("t340 Kiro IDE ignore sources doctor", () => {
     }));
     writeData(project, "stage-graph.json", [...GRAPH, ...unmatched]);
     writeData(project, "harness.json", { plugins: Array.from({ length: 100_000 }, () => "aidlc") });
-    writeFileSync(globalFile, ".kiro/aidlc-common/stages/construction/code-generation.md\n");
+    writeFileSync(globalFile, ".kiro/aidlc-common/stages/build/code-generation.md\n");
 
     expect(kiroIdeIgnoreSourceChecks(project, ".kiro", env).map((row) => row.label)).toEqual([
       hides(`${XDG_IGNORE}:1`, "1 of 8", ".kiro/aidlc-common/"),

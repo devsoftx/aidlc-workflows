@@ -150,6 +150,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { driveAidlc } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // AIDLC_TEST_TIMEOUT bounds the entire case, including setup and cleanup.
 const TIMEOUT_S = Number(process.env.AIDLC_TEST_TIMEOUT);
@@ -596,12 +597,12 @@ describe("t122 Stop hook end-to-end — real hook, real engine (sdk+cli)", () =>
         withAudit: true,
       });
       try {
-        // state-final-stage.md: Lifecycle Phase OPERATION, Current Stage
+        // state-final-stage.md: Lifecycle Phase OPERATE, Current Stage
         // feedback-optimization at [-]. The stage dir lives under the
-        // record as <record>/operation/feedback-optimization/ (memoryPathFor shape).
+        // record as <record>/operate/feedback-optimization/ (memoryPathFor shape).
         const qDir = join(
           docsRoot(proj),
-          "operation",
+          phaseFor(PENDING_STAGE),
           PENDING_STAGE,
         );
         mkdirSync(qDir, { recursive: true });

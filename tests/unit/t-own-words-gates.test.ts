@@ -20,8 +20,9 @@
 // changes at the summary answers "What should change?", on its own row behind
 // that change request, never on the confirmation that follows.
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, test, setDefaultTimeout } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -78,6 +79,22 @@ const LOG = join(AIDLC_SRC, "tools", "aidlc-log.ts");
 const DISPATCHER = join(AIDLC_SRC, "tools", "aidlc.ts");
 const SESSION = "01995000-7a11-7000-8000-00000000f00d";
 const OTHER_SESSION = "01995000-7a11-7000-8000-00000000beef";
+
+// No chat names itself to the tools: this process reads the audit in-process, and a host chat's identity (inherited
+// here) would point those reads at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "SANDBOX_RUNTIME",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 function run(tool: string, args: string[], extra: Record<string, string> = {}): { rc: number; out: string } {
   const env: Record<string, string | undefined> = {
@@ -202,13 +219,19 @@ describe("the stage gate records the choice the agent read, with the person's wo
 
   beforeEach(() => {
     resetAidlcEnv();
+    // The feature scope confirms Feasibility's summary before its gate opens; these cases are about the gate's reply,
+    // and the summary confirmation has its own describe below, so this one opens the gate without it.
+    process.env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD = "1";
     proj = createTestProject();
     seedStateFile(proj, "state-mid-ideation.md");
     slug = state(proj, ["get", "Current Stage"]).out.trim();
     state(proj, ["checkbox", `${slug}=in-progress`]);
     state(proj, ["gate-start", slug]);
   });
-  afterEach(() => cleanupTestProject(proj));
+  afterEach(() => {
+    delete process.env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD;
+    cleanupTestProject(proj);
+  });
 
   // A decision the person has not made goes back to the agent as its next
   // step: never raw JSON for the person, nothing recorded, the question open.
@@ -506,11 +529,21 @@ describe("the stage gate records the choice the agent read, with the person's wo
       report(proj, ["--stage", slug, "--result", "rejected", "--user-input", "Request Changes", "--reason", "tighten it"]);
       expect(report(proj, ["--stage", slug, "--result", "revised"]).kind).toBe("print");
     }
+    // A new chat first loads its stage rules: `next` hands back a load-steering step with a receipt, which the agent
+    // answers with `continue` before the gate's step comes.
     const shownAgain = (args: string[]): GateStep => {
-      const r = run(ORCHESTRATE, [...args, "--project-dir", proj], { AIDLC_SESSION_OVERRIDE: OTHER_SESSION });
-      expect(r.rc, r.out).toBe(0);
-      const step = JSON.parse(r.out.split("\n").find((line) => line.startsWith("{")) as string) as GateStep;
-      return { kind: step.kind, gate_only: step.gate_only, revision_cycle: step.revision_cycle, accept_as_is: step.accept_as_is };
+      let command = args;
+      for (let hop = 0; hop < 20; hop++) {
+        const r = run(ORCHESTRATE, [...command, "--project-dir", proj], { AIDLC_SESSION_OVERRIDE: OTHER_SESSION });
+        expect(r.rc, r.out).toBe(0);
+        const step = JSON.parse(r.out.split("\n").find((line) => line.startsWith("{")) as string) as GateStep & { receipt?: string };
+        if (step.kind === "load-steering") {
+          command = ["continue", step.receipt ?? ""];
+          continue;
+        }
+        return { kind: step.kind, gate_only: step.gate_only, revision_cycle: step.revision_cycle, accept_as_is: step.accept_as_is };
+      }
+      throw new Error("steering continuation limit exceeded");
     };
     const offered = { kind: "run-stage", gate_only: true, revision_cycle: 3, accept_as_is: "offered" };
 
@@ -610,7 +643,7 @@ describe("the summary confirmation records the choice the agent read", () => {
     proj = createTestProject();
     seedStateFile(proj, "state-mid-ideation.md");
     slug = state(proj, ["get", "Current Stage"]).out.trim();
-    questions = join(seededRecordDir(proj), "ideation", slug, `${slug}-questions.md`);
+    questions = join(seededRecordDir(proj), phaseFor(slug), slug, `${slug}-questions.md`);
     mkdirSync(join(questions, ".."), { recursive: true });
     summary("");
     expect(log(proj, [
@@ -1055,6 +1088,8 @@ describe("when the engine cannot tell which chat answered", () => {
   let slug: string;
   beforeEach(() => {
     resetAidlcEnv();
+    // As the gate describe above: the summary confirmation is not what these cases are about.
+    process.env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD = "1";
     proj = createTestProject();
     seedStateFile(proj, "state-mid-ideation.md");
     slug = state(proj, ["get", "Current Stage"]).out.trim();
@@ -1062,7 +1097,10 @@ describe("when the engine cannot tell which chat answered", () => {
     state(proj, ["gate-start", slug]);
     says(proj, "looks good");
   });
-  afterEach(() => cleanupTestProject(proj));
+  afterEach(() => {
+    delete process.env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD;
+    cleanupTestProject(proj);
+  });
 
   const keptMessageId = (): string | null =>
     auditBlockField(

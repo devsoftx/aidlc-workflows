@@ -99,7 +99,12 @@ const SKILLS_DIR = IS_COPILOT
   : HARNESS_NAME === "codex" && !existsSync(join(HARNESS_DIR, "skills"))
     ? join(PROJECT_DIR, ".agents", "skills")
     : join(HARNESS_DIR, "skills");
-const PHASES = ["initialization", "ideation", "inception", "construction", "operation"];
+// The engine's phase order, initialization first, read from the installed lib: this template ships into plugins,
+// so it cannot import the repository's copy. The literal is only for a tree whose lib cannot load.
+const FALLBACK_PHASES = ["initialization", "discover", "design", "build", "test", "secure", "deploy", "operate"];
+const PHASES: readonly string[] = await import(join(HARNESS_DIR, "tools", "aidlc-lib.ts"))
+  .then((m) => (m.PHASES as readonly string[] | undefined) ?? FALLBACK_PHASES)
+  .catch(() => FALLBACK_PHASES);
 const SCOPE_TABLE_END = "<!-- END: compiled scope grid -->";
 const STAGE_TABLE_END = "<!-- END: compiled stage graph -->";
 type ParseStageFrontmatter = (raw: string) => Record<string, unknown>;
@@ -543,7 +548,7 @@ async function installedSchemaAccepts(key: string, sampleValue: unknown): Promis
   if (typeof schema?.validateStageFrontmatter === "function") {
     try {
       const base: Record<string, unknown> = {
-        slug: "probe-stage", phase: "construction", execution: "ALWAYS", condition: "always",
+        slug: "probe-stage", phase: "build", execution: "ALWAYS", condition: "always",
         lead_agent: "aidlc-quality-agent", support_agents: [], mode: "inline",
         produces: [], consumes: [], requires_stage: [], inputs: "x", outputs: "y",
       };

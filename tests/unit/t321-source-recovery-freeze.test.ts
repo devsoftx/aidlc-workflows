@@ -1,6 +1,7 @@
 // covers: function:freshReviewReceipts, function:judgeFreeze,
 // subcommand:aidlc-log:review, hook:aidlc-review-freeze
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS,
   NATIVE_STARTUP_TIMEOUT_MS,
@@ -159,7 +160,7 @@ function seedGitRepo(proj: string): string {
 function seedCodeGenerationOutputs(proj: string, unit: string): string {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("code-generation"),
     unit,
     "code-generation",
   );
@@ -286,7 +287,7 @@ describe("t321 the freeze stays on through a source-recovery review", () => {
     const betaPlan = seedCodeGenerationOutputs(proj, "beta");
     const requirementsDir = join(
       seededRecordDir(proj),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
     );
     mkdirSync(requirementsDir, { recursive: true });

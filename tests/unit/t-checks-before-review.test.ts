@@ -25,6 +25,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -63,7 +64,7 @@ function write(proj: string, path: string, body: string): void {
 
 // ---- A reviewed stage: a bugfix at Requirements Analysis, its document written from confirmed answers.
 const RA = "requirements-analysis";
-const raDir = (proj: string) => join(seededRecordDir(proj), "inception", RA);
+const raDir = (proj: string) => join(seededRecordDir(proj), phaseFor(RA), RA);
 const REQUIREMENTS = "# Requirements\n\n## Overview\n\nA to-do app whose titles are never blank.\n\n## Functional Requirements\n\n- FR-1: a blank title is refused.\n";
 const CITED = `${REQUIREMENTS}\nBuilt from intent-statement.md.\n`;
 
@@ -72,7 +73,7 @@ async function reviewedStage(options: { requirements?: string | null } = {}): Pr
   writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8"), "utf-8");
   appendAuditEntry("STAGE_STARTED", { Stage: RA }, proj);
   // Intent Capture's statement is on disk, so the upstream-coverage check asks the requirements to name it.
-  const ideation = join(seededRecordDir(proj), "ideation", "intent-capture");
+  const ideation = join(seededRecordDir(proj), phaseFor("intent-capture"), "intent-capture");
   mkdirSync(ideation, { recursive: true });
   writeFileSync(join(ideation, "intent-statement.md"), "# Intent Statement\n\nA to-do app.\n", "utf-8");
   const questions = join(raDir(proj), `${RA}-questions.md`);
@@ -235,7 +236,7 @@ describe("t-checks-before-review: a reviewed stage's checks run at its review re
 
 // ---- A stage no review covers: a bugfix at Build and Test, after its code was built.
 const BT = "build-and-test";
-const btDir = (proj: string) => join(seededRecordDir(proj), "construction", BT);
+const btDir = (proj: string) => join(seededRecordDir(proj), phaseFor(BT), BT);
 const UNCITED_BUILD = "# Build Instructions\n\nRun `bun test` from the project folder.\n";
 const CITED_BUILD = `${UNCITED_BUILD}\nFrom code-generation-plan.md, unit-test-instructions.md and code-summary.md.\n`;
 
@@ -248,11 +249,12 @@ function buildAndTest(): string {
     .replace("- [ ] build-and-test ", "- [-] build-and-test ")
     .replace(/^- \*\*Current Stage\*\*:.*$/m, `- **Current Stage**: ${BT}`)
     .replace(/^- \*\*In Progress\*\*:.*$/m, `- **In Progress**: ${BT}`)
-    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
-    .replace("- **Inception**: Active", "- **Inception**: Verified")
-    .replace("- **Construction**: Pending", "- **Construction**: Active"), "utf-8");
+    .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor(BT).toUpperCase()}`)
+    .replace("- **Design**: Active", "- **Design**: Verified")
+    .replace("- **Build**: Pending", "- **Build**: Verified")
+    .replace("- **Test**: Pending", "- **Test**: Active"), "utf-8");
   appendAuditEntry("STAGE_STARTED", { Stage: BT }, proj);
-  const built = join(seededRecordDir(proj), "construction", "code-generation");
+  const built = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(built, { recursive: true });
   writeFileSync(join(built, "code-generation-plan.md"), "# Code Generation Plan\n\n- [x] Step 1: refuse a blank title\n", "utf-8");
   writeFileSync(join(built, "unit-test-instructions.md"), "# Unit Test Instructions\n\nRun `bun test`.\n", "utf-8");
@@ -378,7 +380,7 @@ function unitMajor(): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -391,23 +393,24 @@ function unitMajor(): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${STAGES.map((stage) => `- [${stage === FD ? "-" : " "}] ${stage} — EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: ${FD}
 - **Status**: Running
 `, "utf-8");
   seedBoltDag(proj, ["alpha", "beta"]);
   appendAuditEntry("STAGE_STARTED", { Stage: FD }, proj);
-  const inception = join(seededRecordDir(proj), "inception", "requirements-analysis");
+  const inception = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(inception, { recursive: true });
   writeFileSync(join(inception, "requirements.md"), "# Requirements\n\n- FR-1: a blank title is refused.\n", "utf-8");
   return proj;
 }
 
-const unitDir = (proj: string, unit: string) => join(seededRecordDir(proj), "construction", unit, FD);
+const unitDir = (proj: string, unit: string) => join(seededRecordDir(proj), phaseFor(FD), unit, FD);
 const unitSpec = (proj: string, unit: string) => join(unitDir(proj, unit), "functional-spec.md");
 // A Unit's design, its spec not naming the requirements it was built from.
 function writeUnitDesign(proj: string, unit: string): void {

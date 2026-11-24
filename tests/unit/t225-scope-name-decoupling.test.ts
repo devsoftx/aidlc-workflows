@@ -302,7 +302,7 @@ describe("t225 env-scope fallback under plugin-only selection", () => {
       `import { stageEnabledBySelection } from ${JSON.stringify(join(project, ".claude", "tools", "aidlc-lib.ts"))};`,
       "console.log(JSON.stringify({",
       "  init: stageEnabledBySelection({ plugin: 'aidlc', phase: 'initialization' }),",
-      "  construction: stageEnabledBySelection({ plugin: 'aidlc', phase: 'construction' }),",
+      "  build: stageEnabledBySelection({ plugin: 'aidlc', phase: 'build' }),",
       "}));",
     ].join("\n");
     const result = spawnSync(BUN, ["-e", script], {
@@ -312,7 +312,7 @@ describe("t225 env-scope fallback under plugin-only selection", () => {
       env: { ...process.env, AIDLC_HARNESS_DIR: ".claude" },
     });
     expect(result.status).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ init: true, construction: false });
+    expect(JSON.parse(result.stdout)).toEqual({ init: true, build: false });
     expect(stageEnabledBySelection({ plugin: "aidlc", phase: "initialization" })).toBe(true);
   });
 

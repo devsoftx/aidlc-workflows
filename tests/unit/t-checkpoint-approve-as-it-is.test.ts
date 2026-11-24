@@ -29,6 +29,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -66,7 +67,7 @@ function fixture(policy: Policy | "default", review: "advisory" | "adversarial" 
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -81,12 +82,14 @@ ${policy === "default" ? "" : `- **Guard Policy**: ${policy} (set by you)\n`}- *
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${skipped.map((stage) => `- [S] ${stage} ${DASH} SKIP`).join("\n")}
+### BUILD PHASE
 - [-] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);
@@ -177,7 +180,7 @@ function recordCommand(p: string, name = "check.cjs", session = "approve-as-it-i
 
 function build(p: string, unit: string): void {
   const stage = findStageBySlug(CG)!;
-  const output = join(seededRecordDir(p), "construction", unit, CG);
+  const output = join(seededRecordDir(p), phaseFor(CG), unit, CG);
   mkdirSync(output, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
   writeFileSync(join(output, "source-manifest.json"), JSON.stringify({
@@ -477,7 +480,7 @@ describe("approving a Unit as it is over a review that did not finish", () => {
   function recoveryInterrupted(p: string): void {
     build(p, "alpha");
     review(p, "alpha", 1, "READY");
-    const output = join(seededRecordDir(p), "construction", "alpha", CG);
+    const output = join(seededRecordDir(p), phaseFor(CG), "alpha", CG);
     const doc = join(output, artifactFilename(findStageBySlug(CG)!.produces![0]));
     writeFileSync(doc, `${readFileSync(doc, "utf-8")}\n- Titles cannot be blank.\n`);
     says(p, "review alpha's code again before I approve");

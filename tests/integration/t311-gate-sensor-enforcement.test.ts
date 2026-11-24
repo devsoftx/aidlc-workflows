@@ -79,10 +79,10 @@ interface Fixture {
   scripts: string;
 }
 
-// `laterConstructionStage` places the probe as the second Construction stage,
-// behind a completed anchor, so a Construction autonomy grant makes its gate
-// one the engine approves itself (the first Construction approval is never
-// the grant's).
+// `laterConstructionStage` places the probe as the second unit-loop stage
+// (phase build, for_each unit-of-work), behind a completed anchor of the same
+// kind, so a Construction autonomy grant makes its gate one the engine approves
+// itself (the first Construction approval is never the grant's).
 function setupFixture(
   severity: "advisory" | "blocking",
   matches = "**/*",
@@ -126,13 +126,14 @@ function setupFixture(
     "utf-8",
   );
 
-  const phase = laterConstructionStage ? "construction" : "inception";
+  const phase = laterConstructionStage ? "build" : "design";
   const graph = join(project, "stage-graph.json");
   const anchor = {
     slug: "anchor",
     number: "0.9",
     name: "Anchor",
     phase,
+    for_each: "unit-of-work",
     execution: "ALWAYS",
     lead_agent: "aidlc-product-agent",
     support_agents: [],
@@ -192,7 +193,7 @@ function setupFixture(
       "# AI-DLC State Tracking",
       "",
       `- **Workflow**: ${scope}`,
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       `- **Scope**: ${scope}`,
       `- **Phase**: ${phase}`,
       "- **Current Stage**: probe",
@@ -1046,15 +1047,15 @@ describe("t311 a blocking check over every repository's files", () => {
     ].join("\n"), "utf-8");
     const graph = join(project, "stage-graph.json");
     writeFileSync(graph, `${JSON.stringify([{
-      slug: "reverse-engineering", number: "2.1", name: "Reverse Engineering", phase: "inception",
+      slug: "reverse-engineering", number: "2.1", name: "Reverse Engineering", phase: "discover",
       execution: "ALWAYS", lead_agent: "aidlc-product-agent", support_agents: [], mode: "inline",
       produces: ["architecture", "dependencies"], optional_produces: [], consumes: [], requires_stage: [],
       sensors: [id], scopes: ["bugfix"], inputs: "", outputs: "", rules_in_context: [],
       sensors_applicable: [{ id, path: `.claude/sensors/aidlc-${id}.md`, fire_on: "gate", default_severity: "blocking", category: "test", matches }],
     }], null, 2)}\n`, "utf-8");
     writeFileSync(seededStateFile(project), [
-      "# AI-DLC State Tracking", "", "- **Workflow**: bugfix", "- **State Version**: 8", "- **Scope**: bugfix",
-      "- **Phase**: inception", "- **Current Stage**: reverse-engineering", "", "- [-] reverse-engineering \u2014 EXECUTE", "",
+      "# AI-DLC State Tracking", "", "- **Workflow**: bugfix", "- **State Version**: 10", "- **Scope**: bugfix",
+      "- **Phase**: discover", "- **Current Stage**: reverse-engineering", "", "- [-] reverse-engineering \u2014 EXECUTE", "",
     ].join("\n"), "utf-8");
     seedAuditFile(project);
     const store = codekbDir(project, codekbRepoName(project));

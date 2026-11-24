@@ -31,6 +31,7 @@ import {
   seedBoltDag,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -77,7 +78,7 @@ function finishedPractices(policy: string): string {
   });
   expect(made.status, `${made.stdout}${made.stderr}`).toBe(0);
   const stage = loadGraph().find((entry) => entry.slug === "practices-discovery")!;
-  const dir = join(recordDir(proj), "inception", "practices-discovery");
+  const dir = join(recordDir(proj), stage.phase, "practices-discovery");
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n`);
   const statePath = join(recordDir(proj), "aidlc-state.md");
@@ -92,7 +93,7 @@ function finishedPractices(policy: string): string {
 }
 
 function editTeamPractices(proj: string): void {
-  const path = join(recordDir(proj), "inception", "practices-discovery", artifactFilename("team-practices"));
+  const path = join(recordDir(proj), phaseFor("practices-discovery"), "practices-discovery", artifactFilename("team-practices"));
   writeFileSync(path, `${readFileSync(path, "utf-8")}\nOne line the person added.\n`);
 }
 
@@ -114,7 +115,7 @@ function constructionProject(skeletonStance?: string): string {
 - **Project**: rules travel with the steps
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ${skeletonStance ? `- **Skeleton Stance**: ${skeletonStance}\n` : ""}
 ## Scope Configuration

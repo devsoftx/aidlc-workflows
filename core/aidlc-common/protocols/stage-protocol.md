@@ -115,7 +115,7 @@ review target, or a workflow transition to another operation starts a fresh
 count. Diagnose a refusal only from its message and `/aidlc --doctor`. Never
 read framework or workflow source files to investigate it.
 
-**In Construction, the loop's bookkeeping is internal.** This phase repeats the
+**In the unit loop, the loop's bookkeeping is internal.** This loop repeats the
 same stage once per piece of work, and the machinery that drives the repetition
 is the largest pile of internal detail in the framework: which pass of the
 iteration this is, what a rules receipt carries, whether a gate has
@@ -212,7 +212,7 @@ present the gate and report the human's reply through the existing
 approval procedure. A `unit_gate` follows the team-owned gate procedure with
 the emitted Unit; `swarm_settled` retains the settled-swarm completion policy.
 This branch takes precedence over ordinary stage execution and over generic
-Construction completion-only bookkeeping. It grants no approval itself.
+unit-loop completion-only bookkeeping. It grants no approval itself.
 
 ### HARD STOP RULE (non-negotiable)
 
@@ -263,7 +263,7 @@ ready yet, do what its reply names, then report that stage approved with the
 same choice: do not ask the person again.
 
 ### For stages with conditional options:
-IDEATION and INCEPTION stages may offer to add a previously skipped stage
+DISCOVER and DESIGN stages may offer to add a previously skipped stage
 together with the approval, as one answer:
 
 ```question
@@ -518,10 +518,10 @@ Stage files list **topic areas and example questions** — they are guidance, no
 1. **Depth level** (from `aidlc-state.md` → `**Depth**`, or the run-stage's `depth` when an isolated run carries one) — sets the expected question volume
 2. **Project context** — what's already known from prior stages, codebase analysis, and the user's description
 3. **Phase progression** — Questions naturally decrease as the lifecycle advances:
-   - **Ideation**: Most questions. Business/strategic focus ("why?", "for whom?", "what market?")
-   - **Inception**: Moderate questions. Design/architectural focus ("what requirements?", "which patterns?")
-   - **Construction**: Minimal questions. By this point, decisions should be made. Questions are **exceptional, not routine** — only when the agent detects genuine gaps that prior stages didn't cover (e.g., a unit-specific edge case not addressed in Domain Design). Not a full Q&A session.
-   - **Operation**: Occasional targeted questions only where operational parameters weren't established earlier
+   - **Discover**: Most questions. Business/strategic focus ("why?", "for whom?", "what market?")
+   - **Design**: Moderate questions. Design/architectural focus ("what requirements?", "which patterns?")
+   - **Build, Test, Secure** (and the per-Unit design stages just before them): Minimal questions. By this point, decisions should be made. Questions are **exceptional, not routine** — only when the agent detects genuine gaps that prior stages didn't cover (e.g., a unit-specific edge case not addressed in Domain Design). Not a full Q&A session.
+   - **Deploy, Operate**: Occasional targeted questions only where operational parameters weren't established earlier
 
 | Depth | Target Range | Guidance |
 |-------|-------------|----------|
@@ -532,7 +532,7 @@ Stage files list **topic areas and example questions** — they are guidance, no
 **These are guidelines, not hard caps.** The agent MUST use judgment:
 - A Minimal bugfix with a vague one-line description warrants more questions — don't blindly cap at 2.
 - A Comprehensive enterprise feature with crystal-clear requirements warrants fewer — don't pad with noise.
-- Prior stage outputs reduce what needs asking. If requirements-analysis already captured NFR targets, construction stages shouldn't re-ask.
+- Prior stage outputs reduce what needs asking. If requirements-analysis already captured NFR targets, build and later stages shouldn't re-ask.
 - **Never re-ask an answered question.** Before adding any question to the file, check whether the current record already answers it:
   - Recursively read every `<record>/**/*-questions.md` file. Interpret each filled `[Answer]:` with its question text and options; question files are co-located with stage artifacts rather than stored at the record root.
   - For audit-only interactions, run `{{INVOKE}} engine log answers --stage <slug>` (add `--unit <unit>` when unit-scoped). Use `answered` for paired questions and answers and `open` for questions nobody has answered. One reply closes every question logged for the menu it answered, so a menu answered once never comes back. `ambiguous` holds only an answer with no question before it, or two writers at the same second; it is nothing to ask the person about again: proceed on what they said.
@@ -649,8 +649,8 @@ ask the user something but leave no blank `[Answer]:` tag in `<slug>-questions.m
 the hook cannot see the question is pending and will nudge you to keep going
 (and on a non-interactive run the loop is only bounded by the block cap). So:
 add the open question to the file with a blank tag *before* you stop to wait,
-in every mode (guided, self-guided, chat). This does not apply in autonomous
-Construction, where the loop is meant to keep running without you.
+in every mode (guided, self-guided, chat). This does not apply in the autonomous
+unit loop, where the loop is meant to keep running without you.
 
 ### Error handling for invalid/missing answers
 When processing user answers from question files:
@@ -777,7 +777,7 @@ The explicit stage pin and nonblank reason are mandatory. The engine preserves
 `[S]`, emits one `STAGE_SKIPPED`, and starts the next in-scope stage (or
 completes the workflow) without emitting `STAGE_COMPLETED`. A single-stage run
 cannot use this routing outcome. Under unit-major iteration a per-unit
-Construction directive carries `directive.unit` and may name a later stage
+directive carries `directive.unit` and may name a later stage
 than Current Stage. Judge the stage's condition for that unit, and when it does
 not apply, report `--stage "<directive.stage>" --unit "<directive.unit>"`
 with the reason. That skip covers that unit only: the walk moves on and every
@@ -786,7 +786,7 @@ unit owes it; otherwise it completes through its normal approval, which names
 the skipped units. A unit whose files for the stage are already written cannot
 be skipped.
 
-**Event emission is tool-owned.** State transitions (`advance`, `approve`, `reject`, `skip`, `complete-workflow`, etc.) emit the correct audit events internally. Config changes (`scope-change`, `config-change`, `detect-scope`) likewise. Construction bolts use `aidlc-bolt.ts`; a one-unit skip (`UNIT_SKIPPED`) is the state tool's, reached through `aidlc-orchestrate.ts report --result skipped --unit` or the forward jump's `aidlc-jump.ts execute --units` the engine prints. Non-gate questions, decisions, reviews, and pipeline-link receipts use `aidlc-log.ts`; artifact reuse receipts use `aidlc-state.ts reuse-artifact` (and `aidlc-jump.ts reopen --via redo` for a Redo the person asked for on re-entry); approval gates use the state transition emitted by `aidlc-orchestrate.ts report`. The `aidlc-audit.ts append` CLI is a narrow diagnostic escape hatch for events without a specific owning path; it REFUSES authority-bearing receipts (`HUMAN_TURN`, `GATE_APPROVED`, `GATE_REJECTED`, `QUESTION_ANSWERED`, `REVIEW_REQUESTED`, `REVIEW_COMPLETED`, `PIPELINE_LINK_COMPLETED`, `ARTIFACT_REUSED`, `SWARM_STARTED`, `SWARM_UNIT_CONVERGED`, `SWARM_SOURCE_MERGED`, `AUTONOMY_MODE_SET`, `UNIT_STARTED`, `UNIT_PAUSED`, `UNIT_RESUMED`, `UNIT_COMPLETED`, `UNIT_SKIPPED`, and the Bolt, fork and worktree lifecycle rows `BOLT_*`, `AUDIT_FORKED`/`AUDIT_MERGED`, `STATE_FORKED`/`STATE_MERGED`, `WORKTREE_*`) and the commit-provenance anchor `SOURCE_COMMITTED`; those are emitted only by their owning tool or hook through the library path.
+**Event emission is tool-owned.** State transitions (`advance`, `approve`, `reject`, `skip`, `complete-workflow`, etc.) emit the correct audit events internally. Config changes (`scope-change`, `config-change`, `detect-scope`) likewise. Bolts use `aidlc-bolt.ts`; a one-unit skip (`UNIT_SKIPPED`) is the state tool's, reached through `aidlc-orchestrate.ts report --result skipped --unit` or the forward jump's `aidlc-jump.ts execute --units` the engine prints. Non-gate questions, decisions, reviews, and pipeline-link receipts use `aidlc-log.ts`; artifact reuse receipts use `aidlc-state.ts reuse-artifact` (and `aidlc-jump.ts reopen --via redo` for a Redo the person asked for on re-entry); approval gates use the state transition emitted by `aidlc-orchestrate.ts report`. The `aidlc-audit.ts append` CLI is a narrow diagnostic escape hatch for events without a specific owning path; it REFUSES authority-bearing receipts (`HUMAN_TURN`, `GATE_APPROVED`, `GATE_REJECTED`, `QUESTION_ANSWERED`, `REVIEW_REQUESTED`, `REVIEW_COMPLETED`, `PIPELINE_LINK_COMPLETED`, `ARTIFACT_REUSED`, `SWARM_STARTED`, `SWARM_UNIT_CONVERGED`, `SWARM_SOURCE_MERGED`, `AUTONOMY_MODE_SET`, `UNIT_STARTED`, `UNIT_PAUSED`, `UNIT_RESUMED`, `UNIT_COMPLETED`, `UNIT_SKIPPED`, and the Bolt, fork and worktree lifecycle rows `BOLT_*`, `AUDIT_FORKED`/`AUDIT_MERGED`, `STATE_FORKED`/`STATE_MERGED`, `WORKTREE_*`) and the commit-provenance anchor `SOURCE_COMMITTED`; those are emitted only by their owning tool or hook through the library path.
 
 **Stage graph lookups** (no state file needed):
 ```bash
@@ -1005,16 +1005,16 @@ Key terms used throughout AI-DLC documentation:
 
 | Term | Definition |
 |------|-----------|
-| **Phase** | Top-level grouping: INITIALIZATION, IDEATION, INCEPTION, CONSTRUCTION, OPERATION |
+| **Phase** | Top-level grouping: INITIALIZATION, DISCOVER, DESIGN, BUILD, TEST, SECURE, DEPLOY, OPERATE |
 | **Stage** | A discrete step within a phase (e.g., Intent Capture, Requirements Analysis, Code Generation, Observability Setup) |
 | **Scope** | Controls which stages execute and at what depth. Eleven built-in scopes, one file per scope under `{{HARNESS_DIR}}/scopes/aidlc-<name>.md`: enterprise, feature, mvp, poc, bugfix, refactor, infra, security-patch, classic, workshop, express. Custom scopes can be added without editing this file. |
-| **Bolt** | A Construction planning iteration over one or more dependency-linked Units, distinct from a Unit, its worktree, and a swarm batch. Delivery Planning records grouping, Definition of Done, confidence hypothesis, and ownership. Runtime order comes from the Unit DAG and recorded iteration choice; `bolt-plan.md` does not replace them. Build and Test and CI Pipeline run once across the completed Unit work. |
+| **Bolt** | A unit-loop planning iteration over one or more dependency-linked Units, distinct from a Unit, its worktree, and a swarm batch. Delivery Planning records grouping, Definition of Done, confidence hypothesis, and ownership. Runtime order comes from the Unit DAG and recorded iteration choice; `bolt-plan.md` does not replace them. Build and Test and CI Pipeline run once across the completed Unit work. |
 | **Autonomy mode** | The explicit human choice stored as `Construction Autonomy Mode`: `autonomous` waives ordinary completion questions; `unset`/`gated` requires them. Plan Approval, enabled summary confirmation, skeleton approval, and failures remain human stops. Checkpoint-enabled unit-major stays serial; stage-major with explicit swarm execution supports guided or automatic completion approval; execution is independent of autonomy. Legacy workflows keep their previous gate policy. |
 | **Walking skeleton** | The smallest working integrated slice, planned as the first DAG Unit when skeleton-on. In checkpoint-enabled solo work it runs through all applicable per-unit stages, including Code Generation, before later Units, even with stage-major selected; a real end-to-end check and human checkpoint approval precede continuation. A first design-stage review is not a working skeleton. |
-| **Ladder prompt** | The explicit choice between “Continue automatically” and “Review each checkpoint”. In checkpoint workflows `construction_policy.offer_autonomy` offers it at Construction entry for skeleton-off or after the real skeleton checkpoint for skeleton-on. It never repeats a known choice. On-demand grant/revoke requests remain available during Construction. |
+| **Ladder prompt** | The explicit choice between “Continue automatically” and “Review each checkpoint”. In checkpoint workflows `construction_policy.offer_autonomy` offers it at unit-loop entry for skeleton-off or after the real skeleton checkpoint for skeleton-on. It never repeats a known choice. On-demand grant/revoke requests remain available during the unit loop. |
 | **Construction execution** | New workflows default to `Construction Execution: serial`. Explicit `swarm` requires stage-major and works with gated or autonomous completion approval. Unit-major remains serial. Existing workflows without this field retain legacy autonomy-based swarm routing. |
 | **Construction checkpoint** | An engine-issued verification and approval of one completed Unit, or of the first integrated skeleton Unit. Current artifact/source/attempt-bound proof is required to approve. Skeleton approval is always human; an ordinary Unit may be approved automatically under a recorded grant. Team-owned `unit_gate` and legacy stage gates use their own policies. |
-| **Parallel batch** | A runtime group of dependency-ready Units from `unit-of-work-dependency.md` (2.7) that do not depend on each other and can run concurrently. A runtime batch is not a Bolt-plan grouping; `SWARM_COMPLETED` closes the batch. |
+| **Parallel batch** | A runtime group of dependency-ready Units from `unit-of-work-dependency.md` (2.6) that do not depend on each other and can run concurrently. A runtime batch is not a Bolt-plan grouping; `SWARM_COMPLETED` closes the batch. |
 | **Walk order** | New workflows record `Construction Iteration: unit-major` (one Unit through all applicable per-unit stages before the next) and `Construction Checkpoints: enabled`. Preserve explicit stage-major choices and existing workflows. Skeleton-on checkpoint work completes the first DAG Unit before later Units under either order. Legacy missing fields keep legacy defaults; team-owned gates retain their own policy. Stance resolves `org.md` → `team.md` → `project.md`; a Bolt-plan marker is advisory. |
 | **Unit of Work** | The WHAT: an independently implementable piece of the solution, decomposed during Units Generation and listed in `unit-of-work-dependency.md`. One or more dependency-linked Units supply the scope of a Bolt. |
 | **Worktree** | The git isolation mechanism used when a Bolt Unit runs under swarm mode. The worktree and its intent-scoped `bolt-<id8>_<slug>` branch host that Unit execution; neither is the Bolt itself or the swarm batch. See [Bolt identity](../../knowledge/aidlc-shared/worktree-info-schema.md#bolt-identity) for naming and legacy resolution. |

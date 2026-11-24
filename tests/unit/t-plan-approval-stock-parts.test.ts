@@ -33,6 +33,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -55,7 +56,7 @@ afterEach(() => {
 });
 
 function stageDir(proj: string, unit: string | null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), ...(unit ? [unit] : []), "code-generation");
 }
 
 function writePlan(proj: string, unit: string | null, extra = ""): void {
@@ -151,7 +152,7 @@ describe("one approval starts the build however the rules travel", () => {
 - **Project**: Add a --shout option to greet.py
 - **Project Type**: Brownfield
 - **Scope**: poc
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all
@@ -168,12 +169,14 @@ describe("one approval starts the build however the rules travel", () => {
 - [x] workspace-detection \u2014 EXECUTE
 - [x] state-init \u2014 EXECUTE
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");
@@ -213,7 +216,7 @@ describe("one approval starts the build however the rules travel", () => {
 - **Project**: One-Unit build
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Scope Configuration
@@ -231,16 +234,18 @@ describe("one approval starts the build however the rules travel", () => {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");

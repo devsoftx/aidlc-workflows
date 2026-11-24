@@ -71,6 +71,7 @@ import {
   WORKER_BRIEF_SECTIONS_FIXTURE,
 } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -162,7 +163,7 @@ function project(mode: Mode): string {
 }
 
 function stageDir(proj: string): string {
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -220,7 +221,7 @@ function editReviewedArtifact(proj: string): void {
     {
       File: artifact(proj),
       Tool: "Edit",
-      Context: `inception > ${STAGE} > requirements.md`,
+      Context: `${phaseFor(STAGE)} > ${STAGE} > requirements.md`,
     },
     proj,
   );
@@ -462,7 +463,7 @@ describe("t335 (1) review receipt: relaxed keeps the verdict and carries the cha
     writeFileSync(trace, "{}\n", "utf-8");
     appendAuditEntry(
       "ARTIFACT_CREATED",
-      { File: trace, Tool: "Write", Context: `inception > ${STAGE} > traceability.json` },
+      { File: trace, Tool: "Write", Context: `${phaseFor(STAGE)} > ${STAGE} > traceability.json` },
       proj,
     );
     const receipts = freshReviewReceipts(proj, readFileSync(seededStateFile(proj), "utf-8"), stage());
@@ -1028,7 +1029,7 @@ describe("t335 (5) a team-owned Unit gate runs the same checkpoint", () => {
         "- **Project**: team unit change control test",
         "- **Project Type**: Greenfield",
         "- **Scope**: feature",
-        "- **State Version**: 8",
+        "- **State Version**: 10",
         "- **Skeleton Stance**: on",
         "",
         "## Runtime State",
@@ -1045,7 +1046,7 @@ describe("t335 (5) a team-owned Unit gate runs the same checkpoint", () => {
         "",
         "## Stage Progress",
         "",
-        "### CONSTRUCTION PHASE",
+        `### ${phaseFor(UNIT_STAGE).toUpperCase()} PHASE`,
         `- [-] ${UNIT_STAGE} \u2014 EXECUTE`,
         "- [ ] nfr-requirements \u2014 EXECUTE",
         "- [ ] nfr-design \u2014 EXECUTE",
@@ -1054,7 +1055,7 @@ describe("t335 (5) a team-owned Unit gate runs the same checkpoint", () => {
         "- [ ] build-and-test \u2014 EXECUTE",
         "",
         "## Current Status",
-        "- **Lifecycle Phase**: CONSTRUCTION",
+        `- **Lifecycle Phase**: ${phaseFor(UNIT_STAGE).toUpperCase()}`,
         `- **Current Stage**: ${UNIT_STAGE}`,
         "- **Status**: Running",
         "- **Last Updated**: 2026-08-20T00:00:00Z",
@@ -1066,7 +1067,7 @@ describe("t335 (5) a team-owned Unit gate runs the same checkpoint", () => {
   }
 
   function unitDir(proj: string): string {
-    const dir = join(seededRecordDir(proj), "construction", UNIT, UNIT_STAGE);
+    const dir = join(seededRecordDir(proj), phaseFor(UNIT_STAGE), UNIT, UNIT_STAGE);
     mkdirSync(dir, { recursive: true });
     return dir;
   }
@@ -1103,7 +1104,7 @@ describe("t335 (5) a team-owned Unit gate runs the same checkpoint", () => {
         File: reviewedUnitArtifact(proj),
         Tool: "Edit",
         Unit: UNIT,
-        Context: `construction > ${UNIT} > ${UNIT_STAGE} > functional-spec.md`,
+        Context: `${phaseFor(UNIT_STAGE)} > ${UNIT} > ${UNIT_STAGE} > functional-spec.md`,
       },
       proj,
     );
@@ -1285,7 +1286,7 @@ describe("t335 (3) never relaxed: the human gate, the plan stop, and an in-progr
       assertFence();
     };
     assertBlocked("code-generation-plan.md");
-    const dir = join(seededRecordDir(proj), "construction", "code-generation");
+    const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
     mkdirSync(dir, { recursive: true });
     const plan = join(dir, "code-generation-plan.md");
     writeFileSync(plan, `# Plan\n\nImplement the fix.\n\n${renderTestingContract(contract)}`);

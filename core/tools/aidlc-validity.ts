@@ -6,6 +6,7 @@ import {
   currentFingerprintForm,
   entrySkillInvocation,
   getField,
+  isUnitLoopStage,
   MESSAGE_SPENDING_EVENTS,
   parseCheckboxes,
   readAllAuditShards,
@@ -16,6 +17,7 @@ import { loadGraph } from "./aidlc-graph.ts";
 import { withdrawnTurnPositions } from "./aidlc-record-core.ts";
 import { SLUG_RE as STAGE_SLUG_RE } from "./aidlc-stage-schema.ts";
 import { artifactFilename } from "./aidlc-artifact-vocabulary.ts";
+import { fivePhaseGraphContracts, fivePhaseRecordSpellings } from "./aidlc-five-phase-record.ts";
 import {
   resolveArtifactInstances,
   type ArtifactResolutionOptions,
@@ -177,6 +179,13 @@ function canonicalJson(value: unknown): string {
  * requires_stage is excluded because v2 currently uses it for both semantic
  * and ordering constraints. Treating every such edge as invalidating would be
  * an unsound over-approximation until the graph carries an explicit kind.
+ *
+ * A five-phase release (up to 2.11.4) hashed the same contract with its own
+ * phase name and wording (fivePhaseGraphContracts: one form for a stage it
+ * shipped, one per five-phase folder for a plugin's), so each such hash is
+ * remembered against this one beside the documents' (FIVE_PHASE_BASES), and
+ * basisInCurrentForm reads its receipts as this release's: only a real change
+ * to the contract reads as AI-DLC doing the stage differently.
  */
 function graphContractFingerprint(stage: StageValidityNode): string {
   const contract = {
@@ -191,7 +200,9 @@ function graphContractFingerprint(stage: StageValidityNode): string {
     optional_produces: stage.optional_produces ?? [],
     produces_kinds: stage.produces_kinds ?? {},
   };
-  return `sha256:${sha256(canonicalJson(contract))}`;
+  const current = `sha256:${sha256(canonicalJson(contract))}`;
+  for (const older of fivePhaseGraphContracts(contract)) FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(older))}`, current);
+  return current;
 }
 
 interface InstanceFingerprint {
@@ -331,6 +342,8 @@ function aggregateArtifactBasis(
     }));
     rememberRawFingerprint(`sha256:${sha256(canonicalJson(form))}`, contentHash);
   }
+  const structureHash = `sha256:${sha256(canonicalJson(structure))}`;
+  rememberFivePhaseBasis(fingerprints, structureHash, contentHash);
 
   return {
     artifact,
@@ -338,9 +351,54 @@ function aggregateArtifactBasis(
     required,
     instanceCount: fingerprints.length,
     presentCount: fingerprints.filter((item) => item.present).length,
-    structureHash: `sha256:${sha256(canonicalJson(structure))}`,
+    structureHash,
     contentHash,
   };
+}
+
+// A receipt a five-phase release (State Version 8, up to 2.11.4) wrote hashed
+// each document at the folder the 8 to 10 step moved it from. The same
+// documents and content under those paths, in that release's order, are
+// remembered against the hashes read now, so basisInCurrentForm reads such a
+// receipt as this one: once per layout a plugin stage's documents could have
+// been kept in, since its 2.11.4 folder is not recorded. Only documents read
+// in this process are here, and only the recorded side is mapped: a changed
+// document still differs.
+const FIVE_PHASE_BASES = new Map<string, string>();
+
+function rememberFivePhaseBasis(
+  fingerprints: readonly InstanceFingerprint[],
+  structureHash: string,
+  contentHash: string,
+): void {
+  const spellings = fivePhaseRecordSpellings(fingerprints.map((fingerprint) => fingerprint.instance.relativePath));
+  for (const older of spellings) rememberFivePhaseLayout(fingerprints, older, structureHash, contentHash);
+}
+
+function rememberFivePhaseLayout(
+  fingerprints: readonly InstanceFingerprint[],
+  older: readonly (string | null)[],
+  structureHash: string,
+  contentHash: string,
+): void {
+  const pathAt = (index: number): string => older[index] ?? fingerprints[index].instance.relativePath;
+  const keyAt = (index: number): string =>
+    [fingerprints[index].instance.unit ?? "", fingerprints[index].instance.unitKind ?? "", pathAt(index)].join("\u0000");
+  const order = fingerprints.map((_, index) => index).sort((left, right) => keyAt(left).localeCompare(keyAt(right)));
+  const structure = order.map((index) => ({
+    path: pathAt(index),
+    unit: fingerprints[index].instance.unit,
+    unitKind: fingerprints[index].instance.unitKind,
+  }));
+  FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(structure))}`, structureHash);
+  for (const digest of ["sha256", "committedSha256", "rawSha256"] as const) {
+    const content = order.map((index) => ({
+      path: pathAt(index),
+      sha256: fingerprints[index][digest] ?? fingerprints[index].sha256,
+      present: fingerprints[index].present,
+    }));
+    FIVE_PHASE_BASES.set(`sha256:${sha256(canonicalJson(content))}`, contentHash);
+  }
 }
 
 function producersByArtifact(
@@ -392,7 +450,7 @@ function projectTypeFrom(
 // Construction testing plan and in-place rule follow it). Every other finished
 // stage stays valid, so the advisory names a stage worth redoing.
 function workDependsOnProjectType(stage: StageValidityNode): boolean {
-  return stage.phase === "construction" ||
+  return isUnitLoopStage(stage) ||
     (stage.consumes ?? []).some((consume) => consume.conditional_on !== undefined);
 }
 
@@ -809,8 +867,17 @@ function changesExplainedBy(before: StageValidationBasis, after: StageValidation
 
 function basisInCurrentForm(basis: StageValidationBasis): StageValidationBasis {
   const current = (items: ArtifactBasis[]): ArtifactBasis[] =>
-    items.map((item) => ({ ...item, contentHash: currentFingerprintForm(item.contentHash) ?? item.contentHash }));
-  return { ...basis, inputs: current(basis.inputs), outputs: current(basis.outputs) };
+    items.map((item) => ({
+      ...item,
+      structureHash: FIVE_PHASE_BASES.get(item.structureHash) ?? item.structureHash,
+      contentHash: FIVE_PHASE_BASES.get(item.contentHash) ?? currentFingerprintForm(item.contentHash) ?? item.contentHash,
+    }));
+  return {
+    ...basis,
+    graphContract: FIVE_PHASE_BASES.get(basis.graphContract) ?? basis.graphContract,
+    inputs: current(basis.inputs),
+    outputs: current(basis.outputs),
+  };
 }
 
 export function diffStageValidationBasis(

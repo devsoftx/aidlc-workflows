@@ -76,7 +76,8 @@ describe("a claimed Unit's end-of-Unit notice says where the rest is done", () =
 // own step stays the step, however often the person comes back, and a record
 // an older AI-DLC left there reads the same.
 // `endsAtCodeGeneration`: the plan has no stage after the Units' (classic with
-// Build and Test taken off), so the walk marks the whole work finished instead.
+// Build and Test and the secure-phase reviews taken off), so the walk marks the
+// whole work finished instead.
 function lastUnitClaimed(publish = true, endsAtCodeGeneration = false): string {
   const { seed: lead, remote } = makeSeed(parallelDependencyBody());
   completeUnitOnMain(lead, "beta");
@@ -86,7 +87,10 @@ function lastUnitClaimed(publish = true, endsAtCodeGeneration = false): string {
       readFileSync(seededStateFile(lead), "utf-8")
         .replace("- **Scope**: feature", "- **Scope**: classic")
         .replace("build-and-test \u2014 EXECUTE", "build-and-test \u2014 SKIP")
-        .replace("ci-pipeline \u2014 EXECUTE", "ci-pipeline \u2014 SKIP"),
+        .replace(
+          "ci-pipeline \u2014 EXECUTE",
+          "ci-pipeline \u2014 SKIP\n- [ ] code-review \u2014 SKIP\n- [ ] security-review \u2014 SKIP\n- [ ] conformance-review \u2014 SKIP",
+        ),
     );
   }
   git(lead, ["add", "-A"]);
@@ -123,9 +127,10 @@ describe("a claimed checkout whose record moved on to Build and Test", () => {
   });
 });
 
-// The plan ends at Code Generation: the walk marks this checkout's work
-// finished once its Unit, the last, is done. The Unit has still to reach the
-// lead, so its own step stays the step there too, typed words or not.
+// The plan ends at Code Generation (classic, with Build and Test and the
+// secure-phase reviews taken off): the walk marks this checkout's work finished
+// once its Unit, the last, is done. The Unit has still to reach the lead, so
+// its own step stays the step there too, typed words or not.
 describe("a claimed checkout whose plan ends at Code Generation", () => {
   test("not published: the offer to publish it, then the wait, never finished", () => {
     const checkout = lastUnitClaimed(false, true);

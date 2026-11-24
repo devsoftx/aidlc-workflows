@@ -10,6 +10,7 @@
 // that now needs an input it did not need when it ran is said, once, in one
 // line that asks nothing. A change to the person's own work still asks.
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -46,7 +47,7 @@ function recordDir(proj: string): string {
 
 function writeOutputs(proj: string, slug: string): void {
   const stage = loadGraph().find((entry) => entry.slug === slug)!;
-  const dir = join(recordDir(proj), "inception", slug);
+  const dir = join(recordDir(proj), phaseFor(slug), slug);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n`);
 }
@@ -152,7 +153,7 @@ describe("t-update-changed-stage-line: a finished stage AI-DLC itself changed", 
 
   test("a change to the person's own work in the same window keeps today's question", () => {
     const proj = finishedBeforeTheUpdate("optional");
-    const requirements = join(recordDir(proj), "inception", "requirements-analysis", artifactFilename("requirements"));
+    const requirements = join(recordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", artifactFilename("requirements"));
     appendFileSync(requirements, "\n- FR-2: a title is at most 200 characters.\n");
     const first = step(proj);
     expect(validity(first)?.directly_stale).toContain("requirements-analysis");
@@ -164,7 +165,7 @@ describe("t-update-changed-stage-line: a finished stage AI-DLC itself changed", 
     const proj = finishedBeforeTheUpdate("optional");
     step(proj);
     expect(renewals(proj)).toHaveLength(1);
-    appendFileSync(join(recordDir(proj), "inception", "practices-discovery", artifactFilename("team-practices")),
+    appendFileSync(join(recordDir(proj), phaseFor("practices-discovery"), "practices-discovery", artifactFilename("team-practices")),
       "\nOne practice added.\n");
     expect(validity(step(proj))?.directly_stale).toContain("requirements-analysis");
   });

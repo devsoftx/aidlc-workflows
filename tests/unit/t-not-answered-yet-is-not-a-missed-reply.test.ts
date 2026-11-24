@@ -13,7 +13,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, test, setDefaultTimeout } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -30,6 +30,22 @@ import {
 } from "../harness/fixtures.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -100,6 +116,13 @@ describe("t-not-answered-yet: a gate the person has not answered yet is not a mi
     resetAidlcEnv();
     proj = createTestProject();
     seedStateFile(proj, "state-mid-ideation.md");
+    // These cases are about the gates' replies, not the summary check, which the person switched off here.
+    // Reverse Engineering sits between feasibility and scope-definition in the seven-phase graph and this
+    // greenfield person skips it, so the next gate opened after feasibility is scope-definition's (the fixture's Next Stage).
+    const state = readFileSync(seededStateFile(proj), "utf-8")
+      .replace("## Stage Progress", "- **Summary Confirmation**: off (set by you)\n## Stage Progress")
+      .replace("- [ ] reverse-engineering \u2014 EXECUTE", "- [S] reverse-engineering \u2014 SKIP");
+    writeFileSync(seededStateFile(proj), state);
   });
   afterEach(() => cleanupTestProject(proj));
 

@@ -36,6 +36,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { cleanupTestProject, createTestProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -109,8 +110,8 @@ function walkStage(proj: string, slug: string): void {
   if (reviewerFor[slug]) {
     const artifactDir =
       slug === "requirements-analysis"
-        ? join(recordDirOf(proj), "inception", slug)
-        : join(recordDirOf(proj), "construction", "unit-alpha", slug);
+        ? join(recordDirOf(proj), phaseFor(slug), slug)
+        : join(recordDirOf(proj), phaseFor(slug), "unit-alpha", slug);
     const artifacts =
       slug === "requirements-analysis"
         ? ["requirements.md", "requirements-analysis-questions.md"]
@@ -224,12 +225,14 @@ beforeAll(() => {
   // and init pre-completes the 3 init stages: workspace-scaffold,
   // workspace-detection, state-init). The first post-init EXECUTE stage for
   // bugfix-on-greenfield is requirements-analysis (reverse-engineering is
-  // SKIP-greenfield). Walk the 5 gated EXECUTE stages; approve auto-advances /
+  // SKIP-greenfield). Walk the 7 gated EXECUTE stages; approve auto-advances /
   // auto-completes.
   runInit(PROJ);
   walkStage(PROJ, "requirements-analysis");
   walkStage(PROJ, "code-generation");
   walkStage(PROJ, "build-and-test");
+  walkStage(PROJ, "code-review");
+  walkStage(PROJ, "security-review");
   walkStage(PROJ, "deployment-pipeline");
   walkStage(PROJ, "deployment-execution");
 }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -251,39 +254,39 @@ describe("t51 bugfix event parity — CLI contract (migrated from t51-bugfix-eve
     expect(countEvent(readAudit(PROJ), "WORKFLOW_COMPLETED")).toBe(1);
   });
 
-  test("3: PHASE_STARTED fires 4x (initialization, inception, construction, operation)", () => {
-    expect(countEvent(readAudit(PROJ), "PHASE_STARTED")).toBe(4);
+  test("3: PHASE_STARTED fires 6x (initialization, design, build, test, secure, deploy)", () => {
+    expect(countEvent(readAudit(PROJ), "PHASE_STARTED")).toBe(6);
   });
 
-  test("4: PHASE_COMPLETED fires 4x", () => {
-    expect(countEvent(readAudit(PROJ), "PHASE_COMPLETED")).toBe(4);
+  test("4: PHASE_COMPLETED fires 6x", () => {
+    expect(countEvent(readAudit(PROJ), "PHASE_COMPLETED")).toBe(6);
   });
 
-  test("5: PHASE_VERIFIED fires 4x", () => {
-    expect(countEvent(readAudit(PROJ), "PHASE_VERIFIED")).toBe(4);
+  test("5: PHASE_VERIFIED fires 6x", () => {
+    expect(countEvent(readAudit(PROJ), "PHASE_VERIFIED")).toBe(6);
   });
 
-  test("6: PHASE_SKIPPED fires once (ideation)", () => {
+  test("6: PHASE_SKIPPED fires once (operate)", () => {
     expect(countEvent(readAudit(PROJ), "PHASE_SKIPPED")).toBe(1);
   });
 
-  test("7: STAGE_STARTED fires 8x (3 init + 5 gated)", () => {
-    expect(countEvent(readAudit(PROJ), "STAGE_STARTED")).toBe(8);
+  test("7: STAGE_STARTED fires 10x (3 init + 7 gated)", () => {
+    expect(countEvent(readAudit(PROJ), "STAGE_STARTED")).toBe(10);
   });
 
-  test("8: STAGE_COMPLETED fires 8x", () => {
-    // 3 init + 5 approve. On the final stage, approve delegates to
+  test("8: STAGE_COMPLETED fires 10x", () => {
+    // 3 init + 7 approve. On the final stage, approve delegates to
     // complete-workflow, whose alreadyMarkedCompleted guard suppresses the
-    // duplicate STAGE_COMPLETED — so the count stays 8, not 9.
-    expect(countEvent(readAudit(PROJ), "STAGE_COMPLETED")).toBe(8);
+    // duplicate STAGE_COMPLETED — so the count stays 10, not 11.
+    expect(countEvent(readAudit(PROJ), "STAGE_COMPLETED")).toBe(10);
   });
 
-  test("9: STAGE_AWAITING_APPROVAL fires 5x", () => {
-    expect(countEvent(readAudit(PROJ), "STAGE_AWAITING_APPROVAL")).toBe(5);
+  test("9: STAGE_AWAITING_APPROVAL fires 7x", () => {
+    expect(countEvent(readAudit(PROJ), "STAGE_AWAITING_APPROVAL")).toBe(7);
   });
 
-  test("10: GATE_APPROVED fires 5x", () => {
-    expect(countEvent(readAudit(PROJ), "GATE_APPROVED")).toBe(5);
+  test("10: GATE_APPROVED fires 7x", () => {
+    expect(countEvent(readAudit(PROJ), "GATE_APPROVED")).toBe(7);
   });
 
   // ============================================================
@@ -310,7 +313,7 @@ describe("t51 bugfix event parity — CLI contract (migrated from t51-bugfix-eve
 
     // Every GATE_APPROVED must be immediately followed by a STAGE_COMPLETED - the
     // approve invariant (GATE_APPROVED then STAGE_COMPLETED, audit-first) holds
-    // for ALL 5 gated stages.
+    // for ALL 7 gated stages.
     for (let i = 0; i < stream.length; i++) {
       if (stream[i] === "GATE_APPROVED") {
         expect(stream[i + 1]).toBe("STAGE_COMPLETED");
@@ -327,9 +330,9 @@ describe("t51 bugfix event parity — CLI contract (migrated from t51-bugfix-eve
     expect(content.split("\n").some((l) => /^- \*\*Status\*\*: Completed/.test(l))).toBe(true);
   });
 
-  test("15: 8 stages marked [x] in final state", () => {
+  test("15: 10 stages marked [x] in final state", () => {
     const content = readFileSync(statePath(PROJ), "utf-8");
     const completed = content.split("\n").filter((l) => /^- \[x\] [a-z-]+/.test(l)).length;
-    expect(completed).toBe(8);
+    expect(completed).toBe(10);
   });
 });

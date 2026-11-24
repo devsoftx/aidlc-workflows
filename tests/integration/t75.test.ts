@@ -24,7 +24,7 @@
 // (which toPortablePath-converts on Windows so the audit.md the tool writes
 // through toPosix path helpers round-trips when read back). make_fixture's
 // .claude/rules/{aidlc-team.md,aidlc-project.md} live targets + the two
-// active-record inception/practices-discovery/ drafts are reproduced byte-for-byte
+// active-record design/practices-discovery/ drafts are reproduced byte-for-byte
 // from the .sh heredocs. NOTHING is written under tests/fixtures/**. All temp
 // dirs cleaned in afterAll.
 //
@@ -83,6 +83,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { memoryDirFor } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { extractMarkdownSection } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { resolveTestingPostureFromSections } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
@@ -204,7 +205,7 @@ function makeFixture(): Fixture {
   const memDir = memoryDirFor(proj);
   const draftDir = join(
     seededRecordDir(proj),
-    "inception",
+    phaseFor("practices-discovery"),
     "practices-discovery",
   );
   mkdirSync(memDir, { recursive: true });

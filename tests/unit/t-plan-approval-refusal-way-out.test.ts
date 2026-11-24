@@ -59,6 +59,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { namedCommands, respell, SESSION as SHAPE_SESSION, SHAPES } from "../harness/code-generation-states.ts";
 import {
   AS_ITS_OWN_COMMAND,
@@ -135,7 +136,7 @@ function unitProject(unit: string, policy: "relaxed" | "off" = "off"): string {
 - **Project**: Per-Unit build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: ${policy} (set by you)
 
@@ -147,16 +148,18 @@ function unitProject(unit: string, policy: "relaxed" | "off" = "off"): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");
@@ -172,7 +175,7 @@ function withSource(proj: string): string {
 }
 
 function stageDir(proj: string, unit: string | null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), ...(unit ? [unit] : []), "code-generation");
 }
 
 function writePlan(proj: string, unit: string | null = null, contract = resolveTestingPosture(proj)): void {

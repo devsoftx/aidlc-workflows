@@ -51,6 +51,7 @@ import { basename, dirname } from "node:path";
 import {
   AIDLC_SRC, cleanupTestProject, recordArtifactWriteViaHook, seededAuditShard, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { artifactFilename, auditBlockField, findStageBySlug, readAuditShardEvents, setGuardPolicyLine } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { saveMessage } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
@@ -88,7 +89,7 @@ const latestMessageId = (proj: string): string => {
   const turn = rows(proj, "HUMAN_TURN").at(-1);
   return (turn === undefined ? null : auditBlockField(turn.block, "Message Id")) as string;
 };
-const stageDir = (proj: string) => join(seededRecordDir(proj), "inception", STAGE);
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
 const sleep = () => Bun.sleepSync(1100);
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 
@@ -294,7 +295,7 @@ describe("t-gate-reply-before-document: a reply sent before the stage's document
       expect((await say(proj, "Nothing to add. Approve, and move on", "claude")).status).toBe(0);
       const approval = latestMessageId(proj);
       sleep();
-      const stories = join(seededRecordDir(proj), "inception", "user-stories");
+      const stories = join(seededRecordDir(proj), phaseFor("user-stories"), "user-stories");
       mkdirSync(stories, { recursive: true });
       const other = join(stories, artifactFilename(findStageBySlug("user-stories")?.produces?.[0] ?? "stories"));
       writeFileSync(other, "# Stories\n", "utf-8");

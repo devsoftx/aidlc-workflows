@@ -40,6 +40,7 @@ import {
   seededStateFile,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -95,12 +96,12 @@ function step(proj: string, args: string[]): Record<string, unknown> {
 }
 
 function artifact(proj: string): string {
-  return join(seededRecordDir(proj), "inception", STAGE, "requirements.md");
+  return join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "requirements.md");
 }
 
 // The stage's outputs, then one READY review through the logger.
 function reviewedStage(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", `${STAGE}-questions.md`]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), `# ${name}\n`);

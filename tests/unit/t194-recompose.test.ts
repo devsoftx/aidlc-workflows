@@ -179,7 +179,7 @@ describe("t194 recompose - flips land as suffix edits and the router honours the
   test("Stages to Skip round trip: skip+add preserves the creation-time row bytes", () => {
     // Creation writes annotated entries ("<number> (<slug>)", and for a
     // greenfield feature creation uses the rationale form
-    // "2.1 (reverse-engineering — greenfield)"). The rebuild must preserve
+    // "1.4 (reverse-engineering — greenfield)"). The rebuild must preserve
     // those bytes for stages whose skip-membership did not change.
     const proj = createdProject();
     const rowOf = (state: string): string =>

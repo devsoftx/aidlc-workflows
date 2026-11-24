@@ -54,6 +54,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -96,7 +97,7 @@ function inceptionState(checkbox = "[?]"): string {
 - **Project**: ensemble evidence test
 - **Project Type**: Greenfield
 - **Scope**: enterprise
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all
@@ -106,14 +107,14 @@ function inceptionState(checkbox = "[?]"): string {
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### ${phaseFor("user-stories").toUpperCase()} PHASE
 - [x] requirements-analysis — EXECUTE
 - ${checkbox} user-stories — EXECUTE
 - [ ] delivery-planning — EXECUTE
 
 ## Current Status
 - **Current Stage**: user-stories
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor("user-stories").toUpperCase()}
 - **Status**: In Progress
 `;
 }
@@ -128,7 +129,7 @@ function practicesState(
 - **Project**: practices ensemble evidence test
 - **Project Type**: Greenfield
 - **Scope**: enterprise
-- **State Version**: 8
+- **State Version**: 10
 - **Practices Affirmed Timestamp**: ${affirmedTimestamp}
 
 ## Scope Configuration
@@ -139,14 +140,16 @@ function practicesState(
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### ${phaseFor("reverse-engineering").toUpperCase()} PHASE
 - [S] reverse-engineering — SKIP
+
+### ${phaseFor("practices-discovery").toUpperCase()} PHASE
 - ${checkbox} practices-discovery — EXECUTE
 - [ ] requirements-analysis — EXECUTE
 
 ## Current Status
 - **Current Stage**: practices-discovery
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor("practices-discovery").toUpperCase()}
 - **Status**: In Progress
 `;
 }
@@ -173,7 +176,7 @@ function seedPracticesProject(
 
 function contribDir(
   proj: string,
-  phase = "inception",
+  phase = phaseFor("user-stories"),
   stage = "user-stories",
 ): string {
   return join(seededRecordDir(proj), phase, stage, "contributions");
@@ -183,7 +186,7 @@ function writeContribution(
   proj: string,
   agent: string,
   firstLine?: string,
-  phase = "inception",
+  phase = phaseFor("user-stories"),
   stage = "user-stories",
 ): void {
   const dir = contribDir(proj, phase, stage);
@@ -397,7 +400,7 @@ function perUnitEnsembleGraph(
   mutate?: (node: Record<string, unknown>) => void,
 ): string {
   return graphVariant(proj, (node) => {
-    node.phase = "construction";
+    node.phase = "design";
     node.for_each = "unit-of-work";
     node.mode = "mob";
     node.support_agents = ["aidlc-design-agent"];
@@ -432,7 +435,7 @@ function seedSwarmConverged(proj: string, units: string[]): void {
 function writeUnitContribution(proj: string, unit: string, agent: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("user-stories"),
     unit,
     "user-stories",
     "contributions",
@@ -447,7 +450,7 @@ function writeUnitContribution(proj: string, unit: string, agent: string): void 
 function writeFallbackContribution(proj: string, agent: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("user-stories"),
     "user-stories",
     "contributions",
   );
@@ -459,7 +462,7 @@ function writeFallbackContribution(proj: string, agent: string): void {
 }
 
 function writeUnitArtifact(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "user-stories");
+  const dir = join(seededRecordDir(proj), phaseFor("user-stories"), unit, "user-stories");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "fixture-artifact.md"), `# Fixture artifact for ${unit}\n`);
 }
@@ -671,7 +674,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expect(missing.kind).toBe("error");
     expect(missing.message).toContain('aidlc-design-agent for unit "beta"');
     expect(missing.message).toContain(
-      "construction/<unit>/user-stories/contributions/<agent-slug>.md",
+      "design/<unit>/user-stories/contributions/<agent-slug>.md",
     );
 
     const completeProj = seedProject();
@@ -716,7 +719,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expect(missing.kind).toBe("error");
     expect(missing.message).toContain("aidlc-design-agent (no contribution file)");
     expect(missing.message).toContain(
-      "construction/user-stories/contributions/<agent-slug>.md",
+      "design/user-stories/contributions/<agent-slug>.md",
     );
 
     const completeProj = seedProject();
@@ -734,7 +737,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     const proj = seedProject();
     setAutonomous(proj);
     const graph = graphVariant(proj, (node) => {
-      node.phase = "inception";
+      node.phase = "design";
       delete node.for_each;
       node.mode = "subagent";
       node.support_agents = ["aidlc-design-agent"];
@@ -760,7 +763,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
       expect(d.message).toContain(`${agent} (no contribution file)`);
     }
     expect(d.message).toContain(
-      "inception/practices-discovery/contributions/<agent-slug>.md",
+      "design/practices-discovery/contributions/<agent-slug>.md",
     );
   });
 
@@ -786,7 +789,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         completeProj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -812,9 +815,9 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     const withDraft = (methodology: string): string => {
       const proj = seedPracticesProject("[-]");
       for (const agent of PRACTICES_SUPPORTS) {
-        writeContribution(proj, agent, undefined, "inception", "practices-discovery");
+        writeContribution(proj, agent, undefined, phaseFor("practices-discovery"), "practices-discovery");
       }
-      const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+      const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
       mkdirSync(draftDir, { recursive: true });
       writeFileSync(
         join(draftDir, "team-practices.md"),
@@ -854,7 +857,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         proj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -986,7 +989,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         proj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -1055,9 +1058,9 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
       Agent: "aidlc-pipeline-deploy-agent",
     });
     for (const agent of PRACTICES_SUPPORTS) {
-      writeContribution(proj, agent, undefined, "inception", "practices-discovery");
+      writeContribution(proj, agent, undefined, phaseFor("practices-discovery"), "practices-discovery");
     }
-    const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+    const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
     mkdirSync(draftDir, { recursive: true });
     writeFileSync(
       join(draftDir, "team-practices.md"),
@@ -1081,8 +1084,8 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expect(named, held.message).not.toBeNull();
     const [, teamPractices, discoveredRules] = named as RegExpExecArray;
     const record = relative(proj, seededRecordDir(proj)).split(sep).join("/");
-    expect(teamPractices).toBe(`${record}/inception/practices-discovery/team-practices.md`);
-    expect(discoveredRules).toBe(`${record}/inception/practices-discovery/discovered-rules.md`);
+    expect(teamPractices).toBe(`${record}/design/practices-discovery/team-practices.md`);
+    expect(discoveredRules).toBe(`${record}/design/practices-discovery/discovered-rules.md`);
     expect(held.message).toContain("report --stage practices-discovery --result approved");
 
     const promote = spawnSync(
@@ -1110,7 +1113,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
         proj,
         agent,
         undefined,
-        "inception",
+        phaseFor("practices-discovery"),
         "practices-discovery",
       );
     }
@@ -1146,11 +1149,14 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     expectApprovalCommitted(proj, approved, before, "practices-discovery");
   });
 
-  // The swarm exemption never applies to the scope's FIRST construction stage
-  // (isSkeletonGateStage: the skeleton gate always runs inline, so disk-backed
-  // guards stay correct there). The fixtures below therefore also pivot an
-  // EARLIER stage into construction so the mutated user-stories is not the
-  // skeleton gate - matching the real swarm stage (code-generation, 3.5).
+  // The swarm exemption does not reach the skeleton gate, the first per-unit
+  // EXECUTE stage (isSkeletonGateStage), unless checkpoints are enabled
+  // (isAutonomousSwarmCandidate), so its disk-backed guards stay on there. The
+  // skeleton gate is derived from for_each, not from phase, so the fixture makes
+  // an EARLIER stage per-unit and inline: it becomes the skeleton gate and the
+  // mutated user-stories (a subagent swarm) is a non-skeleton candidate. The
+  // shipped enterprise graph has the same shape: functional-design is the
+  // inline skeleton gate and code-generation the subagent swarm.
   function nonSkeletonSwarmGraph(proj: string): string {
     const path = perUnitEnsembleGraph(proj, (node) => {
       node.mode = "subagent";
@@ -1158,7 +1164,8 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
     const graph = JSON.parse(readFileSync(path, "utf-8")) as Array<Record<string, unknown>>;
     const earlier = graph.find((entry) => entry.slug === "requirements-analysis");
     if (!earlier) throw new Error("fixture graph has no requirements-analysis node");
-    earlier.phase = "construction";
+    earlier.for_each = "unit-of-work";
+    earlier.mode = "inline";
     writeFileSync(path, `${JSON.stringify(graph, null, 2)}\n`);
     return path;
   }
@@ -1178,7 +1185,7 @@ describe("t236 ensemble evidence gate — mob approval requires contribution fil
   test("a malformed swarm DAG fails closed because the expected unit set is unknowable", () => {
     const proj = seedProject();
     setAutonomous(proj);
-    const depDir = join(seededRecordDir(proj), "inception", "units-generation");
+    const depDir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
     mkdirSync(depDir, { recursive: true });
     writeFileSync(
       join(depDir, "unit-of-work-dependency.md"),
@@ -1298,7 +1305,7 @@ describe("t236 an approval given with the collaborators switch stands", () => {
       Stage: "practices-discovery",
       Agent: "aidlc-pipeline-deploy-agent",
     });
-    const draftDir = join(seededRecordDir(proj), "inception", "practices-discovery");
+    const draftDir = join(seededRecordDir(proj), phaseFor("practices-discovery"), "practices-discovery");
     mkdirSync(draftDir, { recursive: true });
     const teamPractices = join(draftDir, "team-practices.md");
     const discoveredRules = join(draftDir, "discovered-rules.md");

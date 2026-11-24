@@ -44,7 +44,7 @@
 //   .sh test 1  (skips non-record writes)                  -> "skips writes outside the record dir (audit unchanged)"
 //   .sh test 2  (skips audit-shard self-writes)            -> "skips audit-shard self-writes (anti-recursion)"
 //   .sh test 3  (logs record artifact as CREATED)          -> "logs record artifact writes as ARTIFACT_CREATED"
-//   .sh test 4  (context breadcrumb)                       -> "extracts the ideation breadcrumb"
+//   .sh test 4  (context breadcrumb)                       -> "extracts the discover breadcrumb"
 //   .sh test 5  (Edit -> ARTIFACT_UPDATED)                 -> "Edit tool emits ARTIFACT_UPDATED"
 //   .sh test 6  (exits silently when no audit shard)       -> "exits silently when no audit shard (shard not created)"
 //   .sh test 7  (writes heartbeat)                         -> "writes the audit-logger.last heartbeat"
@@ -52,7 +52,7 @@
 //   .sh test 9  (malformed JSON graceful, rc 0, no write)  -> "handles malformed JSON stdin (exit 0, audit unchanged)"
 //   .sh test 10 (CLAUDE_PROJECT_DIR script-path fallback)  -> "CLAUDE_PROJECT_DIR fallback from script path"
 //   .sh test 11 (construction breadcrumb)                  -> "construction phase context breadcrumb"
-//   .sh test 12 (operation breadcrumb)                     -> "operation phase context breadcrumb"
+//   .sh test 12 (operation breadcrumb)                     -> "deploy phase context breadcrumb"
 //   .sh test 13 (logging path < 500ms)                     -> "logging path completes within 500ms"
 //   .sh test 14 (skip path < 300ms)                        -> "skip path completes within 300ms"
 //   .sh test 15 (canonical **Event**: ARTIFACT_* field)    -> "emits canonical **Event**: ARTIFACT_* field"
@@ -83,6 +83,7 @@ import {
   seedStateFile,
   seededAuditDir,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -200,7 +201,7 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
     // Any markdown artifact written UNDER the per-intent record fires the event;
     // use a real per-intent stage artifact (domain knowledge is space-level now,
     // not a record subdir, so it is not a record-artifact example).
-    fire(writeJson(join(recordRoot, "inception", "requirements-analysis", "requirements.md")), proj);
+    fire(writeJson(join(recordRoot, phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md")), proj);
     expect(readShards(auditDir)).toContain("ARTIFACT_CREATED");
   });
 
@@ -208,7 +209,7 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
     const { auditDir, recordRoot } = seedIntentShard(proj);
     const absoluteFile = join(
       recordRoot,
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "relative-requirements.md",
     );
@@ -223,11 +224,11 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
     expect(audit).toContain(`**File**: <project-dir>/${projectRelativeFile}`);
   });
 
-  test("extracts the ideation breadcrumb [.sh test 4]", () => {
+  test("extracts the discover breadcrumb [.sh test 4]", () => {
     const { auditDir, recordRoot } = seedIntentShard(proj);
-    fire(writeJson(join(recordRoot, "ideation", "intent-capture", "intent.md")), proj);
+    fire(writeJson(join(recordRoot, phaseFor("intent-capture"), "intent-capture", "intent.md")), proj);
     // STRONGER than the .sh grep: the breadcrumb is on a **Context**: line.
-    expect(readShards(auditDir)).toContain("ideation > intent-capture > intent.md");
+    expect(readShards(auditDir)).toContain(`${phaseFor("intent-capture")} > intent-capture > intent.md`);
   });
 
   // Kiro IDE (VS Code Uri.fsPath) reports `c:\...` for a `C:\...` project dir.
@@ -249,12 +250,12 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
         unit: null,
         workflow: null,
         attempt: "test-attempt",
-        questions_file: "ideation/intent-capture/intent-capture-questions.md",
+        questions_file: "discover/intent-capture/intent-capture-questions.md",
         questions_sha256: "a".repeat(64),
         choice: "Looks correct",
         recorded_at: "2026-09-24T00:00:00Z",
       });
-      const artifact = join(recordRoot, "ideation", "intent-capture", "intent.md");
+      const artifact = join(recordRoot, phaseFor("intent-capture"), "intent-capture", "intent.md");
       const reported = withDrive(artifact, projectDrive === "lower");
       fire(writeJson(reported), hookProj);
       fire(editJson(reported), hookProj);
@@ -262,7 +263,7 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
       const rel = relative(proj, artifact).replace(/\\/g, "/");
       expect(audit).toContain("**Event**: ARTIFACT_CREATED");
       expect(audit).toContain("**Event**: ARTIFACT_UPDATED");
-      expect(audit).toContain("**Context**: ideation > intent-capture > intent.md");
+      expect(audit).toContain(`**Context**: ${phaseFor("intent-capture")} > intent-capture > intent.md`);
       expect(audit).toContain(`**File**: <project-dir>/${rel}`);
       expect(audit.toLowerCase()).not.toContain(proj.replace(/\\/g, "/").toLowerCase());
       expect(audit.toLowerCase()).not.toContain(proj.toLowerCase());
@@ -290,7 +291,7 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
       unit: null,
       workflow: null,
       attempt: "test-attempt",
-      questions_file: "ideation/intent-capture/intent-capture-questions.md",
+      questions_file: "discover/intent-capture/intent-capture-questions.md",
       questions_sha256: "a".repeat(64),
       choice: "Looks correct",
       recorded_at: "2026-09-24T00:00:00Z",
@@ -298,7 +299,7 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
     const before = readShards(auditDir);
     const sibling = join(dirname(recordRoot), basename(recordRoot).toUpperCase());
     expect(sibling).not.toBe(recordRoot);
-    fire(writeJson(join(sibling, "ideation", "intent-capture", "intent.md")), proj);
+    fire(writeJson(join(sibling, phaseFor("intent-capture"), "intent-capture", "intent.md")), proj);
     const audit = readShards(auditDir);
     expect(audit).toBe(before);
     expect(audit).not.toContain(authorizationId);
@@ -454,6 +455,10 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
       join(proj, ".claude", "tools", "aidlc-review-manifest.ts"),
     );
     copyFileSync(
+      join(AIDLC_SRC, "tools", "aidlc-five-phase-record.ts"),
+      join(proj, ".claude", "tools", "aidlc-five-phase-record.ts"),
+    );
+    copyFileSync(
       join(AIDLC_SRC, "tools", "aidlc-command.ts"),
       join(proj, ".claude", "tools", "aidlc-command.ts"),
     );
@@ -486,6 +491,11 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
       join(AIDLC_SRC, "tools", "aidlc-audit.ts"),
       join(proj, ".claude", "tools", "aidlc-audit.ts"),
     );
+    // aidlc-lib.ts imports aidlc-phases.ts at load time; without it the spawned hook exits 1.
+    copyFileSync(
+      join(AIDLC_SRC, "tools", "aidlc-phases.ts"),
+      join(proj, ".claude", "tools", "aidlc-phases.ts"),
+    );
     fire(writeJson(join(recordRoot, "test.md")), proj, localHook, /* setEnv */ false);
     const heartbeat = join(recordRoot, ".aidlc-engine/hooks-health", "write-audit-log.last");
     expect(existsSync(heartbeat)).toBe(true);
@@ -495,20 +505,20 @@ describe("t07 audit-logger PostToolUse hook (mechanism cli — spawned hook + st
     const { auditDir, recordRoot } = seedIntentShard(proj);
     seedStateFile(proj, join(FIXTURES_DIR, "state-construction.md"));
     fire(
-      writeJson(join(recordRoot, "construction", "functional-design", "design.md")),
+      writeJson(join(recordRoot, phaseFor("functional-design"), "functional-design", "design.md")),
       proj,
     );
-    expect(readShards(auditDir)).toContain("construction > functional-design > design.md");
+    expect(readShards(auditDir)).toContain(`${phaseFor("functional-design")} > functional-design > design.md`);
   });
 
-  test("operation phase context breadcrumb [.sh test 12]", () => {
+  test("deploy phase context breadcrumb [.sh test 12]", () => {
     const { auditDir, recordRoot } = seedIntentShard(proj);
     seedStateFile(proj, join(FIXTURES_DIR, "state-operation.md"));
     fire(
-      writeJson(join(recordRoot, "operation", "deployment-pipeline", "config.md")),
+      writeJson(join(recordRoot, phaseFor("deployment-pipeline"), "deployment-pipeline", "config.md")),
       proj,
     );
-    expect(readShards(auditDir)).toContain("operation > deployment-pipeline > config.md");
+    expect(readShards(auditDir)).toContain(`${phaseFor("deployment-pipeline")} > deployment-pipeline > config.md`);
   });
 
   test("logging path completes within 500ms [.sh test 13]", () => {

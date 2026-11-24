@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/protocols/stage-protocol-summary.md, file:aidlc-common/stages/inception/requirements-analysis.md
+// covers: file:aidlc-common/protocols/stage-protocol-summary.md, file:aidlc-common/stages/design/requirements-analysis.md
 //
 // The summary confirmation before a stage writes its documents has one owner:
 // stage-protocol-summary.md, which the engine names when the confirmation is on
@@ -11,6 +11,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const read = (path: string): string => readFileSync(path, "utf-8").replace(/\r\n/g, "\n");
 
@@ -35,7 +36,9 @@ describe("t-summary-stop-has-one-owner", () => {
         .filter((file) => read(file).includes("--checkpoint summary-confirmation"))
         .map((file) => relative(harness.distRoot, file));
       expect(copies).toEqual([]);
-      const requirements = read(join(common, "stages", "inception", "requirements-analysis.md"));
+      const requirements = read(
+        join(common, "stages", phaseFor("requirements-analysis"), "requirements-analysis.md"),
+      );
       expect(requirements).toContain("### Step 9: Confirm the Consolidated Summary");
     },
   );

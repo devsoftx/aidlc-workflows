@@ -24,7 +24,8 @@
 //     "## 5. Multi-agent stages" - forbids dispatching inline support agents
 //   aidlc-common/conductor.md — mirrors the inline-support-agent guidance
 //          and makes the conductor the only delegator
-//   aidlc-common/stages/<phase>/<slug>.md - 33 stage files; all reference
+//   aidlc-common/stages/<phase>/<slug>.md - 36 stage files (3 initialization +
+//          33 runnable); all reference
 //          "stage-protocol"
 //   knowledge/aidlc-shared/state-template.md — the 7 required ## sections
 //   knowledge/aidlc-<agent>-agent/ — one knowledge dir per agents/*.md file
@@ -99,8 +100,9 @@ function allStageFiles(): { slug: string; path: string }[] {
 const STAGE_FILES = allStageFiles();
 
 describe("every stage references the stage protocol", () => {
-  test("the shipped tree has exactly 33 stage files [.sh TOTAL_STAGES]", () => {
-    expect(STAGE_FILES.length).toBe(33);
+  test("the shipped tree has exactly 36 stage files: 3 initialization + 33 runnable [.sh TOTAL_STAGES]", () => {
+    expect(STAGE_FILES.length).toBe(36);
+    expect(STAGE_FILES.filter(({ slug }) => INIT_STAGES.includes(slug)).length).toBe(3);
   });
 
   for (const { slug, path } of STAGE_FILES) {
@@ -178,7 +180,7 @@ describe("SKILL.md routing mandates the static and conditional protocol files", 
   // the routing section names the one no step names. The phase-boundary check
   // is run by the phase-ending stages themselves, so no routing line loads the
   // governance module for it.
-  const note = protocolNote(".claude/aidlc-common/stages/construction/code-generation.md", [
+  const note = protocolNote(".claude/aidlc-common/stages/build/code-generation.md", [
     "reviewer",
     "swarm",
     "ensemble",

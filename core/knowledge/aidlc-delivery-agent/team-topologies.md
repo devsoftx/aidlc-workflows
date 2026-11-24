@@ -6,7 +6,7 @@ Organising teams for fast flow of change using the Team Topologies framework by 
 
 ### 1. Stream-Aligned Team
 - **Purpose**: Delivers value along a single stream of work (a product, a feature set, a user journey, or a business domain).
-- **Characteristics**: Cross-functional (dev, test, ops, UX). Owns the full lifecycle from ideation to production. Has clear ownership boundaries.
+- **Characteristics**: Cross-functional (dev, test, ops, UX). Owns the full lifecycle from discovery to production. Has clear ownership boundaries.
 - **Size**: 5-9 people (two-pizza rule). Enough to own a meaningful slice of the product without excessive coordination.
 - **This is the primary team type.** Most teams in the organisation should be stream-aligned. Other team types exist to reduce the cognitive load on stream-aligned teams.
 

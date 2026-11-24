@@ -17,6 +17,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, REPO_ROOT, runOrchestrateNext,
   seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 const created: string[] = [];
@@ -34,7 +35,7 @@ function project(policy: "off" | "strict", questions: string | null): string {
       policy === "off" ? "- **Guard Policy**: off (from scope bugfix)" : "- **Guard Policy**: strict (set by you)");
   writeFileSync(seededStateFile(proj), state, "utf-8");
   if (questions !== null) {
-    const dir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+    const dir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, QUESTIONS), questions, "utf-8");
   }
@@ -87,8 +88,8 @@ describe("t-resume-keeps-answered-questions: a stage whose questions are answere
         expect(directive.kind, JSON.stringify(directive)).toBe("run-stage");
         expect(directive.stage).toBe("requirements-analysis");
         expect(directive.questions_answered?.path)
-          .toEndWith(`inception/requirements-analysis/${QUESTIONS}`);
-        expect(readFileSync(join(seededRecordDir(proj), "inception", "requirements-analysis", QUESTIONS), "utf-8"))
+          .toEndWith(`design/requirements-analysis/${QUESTIONS}`);
+        expect(readFileSync(join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", QUESTIONS), "utf-8"))
           .toBe(answered);
       });
     }
@@ -99,8 +100,8 @@ describe("t-resume-keeps-answered-questions: a stage whose questions are answere
         const directive = step(proj, args);
         expect(directive.kind, JSON.stringify(directive)).toBe("run-stage");
         expect(directive.questions_answered?.path)
-          .toEndWith(`inception/requirements-analysis/${QUESTIONS}`);
-        expect(readFileSync(join(seededRecordDir(proj), "inception", "requirements-analysis", QUESTIONS), "utf-8"))
+          .toEndWith(`design/requirements-analysis/${QUESTIONS}`);
+        expect(readFileSync(join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", QUESTIONS), "utf-8"))
           .toBe(blank);
       }
     });

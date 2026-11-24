@@ -21,6 +21,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, auditBlockField, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -58,7 +59,7 @@ function fixture(policy: string, iteration: "unit-major" | "stage-major" = "unit
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -74,11 +75,12 @@ function fixture(policy: string, iteration: "unit-major" | "stage-major" = "unit
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${stages.map((stage) => `- [${progress(stage, iteration)}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${iteration === "stage-major" ? "BUILD" : "DESIGN"}
 - **Current Stage**: ${iteration === "stage-major" ? "code-generation" : "functional-design"}
 - **Status**: Running
 `);
@@ -208,7 +210,7 @@ function build(p: string, unit: string, reviewed = true, uncompleted: string | n
   const notices: string[] = [];
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
@@ -230,7 +232,7 @@ function build(p: string, unit: string, reviewed = true, uncompleted: string | n
 }
 
 function alphaDocument(p: string): string {
-  return join(seededRecordDir(p), "construction", "alpha", DOCUMENT_STAGE,
+  return join(seededRecordDir(p), phaseFor(DOCUMENT_STAGE), "alpha", DOCUMENT_STAGE,
     artifactFilename(findStageBySlug(DOCUMENT_STAGE)!.produces![0]));
 }
 
@@ -405,7 +407,7 @@ describe("t-checkpoint-wave-edit: an approved Unit's document edited after a wav
       const document = alphaDocument(p);
       for (const slug of stages) {
         const stage = findStageBySlug(slug)!;
-        const output = join(seededRecordDir(p), "construction", "alpha", slug);
+        const output = join(seededRecordDir(p), phaseFor(slug), "alpha", slug);
         mkdirSync(output, { recursive: true });
         for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
         if (stage.workspace_requires) {

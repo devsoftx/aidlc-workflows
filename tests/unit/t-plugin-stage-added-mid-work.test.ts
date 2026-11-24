@@ -13,7 +13,7 @@
 // project, adds the plugin stage the way a plugin's compose does, compiles the
 // graph with that install's own compile, and drives that install's tools.
 
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -34,6 +34,22 @@ import {
   seededStateFile,
 } from "../harness/fixtures.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS * 2);
 resetAidlcEnv();
@@ -61,7 +77,7 @@ slug: probe-intent-check
 number: 3.65
 name: Probe Intent Check
 plugin: probe
-phase: construction
+phase: test
 execution: ALWAYS
 condition: Always executes once after Build and Test.
 lead_agent: aidlc-developer-agent
@@ -126,7 +142,8 @@ function probeProject(units: string[], stages: Record<string, string> = PLUGIN_S
   const harness = join(proj, ".claude");
   cpSync(AIDLC_SRC, harness, { recursive: true });
   for (const [slug, body] of Object.entries(stages)) {
-    writeFileSync(join(harness, "aidlc-common", "stages", "construction", `${slug}.md`), body);
+    const phase = body.match(/^phase: (\S+)$/m)?.[1] ?? "";
+    writeFileSync(join(harness, "aidlc-common", "stages", phase, `${slug}.md`), body);
   }
   const tool = (name: string) => join(harness, "tools", `${name}.ts`);
   const compiled = spawnSync(BUN, [tool("aidlc-graph"), "compile"], {
@@ -142,7 +159,7 @@ function probeProject(units: string[], stages: Record<string, string> = PLUGIN_S
     ),
     `- [x] code-generation ${SEP} EXECUTE`,
     `- [x] build-and-test ${SEP} EXECUTE`,
-    `- [-] ci-pipeline ${SEP} EXECUTE`,
+    `- [-] performance-validation ${SEP} EXECUTE`,
   ];
   writeFileSync(seededStateFile(proj), `# AI-DLC State Tracking
 
@@ -150,7 +167,7 @@ function probeProject(units: string[], stages: Record<string, string> = PLUGIN_S
 - **Project**: plugin stage added mid-work test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Unit Ownership**: solo
 
@@ -167,12 +184,12 @@ function probeProject(units: string[], stages: Record<string, string> = PLUGIN_S
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### TEST PHASE
 ${rows.join("\n")}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
-- **Current Stage**: ci-pipeline
+- **Lifecycle Phase**: TEST
+- **Current Stage**: performance-validation
 - **Status**: Running
 - **Last Updated**: 2026-10-20T00:00:00Z
 `);
@@ -210,7 +227,7 @@ function state(install: Install): string {
 
 // The plugin stage's report, written where the stage records its work.
 function writeReport(install: Install): void {
-  const dir = join(seededRecordDir(install.proj), "construction", "probe-intent-check");
+  const dir = join(seededRecordDir(install.proj), "test", "probe-intent-check");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, artifactFilename("probe-intent-check-report")), "# Probe intent check\n");
 }
@@ -225,12 +242,12 @@ describe("a stage a plugin adds after the work started", () => {
     const install = probeProject(["alpha"]);
     expect(state(install)).not.toContain("probe-intent-check");
 
-    const skipped = report(install, ["--stage", "ci-pipeline", "--result", "skipped", "--reason", "no pipeline for this test"]);
+    const skipped = report(install, ["--stage", "performance-validation", "--result", "skipped", "--reason", "no pipeline for this test"]);
     expect(skipped.kind, JSON.stringify(skipped)).toBe("done");
     expect(state(install)).toContain("- **Current Stage**: probe-intent-check");
     expect(rowsFrom(install, "build-and-test")).toEqual([
       `- [x] build-and-test ${SEP} EXECUTE`,
-      `- [S] ci-pipeline ${SEP} EXECUTE`,
+      `- [S] performance-validation ${SEP} EXECUTE`,
       `- [-] probe-intent-check ${SEP} EXECUTE`,
     ]);
 
@@ -250,12 +267,12 @@ describe("a stage a plugin adds after the work started", () => {
     ]);
     expect(recomposed.rc, recomposed.out).toBe(0);
     expect(recomposed.out).toContain("Recomposed: 1 skipped (probe-intent-check)");
-    expect(rowsFrom(install, "ci-pipeline")).toEqual([
-      `- [-] ci-pipeline ${SEP} EXECUTE`,
+    expect(rowsFrom(install, "performance-validation")).toEqual([
+      `- [-] performance-validation ${SEP} EXECUTE`,
       `- [ ] probe-intent-check ${SEP} SKIP`,
     ]);
 
-    const skipped = report(install, ["--stage", "ci-pipeline", "--result", "skipped", "--reason", "no pipeline for this test"]);
+    const skipped = report(install, ["--stage", "performance-validation", "--result", "skipped", "--reason", "no pipeline for this test"]);
     expect(skipped.kind, JSON.stringify(skipped)).toBe("done");
     expect(state(install)).not.toContain("- **Current Stage**: probe-intent-check");
   });
@@ -267,12 +284,12 @@ describe("a stage a plugin adds after the work started", () => {
     ]);
     expect(recomposed.rc, recomposed.out).toBe(0);
     expect(recomposed.out).toContain("Recomposed: 0 skipped (none), 1 added (probe-extra-check)");
-    expect(rowsFrom(install, "ci-pipeline")).toEqual([
-      `- [-] ci-pipeline ${SEP} EXECUTE`,
+    expect(rowsFrom(install, "performance-validation")).toEqual([
+      `- [-] performance-validation ${SEP} EXECUTE`,
       `- [ ] probe-extra-check ${SEP} EXECUTE`,
     ]);
 
-    const skipped = report(install, ["--stage", "ci-pipeline", "--result", "skipped", "--reason", "no pipeline for this test"]);
+    const skipped = report(install, ["--stage", "performance-validation", "--result", "skipped", "--reason", "no pipeline for this test"]);
     expect(skipped.kind, JSON.stringify(skipped)).toBe("done");
     expect(state(install)).toContain("- **Current Stage**: probe-extra-check");
   });
@@ -282,16 +299,16 @@ describe("a stage a plugin adds after the work started", () => {
     writeFileSync(
       seededStateFile(install.proj),
       state(install)
-        .replace(`- [-] ci-pipeline ${SEP} EXECUTE`, `- [S] ci-pipeline ${SEP} EXECUTE`)
-        .replace("- **Current Stage**: ci-pipeline", "- **Current Stage**: probe-intent-check"),
+        .replace(`- [-] performance-validation ${SEP} EXECUTE`, `- [S] performance-validation ${SEP} EXECUTE`)
+        .replace("- **Current Stage**: performance-validation", "- **Current Stage**: probe-intent-check"),
     );
     writeReport(install);
     expect(report(install, ["--stage", "probe-intent-check", "--result", "awaiting-approval"]))
       .toMatchObject({ kind: "print" });
     expect(report(install, ["--stage", "probe-intent-check", "--result", "approved", "--user-input", "Approve"]).kind)
       .toBe("done");
-    expect(rowsFrom(install, "ci-pipeline")).toEqual([
-      `- [S] ci-pipeline ${SEP} EXECUTE`,
+    expect(rowsFrom(install, "performance-validation")).toEqual([
+      `- [S] performance-validation ${SEP} EXECUTE`,
       `- [x] probe-intent-check ${SEP} EXECUTE`,
     ]);
   });

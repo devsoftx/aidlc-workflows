@@ -1,4 +1,4 @@
-// covers: subcommand:aidlc-state:gate-start, audit:SENSOR_FIRED, stage:inception/reverse-engineering
+// covers: subcommand:aidlc-state:gate-start, audit:SENSOR_FIRED, stage:discover/reverse-engineering
 //
 // t350 - reverse-engineering's declared sensors fire on its own output (#771).
 //
@@ -86,7 +86,7 @@ function codekbStoreProject(): string {
       "# AI-DLC State Tracking",
       "",
       "- **Workflow**: bugfix",
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       "- **Scope**: bugfix",
       "- **Phase**: inception",
       "- **Current Stage**: reverse-engineering",

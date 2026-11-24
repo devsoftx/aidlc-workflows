@@ -35,11 +35,13 @@ function listed(proj: string): string | undefined {
   return rows.find((row) => row.dirName === intent)?.status;
 }
 
-const SKIP = ["--skip", "build-and-test,deployment-pipeline,deployment-execution"];
-// Classic with two Units: the design stages that add no wiring skipped, and Build and Test, so it finishes at Code Generation.
+const SKIP = ["--skip", "build-and-test,code-review,security-review,deployment-pipeline,deployment-execution"];
+// Classic with two Units: the design stages that add no wiring skipped, and
+// Build and Test and the Secure reviews, so it finishes at Code Generation.
 const CLASSIC_SKIP = [
   "--skip", ["practices-discovery", "user-stories", "refined-mockups", "domain-design", "contract-design", "delivery-planning",
-    "nfr-requirements", "nfr-design", "infrastructure-design", "build-and-test"].join(","),
+    "nfr-requirements", "nfr-design", "infrastructure-design", "build-and-test", "code-review", "security-review",
+    "conformance-review"].join(","),
 ];
 
 describe("a redo of Code Generation after a bugfix finished there", () => {

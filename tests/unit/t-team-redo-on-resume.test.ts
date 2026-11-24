@@ -24,6 +24,7 @@ import {
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
 import { cleanupTestProject, runOrchestrateNext, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename, auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks are not this file's subject and its fixture documents are
@@ -113,7 +114,7 @@ function design(proj: string, unit: string, stage: string): void {
   const reviewer = "aidlc-architecture-reviewer-agent";
   const started = run(proj, "aidlc-state.ts", ["unit", "start", "--stage", stage, "--unit", unit]);
   expect(started.status, started.out).toBe(0);
-  const dir = join(record, "construction", unit, stage);
+  const dir = join(record, phaseFor(stage), unit, stage);
   mkdirSync(dir, { recursive: true });
   for (const name of produces) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
   const review = ["review", "--stage", stage, "--reviewer", reviewer, "--unit", unit, "--iteration", "1"];
@@ -152,10 +153,10 @@ function walk(designed: number, rhythm: "unit-end" | "per-stage" = "unit-end"): 
   writeFileSync(path, lines.join("\n")
     .replace(/- \*\*Current Stage\*\*: .*/, "- **Current Stage**: functional-design")
     .replace(/- \*\*In Progress\*\*: .*/, "- **In Progress**: functional-design")
-    .replace(/- \*\*Lifecycle Phase\*\*: .*/, "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace(/- \*\*Lifecycle Phase\*\*: .*/, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
     .replace(
-      "- **State Version**: 8",
-      `- **State Version**: 8\n- **Unit Ownership**: team\n- **Unit Gate Rhythm**: ${rhythm}\n- **Skeleton Stance**: on`,
+      "- **State Version**: 10",
+      `- **State Version**: 10\n- **Unit Ownership**: team\n- **Unit Gate Rhythm**: ${rhythm}\n- **Skeleton Stance**: on`,
     )
     .replace(/- \*\*Summary Confirmation\*\*: .*/, "- **Summary Confirmation**: off (set by you)"));
   writeFileSync(join(dirname(path), "runtime-graph.json"), `${JSON.stringify({
@@ -210,7 +211,7 @@ describe("a Redo on re-entry for the Unit a team main is walking", () => {
     expect(`${at.kind} ${at.stage}/${at.unit}`, JSON.stringify(at)).toBe("run-stage nfr-design/alpha");
     const started = run(proj, "aidlc-state.ts", ["unit", "start", "--stage", "nfr-design", "--unit", "alpha"]);
     expect(started.status, started.out).toBe(0);
-    const dir = join(dirname(stateFile(proj)), "construction", "alpha", "nfr-design");
+    const dir = join(dirname(stateFile(proj)), phaseFor("nfr-design"), "alpha", "nfr-design");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, artifactFilename("performance-design")), "# performance-design for alpha, a first try\n");
     return proj;

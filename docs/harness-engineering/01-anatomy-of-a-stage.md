@@ -17,7 +17,7 @@ Keeping both in one file means you see the graph edges and the execution steps s
 
 This split is the key to knowing what you're editing. Change a frontmatter field and you've changed the *graph* (a dependency edge, the agent that leads, the execution mode). Change the body and you've changed the *work* (what the agent actually does). The two are independent.
 
-A real stage is authored at `core/aidlc-common/stages/<phase>/<slug>.md` — for example `stages/inception/domain-design.md`. Open one alongside this chapter; the shape will be familiar by the end.
+A real stage is authored at `core/aidlc-common/stages/<phase>/<slug>.md` — for example `stages/design/domain-design.md`. Open one alongside this chapter; the shape will be familiar by the end.
 
 ---
 
@@ -40,7 +40,7 @@ A few notes on the calls that bite hardest:
 
 - **`consumes[].required` is scoped to the active plan, not global.** `required: true` means "if the producing stage runs in *this* workflow, this consume must be satisfied" — not "the producer always runs." Scopes deliberately skip upstream stages, and a flat global requirement would make those scopes structurally invalid. The stage body handles the absent-input case gracefully (prose like "if produced").
 - **`consumes[].conditional_on` captures the brownfield/greenfield split.** A consume marked `conditional_on: brownfield` is only required when the workflow is brownfield. For an unconditional consume, omit the field entirely — there is no `always` value.
-- **`mode` is the communication topology** — who talks to whom while the body runs. `inline` runs short stages in the conductor's own context with supporters as adopted voices; `subagent` delegates the lead to a fresh context (long stages like Construction code generation) and, when supporters are declared, dispatches each as a mutually-blind spoke; `pipeline` chains supporters in declared order, each seeing all upstream work; `mob` runs all supporters in parallel against the lead's draft with one bounded objection round. WHO participates is `support_agents`; HOW they participate is `mode`. `pipeline` and `mob` require non-empty `support_agents`.
+- **`mode` is the communication topology** — who talks to whom while the body runs. `inline` runs short stages in the conductor's own context with supporters as adopted voices; `subagent` delegates the lead to a fresh context (long stages like Code Generation) and, when supporters are declared, dispatches each as a mutually-blind spoke; `pipeline` chains supporters in declared order, each seeing all upstream work; `mob` runs all supporters in parallel against the lead's draft with one bounded objection round. WHO participates is `support_agents`; HOW they participate is `mode`. `pipeline` and `mob` require non-empty `support_agents`.
 - **`for_each` names the iteration artifact.** The five Construction stages that run once per Unit declare `for_each: unit-of-work`; the other stages omit the field and run once. Aggregation is inferred from the graph, not declared.
 - **`lead_agent` and `support_agents` validate against `core/agents/*.md`.** There's no hardcoded list — adding an agent means dropping its file in that directory (see [Adding an Agent](03-adding-an-agent.md)).
 

@@ -432,10 +432,10 @@ export interface TuiProjectOptions {
    *  codekb/<repo>/ directory so a requirements-analysis journey has its
    *  canonical upstream present. */
   reArtifacts?: boolean;
-  /** Pre-seed the 3 REQUIRED ideation artifacts (intent-statement,
+  /** Pre-seed the 3 REQUIRED Discover artifacts (intent-statement,
    *  scope-document, intent-backlog) at their canonical producing-stage paths
-   *  under the intent record's ideation/. A forward `--stage` jump into a late
-   *  ideation stage (e.g. approval-handoff) splits the target's `consumes` by
+   *  under the intent record's discover/. A forward `--stage` jump into a late
+   *  Discover stage (e.g. approval-handoff) splits the target's `consumes` by
    *  presence and reports a required upstream artifact that is absent as
    *  `consumes_absent` (splitConsumesByPresence in aidlc-orchestrate.ts). A
    *  mid-ideation state fixture marks stages [x] but ships no artifacts, so
@@ -613,8 +613,8 @@ export function setupTuiProject(opts: TuiProjectOptions = {}): string {
     // (splitConsumesByPresence in aidlc-orchestrate.ts), so seeding them keeps
     // the jump free of `consumes_absent` gaps without touching checkbox state.
     const src = join(FIXTURES_DIR, "ideation-artifacts");
-    const intentDir = join(record, "ideation", "intent-capture");
-    const scopeDir = join(record, "ideation", "scope-definition");
+    const intentDir = join(record, "discover", "intent-capture");
+    const scopeDir = join(record, "discover", "scope-definition");
     mkdirSync(intentDir, { recursive: true });
     mkdirSync(scopeDir, { recursive: true });
     writeFileSync(

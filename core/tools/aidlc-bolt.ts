@@ -1,9 +1,10 @@
-// aidlc-bolt.ts — Construction-phase bolt lifecycle
+// aidlc-bolt.ts — Construction bolt lifecycle
 //
-// A bolt is one execution of stages 3.1-3.5 for a Unit (or small group of
-// dependency-linked Units). This tool owns BOLT_STARTED, BOLT_COMPLETED,
-// BOLT_FAILED, and AUTONOMY_MODE_SET emissions — separated from aidlc-state
-// to keep Construction-phase specifics out of the general state tool.
+// A bolt is one execution of the per-Unit stages (2.9-2.12 and 3.1) for a
+// Unit (or small group of dependency-linked Units). This tool owns
+// BOLT_STARTED, BOLT_COMPLETED, BOLT_FAILED, and AUTONOMY_MODE_SET emissions —
+// separated from aidlc-state to keep Construction specifics out of the general
+// state tool.
 // `abort` reuses BOLT_FAILED with a `Reason: aborted` field rather than
 // adding a new event type — keeps the audit count stable and uses field
 // taxonomy for sub-classification per the project pattern.

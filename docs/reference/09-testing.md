@@ -1034,7 +1034,7 @@ Manual CI does not make model calls or produce a Full Suite result.
 
 ### Greenfield Stub: `tests/fixtures/greenfield-todo/`
 
-A project description with no source code. Workspace-detection classifies as greenfield. Gives the LLM deterministic intent context for ideation stages.
+A project description with no source code. Workspace-detection classifies as greenfield. Gives the LLM deterministic intent context for discover stages.
 
 Contents: Just `README.md` describing a React Todo App with TypeScript and Vite.
 
@@ -1057,15 +1057,15 @@ Pre-seeded reverse-engineering output for downstream stage tests. Copied into th
 
 Contents: 4 minimal .md files (architecture-overview, technology-stack, codebase-analysis, integration-points) describing the brownfield-todo app.
 
-### Inception Artifacts Fixture: `tests/fixtures/inception-artifacts/`
+### Design Artifacts Fixture: `tests/fixtures/inception-artifacts/`
 
-Pre-seeded inception phase output for tests that jump into construction. Copied into `$PROJ/aidlc/spaces/default/intents/<record>/inception/{requirements-analysis,domain-design,units-generation}/` during setup.
+Pre-seeded design phase output (through Units Generation) for tests that jump into Construction. Copied into `$PROJ/aidlc/spaces/default/intents/<record>/design/{requirements-analysis,domain-design,units-generation}/` during setup.
 
 Contents: minimal .md files (requirements, the consolidated `components.md` catalogue, unit-of-work, unit-of-work-story-map) describing the Todo app. Unit name: `todo-core`.
 
 ### Construction Artifacts Fixture: `tests/fixtures/construction-artifacts/`
 
-Pre-seeded construction phase output for tests that jump to mid-construction stages (e.g., code-generation). Copied into `$PROJ/aidlc/spaces/default/intents/<record>/construction/todo-core/functional-design/` during setup.
+Pre-seeded per-Unit design output for tests that jump to mid-Construction stages (e.g., code-generation). Copied into `$PROJ/aidlc/spaces/default/intents/<record>/design/todo-core/functional-design/` during setup.
 
 Contents: 1 minimal .md file (functional-design) describing the todo-core unit's component specs and state management.
 
@@ -1086,8 +1086,8 @@ What people reply to every question AI-DLC asks them: one item per reply at the 
 | `state-brownfield-init-done.md` | Brownfield | bugfix | Init done, RE next | t72 |
 | `state-mid-inception.md` | Brownfield | bugfix | RE done, requirements-analysis next | t74 |
 | `state-mid-ideation.md` | Greenfield | feature | Intent+market done, feasibility next | t08, t10, t11, t12, t20, t22, t24, t25, t37 |
-| `state-construction.md` | -- | -- | Construction phase | t07, t10, t11, t26, t57 |
-| `state-operation.md` | -- | -- | Operation phase | t07, t10, t11 |
+| `state-construction.md` | -- | -- | Construction, at Functional Design | t07, t10, t11, t26, t57 |
+| `state-operation.md` | -- | -- | Deploy phase, at Deployment Pipeline | t07, t10, t11 |
 | `state-completed.md` | -- | -- | All stages done | t08, t11 |
 | `state-jumped.md` | Brownfield | bugfix | Mid-workflow with jump history | t11, t37, t42 |
 | `state-corrupted.md` | -- | -- | Invalid/corrupted state | t08, t10 |

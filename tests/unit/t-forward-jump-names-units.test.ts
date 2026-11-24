@@ -14,6 +14,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, createTestProject, FIXTURES_DIR, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { forwardJumpNotice } from "../../dist/claude/.claude/tools/aidlc-jump.ts";
@@ -56,7 +57,7 @@ function unitWalk(units: string[]): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -72,11 +73,12 @@ function unitWalk(units: string[]): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${STAGES.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} \u2014 EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -99,7 +101,7 @@ function hooksRunning(p: string): void {
 function finish(p: string, unit: string, steps: string[]): void {
   for (const slug of steps) {
     const stage = findStageBySlug(slug)!;
-    const dir = join(seededRecordDir(p), "construction", unit, slug);
+    const dir = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(dir, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${unit} ${name}\n`);
     if (stage.workspace_requires) {

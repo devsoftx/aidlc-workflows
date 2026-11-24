@@ -78,7 +78,7 @@ function runUtility(project: string, args: string[]) {
 // Minimal valid frontmatter the schema accepts; review fields layered per case.
 const BASE = {
   slug: "fixture-stage",
-  phase: "inception",
+  phase: "design",
   execution: "ALWAYS",
   condition: "Always executes",
   lead_agent: "aidlc-product-agent",
@@ -152,7 +152,7 @@ describe("t266 review class", () => {
 
     const pruned = validateStageFrontmatter({
       ...BASE,
-      phase: "construction",
+      phase: "build",
       for_each: "unit-of-work",
       produces: ["plugin-output", "fixture-artifact"],
       produces_kinds: {

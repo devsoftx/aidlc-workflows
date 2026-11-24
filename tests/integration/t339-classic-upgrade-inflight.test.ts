@@ -46,6 +46,7 @@ import {
   createOrchestrationTestProject,
   runOrchestrateNext,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -59,7 +60,6 @@ const OPERATION_STAGES = [
   "deployment-execution",
   "observability-setup",
   "incident-response",
-  "performance-validation",
   "feedback-optimization",
 ];
 const env = {
@@ -95,8 +95,8 @@ function next(project: string): Record<string, unknown> {
 function legacyClassic() {
   const project = createOrchestrationTestProject();
   projects.push(project);
-  // Workshop preserves the old classic membership, including all seven
-  // Operation EXECUTEs. Only the state shape is downgraded, never dist data.
+  // Workshop preserves the classic membership: the deploy and operate EXECUTEs
+  // in OPERATION_STAGES stay planned. Only the state shape is downgraded, never dist data.
   run(UTILITY, project, ["intent-create", "--scope", "workshop", "--arguments", "in-flight classic upgrade", "--label", "classic-upgrade"]);
   const path = stateFilePath(project);
   let content = readFileSync(path, "utf-8");
@@ -105,12 +105,12 @@ function legacyClassic() {
   content = setField(content, "Review Override", "");
   content = setField(content, "Test Strategy", "Standard");
   content = content.replace(/^- \*\*(Sensors|Learnings|Summary Confirmation)\*\*:.*\n/gm, "");
-  // Seed completed history through the end of Construction with the same state
-  // helpers as existing deterministic routing fixtures. CI Pipeline is already
-  // complete so the next-stage lookup after Build and Test reaches Operation.
+  // Seed every planned EXECUTE outside OPERATION_STAGES as completed (ci-pipeline
+  // included), with the same state helpers as existing deterministic routing
+  // fixtures, so the next-stage lookup after build-and-test reaches deployment-pipeline.
   const planned = new Map(parseCheckboxes(content).map((entry) => [entry.slug, entry]));
   for (const stage of loadStageGraph()) {
-    if (stage.phase !== "operation" && planned.get(stage.slug)?.suffix === "EXECUTE") {
+    if (!OPERATION_STAGES.includes(stage.slug) && planned.get(stage.slug)?.suffix === "EXECUTE") {
       content = setCheckbox(content, stage.slug, "completed");
     }
   }
@@ -118,7 +118,7 @@ function legacyClassic() {
     ["Current Stage", "build-and-test"],
     ["Last Completed Stage", "build-and-test"],
     ["Next Stage", "deployment-pipeline"],
-    ["Lifecycle Phase", "CONSTRUCTION"],
+    ["Lifecycle Phase", "TEST"],
     ["Status", "Running"],
   ]) content = setField(content, field, value);
   writeFileSync(path, content);
@@ -241,7 +241,7 @@ describe("t339 upgrading an in-flight classic intent", () => {
     const current = summaryAuthorizationRecordPath(record, stage, null);
     const authorization = {
       version: 1 as const, id: "1".repeat(64), stage, unit: null, workflow: null,
-      attempt: "unstarted", questions_file: "inception/requirements-analysis/questions.md",
+      attempt: "unstarted", questions_file: "design/requirements-analysis/questions.md",
       questions_sha256: "a".repeat(64), choice: "Looks correct",
       recorded_at: "2026-09-14T00:00:00Z",
     };
@@ -268,12 +268,13 @@ describe("t339 upgrading an in-flight classic intent", () => {
     const recorded = parseCheckboxes(content).filter((entry) => OPERATION_STAGES.includes(entry.slug));
     expect(recorded.map((entry) => entry.slug)).toEqual(OPERATION_STAGES);
     expect(recorded.every((entry) => entry.suffix === "EXECUTE")).toBe(true);
+    expect(phaseFor("performance-validation")).toBe("test");
 
     const directive = next(project);
     expect(directive.stage).toBe("deployment-pipeline");
     expect(run(STATE, project, ["lookup", "next-stage", "build-and-test", "classic"]).trim()).toBe("deployment-pipeline");
     const status = run(UTILITY, project, ["status"]);
-    expect(status).toMatch(/^\s*OPERATION\s+\S+\s+0\/7$/m);
+    expect(status).toMatch(/^\s*OPERATE\s+\S+\s+0\/3$/m);
     expect(status).toContain("Next Stage:     Deployment Pipeline\n");
     expect(readFileSync(path, "utf-8")).toBe(content);
   });
@@ -311,7 +312,7 @@ describe("t339 upgrading an in-flight classic intent", () => {
     let content = setCheckbox(readFileSync(path, "utf-8"), "requirements-analysis", "in-progress");
     for (const [field, value] of [
       ["Current Stage", "requirements-analysis"],
-      ["Lifecycle Phase", "INCEPTION"],
+      ["Lifecycle Phase", "DESIGN"],
       ["Last Completed Stage", "practices-discovery"],
       ["Next Stage", "user-stories"],
     ]) content = setField(content, field, value);

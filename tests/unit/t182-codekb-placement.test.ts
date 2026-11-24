@@ -311,7 +311,7 @@ describe("t182 isCodekb resolver — reverse-engineering artifacts land under sp
       expect(p.startsWith(codekbPrefix), `produces ${p} not under codekb`).toBe(true);
       // It must NOT carry the per-intent record tail.
       expect(p.includes("/intents/")).toBe(false);
-      expect(p.includes("/inception/reverse-engineering/")).toBe(false);
+      expect(p.includes("/discover/reverse-engineering/")).toBe(false);
     }
   });
 

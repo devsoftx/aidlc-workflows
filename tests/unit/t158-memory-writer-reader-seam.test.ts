@@ -30,6 +30,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AIDLC_SRC, learningsSelectionsPath, toPortablePath, writeLearningsSelections } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { loadRules, memoryDirFor } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { memoryGuardPolicyDeclarations } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
@@ -59,8 +60,9 @@ afterEach(() => {
 // routing target) — so the round-trip reads back a practice the writer
 // appended under an existing heading.
 function seedProject(root: string): void {
-  mkdirSync(join(root, "aidlc-docs", "inception", "user-stories"), { recursive: true });
-  mkdirSync(join(root, ".claude", "aidlc-common", "stages", "inception"), { recursive: true });
+  const phase = phaseFor("user-stories");
+  mkdirSync(join(root, "aidlc-docs", phase, "user-stories"), { recursive: true });
+  mkdirSync(join(root, ".claude", "aidlc-common", "stages", phase), { recursive: true });
   const memDir = memoryDirFor(root);
   mkdirSync(memDir, { recursive: true });
   // The intent-less space's own state, the evidence persist takes that the
@@ -91,18 +93,18 @@ function seedProject(root: string): void {
       stages: [
         {
           stage_slug: "user-stories",
-          memory_path: "aidlc-docs/inception/user-stories/memory.md",
+          memory_path: `aidlc-docs/${phase}/user-stories/memory.md`,
         },
       ],
     }),
     "utf-8",
   );
   writeFileSync(
-    join(root, ".claude", "aidlc-common", "stages", "inception", "user-stories.md"),
+    join(root, ".claude", "aidlc-common", "stages", phase, "user-stories.md"),
     [
       "---",
       "slug: user-stories",
-      "phase: inception",
+      `phase: ${phase}`,
       "execution: ALWAYS",
       "lead_agent: aidlc-product-agent",
       "support_agents: []",

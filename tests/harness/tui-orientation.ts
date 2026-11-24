@@ -16,7 +16,7 @@ import {
 } from "./test-budget.ts";
 
 const FIXTURE = join(import.meta.dir, "..", "fixtures", "state-mid-ideation.md");
-export const ORIENTATION_MARKER = "default · fixture · IDEATION";
+export const ORIENTATION_MARKER = "default · fixture · DISCOVER";
 const STARTUP_TIMEOUT_MS = LIVE_STARTUP_TIMEOUT_MS;
 const PROCESS_EXIT_TIMEOUT_MS = NATIVE_TERMINAL_CLEANUP_TIMEOUT_MS;
 
@@ -104,7 +104,7 @@ export function captureOrientationStatusline(
   // and writes the mid-ideation state into it; secondSpace seeds a non-default
   // sibling space so listSpaces().length > 1 and the orientation prefix paints
   // its `<space> ·` segment. With the active space still `default`, the prefix
-  // renders `default · fixture · IDEATION …`. No prompt, no tokens.
+  // renders `default · fixture · DISCOVER …`. No prompt, no tokens.
   const sandbox = setupTuiProject({ withState: "state-mid-ideation.md", secondSpace: true });
   let sample: OrientationSample | undefined;
   let launchError: unknown;

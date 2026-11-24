@@ -2,7 +2,7 @@
 name: classic
 depth: Standard
 keywords: []
-description: "V1-style ceremony through Inception and Construction - the implicit default"
+description: "V1-style ceremony through Design and the unit loop - the implicit default"
 skeleton: off
 review_cap: advisory
 guard_policy: off
@@ -17,11 +17,11 @@ collaborators: off
 
 `classic` is the implicit default scope - used when neither the user nor
 `AWS_AIDLC_DEFAULT_SCOPE` names one - and restores v1-style ceremony through
-Inception and Construction: one human approval per Inception stage. In
-Construction, built Unit by Unit, the human approves each Unit's code plan and,
+Design and the unit loop: one human approval for reverse-engineering and for each Design stage before the unit loop. In
+the unit loop, built Unit by Unit, the human approves each Unit's code plan and,
 under "Review each checkpoint", its checkpoint, so a Unit's design stages run
 without a stop of their own; team-owned Units keep their own per-stage or
-end-of-Unit gates. Ideation is skipped and Operation remains a placeholder. Stage-declared execution modes
+end-of-Unit gates. Discover is skipped except reverse-engineering, and Deploy and Operate remain a placeholder. Stage-declared execution modes
 are unchanged; collaborators are off, so each stage runs with its lead agent
 only (`/aidlc --collaborators on` brings the support agents in).
 
@@ -46,14 +46,14 @@ recorded with `aidlc config flags --bypass <NAME>`.
 
 ## Why these stages, why skip those
 
-AI-DLC v1 had no Ideation phase, so `classic` skips all seven Ideation stages.
-It keeps all Inception stages and the Construction stages through Build and
-Test. CI Pipeline and all seven Operation stages are skipped: customers bring
-their own CI and downstream, and Build and Test is the one integrated build
-across every unit. Only eight stages are unconditional: the three Initialization stages,
+AI-DLC v1 had no Discover phase, so `classic` skips the seven discover stages except reverse-engineering.
+It keeps reverse-engineering, all Design stages, Code Generation, Build and Test, and the
+three Secure reviews. Performance Validation and every Deploy and Operate stage (CI Pipeline
+among them) are skipped: customers bring their own CI and downstream, and Build and Test is the one integrated build
+across every unit. Only ten stages are unconditional: the three Initialization stages,
 Requirements Analysis, Units Generation, Delivery Planning, Code Generation,
-and Build and Test. The remaining Inception and Construction work is
-CONDITIONAL and self-selects from project context, preserving v1's adaptive behavior.
+Build and Test, Code Review, and Security Review. The remaining Design and
+per-unit work, and Conformance Review, are CONDITIONAL and self-select from project context, preserving v1's adaptive behavior.
 
 Its test strategy inherits Standard from its depth, so production testing
 expectations remain in force. The separate `workshop` scope retains the
@@ -61,7 +61,8 @@ teaching-oriented Minimal test override for existing workshop workflows.
 
 ## Membership
 
-Initialization, every Inception stage, and the Construction stages through
-Build and Test are in the grid: 18 of 33 stages. All seven Ideation stages,
-CI Pipeline, and all seven Operation stages are SKIP. The scope intentionally has no keywords; name it explicitly
+Initialization, reverse-engineering, every Design stage, Code Generation, Build and Test,
+and the three Secure reviews are in the grid: 18 of the 33 stages after Initialization.
+The other seven Discover stages, Performance Validation, and every Deploy and Operate
+stage are SKIP. The scope intentionally has no keywords; name it explicitly
 or use the implicit default.

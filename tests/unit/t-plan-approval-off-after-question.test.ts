@@ -15,18 +15,34 @@
 // changes; nor does it for a message sent with their edit of the shown plan.
 
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, REPO_ROOT, runOrchestrateNext,
-  seededRecordDir, seededStateFile,
+  AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, DEFAULT_RECORD_DIR, DEFAULT_SPACE, FIXTURES_DIR,
+  REPO_ROOT, runOrchestrateNext, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
-import { auditBlockField, getField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { auditBlockField, findStageBySlug, getField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { listMessages } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -128,11 +144,11 @@ function planQuestionShown(proj: string): void {
 }
 
 const planFile = (proj: string): string =>
-  join(seededRecordDir(proj), "construction", "code-generation", "code-generation-plan.md");
+  join(seededRecordDir(proj), findStageBySlug("code-generation")!.phase, "code-generation", "code-generation-plan.md");
 
 /** The code plan written, its question not yet asked; `contract` false leaves its Testing Contract to the engine. */
 function planWritten(proj: string, contract = true): void {
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), findStageBySlug("code-generation")!.phase, "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     planFile(proj),
@@ -194,7 +210,7 @@ function guardAdmits(proj: string, command: string): number {
 }
 
 const stateField = (proj: string, name: string) => getField(readFileSync(seededStateFile(proj), "utf-8"), name);
-const ceremonySets = (proj: string) => readAuditShardEvents(proj).filter((row) => row.event === "CEREMONY_SET");
+const ceremonySets = (proj: string) => readAuditShardEvents(proj, DEFAULT_RECORD_DIR, DEFAULT_SPACE).filter((row) => row.event === "CEREMONY_SET");
 
 describe("while the code plan question waits, plan approval goes off only on a message sent since it was shown", () => {
   for (const policy of ["off", "strict"] as const) {

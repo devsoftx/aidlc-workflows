@@ -2,7 +2,7 @@
 
 > **Agent deep dive** · [User Guide](../00-introduction.md) › [Agents](../06-agents.md) › [deep dives](README.md) · Technical reference: [design-agent](../../reference/agents/design-agent.md)
 
-The aidlc-design-agent is your UX/UI designer. It produces wireframes and concept sketches during Ideation, then evolves them into high-fidelity mockups with interaction specifications during Inception. It defines information architecture, navigation design, responsive behavior, and accessibility requirements. For non-UI projects, it produces system context diagrams and API experience designs.
+The aidlc-design-agent is your UX/UI designer. It produces wireframes and concept sketches during Discover, then evolves them into high-fidelity mockups with interaction specifications during Design. It defines information architecture, navigation design, responsive behavior, and accessibility requirements. For non-UI projects, it produces system context diagrams and API experience designs.
 
 The aidlc-design-agent leads two stages and supports two others. It ensures that every user-facing interface is usable, accessible, and consistent with design system standards.
 
@@ -10,15 +10,15 @@ The aidlc-design-agent leads two stages and supports two others. It ensures that
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 1.6 Rough Mockups | Ideation | Low-fidelity wireframes and concept visualization |
-| 2.5 Refined Mockups | Inception | High-fidelity mockups with interaction specs and accessibility |
+| 1.7 Rough Mockups | Discover | Low-fidelity wireframes and concept visualization |
+| 2.4 Refined Mockups | Design | High-fidelity mockups with interaction specs and accessibility |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 2.4 User Stories | Inception | Enriches stories with interaction details and UX acceptance criteria when collaborators are on |
-| 2.6 Domain Design | Inception | Contributes UI component specifications |
+| 2.3 User Stories | Design | Enriches stories with interaction details and UX acceptance criteria when collaborators are on |
+| 2.5 Domain Design | Design | Contributes UI component specifications |
 
 ## What to Expect
 

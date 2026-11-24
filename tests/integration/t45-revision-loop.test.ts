@@ -66,6 +66,7 @@ import {
   createTestProject,
   resetAidlcEnv,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const UTIL = join(AIDLC_SRC, "tools", "aidlc-utility.ts");
@@ -133,7 +134,7 @@ function state(args: string[]): void {
 function recordReview(): void {
   const artifact = join(
     recordDirOf(proj),
-    "inception",
+    phaseFor(SLUG),
     SLUG,
     "requirements.md",
   );

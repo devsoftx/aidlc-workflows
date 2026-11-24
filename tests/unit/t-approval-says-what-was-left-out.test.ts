@@ -12,7 +12,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -25,6 +25,22 @@ import {
   artifactFilename, findStageBySlug, latestMainWorkflowStageRunFloorForProject, reviewArtifactFingerprint,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 resetAidlcEnv();
@@ -33,21 +49,30 @@ afterEach(() => {
   while (projects.length) cleanupTestProject(projects.pop());
 });
 const STAGES = ["functional-design", "nfr-requirements", "nfr-design", "infrastructure-design", "code-generation"];
+// Each Unit stage's folder is `<record>/<phase>/<unit>/<slug>`, so the phase
+// comes from the compiled graph: the four design stages are Design, and
+// code-generation is Build.
+const phaseOf = (slug: string) => findStageBySlug(slug)!.phase;
 const LEFT_OUT = "Left out of this build: AC2.1.1, AC2.1.2 and AC2.2.1.";
 
-// The t342 fixture: one solo intent in Construction, Units alpha and beta.
+// The t342 fixture: one solo intent in the Unit loop, Units alpha and beta.
 function fixture(options: { checkpoints?: boolean; current?: string; team?: boolean; sensorsOff?: boolean } = {}) {
   const p = createTestProject();
   projects.push(p);
   seedAidlcMemory(p);
   const current = options.current ?? "functional-design";
+  const stageLine = (stage: string) => stage === current ? `- [-] ${stage} \u2014 EXECUTE`
+    : options.team ? `- [S] ${stage} \u2014 SKIP` : `- [ ] ${stage} \u2014 EXECUTE`;
+  const designStages = STAGES.filter((stage) => phaseOf(stage) === "design");
+  const buildStages = STAGES.filter((stage) => phaseOf(stage) === "build");
   writeFileSync(seededStateFile(p), `# AI-DLC State Tracking
 ## Project Information
 - **Project**: Left-out work
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-${options.sensorsOff ? "- **Sensors**: off (set by you)\n" : ""}- **State Version**: 8
+${options.sensorsOff ? "- **Sensors**: off (set by you)\n" : ""}- **Summary Confirmation**: off (set by you)
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -63,12 +88,16 @@ ${options.team ? "- **Unit Ownership**: team\n- **Unit Gate Rhythm**: per-stage\
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${STAGES.map((stage) => stage === current ? `- [-] ${stage} \u2014 EXECUTE`
-    : options.team ? `- [S] ${stage} \u2014 SKIP` : `- [ ] ${stage} \u2014 EXECUTE`).join("\n")}
+### DESIGN PHASE
+${designStages.map(stageLine).join("\n")}
+
+### BUILD PHASE
+${buildStages.map(stageLine).join("\n")}
+
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseOf(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `);
@@ -93,7 +122,7 @@ const SKIPPED: Coverage = [
 function cover(p: string, unit: string, coverage: Coverage) {
   for (const slug of STAGES) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), stage.phase, unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       const body = slug === "code-generation" && name === "traceability"
@@ -243,6 +272,9 @@ describe("t-approval-says-what-was-left-out", () => {
     const beta = report("beta", "awaiting-approval");
     expect(String(beta.narration ?? ""), JSON.stringify(beta)).not.toContain("Left out");
     const after = [report("alpha", "approved", ["--user-input", "Approve"]), report("beta", "approved", ["--user-input", "Approve"])];
+    // `next` stops when no hook has run in this project; the person's turn
+    // is what the prompt hook records, as it does in a live session.
+    humanTurn(p, "left-out", "Approve");
     const following = next(p) as Record<string, unknown>;
     expect(following.stage, JSON.stringify(following).slice(0, 400)).toBe("build-and-test");
     for (const step of [...after, following]) expect(JSON.stringify(step)).not.toContain("Left out");
@@ -252,7 +284,7 @@ describe("t-approval-says-what-was-left-out", () => {
     const p = fixture({ checkpoints: false, current: "code-generation" });
     cover(p, "alpha", BUILT);
     cover(p, "beta", BUILT);
-    const design = join(seededRecordDir(p), "construction", "alpha", "functional-design", "traceability.json");
+    const design = join(seededRecordDir(p), phaseOf("functional-design"), "alpha", "functional-design", "traceability.json");
     writeFileSync(design, JSON.stringify({
       stage: "functional-design", unit: "alpha", upstream_ids: ["AC1.1.1"],
       coverage: [{ id: "AC1.1.1", status: "Deferred", target: "nfr-design" }],

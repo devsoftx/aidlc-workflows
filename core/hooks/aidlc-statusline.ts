@@ -9,6 +9,7 @@ import {
   statSync,
 } from "node:fs";
 import { createRequire } from "node:module";
+import { FIVE_PHASE_FOLDERS } from "../tools/aidlc-five-phase-record.ts";
 import { knownActiveSpace } from "../tools/aidlc-runtime-paths.ts";
 import { validateUnitName } from "../tools/aidlc-unit-dag.ts";
 import { unitProgress } from "../tools/aidlc-unit-walk-view.ts";
@@ -509,11 +510,34 @@ function recordedRepos(stateFile: string): string[] {
   return Array.isArray(row?.repos) ? row.repos.filter((repo): repo is string => typeof repo === "string").sort() : [];
 }
 
+// A record a five-phase AI-DLC wrote names one of its phases in a heading or
+// the Lifecycle Phase; none of those names is a seven-phase one, so any other
+// render never loads the engine's state step.
+const FIVE_PHASE_NAME = new RegExp(
+  `^(?:### (?:${FIVE_PHASE_FOLDERS.join("|")}) PHASE|-\\s*\\*\\*Lifecycle Phase\\*\\*:[^\\S\\n]*(?:${FIVE_PHASE_FOLDERS.join("|")}))\\b`,
+  "im",
+);
+
+// The state as AI-DLC's next step brings it up (broughtUpStateText), for work
+// an earlier AI-DLC set up that no step has brought up yet, with its folders
+// still where that release kept them; any other state as it is.
+async function asBroughtUp(recorded: string): Promise<{ state: string; fivePhaseFolders: boolean }> {
+  if (!FIVE_PHASE_NAME.test(recorded)) return { state: recorded, fivePhaseFolders: false };
+  try {
+    const { broughtUpStateText, waitsToBeBroughtUp } = await import("../tools/aidlc-state-upgrade.ts");
+    return waitsToBeBroughtUp(recorded)
+      ? { state: broughtUpStateText(recorded), fivePhaseFolders: true }
+      : { state: recorded, fivePhaseFolders: false };
+  } catch {
+    return { state: recorded, fivePhaseFolders: false };
+  }
+}
+
 function extractField(text: string, label: string): string {
   // Match the Markdown list field pattern used throughout aidlc-state.md:
-  //   - **Lifecycle Phase**: IDEATION
+  //   - **Lifecycle Phase**: DISCOVER
   // Anchoring on "^-\s*\*\*LABEL\*\*:" prevents prose lines that happen to contain
-  // the label (e.g. "> The Lifecycle Phase: OPERATION was added in v2.") from
+  // the label (e.g. "> The Lifecycle Phase: OPERATE was added in v2.") from
   // hijacking the displayed value.
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(`^-\\s*\\*\\*${escaped}\\*\\*:[^\\S\\n]*([^\\n]*)`, "m");
@@ -524,7 +548,7 @@ function extractField(text: string, label: string): string {
 function phaseProgress(text: string, phase: string): { done: number; total: number } {
   if (!phase) return { done: 0, total: 0 };
   // Normalize: take the first whitespace-delimited token and uppercase it, so
-  // values like "INCEPTION (finalizing)" or mixed-case headings still match.
+  // values like "DESIGN (finalizing)" or mixed-case headings still match.
   const phaseToken = phase.trim().split(/\s+/)[0].toUpperCase();
   if (!phaseToken) return { done: 0, total: 0 };
   const lines = text.split(/\r?\n/);
@@ -714,7 +738,7 @@ async function main(stdinText: string): Promise<void> {
     return;
   }
 
-  const state = readFileSync(stateFile, "utf-8");
+  const { state, fivePhaseFolders } = await asBroughtUp(readFileSync(stateFile, "utf-8"));
   const phase = extractField(state, "Lifecycle Phase");
   const stage = extractField(state, "Current Stage");
   const agent = extractField(state, "Active Agent");
@@ -754,8 +778,10 @@ async function main(stdinText: string): Promise<void> {
   // none (between steps in a teammate's clone, or past the Units' stages) the
   // light done-count could miss a skeleton's approval or a walk without
   // checkpoints, so the stage count stands.
-  const units = phase === "CONSTRUCTION" && shown.unit !== ""
-    ? unitProgress(dirname(stateFile), extractField(state, "Construction Iteration"), shown.unit)
+  // A Unit on the step marks per-unit work in design or build. This hot path
+  // does not load the stage graph, so the step's Unit decides it, not the phase.
+  const units = shown.unit !== ""
+    ? unitProgress(dirname(stateFile), extractField(state, "Construction Iteration"), shown.unit, fivePhaseFolders)
     : null;
   if (units) {
     output += ` Unit ${units.current} of ${units.total}`;

@@ -64,6 +64,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename,
   readAllAuditShards,
@@ -186,7 +187,7 @@ function constructionState(opts: {
 - **Project**: unit-major iteration test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ${stanceLine}
 ## Runtime State
@@ -212,14 +213,14 @@ ${iterationLine}
 - [-] domain-design — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `;
 }
 
 function coverUnit(proj: string, unit: string, slug: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of PRODUCES[slug]) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -338,7 +339,7 @@ function logReviewReady(proj: string, stage: string, unit: string): void {
   if (!reviewArtifact) throw new Error(`no review artifact fixture for ${stage}`);
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(reviewArtifact),
@@ -384,7 +385,7 @@ function seedStaleKindDependency(proj: string): void {
     join(seededRecordDir(proj), "runtime-graph.json"),
     `${JSON.stringify({ stages: [] }, null, 2)}\n`,
   );
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "unit-of-work-dependency.md"),
@@ -437,7 +438,7 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/nfr-requirements/performance-requirements.md`,
+      `${RP}/design/alpha/nfr-requirements/performance-requirements.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -455,7 +456,7 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/code-generation/code-generation-plan.md`,
+      `${RP}/build/alpha/code-generation/code-generation-plan.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -505,7 +506,7 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     const proj = seedProject("unit-major");
     seedBoltDag(proj, ["alpha", "beta"]);
     coverFullGrid(proj, ["alpha", "beta"]);
-    const dir = join(seededRecordDir(proj), "construction", "alpha", "nfr-design");
+    const dir = join(seededRecordDir(proj), phaseFor("nfr-design"), "alpha", "nfr-design");
     const { rmSync } = require("node:fs") as typeof import("node:fs");
     rmSync(join(dir, `${PRODUCES["nfr-design"][0]}.md`));
     const d = runNext(proj);
@@ -553,10 +554,10 @@ describe("t209 opt-in unit-major construction design iteration", () => {
     // not the UI-only frontend artifact. The kind comes from the dependency
     // artifact because the cached graph deliberately has no DAG.
     expect(d.produces).toContain(
-      `${RP}/construction/contract/functional-design/rules.md`,
+      `${RP}/design/contract/functional-design/rules.md`,
     );
     expect(d.produces).toContain(
-      `${RP}/construction/contract/functional-design/entities.md`,
+      `${RP}/design/contract/functional-design/entities.md`,
     );
     expect(d.produces?.some((path) => path.endsWith("/functional-spec.md"))).toBe(true);
     expect(d.produces?.some((path) => path.endsWith("/frontend-components.md"))).toBe(false);

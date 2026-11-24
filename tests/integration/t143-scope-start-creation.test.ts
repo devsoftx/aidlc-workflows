@@ -25,7 +25,7 @@
 //   - creation print:  aidlc-orchestrate.ts - names
 //                   `intent create --scope <scope>` and ends "re-run `next` to continue"
 //   - creation summary: `State initialized:` (aidlc-utility.ts handleIntentCreate stdout)
-//   - state fields: State-Version-8 template (aidlc-utility.ts handleIntentCreate)
+//   - state fields: the creation template (aidlc-utility.ts handleIntentCreate)
 //
 // It SPENDS TOKENS — driveAidlc drives the real /aidlc on Opus/Bedrock. The
 // run stops the instant the creation tool-result lands (stopAfterToolResult), so

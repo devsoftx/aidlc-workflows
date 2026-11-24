@@ -1,6 +1,6 @@
-// covers: stage:ideation/intent-capture
+// covers: stage:discover/intent-capture
 //
-// t-tui-kiro-intent-capture.serial.test.ts — drive the IDEATION intent-capture
+// t-tui-kiro-intent-capture.serial.test.ts — drive the DISCOVER intent-capture
 // stage through a REAL keystroke-driven `kiro-cli chat` TUI against the SHIPPED
 // dist/kiro tree, and prove it produces its on-disk artifacts. The Kiro twin of
 // t-tui-t73-intent-capture.serial.test.ts (same seeded fixture, same disk
@@ -39,7 +39,7 @@
 //   - the numbered-prose gate protocol is answerable by keystroke,
 //   - ON DISK: questions file with >=1 [Answer]: line; intent-statement and
 //     stakeholder map with source tags plus Assumptions & Open Questions;
-//     state Completed == [x] count, > 3, IDEATION phase; intent-capture [x]
+//     state Completed == [x] count, > 3, DISCOVER phase; intent-capture [x]
 //     with Current Stage moved off it; audit has STAGE_COMPLETED.
 //
 // COST: spends real Kiro credits (minutes of LLM turns on the `auto` model).
@@ -62,6 +62,7 @@ import { join } from "node:path";
 import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
 import { findIntentGroundingRegressions } from "../harness/intent-grounding-regressions.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTuiProjectAfterKill,
   createKiroNumberedProseAnswerState,
@@ -294,7 +295,7 @@ describe("t-tui-kiro-intent-capture (numbered-prose gates on the shipped dist/ki
           if (answer === "Looks correct") {
             const icDir = join(
               seededRecordDir(sandbox),
-              "ideation",
+              phaseFor("intent-capture"),
               "intent-capture",
             );
             expect(findArtifact(icDir, ["intent", "statement"])).toBeNull();
@@ -311,7 +312,7 @@ describe("t-tui-kiro-intent-capture (numbered-prose gates on the shipped dist/ki
         expect(answerState.approvalsAnswered).toBeGreaterThanOrEqual(1);
 
         // --- assert ON DISK (the Claude twin's surface, verbatim) -------------
-        const icDir = join(seededRecordDir(sandbox), "ideation", "intent-capture");
+        const icDir = join(seededRecordDir(sandbox), phaseFor("intent-capture"), "intent-capture");
         expect(existsSync(icDir)).toBe(true);
 
         const questionsFile = findArtifact(icDir, ["questions"]);
@@ -398,7 +399,7 @@ describe("t-tui-kiro-intent-capture (numbered-prose gates on the shipped dist/ki
         expect(completedMatch).not.toBeNull();
         expect(Number.parseInt((completedMatch as RegExpExecArray)[1], 10)).toBe(xCount);
         expect(xCount).toBeGreaterThan(3);
-        expect(stateMd).toContain("IDEATION");
+        expect(stateMd).toContain("DISCOVER");
         expect(stateMd).toMatch(/- \[x\] intent-capture/);
         const currentStageLine =
           /\*\*Current Stage\*\*:[ \t]*([^\r\n]*)/.exec(stateMd)?.[1]?.trim() ?? "";

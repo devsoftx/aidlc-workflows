@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "functional-design",
+  "unit": "code-review",
+  "workflow": null,
+  "attempt": "9357cd2c85a79c8b",
+  "iteration": 1,
+  "reviewer": "aidlc-architecture-reviewer-agent",
+  "verdict": "READY",
+  "request_id": "review:d413262c8ed20d03ff136a3388310b25",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:5eb0cf460691d4c89203244e36cadbe44dc06c174552f70ffe0b4c67852d79bf",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T04:05:40Z"
+}

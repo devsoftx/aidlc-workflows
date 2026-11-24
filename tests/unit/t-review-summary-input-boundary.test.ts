@@ -19,6 +19,7 @@ import {
   seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const projects: string[] = [];
 afterEach(() => {
@@ -27,7 +28,7 @@ afterEach(() => {
 
 const stage: ReviewFingerprintStage = {
   slug: "requirements-analysis",
-  phase: "inception",
+  phase: phaseFor("requirements-analysis"),
   reviewer: "aidlc-product-lead-agent",
   review_artifact: "requirements",
   produces: ["requirements", "requirements-analysis-questions"],

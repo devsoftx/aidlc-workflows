@@ -38,6 +38,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -55,7 +56,7 @@ function project(): { proj: string; questions: string } {
   tempDirs.push(proj);
   seedAidlcMemory(proj);
   seedStateFile(proj, "state-mid-inception.md");
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const questions = join(dir, `${STAGE}-questions.md`);
   writeFileSync(

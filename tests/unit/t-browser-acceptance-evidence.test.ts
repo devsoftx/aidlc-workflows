@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/construction/build-and-test.md, file:knowledge/aidlc-quality-agent/testing-guide.md
+// covers: file:aidlc-common/stages/test/build-and-test.md, file:knowledge/aidlc-quality-agent/testing-guide.md
 //
 // A browser claim names where it ran, and only a real browser engine makes a
 // browser target Met; a missing real-browser run is said once at the approval
@@ -19,7 +19,7 @@ function read(root: string, rel: string): string {
 }
 
 describe.each(Object.entries(ROOTS))("browser acceptance evidence (%s)", (_name, root) => {
-  const stage = (): string => read(root, "aidlc-common/stages/construction/build-and-test.md");
+  const stage = (): string => read(root, "aidlc-common/stages/test/build-and-test.md");
 
   test("every browser claim names where it ran, and only a real browser engine makes it Met", () => {
     expect(stage()).toContain(

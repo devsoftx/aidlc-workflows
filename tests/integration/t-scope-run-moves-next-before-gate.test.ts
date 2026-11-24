@@ -32,7 +32,9 @@ const REVIEWED = [
 ];
 // Stages with no reviewer, left out to keep the walk short.
 const SKIPPED = ["practices-discovery", "delivery-planning"];
-const CONSTRUCTION = new Set(sourceStages().filter((s) => s.phase === "construction").map((s) => s.slug));
+// Construction: the per-Unit stages and every stage after them.
+const STAGES = sourceStages();
+const CONSTRUCTION = new Set(STAGES.slice(STAGES.findIndex((s) => s.forEachUnit)).map((s) => s.slug));
 const LEARNINGS_CHOICES = ["Yes, for this project", "Yes, for the team", "No"];
 /** The correction the person made in a stage, as the learnings question carries it. */
 const correctionAt = (stage: string) => `name each file in ${stage} after what it holds`;

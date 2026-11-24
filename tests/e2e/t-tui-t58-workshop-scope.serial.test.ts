@@ -2,7 +2,8 @@
 //
 // t-tui-t58-workshop-scope.serial.test.ts - drive the workshop SCOPE-ROUTING
 // journey through a REAL claude TUI and prove that `/aidlc --scope classic` skips
-// the ENTIRE Ideation and Operation phases, runs Inception/Construction at
+// Discover (all but reverse-engineering, itself skipped on greenfield), Deploy
+// and Operate, runs Design and the per-Unit stages at
 // Standard depth with a Standard test strategy, and lands at most 18 completed
 // stages - ON DISK + as the workshop facilitator SEES it painted.
 //
@@ -15,22 +16,23 @@
 // surface, PLUS the rendered statusline value-add):
 //   ROUTING IS DATA-DRIVEN (scope-mapping.json `classic`):
 //     - classic has depth "Standard", inherits testStrategy "Standard", and SKIPs every
-//       ideation stage (intent-capture..approval-handoff all SKIP — lines 105 of
-//       scope-mapping.json), EXECUTEs all inception/construction, SKIPs operation.
+//       Discover stage but reverse-engineering (intent-capture..approval-handoff),
+//       EXECUTEs all of Design and the per-Unit stages, SKIPs Deploy and Operate.
 //     - state-init (aidlc-utility.ts) writes the FULL stage-progress
-//       block with each ideation slug rendered `- [ ] <slug> — SKIP` (the SKIP
-//       suffix from aidlc-utility.ts), so a SKIP'd ideation stage can NEVER
-//       reach `[x]`; it stays `[ ] … — SKIP`. determineFirstPostInitStage
-//       therefore returns reverse-engineering, so the workflow's first
-//       post-init phase is INCEPTION and `- **Lifecycle Phase**: INCEPTION` lands
-//       — Ideation is never entered.
+//       block with each skipped Discover slug rendered `- [ ] <slug> — SKIP` (the SKIP
+//       suffix from aidlc-utility.ts), so a SKIP'd Discover stage can NEVER
+//       reach `[x]`; it stays `[ ] … — SKIP`. reverse-engineering, the one
+//       Discover stage classic keeps, is SKIP on this greenfield project, so
+//       determineFirstPostInitStage returns a Design stage, the workflow's first
+//       post-init phase is DESIGN and `- **Lifecycle Phase**: DESIGN` lands
+//       — Discover is never entered.
 //   .sh -> DISK ASSERTION MAP (each grep becomes a structured disk read):
 //     #1  state file created                 -> existsSync(aidlc-state.md)
-//     #2  no ideation artifacts              -> <record>/ideation/ absent OR empty
-//     #3  no Ideation stage marked [x]       -> 0 lines match `[x] <ideation-slug>`
-//     #4  Inception stages present in state  -> /reverse-engineering|requirements-analysis/
-//     #5  Construction stages present        -> /code-generation|build-and-test/
-//     #6  Operation stages SKIP-only        -> no `[x] <operation-slug>`; each renders `— SKIP`
+//     #2  no discover artifacts              -> <record>/discover/ absent OR empty
+//     #3  no skipped Discover stage [x]      -> 0 lines match `[x] <discover-slug>`
+//     #4  Discover/Design stages in state    -> /reverse-engineering|requirements-analysis/
+//     #5  Build/Test stages present          -> /code-generation|build-and-test/
+//     #6  Deploy/Operate stages SKIP-only    -> no `[x] <slug>`; each renders `— SKIP`
 //     #7-9 init stages [x]                    -> `[x] workspace-scaffold|-detection|state-init`
 //     #11 classic scope recorded            -> `- **Scope**: classic`
 //     #12 Depth = Standard                    -> `- **Depth**: Standard`
@@ -38,9 +40,9 @@
 //     #14 completed < 30                       -> `- **Completed**: N` with N < 30
 //     #15 audit log substantial               -> audit.md > 200 bytes (+ WORKSPACE_INITIALISED)
 //   RENDER (the tui-only value-add the headless .sh / SDK path is blind to):
-//     - the captured pane painted `[AIDLC] INCEPTION` (the workshop went straight
-//       to Inception — Ideation was skipped, visible to the user) and NEVER
-//       `[AIDLC] IDEATION`. This is the rendered proof of the skip the .sh could
+//     - the captured pane painted `[AIDLC] DESIGN` (the workshop went straight
+//       to Design — Discover was skipped, visible to the user) and NEVER
+//       `[AIDLC] DISCOVER`. This is the rendered proof of the skip the .sh could
 //       only infer from state checkboxes.
 //     - an AskUserQuestion menu painted at least once (the workshop runs gates —
 //       scope-mapping describes it as "Facilitated group session with mandatory
@@ -74,7 +76,7 @@
 // routing, never a thing to soften.)
 //
 // COST: spends real Bedrock tokens (a fresh-project initialization turn + the
-// workshop gate sequence into the first post-init Inception stages - minutes of
+// workshop gate sequence into the first post-init Design stages - minutes of
 // live LLM turns). Gated behind AIDLC_TUI_LIVE=1 so a bare `--e2e` on a laptop
 // SKIPs it; selected TUI substrate/claude/distributable absence also SKIPs with
 // a reason - never a hollow pass.
@@ -90,6 +92,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { recordDirFor, stateFilePathFor } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTuiProjectAfterKill,
   setupTuiProject,
@@ -171,9 +174,9 @@ function skipReason(): string | null {
 }
 const SKIP_REASON = skipReason();
 
-// The 7 ideation slugs. The classic scope SKIPs EVERY one (no ideation stage
-// lists classic in its `scopes:` frontmatter), so none should be marked `[x]` in
-// this journey.
+// The 7 Discover slugs besides reverse-engineering. The classic scope SKIPs
+// EVERY one (none lists classic in its `scopes:` frontmatter), so none should be
+// marked `[x]` in this journey.
 const IDEATION_SLUGS = [
   "intent-capture",
   "market-research",
@@ -211,9 +214,9 @@ function completedCount(projectDir: string): number {
   }
 }
 
-describe("t-tui-t58 workshop-scope (skips Ideation, runs Inception+ at Standard/Standard)", () => {
+describe("t-tui-t58 workshop-scope (skips Discover, runs Design+ at Standard/Standard)", () => {
   test.skipIf(SKIP_REASON !== null)(
-    `classic scope routing skips Ideation + lands Inception/Construction/Operation on disk${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
+    `classic scope routing skips Discover + lands the Design, Build, Test, Deploy and Operate rows on disk${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
       const session = `aidlc_tui_t58_${process.pid}`;
       // --no-aidlc-docs: a brand-new workspace the journey scaffolds itself. Use an
@@ -221,10 +224,10 @@ describe("t-tui-t58 workshop-scope (skips Ideation, runs Inception+ at Standard/
       // not the separate scope-confirmation/disambiguation surface.
       const proj = setupTuiProject({ noAidlcDocs: true });
       // Render value-add: tail the grid while the workshop runs to prove (a) the
-      // INCEPTION statusline painted (Ideation skipped, as the user sees it) and
-      // never IDEATION, and (b) a gate menu painted with a non-prose footer.
-      let sawInception = false;
-      let sawIdeation = false;
+      // DESIGN statusline painted (Discover skipped, as the user sees it) and
+      // never DISCOVER, and (b) a gate menu painted with a non-prose footer.
+      let sawDesign = false;
+      let sawDiscover = false;
       let sawMenu = false;
       let pollTimer: ReturnType<typeof setInterval> | undefined;
       try {
@@ -270,15 +273,15 @@ describe("t-tui-t58 workshop-scope (skips Ideation, runs Inception+ at Standard/
         drive(["send", "--session", session, "--keys", "Enter", "--no-enter"]);
 
         // Begin tailing the grid BEFORE the answer-gate runs, so we catch the
-        // INCEPTION statusline + any gate menu while the workshop is live. Plain
+        // DESIGN statusline + any gate menu while the workshop is live. Plain
         // text only — platform-invariant (no colour escapes).
         pollTimer = setInterval(() => {
           const grid = drive(["capture", "--session", session]).stdout;
           // The statusline carries an orientation prefix (the intent slug, then a
           // middle-dot separator) before the phase, so anchor on the separator followed
           // by the phase name.
-          if (grid.includes("· INCEPTION")) sawInception = true;
-          if (grid.includes("· IDEATION")) sawIdeation = true;
+          if (grid.includes("· DESIGN")) sawDesign = true;
+          if (grid.includes("· DISCOVER")) sawDiscover = true;
           if (grid.includes("Enter to select") || grid.includes("Submit answers")) {
             sawMenu = true;
           }
@@ -341,30 +344,31 @@ describe("t-tui-t58 workshop-scope (skips Ideation, runs Inception+ at Standard/
         expect(existsSync(statePath)).toBe(true);
         const stateMd = readFileSync(statePath, "utf8");
 
-        // #2 no ideation artifacts: workshop SKIPs all ideation, so the record's
-        //    ideation/ dir is either absent or empty.
-        const ideationDir = join(recordDirFor(proj), "ideation");
-        if (existsSync(ideationDir)) {
-          const ideationFiles = walkFiles(ideationDir);
-          expect(ideationFiles.length).toBe(0);
+        // #2 no discover artifacts: classic SKIPs every Discover stage on a
+        //    greenfield project, so the record's discover/ dir is either absent
+        //    or empty.
+        const discoverDir = join(recordDirFor(proj), phaseFor("intent-capture"));
+        if (existsSync(discoverDir)) {
+          const discoverFiles = walkFiles(discoverDir);
+          expect(discoverFiles.length).toBe(0);
         }
 
-        // #3 no Ideation stage marked [x]: each SKIP'd ideation slug renders as an
+        // #3 no skipped Discover stage marked [x]: each SKIP'd slug renders as an
         //    unchecked `- [ ] <slug>` line with the SKIP suffix and is not executed in
-        //    this journey. Assert ZERO `[x] <ideation-slug>` lines.
+        //    this journey. Assert ZERO `[x] <discover-slug>` lines.
         for (const slug of IDEATION_SLUGS) {
           const reX = new RegExp(`\\[x\\]\\s*${slug}\\b`, "i");
           if (reX.test(stateMd)) {
-            throw new Error(`ideation stage '${slug}' was marked [x] — classic must SKIP it`);
+            throw new Error(`discover stage '${slug}' was marked [x] — classic must SKIP it`);
           }
         }
 
         expect(stateMd).toMatch(/reverse-engineering|requirements-analysis/);
         expect(stateMd).toMatch(/code-generation|build-and-test/);
-        // #6 Operation stages are planned-but-SKIP'd for classic: state-init still
+        // #6 Deploy and Operate stages are planned-but-SKIP'd for classic: state-init still
         //    renders every slug as `- [ ] <slug> — SKIP` (and by number under
         //    Stages to Skip), so the slugs ARE present. Assert none is marked [x]
-        //    and each carries the SKIP suffix — the same shape as #3 for Ideation.
+        //    and each carries the SKIP suffix — the same shape as #3 for Discover.
         for (const slug of ["deployment-pipeline", "observability-setup"]) {
           expect(new RegExp(`\\[x\\]\\s*${slug}\\b`, "i").test(stateMd)).toBe(false);
           expect(stateMd).toMatch(new RegExp(`- \\[[ S]\\] ${slug} \u2014 SKIP`));
@@ -398,11 +402,11 @@ describe("t-tui-t58 workshop-scope (skips Ideation, runs Inception+ at Standard/
         expect(auditMd.slice(wiIdx, wiIdx + 500)).toMatch(/Scope.*:\s*classic/);
 
         // ===================== RENDER (the tui-only value-add) ===================
-        // The captured pane painted `[AIDLC] INCEPTION` (the workshop went straight
-        // to Inception because Ideation was skipped) and NEVER `[AIDLC] IDEATION` —
+        // The captured pane painted `[AIDLC] DESIGN` (the workshop went straight
+        // to Design because Discover was skipped) and NEVER `[AIDLC] DISCOVER` —
         // the rendered proof of the skip the headless .sh / SDK path cannot see.
-        expect(sawInception).toBe(true);
-        expect(sawIdeation).toBe(false);
+        expect(sawDesign).toBe(true);
+        expect(sawDiscover).toBe(false);
         // A gate menu painted at least once with a non-prose footer (the workshop's
         // "mandatory gates"). NON-PROSE signals only — never a rewordable string.
         expect(sawMenu).toBe(true);

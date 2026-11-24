@@ -3,6 +3,7 @@
 // named chat, the person's turns through the human-turn hook, and the projects
 // each kind of ask is asked in. Each project builder pushes its folder on the
 // caller's list, which cleans it up.
+import { phaseFor } from "./stage-phase.ts";
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "./test-budget.ts";
 import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -103,7 +104,7 @@ export function inception(projects: string[]): string {
 
 // The stage's outputs and one READY review, as a real run records them.
 export function reviewedStage(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", `${STAGE}-questions.md`]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), `# ${name}\n`);
@@ -128,7 +129,7 @@ export function built(projects: string[]): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -145,11 +146,14 @@ export function built(projects: string[]): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${CONSTRUCTION.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${DASH} EXECUTE`).join("\n")}
+### DESIGN PHASE
+${CONSTRUCTION.filter((stage) => phaseFor(stage) === "design").map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${DASH} EXECUTE`).join("\n")}
+### BUILD PHASE
+- [ ] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -159,7 +163,7 @@ ${CONSTRUCTION.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] 
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "feature" }, p);
   for (const slug of CONSTRUCTION) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", "alpha", slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), "alpha", slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
     if (stage.workspace_requires) {
@@ -192,7 +196,7 @@ export function staffing(projects: string[]): string {
 - **Project**: question record
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0
@@ -207,20 +211,22 @@ export function staffing(projects: string[]): string {
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 - [x] units-generation ${DASH} EXECUTE
 - [x] delivery-planning ${DASH} EXECUTE
-
-### CONSTRUCTION PHASE
 - [-] functional-design ${DASH} EXECUTE
 - [ ] nfr-requirements ${DASH} EXECUTE
 - [ ] nfr-design ${DASH} EXECUTE
 - [ ] infrastructure-design ${DASH} EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation ${DASH} EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test ${DASH} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -239,7 +245,7 @@ export function codeGeneration(projects: string[]): string {
   writeFileSync(seededStateFile(proj), state, "utf-8");
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "base.ts"), "export const base = true;\n", "utf-8");
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), "build", "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify for titles\n- Touches: src/slugify.ts\n" +

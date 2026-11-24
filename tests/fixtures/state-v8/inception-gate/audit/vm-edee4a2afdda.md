@@ -1,0 +1,1694 @@
+# AI-DLC Audit Log
+
+## Workflow Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: WORKFLOW_STARTED
+**Scope**: feature
+**Request**: /aidlc Build a small todo CLI
+**Source Baseline**: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+---
+
+## Phase Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: PHASE_STARTED
+**Phase**: initialization
+**Stage count**: 3
+**Scope**: feature
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_STARTED
+**Stage**: workspace-scaffold
+**Agent**: orchestrator
+
+---
+
+## Workspace Scaffolded
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: WORKSPACE_SCAFFOLDED
+**Request**: /aidlc Build a small todo CLI
+**Details**: 5 in-scope phase dirs + verification/ + space-level knowledge/ ensured (shell shipped by SEED)
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_COMPLETED
+**Stage**: workspace-scaffold
+**Details**: 5 in-scope phase dirs + verification/ + space-level knowledge/ ensured
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_STARTED
+**Stage**: workspace-detection
+**Agent**: orchestrator
+
+---
+
+## Workspace Scanned
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: WORKSPACE_SCANNED
+**Project Type**: Greenfield
+**Languages**: Unknown
+**Frameworks**: Unknown
+**Build System**: Unknown
+**Details**: Deterministic rule-based scan
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_COMPLETED
+**Stage**: workspace-detection
+**Details**: Classified Greenfield; languages=Unknown; frameworks=Unknown
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_STARTED
+**Stage**: state-init
+**Agent**: orchestrator
+
+---
+
+## Workspace Initialised
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: WORKSPACE_INITIALISED
+**Request**: /aidlc Build a small todo CLI
+**Project Type**: Greenfield
+**Project Type Source**: workspace scan
+**Scope**: feature
+**Languages**: Unknown
+**Frameworks**: Unknown
+**Build System**: Unknown
+**Details**: 29 stages in scope, routing to intent-capture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_COMPLETED
+**Stage**: state-init
+**Details**: State initialized: feature scope, 29 stages, routing to intent-capture
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: PHASE_COMPLETED
+**From phase**: initialization
+**To phase**: ideation
+**Stages completed**: 3
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: initialization → ideation
+
+---
+
+## Phase Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: PHASE_STARTED
+**Phase**: ideation
+**Scope**: feature
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: STAGE_STARTED
+**Stage**: intent-capture
+**Agent**: aidlc-product-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4ecc01b5
+**Sensor ID**: claim-sources
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: SENSOR_FAILED
+**Fire id**: 4ecc01b5
+**Sensor ID**: claim-sources
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/intent-capture/claim-sources-4ecc01b5.md
+**Findings count**: 5
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7081b6ff
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7081b6ff
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+**Duration ms**: 80
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: 8a4a951f
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/stakeholder-map.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: 8a4a951f
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/stakeholder-map.md
+**Duration ms**: 79
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: SENSOR_FIRED
+**Fire id**: c1a372ea
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-capture-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: c1a372ea
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-capture-questions.md
+**Duration ms**: 104
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: SENSOR_FIRED
+**Fire id**: 62292f4f
+**Sensor ID**: upstream-coverage
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: 62292f4f
+**Sensor ID**: upstream-coverage
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+**Duration ms**: 77
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: REVIEW_REQUESTED
+**Stage**: intent-capture
+**Reviewer**: aidlc-product-lead-agent
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:c8a02c162442bf9e7b20d1d91b146dd60bfb07c53728c8a7cf51039db60801c4
+**Request Id**: review:14489b5702a835abb0d356ea8cd42582
+**Review File**: .aidlc-engine/reviews/intent-capture/stage/6c88d4d74fce873c/1.14489b5702a835abb0d356ea8cd42582.review.md
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-23T03:07:18Z
+**Event**: REVIEW_COMPLETED
+**Stage**: intent-capture
+**Reviewer**: aidlc-product-lead-agent
+**Iteration**: 1
+**Verdict**: READY
+**Reviewer Finished Before Verdict**: no
+**Request Fingerprint**: sha256:c8a02c162442bf9e7b20d1d91b146dd60bfb07c53728c8a7cf51039db60801c4
+**Artifact Fingerprint**: sha256:c8a02c162442bf9e7b20d1d91b146dd60bfb07c53728c8a7cf51039db60801c4
+**Request Id**: review:14489b5702a835abb0d356ea8cd42582
+**Review Record**: .aidlc-engine/reviews/intent-capture/stage/6c88d4d74fce873c/1.json
+**Review Record Digest**: sha256:a20b5aef7ea1a710dbf4e1f92e2bede45cef0d5000b96dabdf63d6f1626947c6
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 282412c8
+**Sensor ID**: claim-sources
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_FAILED
+**Fire id**: 282412c8
+**Sensor ID**: claim-sources
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/intent-capture/claim-sources-282412c8.md
+**Findings count**: 5
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 99f56b49
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: 99f56b49
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+**Duration ms**: 95
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: cb0b66b8
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/stakeholder-map.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: cb0b66b8
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/stakeholder-map.md
+**Duration ms**: 79
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3b957b84
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-capture-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3b957b84
+**Sensor ID**: required-sections
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-capture-questions.md
+**Duration ms**: 78
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: 39154c93
+**Sensor ID**: upstream-coverage
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 39154c93
+**Sensor ID**: upstream-coverage
+**Stage slug**: intent-capture
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md
+**Duration ms**: 100
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: intent-capture
+**Next Stage**: market-research
+**Brief Digest**: none
+**Sensor State**: claim-sources@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md=failed(5) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/intent-capture/claim-sources-282412c8.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/stakeholder-map.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-capture-questions.md=passed; upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/intent-capture/intent-statement.md=passed
+**Open Decisions**: 0
+**Question Id**: 052bae7e
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:2131703dafb5990bd21f6cf8f6538dfb40cee37ec7342cda295a3bcfbfa2aa40
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: GATE_APPROVED
+**Stage**: intent-capture
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: STAGE_COMPLETED
+**Stage**: intent-capture
+**Validation Basis**: {"graphContract":"sha256:a2667bc36979eded33d5632e32a90dcf92e51265610d1ca27064a44384271e07","inputs":[],"outputs":[{"artifact":"intent-capture-questions","contentHash":"sha256:1f5a464946e1bd5e52e047ac98605e0f16b008772d2aa58050637dbe5964cb4b","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:f28ea65a84a582f6928353c8be1827256bfb9cccd0923fb834258a55b7de07d0"},{"artifact":"intent-statement","contentHash":"sha256:a638b1039035e5327e554d28936bfdd61b0885a3e4a97dae0b195ae963347d34","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:95cbcb7f041cbc36b748961a82bad7ccd854e746f8e1fad0ddbf1a531f46b19e"},{"artifact":"stakeholder-map","contentHash":"sha256:7eb29af0e755a5005878dfea9618482f4b62178f410712f47a4cd390a57b5de9","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:8cbb89a0518e1b78e81f553ddb6029d4b2226e42c9ee1e33321a1229b1d06d84"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Intent Capture & Framing approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: STAGE_STARTED
+**Stage**: market-research
+**Agent**: aidlc-product-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2429a4ea
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/competitive-analysis.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2429a4ea
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/competitive-analysis.md
+**Duration ms**: 78
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: 75e5bb40
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/market-trends.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 75e5bb40
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/market-trends.md
+**Duration ms**: 110
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: SENSOR_FIRED
+**Fire id**: c666966d
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/build-vs-buy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: SENSOR_PASSED
+**Fire id**: c666966d
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/build-vs-buy.md
+**Duration ms**: 83
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: SENSOR_FIRED
+**Fire id**: 12f5ac4c
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/market-research-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: SENSOR_PASSED
+**Fire id**: 12f5ac4c
+**Sensor ID**: required-sections
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/market-research-questions.md
+**Duration ms**: 82
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: SENSOR_FIRED
+**Fire id**: bc25a1cf
+**Sensor ID**: upstream-coverage
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/competitive-analysis.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: SENSOR_FAILED
+**Fire id**: bc25a1cf
+**Sensor ID**: upstream-coverage
+**Stage slug**: market-research
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/competitive-analysis.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/market-research/upstream-coverage-bc25a1cf.md
+**Findings count**: 1
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: market-research
+**Next Stage**: feasibility
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/competitive-analysis.md=failed(1) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/market-research/upstream-coverage-bc25a1cf.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/competitive-analysis.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/market-trends.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/build-vs-buy.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/market-research/market-research-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: 80f37fa8
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:9b69617485cc3326404daf57fb95fe8ad401e19f241ffce352b09738fce02222
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: GATE_APPROVED
+**Stage**: market-research
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: STAGE_COMPLETED
+**Stage**: market-research
+**Validation Basis**: {"graphContract":"sha256:dcdc34c4d84ea3bcf79d95186d0526092835c798df591698097397c149115385","inputs":[{"artifact":"intent-statement","contentHash":"sha256:a638b1039035e5327e554d28936bfdd61b0885a3e4a97dae0b195ae963347d34","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:95cbcb7f041cbc36b748961a82bad7ccd854e746f8e1fad0ddbf1a531f46b19e"}],"outputs":[{"artifact":"build-vs-buy","contentHash":"sha256:5837c07557f470769daa6fc0be2f2b023bd72cff58857fe50bf20c97118a8fb6","instanceCount":1,"presentCount":1,"producer":"market-research","required":true,"structureHash":"sha256:aa85f581ab53a0324907f314c246259618d480b7825152f6a46e02160a16b6fe"},{"artifact":"competitive-analysis","contentHash":"sha256:61869bc0ab3545a3b8d82d378b3f5cccd50b2d82786b955764cb0e07ad94fbba","instanceCount":1,"presentCount":1,"producer":"market-research","required":true,"structureHash":"sha256:3ba5c2f89e312c20514ccd845ef12701688bce22ee0317da68dd63dabf8b859c"},{"artifact":"market-research-questions","contentHash":"sha256:40b3f16f30f64b933546ab83b862c7606492bfdc4ce8ff859c2c407f271a80e6","instanceCount":1,"presentCount":1,"producer":"market-research","required":true,"structureHash":"sha256:c4bc9cbefab6a234ccf47c911e4853289343f945bda058fed13770d0332206b2"},{"artifact":"market-trends","contentHash":"sha256:510a76fc889332adf3cee818c61a2b7d9739c22e3e81eb8cac7942b2611463a5","instanceCount":1,"presentCount":1,"producer":"market-research","required":true,"structureHash":"sha256:19966c519e8033eb07fcf8807e60433a09012c26a4dad0f132398a347a38aea7"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Market Research approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:21Z
+**Event**: STAGE_STARTED
+**Stage**: feasibility
+**Agent**: aidlc-architect-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: 9084ee89
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-assessment.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: 9084ee89
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-assessment.md
+**Duration ms**: 110
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: d4b8227f
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/constraint-register.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: d4b8227f
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/constraint-register.md
+**Duration ms**: 98
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: 30b40593
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/raid-log.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: 30b40593
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/raid-log.md
+**Duration ms**: 106
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6103d0f9
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6103d0f9
+**Sensor ID**: required-sections
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-questions.md
+**Duration ms**: 95
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: 797854d1
+**Sensor ID**: upstream-coverage
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-assessment.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: SENSOR_FAILED
+**Fire id**: 797854d1
+**Sensor ID**: upstream-coverage
+**Stage slug**: feasibility
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-assessment.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/feasibility/upstream-coverage-797854d1.md
+**Findings count**: 1
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: feasibility
+**Next Stage**: scope-definition
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-assessment.md=failed(1) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/feasibility/upstream-coverage-797854d1.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-assessment.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/constraint-register.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/raid-log.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/feasibility/feasibility-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: e7ee613d
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:719931cc95b3e36a63f31250501662d22ded63b762a94436ce3462ed922713e2
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: GATE_APPROVED
+**Stage**: feasibility
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: STAGE_COMPLETED
+**Stage**: feasibility
+**Validation Basis**: {"graphContract":"sha256:543912e848784f58af817ec322275022445da586f78256c281d1c37d967b15aa","inputs":[{"artifact":"build-vs-buy","contentHash":"sha256:5837c07557f470769daa6fc0be2f2b023bd72cff58857fe50bf20c97118a8fb6","instanceCount":1,"presentCount":1,"producer":"market-research","required":false,"structureHash":"sha256:aa85f581ab53a0324907f314c246259618d480b7825152f6a46e02160a16b6fe"},{"artifact":"competitive-analysis","contentHash":"sha256:61869bc0ab3545a3b8d82d378b3f5cccd50b2d82786b955764cb0e07ad94fbba","instanceCount":1,"presentCount":1,"producer":"market-research","required":false,"structureHash":"sha256:3ba5c2f89e312c20514ccd845ef12701688bce22ee0317da68dd63dabf8b859c"},{"artifact":"intent-statement","contentHash":"sha256:a638b1039035e5327e554d28936bfdd61b0885a3e4a97dae0b195ae963347d34","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:95cbcb7f041cbc36b748961a82bad7ccd854e746f8e1fad0ddbf1a531f46b19e"},{"artifact":"market-trends","contentHash":"sha256:510a76fc889332adf3cee818c61a2b7d9739c22e3e81eb8cac7942b2611463a5","instanceCount":1,"presentCount":1,"producer":"market-research","required":false,"structureHash":"sha256:19966c519e8033eb07fcf8807e60433a09012c26a4dad0f132398a347a38aea7"}],"outputs":[{"artifact":"constraint-register","contentHash":"sha256:f46457755668d20414e3c5bdf17a88b4022b9020146fa17154074d2b85f11a2c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":true,"structureHash":"sha256:ffb33d01926fb2e1b45152a40a9dc9802bf39ab4035a494614bc89cb1a945030"},{"artifact":"feasibility-assessment","contentHash":"sha256:4f667f46f77cd967d99b05e18471718c250af82d322a3581a69d1f21e68cbe9c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":true,"structureHash":"sha256:c57cc7e2fee3774e88294fadb0bde13cc40c57a3a70e0f6bd7a781524590f055"},{"artifact":"feasibility-questions","contentHash":"sha256:87c9d06d0a54be1c2865c56e106e2e48efcae58e09fb17b5b2a24783dfc09eaa","instanceCount":1,"presentCount":1,"producer":"feasibility","required":true,"structureHash":"sha256:a8d90f482114e26579a50f7110a3b62be7f73e331fa678dfbee3e03984521fb3"},{"artifact":"raid-log","contentHash":"sha256:6cc08e21c9c00cc187b49e7a95b4e3ca59ddb63239f30b43601cb1958002d814","instanceCount":1,"presentCount":1,"producer":"feasibility","required":true,"structureHash":"sha256:bca1eefe54e53bbd9f292d12182ae36dbfd72f2fd5cde09eff17f4a5869710f3"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Feasibility & Constraints approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: STAGE_STARTED
+**Stage**: scope-definition
+**Agent**: aidlc-product-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: SENSOR_FIRED
+**Fire id**: f1573b96
+**Sensor ID**: required-sections
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-document.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: f1573b96
+**Sensor ID**: required-sections
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-document.md
+**Duration ms**: 79
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: SENSOR_FIRED
+**Fire id**: b65f9c78
+**Sensor ID**: required-sections
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/intent-backlog.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: b65f9c78
+**Sensor ID**: required-sections
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/intent-backlog.md
+**Duration ms**: 88
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: SENSOR_FIRED
+**Fire id**: 1993a680
+**Sensor ID**: required-sections
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-definition-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: SENSOR_PASSED
+**Fire id**: 1993a680
+**Sensor ID**: required-sections
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-definition-questions.md
+**Duration ms**: 83
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: SENSOR_FIRED
+**Fire id**: 8bda3263
+**Sensor ID**: upstream-coverage
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-document.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: SENSOR_FAILED
+**Fire id**: 8bda3263
+**Sensor ID**: upstream-coverage
+**Stage slug**: scope-definition
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-document.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/scope-definition/upstream-coverage-8bda3263.md
+**Findings count**: 1
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: scope-definition
+**Next Stage**: team-formation
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-document.md=failed(1) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/scope-definition/upstream-coverage-8bda3263.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-document.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/intent-backlog.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/scope-definition/scope-definition-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: 120b11bc
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:c6117f1fe3357f1210cef782c1aa3edb6d111c8901fb547e621f6ab3fcf9a08b
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: GATE_APPROVED
+**Stage**: scope-definition
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: STAGE_COMPLETED
+**Stage**: scope-definition
+**Validation Basis**: {"graphContract":"sha256:f507bca6811bab5a3fbe73663d1debe5d0de707829c0a8a0d3c77b97f91a29c7","inputs":[{"artifact":"constraint-register","contentHash":"sha256:f46457755668d20414e3c5bdf17a88b4022b9020146fa17154074d2b85f11a2c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":false,"structureHash":"sha256:ffb33d01926fb2e1b45152a40a9dc9802bf39ab4035a494614bc89cb1a945030"},{"artifact":"feasibility-assessment","contentHash":"sha256:4f667f46f77cd967d99b05e18471718c250af82d322a3581a69d1f21e68cbe9c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":false,"structureHash":"sha256:c57cc7e2fee3774e88294fadb0bde13cc40c57a3a70e0f6bd7a781524590f055"},{"artifact":"intent-statement","contentHash":"sha256:a638b1039035e5327e554d28936bfdd61b0885a3e4a97dae0b195ae963347d34","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:95cbcb7f041cbc36b748961a82bad7ccd854e746f8e1fad0ddbf1a531f46b19e"}],"outputs":[{"artifact":"intent-backlog","contentHash":"sha256:d3f1d6223a21a6067ad60ae11b0ff8ac8c104624af5c1d5c43fb6d704e15c25a","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:5de4db9966c33c10d085d8d674a82b55199f8644381270be84ce2d5495af6d9c"},{"artifact":"scope-definition-questions","contentHash":"sha256:ad6978ddd91340fd25d699ac54648e747db2f7f392fc11604adb78c2da5fd44d","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:dfd726159e85fe935981d614181c106f75b42340dc3794847ae916b70561d8cb"},{"artifact":"scope-document","contentHash":"sha256:9e93345e56ced725051a217badba15333703d1b830048bfb8653d43ba85d6f62","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:013eddc9b1884a6f56dd3fe06ea2e98950fb2a7db5c3cc0d69a2388578c118c9"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Scope Definition approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: STAGE_STARTED
+**Stage**: team-formation
+**Agent**: aidlc-delivery-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4ac0f0e4
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-assessment.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:24Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4ac0f0e4
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-assessment.md
+**Duration ms**: 100
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_FIRED
+**Fire id**: f81c8198
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/skill-matrix.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_PASSED
+**Fire id**: f81c8198
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/skill-matrix.md
+**Duration ms**: 78
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_FIRED
+**Fire id**: 062a2cd3
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/mob-composition.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_PASSED
+**Fire id**: 062a2cd3
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/mob-composition.md
+**Duration ms**: 82
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_FIRED
+**Fire id**: f8267d8e
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-formation-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_PASSED
+**Fire id**: f8267d8e
+**Sensor ID**: required-sections
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-formation-questions.md
+**Duration ms**: 96
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7dd75892
+**Sensor ID**: upstream-coverage
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-assessment.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: SENSOR_FAILED
+**Fire id**: 7dd75892
+**Sensor ID**: upstream-coverage
+**Stage slug**: team-formation
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-assessment.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/team-formation/upstream-coverage-7dd75892.md
+**Findings count**: 2
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: team-formation
+**Next Stage**: rough-mockups
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-assessment.md=failed(2) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/team-formation/upstream-coverage-7dd75892.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-assessment.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/skill-matrix.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/mob-composition.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/team-formation/team-formation-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: c1f15825
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:666c3036d4049e4ba932f66305e36e4e309c4976631d3ac1b5e885302c8fa54f
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:25Z
+**Event**: GATE_APPROVED
+**Stage**: team-formation
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: STAGE_COMPLETED
+**Stage**: team-formation
+**Validation Basis**: {"graphContract":"sha256:e661f4c04fda668c89e5738883b120350b929b6231a304c499e49a4e3a743c33","inputs":[{"artifact":"feasibility-assessment","contentHash":"sha256:4f667f46f77cd967d99b05e18471718c250af82d322a3581a69d1f21e68cbe9c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":false,"structureHash":"sha256:c57cc7e2fee3774e88294fadb0bde13cc40c57a3a70e0f6bd7a781524590f055"},{"artifact":"intent-backlog","contentHash":"sha256:d3f1d6223a21a6067ad60ae11b0ff8ac8c104624af5c1d5c43fb6d704e15c25a","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:5de4db9966c33c10d085d8d674a82b55199f8644381270be84ce2d5495af6d9c"},{"artifact":"scope-document","contentHash":"sha256:9e93345e56ced725051a217badba15333703d1b830048bfb8653d43ba85d6f62","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:013eddc9b1884a6f56dd3fe06ea2e98950fb2a7db5c3cc0d69a2388578c118c9"}],"outputs":[{"artifact":"mob-composition","contentHash":"sha256:85e3d32fa4167509bf33d8fd8ca9ca30017ba9700d97f07c8c13faba7ca01f9e","instanceCount":1,"presentCount":1,"producer":"team-formation","required":true,"structureHash":"sha256:5aa4ebe650c79d6387319ed9d3ad385afe1118f476abded610959d771fe8ccaf"},{"artifact":"skill-matrix","contentHash":"sha256:517185b26a4c766334698a2e3696c87fa0e716222f590608ea80fcd05a1e0f22","instanceCount":1,"presentCount":1,"producer":"team-formation","required":true,"structureHash":"sha256:3b13ae822e4ecd9c4ee64ad0110aae7ac42d0a44e889c2f51b1bb43bfea3d231"},{"artifact":"team-assessment","contentHash":"sha256:c0994f60000752e567703579ece3bb9b25a54a70d6e1c698320742850ca3cc67","instanceCount":1,"presentCount":1,"producer":"team-formation","required":true,"structureHash":"sha256:109d02e095bfe4614f2207ed7c07842467fae1b85fd6c84154f06e6933e1ac21"},{"artifact":"team-formation-questions","contentHash":"sha256:32251a0fead2554af4eb3057db1b2f06d94e45e7253d48ad8c587733ebcd829b","instanceCount":1,"presentCount":1,"producer":"team-formation","required":true,"structureHash":"sha256:95129b47fbb9fea1f16583c97b5c79df6a95d13ff6b926ac873c3f914dc327fb"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Team Formation approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: STAGE_STARTED
+**Stage**: rough-mockups
+**Agent**: aidlc-design-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: c5e69710
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: c5e69710
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+**Duration ms**: 80
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: 74a2f552
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/user-flow.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: 74a2f552
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/user-flow.md
+**Duration ms**: 122
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: b6108537
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/rough-mockups-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: b6108537
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/rough-mockups-questions.md
+**Duration ms**: 111
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5953e61e
+**Sensor ID**: upstream-coverage
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:27Z
+**Event**: SENSOR_FAILED
+**Fire id**: 5953e61e
+**Sensor ID**: upstream-coverage
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/rough-mockups/upstream-coverage-5953e61e.md
+**Findings count**: 3
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-23T03:07:27Z
+**Event**: REVIEW_REQUESTED
+**Stage**: rough-mockups
+**Reviewer**: aidlc-product-lead-agent
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:69a4582c357ddd5cbe177255fd851dae08f2603b6c5294e8a061b3762d72f5d3
+**Request Id**: review:db95d1e4e26583208e62703ae786c50f
+**Review File**: .aidlc-engine/reviews/rough-mockups/stage/167024b731bad244/1.db95d1e4e26583208e62703ae786c50f.review.md
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-23T03:07:27Z
+**Event**: REVIEW_COMPLETED
+**Stage**: rough-mockups
+**Reviewer**: aidlc-product-lead-agent
+**Iteration**: 1
+**Verdict**: READY
+**Reviewer Finished Before Verdict**: no
+**Request Fingerprint**: sha256:69a4582c357ddd5cbe177255fd851dae08f2603b6c5294e8a061b3762d72f5d3
+**Artifact Fingerprint**: sha256:69a4582c357ddd5cbe177255fd851dae08f2603b6c5294e8a061b3762d72f5d3
+**Request Id**: review:db95d1e4e26583208e62703ae786c50f
+**Review Record**: .aidlc-engine/reviews/rough-mockups/stage/167024b731bad244/1.json
+**Review Record Digest**: sha256:ccdfbefb33bdea32623e8efbe9397edd70b57a2aee368f5e6a2413e92ff9559d
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2c58ce4d
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2c58ce4d
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+**Duration ms**: 85
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6abbcc3e
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/user-flow.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6abbcc3e
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/user-flow.md
+**Duration ms**: 80
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6910f83d
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/rough-mockups-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6910f83d
+**Sensor ID**: required-sections
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/rough-mockups-questions.md
+**Duration ms**: 105
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: c7ebbff1
+**Sensor ID**: upstream-coverage
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: SENSOR_FAILED
+**Fire id**: c7ebbff1
+**Sensor ID**: upstream-coverage
+**Stage slug**: rough-mockups
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/rough-mockups/upstream-coverage-c7ebbff1.md
+**Findings count**: 3
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:28Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: rough-mockups
+**Next Stage**: approval-handoff
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md=failed(3) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/rough-mockups/upstream-coverage-c7ebbff1.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/wireframes.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/user-flow.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/rough-mockups/rough-mockups-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: 0d6c7be3
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:351a1185b2c87eb959c5ee09199db4c0f2f6f9d4674e5ffda0af01d4d90efc38
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: GATE_APPROVED
+**Stage**: rough-mockups
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: STAGE_COMPLETED
+**Stage**: rough-mockups
+**Validation Basis**: {"graphContract":"sha256:5fba28f1cd240c14897220333a49791025975ed0959b36140f54f85ea567bf03","inputs":[{"artifact":"intent-backlog","contentHash":"sha256:d3f1d6223a21a6067ad60ae11b0ff8ac8c104624af5c1d5c43fb6d704e15c25a","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:5de4db9966c33c10d085d8d674a82b55199f8644381270be84ce2d5495af6d9c"},{"artifact":"intent-statement","contentHash":"sha256:a638b1039035e5327e554d28936bfdd61b0885a3e4a97dae0b195ae963347d34","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:95cbcb7f041cbc36b748961a82bad7ccd854e746f8e1fad0ddbf1a531f46b19e"},{"artifact":"scope-document","contentHash":"sha256:9e93345e56ced725051a217badba15333703d1b830048bfb8653d43ba85d6f62","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:013eddc9b1884a6f56dd3fe06ea2e98950fb2a7db5c3cc0d69a2388578c118c9"}],"outputs":[{"artifact":"rough-mockups-questions","contentHash":"sha256:b28a9fa420653b67d360dccb5453bb5efe8dac5678fcc735a47c68bf04dc1d41","instanceCount":1,"presentCount":1,"producer":"rough-mockups","required":true,"structureHash":"sha256:92e2cb137638b88ccac5e920aa29c17ddad93d51a06358e3989118b2c5786af1"},{"artifact":"user-flow","contentHash":"sha256:4aa34ee7e385be7be67b788d890dd2e6289cd8cc5eeddf3d38b2689bd84eb01a","instanceCount":1,"presentCount":1,"producer":"rough-mockups","required":true,"structureHash":"sha256:28a59563b4ba4a8ef68e125f199925dfb4f8428eb9e7decc4b476a5f09de8c8d"},{"artifact":"wireframes","contentHash":"sha256:95d50976f643f9abae64d552a7692c045986dd95f463311b7b4974ffe76b8c4a","instanceCount":1,"presentCount":1,"producer":"rough-mockups","required":true,"structureHash":"sha256:1afaaf492a030cca4ecc74de39c0b8cc46adace83196c250e28a5b2b87559602"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Rough Mockups approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: STAGE_STARTED
+**Stage**: approval-handoff
+**Agent**: aidlc-delivery-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 9ca9baa7
+**Sensor ID**: required-sections
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/initiative-brief.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 9ca9baa7
+**Sensor ID**: required-sections
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/initiative-brief.md
+**Duration ms**: 95
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5f9b1a4f
+**Sensor ID**: required-sections
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/decision-log.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 5f9b1a4f
+**Sensor ID**: required-sections
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/decision-log.md
+**Duration ms**: 88
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 65c18373
+**Sensor ID**: required-sections
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/approval-handoff-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 65c18373
+**Sensor ID**: required-sections
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/approval-handoff-questions.md
+**Duration ms**: 88
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: e07c04e6
+**Sensor ID**: upstream-coverage
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/initiative-brief.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: SENSOR_FAILED
+**Fire id**: e07c04e6
+**Sensor ID**: upstream-coverage
+**Stage slug**: approval-handoff
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/initiative-brief.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/approval-handoff/upstream-coverage-e07c04e6.md
+**Findings count**: 4
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: approval-handoff
+**Next Stage**: practices-discovery
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/initiative-brief.md=failed(4) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/approval-handoff/upstream-coverage-e07c04e6.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/initiative-brief.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/decision-log.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/ideation/approval-handoff/approval-handoff-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: 39955262
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:7fd8f1573a7c022267bff78cbcdc02a83f0e99ec2d8eb79908874ab3317dd0dc
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: GATE_APPROVED
+**Stage**: approval-handoff
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: STAGE_COMPLETED
+**Stage**: approval-handoff
+**Validation Basis**: {"graphContract":"sha256:8f1543e205d2a9a223a57a0bc133871309218f55c508c2b942f2398926f9a31e","inputs":[{"artifact":"competitive-analysis","contentHash":"sha256:61869bc0ab3545a3b8d82d378b3f5cccd50b2d82786b955764cb0e07ad94fbba","instanceCount":1,"presentCount":1,"producer":"market-research","required":false,"structureHash":"sha256:3ba5c2f89e312c20514ccd845ef12701688bce22ee0317da68dd63dabf8b859c"},{"artifact":"constraint-register","contentHash":"sha256:f46457755668d20414e3c5bdf17a88b4022b9020146fa17154074d2b85f11a2c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":false,"structureHash":"sha256:ffb33d01926fb2e1b45152a40a9dc9802bf39ab4035a494614bc89cb1a945030"},{"artifact":"feasibility-assessment","contentHash":"sha256:4f667f46f77cd967d99b05e18471718c250af82d322a3581a69d1f21e68cbe9c","instanceCount":1,"presentCount":1,"producer":"feasibility","required":false,"structureHash":"sha256:c57cc7e2fee3774e88294fadb0bde13cc40c57a3a70e0f6bd7a781524590f055"},{"artifact":"intent-backlog","contentHash":"sha256:d3f1d6223a21a6067ad60ae11b0ff8ac8c104624af5c1d5c43fb6d704e15c25a","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:5de4db9966c33c10d085d8d674a82b55199f8644381270be84ce2d5495af6d9c"},{"artifact":"intent-statement","contentHash":"sha256:a638b1039035e5327e554d28936bfdd61b0885a3e4a97dae0b195ae963347d34","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:95cbcb7f041cbc36b748961a82bad7ccd854e746f8e1fad0ddbf1a531f46b19e"},{"artifact":"scope-document","contentHash":"sha256:9e93345e56ced725051a217badba15333703d1b830048bfb8653d43ba85d6f62","instanceCount":1,"presentCount":1,"producer":"scope-definition","required":true,"structureHash":"sha256:013eddc9b1884a6f56dd3fe06ea2e98950fb2a7db5c3cc0d69a2388578c118c9"},{"artifact":"stakeholder-map","contentHash":"sha256:7eb29af0e755a5005878dfea9618482f4b62178f410712f47a4cd390a57b5de9","instanceCount":1,"presentCount":1,"producer":"intent-capture","required":true,"structureHash":"sha256:8cbb89a0518e1b78e81f553ddb6029d4b2226e42c9ee1e33321a1229b1d06d84"},{"artifact":"team-assessment","contentHash":"sha256:c0994f60000752e567703579ece3bb9b25a54a70d6e1c698320742850ca3cc67","instanceCount":1,"presentCount":1,"producer":"team-formation","required":false,"structureHash":"sha256:109d02e095bfe4614f2207ed7c07842467fae1b85fd6c84154f06e6933e1ac21"},{"artifact":"wireframes","contentHash":"sha256:95d50976f643f9abae64d552a7692c045986dd95f463311b7b4974ffe76b8c4a","instanceCount":1,"presentCount":1,"producer":"rough-mockups","required":false,"structureHash":"sha256:1afaaf492a030cca4ecc74de39c0b8cc46adace83196c250e28a5b2b87559602"}],"outputs":[{"artifact":"approval-handoff-questions","contentHash":"sha256:82360189e87b5b771093f162fc642e081821a3057af5abc3238b9a3f70bd6423","instanceCount":1,"presentCount":1,"producer":"approval-handoff","required":true,"structureHash":"sha256:e14f4b517517e638f40bd0469c57b1ab1713c2db4d56f184754a723ca809d676"},{"artifact":"decision-log","contentHash":"sha256:2b3d9279a9e08952affa57531ba8bd5e52b08e6431444339a6b7b8842cae7080","instanceCount":1,"presentCount":1,"producer":"approval-handoff","required":true,"structureHash":"sha256:5c299702a4dc7dd1c034ed2d67cefa3f7d662cf87816e72353f54870ae2013cf"},{"artifact":"initiative-brief","contentHash":"sha256:f435fffc08ad05c6e0de73184443dad3f2480d05b95bef4f20d215e5db9ecff3","instanceCount":1,"presentCount":1,"producer":"approval-handoff","required":true,"structureHash":"sha256:ff681b51d420b7474d97723526cda1ff7eb0de51b691b82652876641c4cf9153"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Approval & Handoff approved by gate
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: PHASE_COMPLETED
+**From phase**: ideation
+**To phase**: inception
+**Stages completed**: 10
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: ideation → inception
+
+---
+
+## Phase Start
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: PHASE_STARTED
+**Phase**: inception
+**Scope**: feature
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: STAGE_STARTED
+**Stage**: practices-discovery
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: 0268bd39
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/team-practices.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: 0268bd39
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/team-practices.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: a9223901
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/discovered-rules.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: a9223901
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/discovered-rules.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3ae262a9
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/evidence.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3ae262a9
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/evidence.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: SENSOR_FIRED
+**Fire id**: e878ec45
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/practices-discovery-timestamp.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: SENSOR_PASSED
+**Fire id**: e878ec45
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/practices-discovery-timestamp.md
+**Duration ms**: 85
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: SENSOR_FIRED
+**Fire id**: c5ce736f
+**Sensor ID**: upstream-coverage
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/team-practices.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: SENSOR_PASSED
+**Fire id**: c5ce736f
+**Sensor ID**: upstream-coverage
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/team-practices.md
+**Duration ms**: 86
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: practices-discovery
+**Next Stage**: requirements-analysis
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/team-practices.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/discovered-rules.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/evidence.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/practices-discovery-timestamp.md=passed; upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/inception/practices-discovery/team-practices.md=passed
+**Open Decisions**: 0
+**Question Id**: d0a66291
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:fbe6398ff6c5455c0cc2bcebfedff53f6974ce1e6e6150b1538ff9d1d66d8ae9
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: GATE_APPROVED
+**Stage**: practices-discovery
+**User Input**: approve
+**Brief Digest**: none
+**Git Name**: Fixture
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: STAGE_COMPLETED
+**Stage**: practices-discovery
+**Validation Basis**: {"graphContract":"sha256:886af627a0fea6d271a662e4a54b4c5993ecee715d6144d46d4a58c2bc3d19bb","inputs":[],"outputs":[{"artifact":"discovered-rules","contentHash":"sha256:3d5f341980404d3826721590665b35b14a2ad26f3a7c0ce2e23355381586dd94","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:7ed64e72bce7a50e509ea1dddf4a0f4ccff05c29c51b32f7aa76cc3f4e6abfdc"},{"artifact":"evidence","contentHash":"sha256:4307334f0d2e690d9d51c0ab6187e080e32c9335aafca76b43168a4d01af1925","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:212379543500b2db42c77167f9d84b2c94331df97b811a1b4ad7389476743ff7"},{"artifact":"practices-discovery-timestamp","contentHash":"sha256:b9855b3370ed2da2da4eac268574480bba4b3217e8ed854074b632f193c19f30","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:6ecf82f73e33a1c41088fcdd9f25678e73115a1669a4b83548103575d5751ce8"},{"artifact":"team-practices","contentHash":"sha256:6f8b836ad06e3758195f183feb2012662d84019c73d74da29db115d5bde85ce7","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:55eb0e42f399a486ad987fb272115d8970556d67d6721c24b17bd6b31153d3ca"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Practices Discovery approved by gate
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-23T03:07:31Z
+**Event**: STAGE_STARTED
+**Stage**: requirements-analysis
+**Agent**: aidlc-product-agent
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:32Z
+**Event**: SENSOR_FIRED
+**Fire id**: 1d15d6bc
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:32Z
+**Event**: SENSOR_PASSED
+**Fire id**: 1d15d6bc
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+**Duration ms**: 113
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:32Z
+**Event**: SENSOR_FIRED
+**Fire id**: 0311b928
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements-analysis-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:32Z
+**Event**: SENSOR_PASSED
+**Fire id**: 0311b928
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements-analysis-questions.md
+**Duration ms**: 108
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:32Z
+**Event**: SENSOR_FIRED
+**Fire id**: 36218e6d
+**Sensor ID**: upstream-coverage
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:32Z
+**Event**: SENSOR_FAILED
+**Fire id**: 36218e6d
+**Sensor ID**: upstream-coverage
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/requirements-analysis/upstream-coverage-36218e6d.md
+**Findings count**: 2
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-23T03:07:33Z
+**Event**: REVIEW_REQUESTED
+**Stage**: requirements-analysis
+**Reviewer**: aidlc-product-lead-agent
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:8c041189fedbe3f9ce2c52226c9d944517f706065db777c0e8d7d49f9b0752de
+**Request Id**: review:f6be5ca22f5f27f3f65f52d50baaf117
+**Review File**: .aidlc-engine/reviews/requirements-analysis/stage/86342aad4cadfccb/1.f6be5ca22f5f27f3f65f52d50baaf117.review.md
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-23T03:07:33Z
+**Event**: REVIEW_COMPLETED
+**Stage**: requirements-analysis
+**Reviewer**: aidlc-product-lead-agent
+**Iteration**: 1
+**Verdict**: READY
+**Reviewer Finished Before Verdict**: no
+**Request Fingerprint**: sha256:8c041189fedbe3f9ce2c52226c9d944517f706065db777c0e8d7d49f9b0752de
+**Artifact Fingerprint**: sha256:8c041189fedbe3f9ce2c52226c9d944517f706065db777c0e8d7d49f9b0752de
+**Request Id**: review:f6be5ca22f5f27f3f65f52d50baaf117
+**Review Record**: .aidlc-engine/reviews/requirements-analysis/stage/86342aad4cadfccb/1.json
+**Review Record Digest**: sha256:f1e523e4f91e0e58194076b5b91e1bcf85871e1415c0b43a128b96699a6c5af6
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:33Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7d7d955c
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:33Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7d7d955c
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:33Z
+**Event**: SENSOR_FIRED
+**Fire id**: e4104f06
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements-analysis-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-23T03:07:33Z
+**Event**: SENSOR_PASSED
+**Fire id**: e4104f06
+**Sensor ID**: required-sections
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements-analysis-questions.md
+**Duration ms**: 89
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-23T03:07:34Z
+**Event**: SENSOR_FIRED
+**Fire id**: c0b8059b
+**Sensor ID**: upstream-coverage
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-23T03:07:34Z
+**Event**: SENSOR_FAILED
+**Fire id**: c0b8059b
+**Sensor ID**: upstream-coverage
+**Stage slug**: requirements-analysis
+**Output path**: aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md
+**Detail path**: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/requirements-analysis/upstream-coverage-c0b8059b.md
+**Findings count**: 2
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-23T03:07:34Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: requirements-analysis
+**Next Stage**: user-stories
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md=failed(2) [detail: aidlc/spaces/default/intents/fixture-8000000000000001/.aidlc-engine/sensors/requirements-analysis/upstream-coverage-c0b8059b.md]; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements.md=passed; required-sections@aidlc/spaces/default/intents/fixture-8000000000000001/inception/requirements-analysis/requirements-analysis-questions.md=passed
+**Open Decisions**: 0
+**Question Id**: e4d094e0
+**Question Type**: gate
+**Question Chat**: dade516b-79d5-5cd0-a445-78f809e43acd
+**Question Shows**: sha256:bd2d1bc2bdf5c6a5e72528ebf9ef32bc8dc31f54d6f00c36e24877a4e5730d75
+
+---

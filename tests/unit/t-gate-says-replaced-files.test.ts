@@ -19,6 +19,7 @@ import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harne
 import {
   AIDLC_SRC, cleanupTestProject, createTestProject, runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { createCodeGenerationProject, reply, reviewText, runNamed, stageDir, writePlan } from "../harness/code-generation-states.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
@@ -378,7 +379,7 @@ function checkpointProject(review: "none" | "advisory" = "none"): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -394,13 +395,14 @@ function checkpointProject(review: "none" | "advisory" = "none"): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${UNIT_STAGES.map((stage) => review === "advisory"
     ? stage === "code-generation" ? `- [-] ${stage} \u2014 EXECUTE` : `- [S] ${stage} \u2014 SKIP`
     : stage === "functional-design" ? `- [-] ${stage} \u2014 EXECUTE` : `- [ ] ${stage} \u2014 EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${review === "advisory" ? "BUILD" : "DESIGN"}
 - **Current Stage**: ${review === "advisory" ? "code-generation" : "functional-design"}
 - **Status**: Running
 `);
@@ -414,7 +416,7 @@ ${UNIT_STAGES.map((stage) => review === "advisory"
 function cover(p: string, unit: string, stages: readonly string[] = UNIT_STAGES) {
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       const body = slug === "code-generation" && name === "traceability"
@@ -540,7 +542,7 @@ function unitsProject(team: boolean): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -555,11 +557,12 @@ ${team ? "- **Unit Ownership**: team\n- **Unit Gate Rhythm**: per-stage\n" : "- 
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${UNIT_STAGES.map((stage) => stage === "code-generation" ? `- [-] ${stage} \u2014 EXECUTE` : `- [S] ${stage} \u2014 SKIP`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);

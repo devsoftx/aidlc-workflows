@@ -60,6 +60,7 @@ import {
 } from "../harness/fixtures.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -140,7 +141,7 @@ function constructionState(
 - **Project**: wave test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Construction Iteration**: ${iteration}
 ${reviewOverride ? `- **Review Override**: ${reviewOverride}\n` : ""}
@@ -156,20 +157,22 @@ ${autonomy ? `- **Construction Autonomy Mode**: ${autonomy}\n` : ""}
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 ${row("x", "domain-design")}
 ${row("x", "units-generation")}
-
-### CONSTRUCTION PHASE
 ${row(current === "functional-design" ? "-" : " ", "functional-design")}
 ${row(current === "nfr-requirements" ? "-" : " ", "nfr-requirements")}
 ${row(current === "nfr-design" ? "-" : " ", "nfr-design")}
 ${row(current === "infrastructure-design" ? "-" : " ", "infrastructure-design")}
+
+### BUILD PHASE
 ${row(current === "code-generation" ? "-" : " ", "code-generation")}
+
+### TEST PHASE
 ${row(" ", "build-and-test")}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;
@@ -225,7 +228,7 @@ function cover(
   stage: string,
   names: string[],
 ): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, stage);
+  const dir = join(seededRecordDir(proj), phaseFor(stage), unit, stage);
   mkdirSync(dir, { recursive: true });
   for (const name of names) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -240,7 +243,7 @@ function review(
 ): void {
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("functional-design"),
     unit,
     "functional-design",
     "functional-spec.md",
@@ -372,7 +375,7 @@ function freezeWrite(
 function confirmUnitSummary(proj: string, unit: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("functional-design"),
     unit,
     "functional-design",
   );
@@ -622,7 +625,7 @@ function writeDependencyArtifact(
   proj: string,
   units: Array<{ name: string; kind?: string; depends_on: string[] }>,
 ): void {
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   const lines = ["# Unit Dependency", "", "```yaml", "units:"];
   for (const unit of units) {
@@ -677,25 +680,25 @@ describe("t278 engine-emitted wave contract", () => {
     expect(api.required_produces).toHaveLength(4);
     expect(
       api.required_produces.every((path) =>
-        path.includes("/construction/api/infrastructure-design/")
+        path.includes("/design/api/infrastructure-design/")
       ),
     ).toBe(true);
     expect(web.unit_kind).toBe("ui");
     expect(web.required_produces).toEqual([
-      `${RP}/construction/web/infrastructure-design/infrastructure-specification.md`,
-      `${RP}/construction/web/infrastructure-design/monitoring-design.md`,
-      `${RP}/construction/web/infrastructure-design/cicd-pipeline.md`,
-      `${RP}/construction/web/infrastructure-design/traceability.json`,
+      `${RP}/design/web/infrastructure-design/infrastructure-specification.md`,
+      `${RP}/design/web/infrastructure-design/monitoring-design.md`,
+      `${RP}/design/web/infrastructure-design/cicd-pipeline.md`,
+      `${RP}/design/web/infrastructure-design/traceability.json`,
     ]);
     expect(api.consumes_absent).toBeArray();
     expect(web.consumes_absent).toBeArray();
     expect(directive.unit).toBe("api");
     expect(directive.memory_path).toBe(api.unit_memory_path);
     expect(api.unit_memory_path).toBe(
-      `${RP}/construction/api/infrastructure-design/memory.md`,
+      `${RP}/design/api/infrastructure-design/memory.md`,
     );
     expect(web.unit_memory_path).toBe(
-      `${RP}/construction/web/infrastructure-design/memory.md`,
+      `${RP}/design/web/infrastructure-design/memory.md`,
     );
 
     // The rules ride inline on the run-stage when they fit (the shipped case)
@@ -740,17 +743,17 @@ describe("t278 engine-emitted wave contract", () => {
       );
     }
     expect(consumePaths).toContain(
-      `${RP}/construction/contract/nfr-requirements/security-requirements.md`,
+      `${RP}/design/contract/nfr-requirements/security-requirements.md`,
     );
     expect(consumePaths).toContain(
-      `${RP}/construction/contract/nfr-requirements/tech-stack-decisions.md`,
+      `${RP}/design/contract/nfr-requirements/tech-stack-decisions.md`,
     );
     expect(consumePaths).toContain(
-      `${RP}/construction/contract/functional-design/functional-spec.md`,
+      `${RP}/design/contract/functional-design/functional-spec.md`,
     );
     expect(entry.required_produces).toEqual([
-      `${RP}/construction/contract/nfr-design/security-design.md`,
-      `${RP}/construction/contract/nfr-design/traceability.json`,
+      `${RP}/design/contract/nfr-design/security-design.md`,
+      `${RP}/design/contract/nfr-design/traceability.json`,
     ]);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -831,7 +834,7 @@ describe("t278 engine-emitted wave contract", () => {
     writeFileSync(
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "beta",
         "functional-design",
         "functional-spec.md",
@@ -876,7 +879,7 @@ describe("t278 engine-emitted wave contract", () => {
     writeFileSync(
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "alpha",
         "functional-design",
         "functional-spec.md",
@@ -922,7 +925,7 @@ describe("t278 engine-emitted wave contract", () => {
       completeWave(proj, "alpha");
       completeWave(proj, "beta");
       expect(next(proj).directive.gate).toBe(true);
-      writeFileSync(join(seededRecordDir(proj), "construction", "alpha", "functional-design", "functional-spec.md"),
+      writeFileSync(join(seededRecordDir(proj), phaseFor("functional-design"), "alpha", "functional-design", "functional-spec.md"),
         "# changed after review\n");
       const after = next(proj).directive;
       expect(after.wave, JSON.stringify(after)).toBeUndefined();
@@ -945,7 +948,7 @@ describe("t278 engine-emitted wave contract", () => {
     writeFileSync(
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "alpha",
         "functional-design",
         "functional-spec.md",
@@ -963,7 +966,7 @@ describe("t278 engine-emitted wave contract", () => {
     writeFileSync(
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         "alpha",
         "functional-design",
         "functional-spec.md",
@@ -1008,7 +1011,7 @@ describe("t278 engine-emitted wave contract", () => {
     // next write refused.
     markHumanTurn(proj);
     review(proj, "alpha");
-    const artifact = join(seededRecordDir(proj), "construction", "alpha", "functional-design", "functional-spec.md");
+    const artifact = join(seededRecordDir(proj), phaseFor("functional-design"), "alpha", "functional-design", "functional-spec.md");
     const env: NodeJS.ProcessEnv = { ...process.env, AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD: "1" };
     delete env.AWS_AIDLC_DEFAULT_SCOPE;
     delete env.AIDLC_STOP_HOOK_PROBE;
@@ -1094,7 +1097,7 @@ describe("t278 engine-emitted wave contract", () => {
     review(proj, "alpha");
     const artifact = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
       "functional-spec.md",
@@ -1206,7 +1209,7 @@ describe("t278 engine-emitted wave contract", () => {
 
     const artifact = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
       "functional-spec.md",
@@ -1273,7 +1276,7 @@ describe("t278 engine-emitted wave contract", () => {
     review(proj, "alpha");
     const alphaArtifact = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
       "functional-spec.md",
@@ -1302,7 +1305,7 @@ describe("t278 engine-emitted wave contract", () => {
 
     const artifact = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
       "functional-spec.md",
@@ -1405,7 +1408,7 @@ describe("t278 engine-emitted wave contract", () => {
     for (const unit of units) {
       const memory = join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("functional-design"),
         unit.name,
         "functional-design",
         "memory.md",
@@ -1457,7 +1460,7 @@ describe("t278 engine-emitted wave contract", () => {
     cover(proj, "alpha", "functional-design", REQUIRED_FD);
     const unitMemory = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
       "memory.md",
@@ -1476,7 +1479,7 @@ describe("t278 engine-emitted wave contract", () => {
     expect(readFileSync(unitMemory, "utf-8")).toContain(
       "- 2026-08-12T00:00:00Z \u2014 preserve this note; verbatim context",
     );
-    expect(existsSync(join(seededRecordDir(proj), "construction", "functional-design"))).toBe(false);
+    expect(existsSync(join(seededRecordDir(proj), phaseFor("functional-design"), "functional-design"))).toBe(false);
     expect(next(proj).directive.gate).toBe(true);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 

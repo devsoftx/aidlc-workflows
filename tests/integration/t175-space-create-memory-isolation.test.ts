@@ -100,7 +100,7 @@ describe("t175 space-create memory isolation (vision §11 — no learning leak)"
   test("a new space gets the framework phase rules, not default's edits, and its first stage starts", () => {
     seedAidlcMemory(proj);
     const TEAM_EDIT = "DEFAULT-PHASE-EDIT-must-not-leak";
-    appendFileSync(join(memoryOf("default"), "phases", "ideation.md"), `\n- ${TEAM_EDIT}\n`, "utf-8");
+    appendFileSync(join(memoryOf("default"), "phases", "discover.md"), `\n- ${TEAM_EDIT}\n`, "utf-8");
 
     expect(util(["space-create", "payments"]).status).toBe(0);
     const phases = readdirSync(SEED_PHASES);
@@ -109,7 +109,7 @@ describe("t175 space-create memory isolation (vision §11 — no learning leak)"
       expect(readFileSync(join(memoryOf("payments"), "phases", f), "utf-8"))
         .toBe(readFileSync(join(SEED_PHASES, f), "utf-8"));
     }
-    expect(readFileSync(join(memoryOf("payments"), "phases", "ideation.md"), "utf-8")).not.toContain(TEAM_EDIT);
+    expect(readFileSync(join(memoryOf("payments"), "phases", "discover.md"), "utf-8")).not.toContain(TEAM_EDIT);
 
     expect(util(["space", "payments"]).status).toBe(0);
     expect(util(["intent-create", "--scope", "poc"]).status).toBe(0);

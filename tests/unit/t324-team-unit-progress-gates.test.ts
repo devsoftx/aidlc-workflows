@@ -41,6 +41,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   deriveTeamUnitProgressModel,
 } from "../../dist/claude/.claude/tools/aidlc-orchestrate.ts";
@@ -164,7 +165,7 @@ function constructionState(opts: {
 - **Project**: team unit progress test
 - **Project Type**: Greenfield
 - **Scope**: ${opts.scope ?? "feature"}
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -180,7 +181,7 @@ ${ownership}${rhythm}
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
@@ -189,7 +190,7 @@ ${ownership}${rhythm}
 - [ ] build-and-test — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -254,7 +255,7 @@ function runReport(proj: string, args: string[]): Directive {
 }
 
 function coverUnit(proj: string, unit: string, stage: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, stage);
+  const dir = join(seededRecordDir(proj), phaseFor(stage), unit, stage);
   mkdirSync(dir, { recursive: true });
   for (const artifact of PRODUCES[stage]) {
     writeFileSync(
@@ -283,7 +284,7 @@ function addReviewFinding(
 ): string {
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(PRODUCES[stage][0]),
@@ -333,7 +334,7 @@ function logReviewReady(
     const content = readFileSync(
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor(stage),
         unit,
         stage,
         artifactFilename(artifact),
@@ -348,7 +349,7 @@ function logReviewReady(
   }
   const reviewArtifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(findStageBySlug(stage)!.review_artifact!),
@@ -683,19 +684,19 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
       seededStateFile(proj),
       constructionState({ ownership: "team" })
         .replace(
-          `### CONSTRUCTION PHASE
+          `### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
 - [ ] code-generation — EXECUTE
 - [ ] build-and-test — EXECUTE`,
-          `### INCEPTION PHASE
+          `### ${phaseFor("delivery-planning").toUpperCase()} PHASE
 - [-] delivery-planning — EXECUTE`,
         )
         .replace(
-          "- **Lifecycle Phase**: CONSTRUCTION",
-          "- **Lifecycle Phase**: INCEPTION",
+          `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`,
+          `- **Lifecycle Phase**: ${phaseFor("delivery-planning").toUpperCase()}`,
         )
         .replace(
           "- **Current Stage**: functional-design",
@@ -840,7 +841,12 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
         `- [S] build-and-test — SKIP
 - [S] ci-pipeline — SKIP
 
-### OPERATION PHASE
+### ${phaseFor("code-review").toUpperCase()} PHASE
+- [S] code-review — SKIP
+- [S] security-review — SKIP
+- [S] conformance-review — SKIP
+
+### ${phaseFor("deployment-pipeline").toUpperCase()} PHASE
 - [S] deployment-pipeline — SKIP
 - [S] environment-provisioning — SKIP
 - [S] deployment-execution — SKIP
@@ -888,7 +894,7 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
     rmSync(
       join(
         seededRecordDir(proj),
-        "inception",
+        phaseFor("units-generation"),
         "units-generation",
         "unit-of-work-dependency.md",
       ),
@@ -1174,7 +1180,7 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
     const decisions = (id: string): string =>
       `\n\`\`\`aidlc-decisions\ndecisions:\n  - id: ${id}\n    decision: Left to the person\n    owner: person\n    blocking: false\n\`\`\`\n`;
     const spec = (unit: string): string =>
-      join(seededRecordDir(proj), "construction", unit, "functional-design", artifactFilename("functional-spec"));
+      join(seededRecordDir(proj), phaseFor("functional-design"), unit, "functional-design", artifactFilename("functional-spec"));
     coverUnit(proj, "beta", "functional-design");
     writeFileSync(spec("beta"), `# functional-spec for beta\n${decisions("BETA-D1")}`);
     const build = (): void => {
@@ -1202,8 +1208,8 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
       expect(auditBlockField(open.block, "Open Decisions")).toBe("1");
       expect(auditBlockField(open.block, "Decisions")).toBe("ALPHA-D1");
       const checks = auditBlockField(open.block, "Sensor State") ?? "";
-      expect(checks).toContain("/construction/alpha/functional-design/");
-      expect(checks).not.toContain("/construction/beta/");
+      expect(checks).toContain("/design/alpha/functional-design/");
+      expect(checks).not.toContain(`/${phaseFor("functional-design")}/beta/`);
     }
     expect(auditBlockField(alphaRows("GATE_APPROVED").at(-1)!.block, "Decisions Accepted Open")).toBe("ALPHA-D1");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -1476,7 +1482,7 @@ describe("t324 team-owned unit progress and per-unit gates", () => {
       const result = (event: string, id: string, unit: string) => appendAuditEntry(event, {
         "Sensor ID": id,
         "Stage slug": "functional-design",
-        "Output path": relative(proj, join(seededRecordDir(proj), "construction", unit, "functional-design",
+        "Output path": relative(proj, join(seededRecordDir(proj), phaseFor("functional-design"), unit, "functional-design",
           artifactFilename("entities"))).replaceAll("\\", "/"),
         ...(event === "SENSOR_FAILED" ? { "Detail path": "detail.md", "Findings count": "1" } : {}),
       }, proj);
@@ -1969,7 +1975,7 @@ describe("t324 scope-change Unit topology (#1401)", () => {
     // Units Generation ran: the Units it made are the ones in the Unit DAG.
     writeFileSync(seededStateFile(proj), state(proj).replace(
       "## Stage Progress\n",
-      "## Stage Progress\n<!-- Checkbox states: [ ] not started -->\n\n### INCEPTION PHASE\n- [x] units-generation \u2014 EXECUTE\n",
+      `## Stage Progress\n<!-- Checkbox states: [ ] not started -->\n\n### ${phaseFor("units-generation").toUpperCase()} PHASE\n- [x] units-generation \u2014 EXECUTE\n`,
     ));
     const first = runNext(proj);
     settleBody(proj, first);
@@ -1999,7 +2005,7 @@ describe("t324 scope-change Unit topology (#1401)", () => {
     // (#1401). Now alpha carries on at the next stage refactor runs, per Unit.
     const next = runNext(proj);
     expect(next).toMatchObject({ kind: "run-stage", stage: "code-generation", unit: "alpha", gate: false });
-    expect((next.produces as string[])[0]).toContain("/construction/alpha/code-generation/");
+    expect((next.produces as string[])[0]).toContain("/build/alpha/code-generation/");
     settleBody(proj, next);
     const gate = runNext(proj);
     expect(gate).toMatchObject({ stage: "code-generation", unit: "alpha", unit_gate: "per-stage", gate: true });

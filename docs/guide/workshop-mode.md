@@ -18,7 +18,7 @@ changing state.
 
 The integration lead works from unscoped main. Each delivery team works from a
 checkout stamped to one claimed Unit. A claimed checkout runs that Unit's exact
-Construction chain, stages 3.1 through 3.5, in graph order. Main never reruns
+Construction chain, stages 2.9 through 3.1, in graph order. Main never reruns
 those stages after merge because the team's keyed receipts arrive with its
 audit shard.
 
@@ -31,8 +31,8 @@ For the Workshop scope's stage grid and Minimal test floor, see
 
 | Role | Responsibility |
 |------|----------------|
-| **Integration lead** | Drives Inception and any required walking skeleton on main, monitors claims, pins completed candidates, presents merge gates, and lands approved Units |
-| **Unit team** | Claims one dependency-ready Unit, runs its scoped 3.1-3.5 chain, commits the artifacts/receipts/source, and publishes the candidate |
+| **Integration lead** | Drives the shared stages through Delivery Planning and any required walking skeleton on main, monitors claims, pins completed candidates, presents merge gates, and lands approved Units |
+| **Unit team** | Claims one dependency-ready Unit, runs its scoped 2.9-3.1 chain, commits the artifacts/receipts/source, and publishes the candidate |
 | **Review group** | Answers the Unit's selected team gates and the main-side pinned merge gate |
 
 Two topologies use the same commands and evidence:
@@ -131,7 +131,8 @@ clone last saw).
 
 ## Prepare Construction
 
-The integration lead completes Inception, including:
+The integration lead completes the shared stages through Delivery Planning,
+including:
 
 1. the authoritative Unit DAG;
 2. `Construction Iteration: unit-major`;
@@ -139,7 +140,7 @@ The integration lead completes Inception, including:
 4. the team gate rhythm, `per-stage` or `unit-end`;
 5. the affirmed branching strategy.
 
-When Inception ends with two or more Units, the first step into Construction
+When those stages end with two or more Units, the first step into Construction
 asks who builds them, once, in every scope and in a composed workflow: **Just
 me** records `Unit Ownership: solo` and this session builds the Units;
 **Several teams** records `Unit Ownership: team`, switching a stage-by-stage
@@ -238,18 +239,18 @@ creating a successor attempt.
 
 Run `/aidlc` in the claimed checkout. The engine routes only the stamped Unit:
 
-1. Functional Design (3.1)
-2. NFR Requirements (3.2)
-3. NFR Design (3.3)
-4. Infrastructure Design (3.4)
-5. Code Generation (3.5)
+1. Functional Design (2.9)
+2. NFR Requirements (2.10)
+3. NFR Design (2.11)
+4. Infrastructure Design (2.12)
+5. Code Generation (3.1)
 
 Plan Approval remains mandatory during Code Generation.
 
 Gate rhythm controls the team review points:
 
 - `per-stage`: one gate after each settled `(stage, Unit)`;
-- `unit-end`: one team completion gate after 3.5;
+- `unit-end`: one team completion gate after 3.1;
 - both rhythms still add one pinned merge gate on main.
 
 When the Unit is complete and approved, `/aidlc` asks once whether to commit it
@@ -278,8 +279,8 @@ the claim's audit shard with the rows pin accepts and the review records its
 receipts name (AI-DLC keeps those out of commits), and every other audit shard
 and the stages' shared diaries as main has them; what is left out stays in the
 checkout's own history, and publish says how many rows. A change to any other
-record outside the Unit's `construction/<unit>/` folder (an Inception artifact
-such as `contract-summary.md`) is published too, but pin will refuse it, so
+record outside the Unit's `design/<unit>/` and `build/<unit>/` folders (a Design
+artifact such as `contract-summary.md`) is published too, but pin will refuse it, so
 publish names the file: take it out of the branch, make the change on main,
 and publish again. Pin and land refuse it too, and say to do that in the
 checkout where the Unit is claimed.
@@ -431,8 +432,8 @@ git push origin main
 ```
 
 Dependents become claimable from the merged row. After the last row merges,
-the per-Unit block settles and main routes Build and Test (3.6), then CI
-Pipeline (3.7), exactly as solo Construction does. Main can also move on to
+the per-Unit block settles and main routes Build and Test (4.1) and the stages
+after it, exactly as solo Construction does. Main can also move on to
 Build and Test before then, typed (`/aidlc --stage build-and-test`) or asked
 in plain words: once a team has taken a Unit, the Unit stages stay open on
 main, the move says once which Units are still open and whose ("Still open on
@@ -536,12 +537,12 @@ registry.
 
 ### Day 1
 
-1. The facilitator runs Inception with the group.
+1. The facilitator runs the shared stages through Delivery Planning with the group.
 2. If enabled, the facilitator builds and gates the walking skeleton on main,
    then shares the plan with the teams when asked.
 3. Alice takes `billing`; Bob takes `notifications`, each from the question in
    their own clone.
-4. Each team runs its scoped 3.1-3.5 chain and team gates.
+4. Each team runs its scoped 2.9-3.1 chain and team gates.
 5. Each team publishes its Unit when asked.
 
 ### Day 2
@@ -550,8 +551,8 @@ registry.
    reviews its evidence, records the merge gate, and lands it.
 2. Main is pushed when asked; any Unit depending on `billing` becomes claimable.
 3. The facilitator repeats pin/gate/land for Bob's pinned candidate.
-4. When the final row is merged, `/aidlc` on main routes Build and Test, then
-   CI Pipeline.
+4. When the final row is merged, `/aidlc` on main routes Build and Test and the
+   stages after it.
 5. The group reviews `UNIT_MERGED`, gate, and reviewer rows in the combined
    audit shards.
 
@@ -565,6 +566,6 @@ claim-bound CAS publication; main serializes the reviewed pinned OIDs.
 - [Facilitator Guide](facilitator-guide.md) - readiness check, scopes for side tasks, recovery playbook, and how strongly each harness enforces the workflow
 - [CLI Commands](12-cli-commands.md) - claim, publish, pin, gate, and land
 - [State and Audit](10-state-and-audit.md) - per-clone shards and merged receipt floors
-- [Construction](../reference/04-stages/construction.md) - Unit-major routing and gate rhythm
+- [Unit walk](../reference/04-stages/build.md#unit-walk) - Unit-major routing and gate rhythm
 - [Runtime Graph](../reference/13-runtime-graph.md) - the separate solo/swarm Bolt merge path
 - [Branching Strategies](../../core/knowledge/aidlc-pipeline-deploy-agent/branching-strategies.md) - merge-dispatch strategy selection

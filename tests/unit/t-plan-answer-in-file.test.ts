@@ -33,6 +33,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { planApprovalRuntimeFile } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 
@@ -74,7 +75,7 @@ function project(policy: "strict" | "relaxed" | "off" = "relaxed"): string {
 }
 
 function stageDir(proj: string): string {
-  return join(seededRecordDir(proj), "construction", "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 }
 
 function writePlan(proj: string): void {
@@ -577,7 +578,7 @@ describe("the same answer through Kiro CLI's userPromptSubmit hook", () => {
 - **Project**: Add a --shout option to greet.py
 - **Project Type**: Brownfield
 - **Scope**: poc
-- **State Version**: 8
+- **State Version**: 10
 
 ## Scope Configuration
 - **Stages to Execute**: all
@@ -594,12 +595,14 @@ describe("the same answer through Kiro CLI's userPromptSubmit hook", () => {
 - [x] workspace-detection \u2014 EXECUTE
 - [x] state-init \u2014 EXECUTE
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");

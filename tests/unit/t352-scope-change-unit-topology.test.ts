@@ -47,16 +47,23 @@ afterEach(() => { while (projects.length) cleanupTestProject(projects.pop()); })
 const stage = "nfr-requirements";
 const env = { ...process.env, AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" };
 const DROPPED = "no longer part of the plan";
+const LATER_WORK_PHASES = ["build", "test", "secure", "deploy", "operate"];
+// The stages a Unit's work runs after Functional Design: the per-Unit stages,
+// then the build, test, secure, deploy and operate phases.
+function isLaterWork(node: { for_each?: string; phase: string }): boolean {
+  return node.for_each === "unit-of-work" || LATER_WORK_PHASES.includes(node.phase);
+}
 
-// A feature run in Construction: Units Generation ran (alpha and beta), the
-// cursor reads functional-design, and later stages have not started.
+// A feature run partway through its per-Unit stages: Units Generation ran
+// (alpha and beta), the cursor reads functional-design, and later stages have
+// not started.
 function fixture(ownership = "team", iteration = "unit-major", dag = true): string {
   const proj = createTestProject();
   projects.push(proj);
   seedAidlcMemory(proj);
   const stages = loadStageGraph().map((node) => {
     const box = node.slug === "functional-design" ? "-"
-      : node.phase === "construction" || node.phase === "operation" ? " "
+      : isLaterWork(node) ? " "
       : node.slug === "units-generation" && !dag ? " " : "x";
     const action = node.slug === "units-generation" && !dag ? "SKIP" : "EXECUTE";
     return `- [${box}] ${node.slug} \u2014 ${action}`;
@@ -67,7 +74,7 @@ function fixture(ownership = "team", iteration = "unit-major", dag = true): stri
 - **Project**: Unit plan safety
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -234,7 +241,7 @@ describe("the Units carry on per Unit after the switch (#1401)", () => {
     // A fallback to one stage-level step would leave work that no Unit gate reads.
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "alpha" });
-    expect((directive.produces as string[])[0]).toContain("/construction/alpha/functional-design/");
+    expect((directive.produces as string[])[0]).toContain("/design/alpha/functional-design/");
   });
   test("a recompose that skips Units Generation keeps the Units too", () => {
     const p = fixture();
@@ -249,12 +256,12 @@ describe("the Units carry on per Unit after the switch (#1401)", () => {
     const directive = next(p);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
-    expect((directive.produces as string[])[0]).toContain("/construction/functional-design/");
+    expect((directive.produces as string[])[0]).toContain("/design/functional-design/");
   });
-  test("fully completed team Construction switches without a line", () => {
+  test("fully completed team Unit work switches without a line", () => {
     const p = fixture();
     let content = state(p);
-    for (const node of loadStageGraph().filter((s) => s.phase === "construction")) {
+    for (const node of loadStageGraph().filter(isLaterWork)) {
       content = setCheckbox(content, node.slug, "completed");
     }
     putState(p, setField(content, "Current Stage", "build-and-test"));
@@ -277,10 +284,13 @@ describe("every harness and every way in", () => {
   }
   test("recompose skips stages with live Unit work and names it", () => {
     const p = fixture();
-    // With no Operation stages on the plan, the NFR stages can leave it as a
-    // group: nothing left on the plan reads them.
+    // With no Deploy or Operate stages on the plan, and performance-validation
+    // (which reads the NFR outputs) skipped too, the NFR stages can leave it as
+    // a group: nothing left on the plan reads them.
     let content = state(p);
-    for (const node of loadStageGraph().filter((s) => s.phase === "operation")) {
+    const skipped = loadStageGraph().filter((s) =>
+      s.phase === "deploy" || s.phase === "operate" || s.slug === "performance-validation");
+    for (const node of skipped) {
       content = setStageSuffix(content, node.slug, "SKIP");
     }
     putState(p, content);
@@ -367,7 +377,7 @@ function planAt(from: string, at: string, box = "?", extra = "", type = "Greenfi
 - **Project**: Unit plan safety
 - **Project Type**: ${type}
 - **Scope**: ${from}
-${extra}- **State Version**: 8
+${extra}- **State Version**: 10
 
 ## Scope Configuration
 - **Depth**: Minimal
@@ -428,7 +438,7 @@ describe("a switch into a scope that runs Units Generation, after the work passe
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
     expect(JSON.stringify(directive)).not.toContain("{unit-name}");
-    expect((directive.produces as string[])[0]).toContain("/construction/functional-design/");
+    expect((directive.produces as string[])[0]).toContain("/design/functional-design/");
   });
 
   test("the switch line counts the stages the work still runs: the ones done, and the ones from the current stage on", () => {

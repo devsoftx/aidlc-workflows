@@ -61,7 +61,7 @@ interface RuntimeStage {
   completed_at: string | null;    // ISO from STAGE_COMPLETED; null when pending OR when `instances` is present
   agent: string | null;           // lead_agent; null when `instances` is present
   memory_path: string;            // <record>/<phase>/<stage>/memory.md (parent stage path even on instance-bearing rows)
-  memory_entries: number | null;  // null = no memory.md file OR `instances` is present; else parseMemoryHeadings.total (a per-Unit stage: every Unit's construction/<unit>/<stage>/memory.md plus this path's)
+  memory_entries: number | null;  // null = no memory.md file OR `instances` is present; else parseMemoryHeadings.total (a per-Unit stage: every Unit's <phase>/<unit>/<stage>/memory.md plus this path's)
   memory_breakdown: {             // null when memory_entries is null
     interpretations: number;
     deviations: number;
@@ -116,7 +116,7 @@ and uses the healed in-memory batches and kinds to resolve every per-Unit entry,
 including build, completion-receipt, paired-review, and Unit-memory paths. The
 conductor consumes only that directive; it never reads this cached node or
 reconstructs sibling paths. Its source is the **fenced
-`yaml` `units:` edge block** that units-generation (2.7) authors on
+`yaml` `units:` edge block** that units-generation (2.6) authors on
 `unit-of-work-dependency.md`, beside the human-readable prose:
 
 ```yaml
@@ -135,7 +135,7 @@ and drives the per-unit construction design pruning (see
 artifacts are filtered to the ones that apply to each unit's kind. An untagged
 unit carries no `kind` key and keeps the full design-artifact matrix. An invalid
 kind value makes the whole block `malformed` (see below), so a typo fails loud at
-the 2.7 gate rather than pruning wrong.
+the 2.6 gate rather than pruning wrong.
 
 `compile` parses *that structured block* — a pure-data parse, no model
 call — into `units` (verbatim edges) and `batches` (topological
@@ -151,10 +151,10 @@ or when the artifact exists but its edge block is absent, malformed
 then `compile` writes a stderr diagnostic naming the reason and leaves
 `bolt_dag` off the envelope rather than emit a wrong-but-valid DAG.
 Those failures are surfaced
-upstream at the 2.7 gate by the `required-sections` sensor, which
+upstream at the 2.6 gate by the `required-sections` sensor, which
 validates the same block and reports `edge_block: ok | absent |
-malformed | cyclic`. The engine reads the same block before the 2.7 review request and before the 2.7 gate opens, and while it cannot, it hands the agent the defect and the block's shape instead; a block that breaks after the approval stops Construction's `next` on the same repair step for the agent, never on an error for the person. Authoring the edges as structured data (knowledge
-work, once, behind the 2.7 approval gate) is what keeps the hook-fired
+malformed | cyclic`. The engine reads the same block before the 2.6 review request and before the 2.6 gate opens, and while it cannot, it hands the agent the defect and the block's shape instead; a block that breaks after the approval stops Construction's `next` on the same repair step for the agent, never on an error for the person. Authoring the edges as structured data (knowledge
+work, once, behind the 2.6 approval gate) is what keeps the hook-fired
 `compile` byte-identical on re-run: no model sits in the compile path. The orchestrate engine validates a cached `bolt_dag` against `unit-of-work-dependency.md` and self-heals per-unit iteration on the read side when the node is absent or disagrees with that authored artifact; the graph file itself is only repaired by the next compile.
 
 ---
@@ -363,7 +363,7 @@ unit checkpoint when one is set) and scans the audit tail for a
 --worktree`) byte-copies main's `runtime-graph.json` into the Bolt's
 worktree (or writes an empty graph there when main has none), and `fragment-merge` (called by `aidlc-bolt complete --merge`)
 removes it; neither emits an audit row. The compile populates
-`BoltInstance[]` when a Construction-phase stage's window holds
+`BoltInstance[]` when a per-Unit stage's window holds
 `STATE_FORKED` rows for at least two distinct Bolt slugs. The full
 lifecycle is in section 11.
 

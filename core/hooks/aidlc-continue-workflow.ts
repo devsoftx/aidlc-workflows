@@ -10,8 +10,8 @@
 // work carries on by itself.
 //
 // Why it exists. The forwarding loop is the conductor (LLM) calling the engine
-// for the next move, acting on it, and reporting. Under autonomous
-// Construction, or in a run nobody attends (AIDLC_UNATTENDED=1), no person is
+// for the next move, acting on it, and reporting. Under the autonomous
+// unit loop, or in a run nobody attends (AIDLC_UNATTENDED=1), no person is
 // there to carry the work on when the conductor forgets to consult the engine,
 // so when the conductor tries to end its turn this hook runs the engine
 // (`aidlc-orchestrate next`) and, if a directive is still PENDING, blocks the
@@ -43,7 +43,7 @@
 //      file under <record>/.aidlc-engine/stop-hook/. Under a no-progress ceiling
 //      exposed as CLAUDE_CODE_STOP_HOOK_BLOCK_CAP, once the count reaches the cap
 //      we LET GO (allow the stop). The default ceiling is run-mode aware: an
-//      autonomous Construction run keeps the long ceiling (8, the loop must run
+//      autonomous unit-loop run keeps the long ceiling (8, the loop must run
 //      to completion with no human to release it), while a gated run nobody
 //      attends uses a low ceiling (2, issue #365 itself recommends BLOCK_CAP=2
 //      as the workaround). When workflow state or the pending
@@ -75,7 +75,7 @@
 //      signal that a question is pending, so we ALLOW the stop then too
 //      (isPendingQuestionStop below). The active directive stage selects the
 //      questions file because a unit-major walk can run ahead of Current Stage.
-//      Autonomous Construction stays guarded except for unit-major
+//      The autonomous unit loop stays guarded except for unit-major
 //      code-generation's mandatory Plan Approval. Any miss falls through to the
 //      cap-bounded block, so a genuine mid-stage quit is still nudged.
 //   4. A LOGGED NON-GATE QUESTION has a current-stage (or, in a unit-major walk
@@ -86,18 +86,18 @@
 //      the positive signal for structured questions that do not live in the
 //      stage questions file (notably the learnings ritual), and for harnesses
 //      that render questions as prose.
-//      Like the pending-file carve-out, it is limited to [-]. Under autonomous
-//      Construction it allows any logged question while a person is there;
+//      Like the pending-file carve-out, it is limited to [-]. Under the autonomous
+//      unit loop it allows any logged question while a person is there;
 //      an unattended driver (AIDLC_UNATTENDED=1) has nobody to answer, so
 //      there it allows only a checkpoint question (the verification command,
-//      a plan approval, a summary confirmation, a Construction policy change).
+//      a plan approval, a summary confirmation, an autonomy policy change).
 //   5. An IN-FLIGHT COMPOSE gate is positively signalled by the engine's open
-//      compose question (its published step). Under autonomous Construction
+//      compose question (its published step). Under the autonomous unit loop
 //      it allows the stop while a person is there; an unattended driver
 //      (AIDLC_UNATTENDED=1) has nobody to answer the gate.
 //   6. An IN-FLIGHT BACKGROUND SUBAGENT is positively signalled by a fresh
 //      session-scoped ledger entry added after background dispatch acceptance
-//      and removed one-at-a-time on SubagentStop. Under autonomous Construction
+//      and removed one-at-a-time on SubagentStop. Under the autonomous unit loop
 //      it allows the stop while a person is there (the helper's completion
 //      carries the work on); an unattended driver (AIDLC_UNATTENDED=1) keeps
 //      the loop alive.
@@ -121,7 +121,7 @@
 //      in the responding turn (one a validated terminal result settles
 //      excepted), an unreadable transcript, a missing marker, no human prompt
 //      found, or any parse miss falls through to the cap-bounded block.
-//      Autonomous Construction is read the same way: a person who writes
+//      The autonomous unit loop is read the same way: a person who writes
 //      mid-run is present (the hook's own continuation is a host turn and never
 //      moves the human-turn marker), and every turn of an unattended run touches
 //      the engine, so nothing there is released by it. An unattended driver
@@ -144,12 +144,12 @@
 //      `ask` and resume status `waiting`. On the shared non-Copilot path we must
 //      read this latch BEFORE probing `next`, because the probe publishes its
 //      own sessionless directive and can overwrite the `ask` kind. We ALLOW the
-//      stop while the human chooses how to resume. Autonomous Construction is
+//      stop while the human chooses how to resume. The autonomous unit loop is
 //      guarded and falls through to the cap-bounded block.
 //   9. A GUARD RECOVERY question may wait for a remedy selection or follow-up
 //      feedback after a refused report. Its state-bound shared ask marker must
 //      survive the Stop hook's own `next` probe. Allow that wait before probing,
-//      including under autonomous Construction when the guard requires human
+//      including under the autonomous unit loop when the guard requires human
 //      input. Once the response is ready, continuation is enforced again.
 //  10. A STEP THAT ENDS THE TURN: the last step the engine handed out was an
 //      `ask` (where new work goes, which plan to start it with), a print the
@@ -158,7 +158,7 @@
 //      open gate), and the person has not written since (turnEndIsOpen). The probe's own `next`, or
 //      Copilot's retained step,
 //      would hand back the work in progress, so this is read before either.
-//  11. The CONSTRUCTION AUTONOMY QUESTION: the probed run-stage, or any rules
+//  11. The UNIT-LOOP AUTONOMY QUESTION: the probed run-stage, or any rules
 //      part leading to it (the probe restarts the rules at part 1), still
 //      offers the choice between continuing automatically and reviewing each
 //      checkpoint (construction_policy.offer_autonomy, offer_autonomy on a
@@ -170,12 +170,12 @@
 //      still under way, pending work. Copilot's retained step does not carry
 //      the offer.
 //  12. AN ATTENDED, GATED RUN: none of the above says the agent waits, and a
-//      person is there (no AIDLC_UNATTENDED=1, Construction not autonomous).
+//      person is there (no AIDLC_UNATTENDED=1, the unit loop not autonomous).
 //      The record cannot tell a question asked in prose from a mid-stage quit,
 //      and the line was wrong for the first (Kiro CLI v3 showed it as the agent
 //      speaking while it waited), so the turn ends: the question stays on
 //      screen, and the person's next message carries the work on. Only where
-//      the work carries on by itself, autonomous Construction or a run nobody
+//      the work carries on by itself, the autonomous unit loop or a run nobody
 //      attends, does the cap-bounded block still hand the work back. One stop
 //      is not let go here or by point 7: a Codex turn that handed a helper work
 //      and neither waited for it nor got its answer back (TurnReading). Codex
@@ -204,6 +204,7 @@ import {
   errorMessage,
   findIntentByUuid,
   findStageBySlug,
+  isUnitLoopStage,
   listIntents,
   parseRecordIntentKey,
   effectiveUnitGateRhythm,
@@ -267,7 +268,7 @@ const HOOK_NAME = "continue-workflow";
 // before the hook releases the session. Exposed as an env var so a fork can
 // tune it. An explicit CLAUDE_CODE_STOP_HOOK_BLOCK_CAP always wins. With no
 // override the default is RUN-MODE aware:
-//   - autonomous Construction -> 8. An unattended run has no human to release
+//   - autonomous unit loop -> 8. An unattended run has no human to release
 //     it, so the loop must run far before letting go; only a genuine hang should
 //     ever hit the cap there.
 //   - everything else -> 2: a gated run nobody attends (an attended one ends
@@ -775,10 +776,10 @@ function repliedToGate(projectDir: string, gate: { stage: string; unit?: string 
 // more):
 //   1. POSITIVE-CONFIRMATION — allow only when a `<slug>-questions.md` under the
 //      active directive stage's canonical dir, or the exact active-unit dir
-//      carried by a Construction directive, has at least one `[Answer]:` tag
+//      carried by a per-unit directive, has at least one `[Answer]:` tag
 //      that is empty or underscores-only. No file, all answered, or any read
 //      error → false (fall through to the cap).
-//   2. AUTONOMY GUARD — never fires under autonomous Construction except for
+//   2. AUTONOMY GUARD — never fires under the autonomous unit loop except for
 //      unit-major code-generation. That mode suppresses the autonomous swarm
 //      and routes code-generation through the interactive per-unit walk, whose
 //      Plan Approval is mandatory. Every other autonomous path must keep running
@@ -790,8 +791,8 @@ function repliedToGate(projectDir: string, gate: { stage: string; unit?: string 
 // An `[Answer]:` line is "unanswered" when, after the colon, only whitespace or
 // underscores remain (stage-protocol.md "Error handling for invalid/missing
 // answers": "blank or contains only underscores"). Standard stages use
-// `<record>/<phase>/<slug>/`; a per-unit Construction directive carries its
-// exact unit and uses `<record>/construction/<unit>/<slug>/`. We never
+// `<record>/<phase>/<slug>/`; a per-unit directive carries its
+// exact unit and uses `<record>/<phase>/<unit>/<slug>/`. We never
 // recursively accept a question from a different unit: an old unanswered file
 // must not disable enforcement for the unit currently named by the engine.
 // The golden-journey driver reads the same wait through it (tests/harness/golden-journey.ts).
@@ -804,10 +805,13 @@ export function hasPendingQuestion(
 ): boolean {
   if (slug.length === 0 || phase.length === 0) return false;
   const normalizedPhase = phase.toLowerCase();
+  const stage = findStageBySlug(slug);
+  // A known stage's folder is its own phase's; Lifecycle Phase follows Current
+  // Stage, which a Unit walk's step can be past.
   const stageDirPath =
-    normalizedPhase === "construction" && unit
-      ? join(docsRoot(projectDir), normalizedPhase, unit, slug)
-      : stageDir(projectDir, normalizedPhase, slug);
+    unit && stage && isUnitLoopStage(stage)
+      ? join(docsRoot(projectDir), stage.phase, unit, slug)
+      : stageDir(projectDir, stage?.phase ?? normalizedPhase, slug);
   if (!existsSync(stageDirPath)) return false;
   let files: string[];
   try {
@@ -835,7 +839,7 @@ export function hasPendingQuestion(
 }
 
 // The tier-2 carve-out decision: the state cursor is [-] in-progress and the
-// active directive stage has a pending question. Autonomous Construction is
+// active directive stage has a pending question. The autonomous unit loop is
 // excluded except when unit-major routes code-generation through its mandatory
 // interactive Plan Approval.
 function isPendingQuestionStop(
@@ -851,7 +855,7 @@ function isPendingQuestionStop(
     const unitMajorCodeGeneration =
       slug === "code-generation" &&
       unit !== undefined &&
-      phase.trim().toLowerCase() === "construction" &&
+      isUnitLoopStage(findStageBySlug(slug)) &&
       getField(stateContent, "Construction Iteration")?.trim() === "unit-major";
     if (
       getField(stateContent, "Construction Autonomy Mode")?.trim() === "autonomous" &&
@@ -891,7 +895,7 @@ function isPendingQuestionStop(
 // section 13 learnings question after a correction. Keep the same strict
 // stage-state gate as the question-file carve-out. Which logged question waits
 // on the person is decisionWaitsOnPerson's (aidlc-lib.ts), the reader `next`
-// uses too: under autonomous Construction a person who is there still answers
+// uses too: under the autonomous unit loop a person who is there still answers
 // the questions the agent asks them (the protocol keeps failures theirs, and
 // this hook's own carry-on step tells the agent to log a question and end its
 // turn); an unattended driver (AIDLC_UNATTENDED=1) has nobody to answer a
@@ -947,7 +951,7 @@ function isPendingDecisionStop(
 // and abandoning the gate. POSITIVE-CONFIRMATION: the engine published its
 // compose step as the open question (composeGateOpen, the one reader), which a
 // `next` naming another step or the approval's recompose closes. Under
-// autonomous Construction a person who is there answers the gate too (they
+// the autonomous unit loop a person who is there answers the gate too (they
 // asked for the reshape); only an unattended driver (AIDLC_UNATTENDED=1) has
 // nobody to answer it, so there an open question must not strand the run.
 // Fail-closed: any read error falls through to the cap-bounded block.
@@ -972,8 +976,8 @@ function isPendingComposeStop(projectDir: string, stateContent: string): boolean
 // background result arrives. POSITIVE-CONFIRMATION: the dispatch hook adds one
 // session-scoped ledger entry only for an accepted `run_in_background: true`
 // call, or for a launch its PostToolUse response confirms as "async_launched",
-// and SubagentStop removes one entry for that same session. Under autonomous
-// Construction a person who is there sees the helper's completion resume the
+// and SubagentStop removes one entry for that same session. Under the autonomous
+// unit loop a person who is there sees the helper's completion resume the
 // agent, as in a gated run; only an unattended driver (AIDLC_UNATTENDED=1)
 // keeps the loop alive past the wait.
 //
@@ -1037,7 +1041,7 @@ function isPendingSubagentStop(
 //      unreadable evidence, no human prompt found, or any engine call in the
 //      responding turn (one a validated terminal result settles excepted)
 //      reads as not conversational (fall through to the cap-bounded block).
-//   2. AUTONOMY GUARD: never fires under autonomous Construction with an
+//   2. AUTONOMY GUARD: never fires under the autonomous unit loop with an
 //      unattended driver (AIDLC_UNATTENDED=1). There the loop must keep running
 //      unattended; there is no human chatting to release.
 // Fail-closed throughout: any error reads as not conversational and the
@@ -1341,7 +1345,7 @@ function transcriptIsConversational(transcriptPath: string, format: "claude" | "
   return { conversational: true, helperLeftRunning };
 }
 
-// The tier-3 carve-out decision: not an unattended autonomous Construction run,
+// The tier-3 carve-out decision: not an unattended autonomous unit-loop run,
 // and the ending turn is positively confirmed conversational by whichever
 // evidence the harness offers.
 //
@@ -1372,7 +1376,7 @@ function transcriptIsConversational(transcriptPath: string, format: "claude" | "
 // transcript, a missing/unreadable marker, no human prompt found, or any engine
 // engagement in the responding turn (a call a validated terminal result settles
 // excepted) all return false and fall through to the cap-bounded block. An
-// autonomous Construction run is read the same way: a person who writes mid-run
+// autonomous unit-loop run is read the same way: a person who writes mid-run
 // is present (the hook's own continuation is a host turn, which never moves the
 // human-turn marker), and every turn of an unattended run touches the engine, so
 // the predicate never releases one. An unattended driver (AIDLC_UNATTENDED=1)
@@ -1388,7 +1392,7 @@ function isConversationalStop(
 ): TurnReading {
   try {
     // An unattended driver (AIDLC_UNATTENDED=1) has nobody present, and a prompt
-    // it submits reads as a person's: under autonomous Construction the loop
+    // it submits reads as a person's: under the autonomous unit loop the run
     // stays alive there.
     if (!humanTurnMintAllowed() && getField(stateContent, "Construction Autonomy Mode")?.trim() === "autonomous") {
       return NOTHING_READ;
@@ -1628,7 +1632,7 @@ function retainedUnitWorkRecorded(
 // instruction to do something new or out-of-band (the security property).
 function continuationReason(kind: string, stage: string, committedTo?: string, unit?: string): string {
   // A recorded result that moved the work on names the step it moved to
-  // (none under unit-major Construction, where Current Stage does not name it).
+  // (none under the unit-major walk, where Current Stage does not name it).
   if (kind === "rehydrate" && committedTo !== undefined) return carryingOnLine(committedTo);
   // A finished Unit's step, or evidence that is missing or stale: a fresh
   // `next` decides where the work goes, so the line names no stage.
@@ -1941,7 +1945,7 @@ if (kind === "notice") {
 // rubber-stamping the remaining stages to force a `done`. Terminal allow only
 // (never a new block), so it can never trap a session.
 //
-// AUTONOMY GUARD: an unattended autonomous Construction run (`Construction
+// AUTONOMY GUARD: an unattended autonomous unit-loop run (`Construction
 // Autonomy Mode: autonomous`) MUST keep moving and never self-park. There is no
 // human to resume it later, so a park would strand the swarm/Bolt run waiting
 // on someone who was told they weren't needed. When autonomous, decline the
@@ -1960,7 +1964,7 @@ if (kind === "parked") {
     recordHookTrace(
       projectDir,
       HOOK_NAME,
-      "parked directive seen under autonomous Construction; declining the parked allow (an unattended run must not self-park), falling through to the cap-bounded block",
+      "parked directive seen under the autonomous unit loop; declining the parked allow (an unattended run must not self-park), falling through to the cap-bounded block",
     );
   } else {
     resetGuard(projectDir);
@@ -2131,14 +2135,14 @@ if (reachedTheStep && directive.offerAutonomy === true) {
   recordHookTrace(
     projectDir,
     HOOK_NAME,
-    "the step offers the Construction autonomy choice and none is on record; allowing the stop (autonomy-question carve-out)",
+    "the step offers the unit-loop autonomy choice and none is on record; allowing the stop (autonomy-question carve-out)",
   );
   return allowStop();
 }
 
 // Pending-compose carve-out (tier 2b): an in-flight compose proposal is
 // awaiting the human's approve/edit/reject (the engine's open compose question)
-// and no unattended driver runs autonomous Construction - the conductor is
+// and no unattended driver runs the autonomous unit loop - the conductor is
 // parked on the human exactly like a stage gate, so allow the turn to end
 // instead of nudging it back into stage execution mid-compose.
 // Positive-confirmation only, autonomy-guarded, fail-closed (see
@@ -2177,7 +2181,7 @@ if (isPendingSubagentStop(projectDir, stateContent, rawSessionId)) {
 // isConversationalStop): no evidence, no human prompt, an engine call in the
 // responding turn that no validated terminal result settles, or any read error
 // falls through to the cap-bounded block below, so a conductor that engaged the
-// workflow and then quit mid-loop is still nudged, under autonomous Construction
+// workflow and then quit mid-loop is still nudged, under the autonomous unit loop
 // too (every turn of an unattended run touches the engine; a person who writes
 // mid-run is present and is let go). A Codex turn that left a helper running
 // (TurnReading) is let go by neither this nor the attended-run carve-out: the
@@ -2249,12 +2253,12 @@ if (!shouldBlock) {
 return blockStop(continuationReason(
   kind,
   activeStage ?? currentStageSlug(stateContent),
-  // Under unit-major Construction, Current Stage stays on the block's first
-  // stage while the walk moves through (stage, Unit) beats, so it does not
-  // name the next step there: leave the stage out.
+  // Under the unit-major walk, Current Stage stays on the block's first
+  // unit-loop stage while the walk moves through (stage, Unit) beats, so it
+  // does not name the next step there: leave the stage out.
   directive.committed
     ? getField(stateContent, "Construction Iteration")?.trim() === "unit-major" &&
-        getField(stateContent, "Lifecycle Phase")?.trim().toUpperCase() === "CONSTRUCTION"
+        isUnitLoopStage(findStageBySlug(currentStageSlug(stateContent)))
       ? ""
       : currentStageSlug(stateContent)
     : undefined,

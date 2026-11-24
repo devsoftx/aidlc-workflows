@@ -1,14 +1,15 @@
-// covers: file:skills/aidlc/SKILL.md, file:tools/aidlc-audit.ts, file:knowledge/aidlc-shared/audit-format.md, file:knowledge/aidlc-shared/state-template.md, file:aidlc-common/protocols/stage-protocol.md, file:aidlc-common/protocols/stage-protocol-construction.md, file:aidlc-common/stages/construction/code-generation.md
+// covers: file:skills/aidlc/SKILL.md, file:tools/aidlc-audit.ts, file:knowledge/aidlc-shared/audit-format.md, file:knowledge/aidlc-shared/state-template.md, file:aidlc-common/protocols/stage-protocol.md, file:aidlc-common/protocols/stage-protocol-construction.md, file:aidlc-common/stages/build/code-generation.md
 //
 // A Construction Bolt-by-Bolt vocabulary check: it reads the SHIPPED
 // implementation files for the durable anchors of the Bolt vocabulary - the
 // retired "Construction Phase N" sub-step labels (must be GONE from SKILL.md),
 // the four Bolt audit events registered in aidlc-audit.ts, the BOLT_STARTED row
 // in audit-format.md, the Construction Autonomy Mode state field in
-// state-template.md, the stage-protocol Terminology **Bolt** row (sprint-like
-// iteration planned in 2.9 over one or more Units; distinct from runtime
-// grouping; 3.6/3.7 once after all Bolts; walk-order and walking-skeleton facts
-// alongside), the orchestrator-managed completion gating note in
+// state-template.md, the stage-protocol Terminology **Bolt** row (a unit-loop
+// planning iteration over one or more dependency-linked Units, distinct from a
+// Unit, its worktree and a swarm batch; Build and Test and CI Pipeline run once
+// after them; walk-order and walking-skeleton facts alongside), the
+// orchestrator-managed completion gating note in
 // code-generation.md, and the absence of a Bolt-major ceremony in
 // stage-protocol-construction.md.
 //
@@ -35,18 +36,19 @@
 //   dist/claude/.claude/knowledge/aidlc-shared/state-template.md             (STATE_TEMPLATE)
 //     **Construction Autonomy Mode**: [unset/autonomous/gated]
 //   dist/claude/.claude/aidlc-common/protocols/stage-protocol.md             (STAGE_PROTOCOL)
-//     Terminology **Bolt** row: sprint-like iteration planned in 2.9 over one
-//     or more Units; default stage-major runtime does not consume bolt-plan.md;
-//     3.6 & 3.7 once after all Bolts
+//     Terminology **Bolt** row: unit-loop planning iteration over one or more
+//     dependency-linked Units; runtime order comes from the Unit DAG;
+//     bolt-plan.md does not replace it; Build and Test and CI Pipeline run once
 //   dist/claude/.claude/aidlc-common/protocols/stage-protocol-construction.md
 //     (CONSTRUCTION_PROTOCOL; must carry no planned Bolt-major ceremony)
-//   dist/claude/.claude/aidlc-common/stages/construction/code-generation.md  (CODE_GEN)
+//   dist/claude/.claude/aidlc-common/stages/build/code-generation.md  (CODE_GEN)
 //     "orchestrator-managed completion gating" note
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const SKILL_MD = readFileSync(
   join(AIDLC_SRC, "skills", "aidlc", "SKILL.md"),
@@ -82,7 +84,7 @@ const CODE_GEN = readFileSync(
     AIDLC_SRC,
     "aidlc-common",
     "stages",
-    "construction",
+    phaseFor("code-generation"),
     "code-generation.md",
   ),
   "utf-8",
@@ -152,12 +154,12 @@ describe("t47 Construction Bolt vocabulary (migrated from t47-construction-bolts
   });
 
   // =========================================================================
-  // Test 11 — stage-protocol.md Terminology **Bolt** row: sprint-like
-  // Construction iteration whose intended grouping is planned in 2.9, while
-  // the stage-major runtime does not consume bolt-plan.md as a boundary;
-  // 3.6/3.7 run once after all Bolts. Pin the row so a split across unrelated
-  // lines cannot satisfy the guard. Walk-order / walking-skeleton runtime
-  // facts live on neighboring Terminology rows.
+  // Test 11 — stage-protocol.md Terminology **Bolt** row: a unit-loop planning
+  // iteration whose grouping Delivery Planning records, while the runtime order
+  // comes from the Unit DAG and bolt-plan.md does not replace it; Build and
+  // Test and CI Pipeline run once across the completed Unit work. Pin the row
+  // so a split across unrelated lines cannot satisfy the guard. Walk-order /
+  // walking-skeleton runtime facts live on neighboring Terminology rows.
   // =========================================================================
   test("stage-protocol.md distinguishes the planned Bolt iteration from stage-major runtime grouping", () => {
     const lines = STAGE_PROTOCOL.split("\n");
@@ -167,7 +169,7 @@ describe("t47 Construction Bolt vocabulary (migrated from t47-construction-bolts
       l.startsWith("| **Walking skeleton** |"),
     );
     expect(boltRow).toBeDefined();
-    expect(boltRow).toMatch(/Construction planning iteration/i);
+    expect(boltRow).toMatch(/unit-loop planning iteration/i);
     expect(boltRow).toMatch(/Delivery Planning/);
     expect(boltRow).toMatch(/one or more dependency-linked Units/i);
     expect(boltRow).toMatch(/distinct from a Unit.*worktree.*swarm/i);

@@ -143,7 +143,7 @@
       "slug": "intent-capture",
       "number": "1.1",
       "name": "Intent Capture & Framing",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "ALWAYS",
       "condition": "First stage of every workflow — establishes the initiative's foundation",
       "lead_agent": "aidlc-product-agent",
@@ -190,7 +190,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -225,7 +225,7 @@
       "slug": "market-research",
       "number": "1.2",
       "name": "Market Research",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "CONDITIONAL",
       "condition": "Execute when initiative has external market positioning or build-vs-buy considerations. Skip for internal tools, bug fixes, or refactors.",
       "lead_agent": "aidlc-product-agent",
@@ -271,7 +271,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -298,7 +298,7 @@
       "slug": "feasibility",
       "number": "1.3",
       "name": "Feasibility & Constraints",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "CONDITIONAL",
       "condition": "Execute when there are integration constraints, regulatory requirements, or significant technical uncertainty. Skip for trivial changes with no technical risk.",
       "lead_agent": "aidlc-architect-agent",
@@ -361,7 +361,89 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
+          "scope": "phase"
+        }
+      ],
+      "sensors_applicable": [
+        {
+          "id": "required-sections",
+          "path": ".claude/sensors/aidlc-required-sections.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        },
+        {
+          "id": "upstream-coverage",
+          "path": ".claude/sensors/aidlc-upstream-coverage.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        }
+      ]
+    },
+    {
+      "slug": "reverse-engineering",
+      "number": "1.4",
+      "name": "Reverse Engineering",
+      "phase": "discover",
+      "execution": "CONDITIONAL",
+      "condition": "Execute when project is brownfield. On rerun the Step 1 guard checks store freshness (codekb-scope-diff) - verified-CURRENT stores may be reused by human choice, anything else rescans. Skip for greenfield projects.",
+      "lead_agent": "aidlc-developer-agent",
+      "support_agents": [
+        "aidlc-architect-agent"
+      ],
+      "mode": "pipeline",
+      "produces": [
+        "business-overview",
+        "architecture",
+        "code-structure",
+        "api-documentation",
+        "component-inventory",
+        "technology-stack",
+        "dependencies",
+        "code-quality-assessment",
+        "reverse-engineering-timestamp"
+      ],
+      "consumes": [],
+      "requires_stage": [
+        "state-init"
+      ],
+      "sensors": [
+        "required-sections",
+        "upstream-coverage"
+      ],
+      "scopes": [
+        "enterprise",
+        "feature",
+        "mvp",
+        "poc",
+        "bugfix",
+        "refactor",
+        "security-patch",
+        "classic",
+        "workshop",
+        "express"
+      ],
+      "inputs": "<record>/aidlc-state.md",
+      "outputs": "aidlc/spaces/<active-space>/codekb/<repo>/ (9 artifacts: business-overview.md, architecture.md, code-structure.md, api-documentation.md, component-inventory.md, technology-stack.md, dependencies.md, code-quality-assessment.md, reverse-engineering-timestamp.md)",
+      "rules_in_context": [
+        {
+          "path": "aidlc/spaces/default/memory/org.md",
+          "scope": "org"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/team.md",
+          "scope": "team"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/project.md",
+          "scope": "project"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -386,9 +468,9 @@
     },
     {
       "slug": "scope-definition",
-      "number": "1.4",
+      "number": "1.5",
       "name": "Scope Definition",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "ALWAYS",
       "condition": "Always executes — defines the scope boundary and prioritized backlog",
       "lead_agent": "aidlc-product-agent",
@@ -445,7 +527,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -470,9 +552,9 @@
     },
     {
       "slug": "team-formation",
-      "number": "1.5",
+      "number": "1.6",
       "name": "Team Formation",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "CONDITIONAL",
       "condition": "Execute when team composition, capacity, or mob planning is relevant. Skip for solo developer or small team projects.",
       "lead_agent": "aidlc-delivery-agent",
@@ -526,7 +608,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -551,9 +633,9 @@
     },
     {
       "slug": "rough-mockups",
-      "number": "1.6",
+      "number": "1.7",
       "name": "Rough Mockups",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "CONDITIONAL",
       "condition": "Execute when user-facing UI is part of the initiative; for API/backend, produce system interaction diagrams. Skip for non-UI, API-only, or infrastructure-only initiatives.",
       "lead_agent": "aidlc-design-agent",
@@ -614,7 +696,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -639,11 +721,11 @@
     },
     {
       "slug": "approval-handoff",
-      "number": "1.7",
+      "number": "1.8",
       "name": "Approval & Handoff",
-      "phase": "ideation",
+      "phase": "discover",
       "execution": "ALWAYS",
-      "condition": "Always executes — compiles all Ideation artifacts into initiative brief for approval",
+      "condition": "Always executes — compiles all Discover artifacts into initiative brief for approval",
       "lead_agent": "aidlc-delivery-agent",
       "support_agents": [
         "aidlc-product-agent"
@@ -708,7 +790,7 @@
         "feature"
       ],
       "summary_confirmation": "required",
-      "inputs": "All Ideation phase artifacts (intent, market research, feasibility, scope, team, mockups)",
+      "inputs": "All Discover phase artifacts (intent, market research, feasibility, scope, team, mockups)",
       "outputs": "initiative-brief.md, decision-log.md, approval-handoff-questions.md (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -724,89 +806,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/ideation.md",
-          "scope": "phase"
-        }
-      ],
-      "sensors_applicable": [
-        {
-          "id": "required-sections",
-          "path": ".claude/sensors/aidlc-required-sections.md",
-          "fire_on": "gate",
-          "default_severity": "advisory",
-          "category": "document-shape",
-          "matches": "**/{aidlc-docs,intents,codekb}/**"
-        },
-        {
-          "id": "upstream-coverage",
-          "path": ".claude/sensors/aidlc-upstream-coverage.md",
-          "fire_on": "gate",
-          "default_severity": "advisory",
-          "category": "document-shape",
-          "matches": "**/{aidlc-docs,intents,codekb}/**"
-        }
-      ]
-    },
-    {
-      "slug": "reverse-engineering",
-      "number": "2.1",
-      "name": "Reverse Engineering",
-      "phase": "inception",
-      "execution": "CONDITIONAL",
-      "condition": "Execute when project is brownfield. On rerun the Step 1 guard checks store freshness (codekb-scope-diff) - verified-CURRENT stores may be reused by human choice, anything else rescans. Skip for greenfield projects.",
-      "lead_agent": "aidlc-developer-agent",
-      "support_agents": [
-        "aidlc-architect-agent"
-      ],
-      "mode": "pipeline",
-      "produces": [
-        "business-overview",
-        "architecture",
-        "code-structure",
-        "api-documentation",
-        "component-inventory",
-        "technology-stack",
-        "dependencies",
-        "code-quality-assessment",
-        "reverse-engineering-timestamp"
-      ],
-      "consumes": [],
-      "requires_stage": [
-        "state-init"
-      ],
-      "sensors": [
-        "required-sections",
-        "upstream-coverage"
-      ],
-      "scopes": [
-        "enterprise",
-        "feature",
-        "mvp",
-        "poc",
-        "bugfix",
-        "refactor",
-        "security-patch",
-        "classic",
-        "workshop",
-        "express"
-      ],
-      "inputs": "<record>/aidlc-state.md",
-      "outputs": "aidlc/spaces/<active-space>/codekb/<repo>/ (9 artifacts: business-overview.md, architecture.md, code-structure.md, api-documentation.md, component-inventory.md, technology-stack.md, dependencies.md, code-quality-assessment.md, reverse-engineering-timestamp.md)",
-      "rules_in_context": [
-        {
-          "path": "aidlc/spaces/default/memory/org.md",
-          "scope": "org"
-        },
-        {
-          "path": "aidlc/spaces/default/memory/team.md",
-          "scope": "team"
-        },
-        {
-          "path": "aidlc/spaces/default/memory/project.md",
-          "scope": "project"
-        },
-        {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/discover.md",
           "scope": "phase"
         }
       ],
@@ -831,9 +831,9 @@
     },
     {
       "slug": "practices-discovery",
-      "number": "2.2",
+      "number": "2.1",
       "name": "Practices Discovery",
-      "phase": "inception",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Always rerun for freshness. Brownfield discovers from evidence + reverse-engineering artifacts. Greenfield prompts user via structured questions using org.md defaults.",
       "lead_agent": "aidlc-pipeline-deploy-agent",
@@ -914,7 +914,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -939,9 +939,9 @@
     },
     {
       "slug": "requirements-analysis",
-      "number": "2.3",
+      "number": "2.2",
       "name": "Requirements Analysis",
-      "phase": "inception",
+      "phase": "design",
       "execution": "ALWAYS",
       "condition": "Always executes — depth scales with project complexity",
       "lead_agent": "aidlc-product-agent",
@@ -1029,7 +1029,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1054,9 +1054,9 @@
     },
     {
       "slug": "user-stories",
-      "number": "2.4",
+      "number": "2.3",
       "name": "User Stories",
-      "phase": "inception",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Execute when user-facing features, multiple personas, complex business logic, or cross-team work is involved. Skip for pure refactoring, isolated bug fixes, infrastructure-only changes, or developer tooling.",
       "lead_agent": "aidlc-product-agent",
@@ -1112,7 +1112,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/requirements-analysis/requirements.md, RE artifacts (if brownfield)",
+      "inputs": "<record>/design/requirements-analysis/requirements.md, RE artifacts (if brownfield)",
       "outputs": "stories.md, personas.md, user-stories-assessment.md, traceability.json (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -1128,7 +1128,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1161,9 +1161,9 @@
     },
     {
       "slug": "refined-mockups",
-      "number": "2.5",
+      "number": "2.4",
       "name": "Refined Mockups",
-      "phase": "inception",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Execute when user-facing UI exists; for APIs, refine interaction diagrams",
       "lead_agent": "aidlc-design-agent",
@@ -1235,7 +1235,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1260,9 +1260,9 @@
     },
     {
       "slug": "domain-design",
-      "number": "2.6",
+      "number": "2.5",
       "name": "Domain Design",
-      "phase": "inception",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Execute when new components or logical building blocks are needed. Skip when changes are modifications to existing components only.",
       "lead_agent": "aidlc-architect-agent",
@@ -1321,7 +1321,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced), RE artifacts (if brownfield)",
+      "inputs": "<record>/design/requirements-analysis/requirements.md, <record>/design/user-stories/stories.md (if produced), RE artifacts (if brownfield)",
       "outputs": "components.md (fenced ```yaml component catalogue plus a human-readable mermaid diagram and summary table), decisions.md (Architecture Decision Records), and traceability.json — all under this stage's record dir, engine-resolved",
       "rules_in_context": [
         {
@@ -1337,7 +1337,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1370,11 +1370,11 @@
     },
     {
       "slug": "units-generation",
-      "number": "2.7",
+      "number": "2.6",
       "name": "Units Generation",
-      "phase": "inception",
+      "phase": "design",
       "execution": "ALWAYS",
-      "condition": "Always executes when in scope. Produces the dependency DAG that Stage 2.9 Delivery Planning consumes for Bolt sequencing. In the compiled scope grid, 2.7 (Units Generation) and 2.9 (Delivery Planning) travel together — both EXECUTE or both SKIP per scope.",
+      "condition": "Always executes when in scope. Produces the dependency DAG that Stage 2.8 Delivery Planning consumes for Bolt sequencing. In the compiled scope grid, 2.6 (Units Generation) and 2.8 (Delivery Planning) travel together — both EXECUTE or both SKIP per scope.",
       "lead_agent": "aidlc-architect-agent",
       "support_agents": [
         "aidlc-delivery-agent"
@@ -1424,7 +1424,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/domain-design/components.md, <record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced)",
+      "inputs": "<record>/design/domain-design/components.md, <record>/design/requirements-analysis/requirements.md, <record>/design/user-stories/stories.md (if produced)",
       "outputs": "unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md, traceability.json (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -1440,7 +1440,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1473,9 +1473,9 @@
     },
     {
       "slug": "contract-design",
-      "number": "2.8",
+      "number": "2.7",
       "name": "Contract Design",
-      "phase": "inception",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Execute when the system has any formal contract to pin down — an inter-unit boundary (more than one unit that must integrate) OR a unit that exposes a public/external API consumed outside the system. Skip only for a single self-contained unit with no inter-unit boundaries and no externally consumed API.",
       "lead_agent": "aidlc-architect-agent",
@@ -1523,7 +1523,7 @@
       "reviewer_max_iterations": 2,
       "review_class": "advisory",
       "summary_confirmation": "required",
-      "inputs": "<record>/inception/units-generation/unit-of-work.md, <record>/inception/units-generation/unit-of-work-dependency.md, <record>/inception/domain-design/components.md (if produced), <record>/inception/requirements-analysis/requirements.md",
+      "inputs": "<record>/design/units-generation/unit-of-work.md, <record>/design/units-generation/unit-of-work-dependency.md, <record>/design/domain-design/components.md (if produced), <record>/design/requirements-analysis/requirements.md",
       "outputs": "contract-summary.md (under this stage's record dir, engine-resolved) — a human-readable overview of every contract (inter-unit boundaries and public/external APIs), each with a fenced spec block (OpenAPI / AsyncAPI / shared schema) inline",
       "rules_in_context": [
         {
@@ -1539,7 +1539,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1564,11 +1564,11 @@
     },
     {
       "slug": "delivery-planning",
-      "number": "2.9",
+      "number": "2.8",
       "name": "Delivery Planning",
-      "phase": "inception",
+      "phase": "design",
       "execution": "ALWAYS",
-      "condition": "Always executes — capstone Inception stage, produces the detailed execution plan for Construction and Operation",
+      "condition": "Always executes — capstone Design stage, produces the detailed execution plan for Build through Operate",
       "lead_agent": "aidlc-delivery-agent",
       "support_agents": [
         "aidlc-architect-agent"
@@ -1634,7 +1634,7 @@
         "workshop"
       ],
       "summary_confirmation": "required",
-      "inputs": "All Inception artifacts (requirements, stories, mockups, architecture, units)",
+      "inputs": "All Design artifacts (requirements, stories, mockups, architecture, units)",
       "outputs": "bolt-plan.md, team-allocation.md, risk-and-sequencing-rationale.md, external-dependency-map.md, delivery-planning-questions.md (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -1650,7 +1650,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/inception.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1675,9 +1675,9 @@
     },
     {
       "slug": "functional-design",
-      "number": "3.1",
+      "number": "2.9",
       "name": "Functional Design",
-      "phase": "construction",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "New data models, complex business logic, or business rules need design. Skip if simple logic changes with no new business logic.",
       "lead_agent": "aidlc-architect-agent",
@@ -1788,7 +1788,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1837,9 +1837,9 @@
     },
     {
       "slug": "nfr-requirements",
-      "number": "3.2",
+      "number": "2.10",
       "name": "NFR Requirements",
-      "phase": "construction",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Performance, security, scalability, reliability, or observability requirements needed, or tech stack selection needed. Skip if no NFR requirements and tech stack already determined.",
       "lead_agent": "aidlc-architect-agent",
@@ -1938,7 +1938,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -1987,9 +1987,9 @@
     },
     {
       "slug": "nfr-design",
-      "number": "3.3",
+      "number": "2.11",
       "name": "NFR Design",
-      "phase": "construction",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "NFR Requirements was executed and NFR patterns need design. Skip if NFR Requirements was skipped.",
       "lead_agent": "aidlc-architect-agent",
@@ -2101,7 +2101,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -2150,9 +2150,9 @@
     },
     {
       "slug": "infrastructure-design",
-      "number": "3.4",
+      "number": "2.12",
       "name": "Infrastructure Design",
-      "phase": "construction",
+      "phase": "design",
       "execution": "CONDITIONAL",
       "condition": "Infrastructure services need mapping, deployment architecture required, or cloud resources needed. Skip if no infrastructure changes and infrastructure already defined.",
       "lead_agent": "aidlc-aws-platform-agent",
@@ -2270,7 +2270,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/design.md",
           "scope": "phase"
         }
       ],
@@ -2319,9 +2319,9 @@
     },
     {
       "slug": "code-generation",
-      "number": "3.5",
+      "number": "3.1",
       "name": "Code Generation",
-      "phase": "construction",
+      "phase": "build",
       "execution": "ALWAYS",
       "condition": "Always executes for every unit in the execution plan.",
       "lead_agent": "aidlc-developer-agent",
@@ -2417,7 +2417,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/build.md",
           "scope": "phase"
         }
       ],
@@ -2442,9 +2442,9 @@
     },
     {
       "slug": "build-and-test",
-      "number": "3.6",
+      "number": "4.1",
       "name": "Build and Test",
-      "phase": "construction",
+      "phase": "test",
       "execution": "ALWAYS",
       "condition": "Always executes once after all per-unit stages are finished.",
       "lead_agent": "aidlc-quality-agent",
@@ -2514,7 +2514,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/test.md",
           "scope": "phase"
         }
       ],
@@ -2546,10 +2546,319 @@
       ]
     },
     {
+      "slug": "performance-validation",
+      "number": "4.2",
+      "name": "Performance Validation",
+      "phase": "test",
+      "execution": "CONDITIONAL",
+      "condition": "Execute when NFR performance targets need validation under load",
+      "lead_agent": "aidlc-quality-agent",
+      "support_agents": [],
+      "mode": "inline",
+      "produces": [
+        "load-test-plan",
+        "load-test-results",
+        "nfr-validation-matrix",
+        "performance-validation-questions"
+      ],
+      "consumes": [
+        {
+          "artifact": "performance-requirements",
+          "required": true
+        },
+        {
+          "artifact": "scalability-requirements",
+          "required": true
+        },
+        {
+          "artifact": "performance-design",
+          "required": true
+        },
+        {
+          "artifact": "scalability-design",
+          "required": true
+        }
+      ],
+      "requires_stage": [
+        "nfr-requirements",
+        "nfr-design"
+      ],
+      "sensors": [
+        "required-sections",
+        "upstream-coverage"
+      ],
+      "scopes": [
+        "enterprise",
+        "feature",
+        "workshop"
+      ],
+      "summary_confirmation": "required",
+      "inputs": "NFR requirements from nfr-requirements stage, NFR design from nfr-design stage, deployed application",
+      "outputs": "load-test-plan.md, test-results.md, nfr-validation-matrix.md, performance-validation-questions.md (under this stage's record dir, engine-resolved)",
+      "rules_in_context": [
+        {
+          "path": "aidlc/spaces/default/memory/org.md",
+          "scope": "org"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/team.md",
+          "scope": "team"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/project.md",
+          "scope": "project"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/phases/test.md",
+          "scope": "phase"
+        }
+      ],
+      "sensors_applicable": [
+        {
+          "id": "required-sections",
+          "path": ".claude/sensors/aidlc-required-sections.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        },
+        {
+          "id": "upstream-coverage",
+          "path": ".claude/sensors/aidlc-upstream-coverage.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        }
+      ]
+    },
+    {
+      "slug": "code-review",
+      "number": "5.1",
+      "name": "Code Review",
+      "phase": "secure",
+      "execution": "ALWAYS",
+      "condition": "Always executes once after build-and-test; the review covers every unit's code.",
+      "lead_agent": "aidlc-quality-agent",
+      "support_agents": [],
+      "mode": "inline",
+      "produces": [
+        "code-review-report",
+        "code-review-findings"
+      ],
+      "consumes": [
+        {
+          "artifact": "code-summary",
+          "required": true
+        },
+        {
+          "artifact": "build-and-test-summary",
+          "required": true
+        }
+      ],
+      "requires_stage": [
+        "build-and-test"
+      ],
+      "sensors": [
+        "required-sections"
+      ],
+      "scopes": [
+        "enterprise",
+        "feature",
+        "mvp",
+        "poc",
+        "bugfix",
+        "refactor",
+        "security-patch",
+        "infra",
+        "classic",
+        "workshop",
+        "express"
+      ],
+      "inputs": "code summaries and build-and-test results for every unit",
+      "outputs": "code-review-report.md and code-review-findings.md (under this stage's record dir, engine-resolved)",
+      "rules_in_context": [
+        {
+          "path": "aidlc/spaces/default/memory/org.md",
+          "scope": "org"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/team.md",
+          "scope": "team"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/project.md",
+          "scope": "project"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/phases/secure.md",
+          "scope": "phase"
+        }
+      ],
+      "sensors_applicable": [
+        {
+          "id": "required-sections",
+          "path": ".claude/sensors/aidlc-required-sections.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        }
+      ]
+    },
+    {
+      "slug": "security-review",
+      "number": "5.2",
+      "name": "Security Review",
+      "phase": "secure",
+      "execution": "ALWAYS",
+      "condition": "Always executes after code-review; the review covers authentication, authorization, data handling, secrets, dependencies and infrastructure.",
+      "lead_agent": "aidlc-devsecops-agent",
+      "support_agents": [],
+      "mode": "inline",
+      "produces": [
+        "security-review-report",
+        "security-findings"
+      ],
+      "consumes": [
+        {
+          "artifact": "code-review-findings",
+          "required": true
+        },
+        {
+          "artifact": "security-design",
+          "required": false
+        },
+        {
+          "artifact": "infrastructure-specification",
+          "required": false
+        }
+      ],
+      "requires_stage": [
+        "code-review"
+      ],
+      "sensors": [
+        "required-sections"
+      ],
+      "scopes": [
+        "enterprise",
+        "feature",
+        "mvp",
+        "poc",
+        "bugfix",
+        "refactor",
+        "security-patch",
+        "infra",
+        "classic",
+        "workshop",
+        "express"
+      ],
+      "inputs": "code review findings, security design, infrastructure specification",
+      "outputs": "security-review-report.md and security-findings.md (under this stage's record dir, engine-resolved)",
+      "rules_in_context": [
+        {
+          "path": "aidlc/spaces/default/memory/org.md",
+          "scope": "org"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/team.md",
+          "scope": "team"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/project.md",
+          "scope": "project"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/phases/secure.md",
+          "scope": "phase"
+        }
+      ],
+      "sensors_applicable": [
+        {
+          "id": "required-sections",
+          "path": ".claude/sensors/aidlc-required-sections.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        }
+      ]
+    },
+    {
+      "slug": "conformance-review",
+      "number": "5.3",
+      "name": "Conformance Review",
+      "phase": "secure",
+      "execution": "CONDITIONAL",
+      "condition": "Execute when the project has written requirements, standards or regulatory obligations that the delivered code must meet.",
+      "lead_agent": "aidlc-compliance-agent",
+      "support_agents": [],
+      "mode": "inline",
+      "produces": [
+        "conformance-report"
+      ],
+      "consumes": [
+        {
+          "artifact": "requirements",
+          "required": false
+        },
+        {
+          "artifact": "rules",
+          "required": false
+        },
+        {
+          "artifact": "security-review-report",
+          "required": true
+        }
+      ],
+      "requires_stage": [
+        "security-review"
+      ],
+      "sensors": [
+        "required-sections"
+      ],
+      "scopes": [
+        "enterprise",
+        "security-patch",
+        "infra",
+        "classic"
+      ],
+      "inputs": "requirements, team and project rules, security review report",
+      "outputs": "conformance-report.md (under this stage's record dir, engine-resolved)",
+      "rules_in_context": [
+        {
+          "path": "aidlc/spaces/default/memory/org.md",
+          "scope": "org"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/team.md",
+          "scope": "team"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/project.md",
+          "scope": "project"
+        },
+        {
+          "path": "aidlc/spaces/default/memory/phases/secure.md",
+          "scope": "phase"
+        }
+      ],
+      "sensors_applicable": [
+        {
+          "id": "required-sections",
+          "path": ".claude/sensors/aidlc-required-sections.md",
+          "fire_on": "gate",
+          "default_severity": "advisory",
+          "category": "document-shape",
+          "matches": "**/{aidlc-docs,intents,codekb}/**"
+        }
+      ]
+    },
+    {
       "slug": "ci-pipeline",
-      "number": "3.7",
+      "number": "6.1",
       "name": "CI Pipeline",
-      "phase": "construction",
+      "phase": "deploy",
       "execution": "CONDITIONAL",
       "condition": "Execute when CI pipeline needs creation or significant modification. Skip if CI already exists and is adequate.",
       "lead_agent": "aidlc-pipeline-deploy-agent",
@@ -2607,7 +2916,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/construction.md",
+          "path": "aidlc/spaces/default/memory/phases/deploy.md",
           "scope": "phase"
         }
       ],
@@ -2648,9 +2957,9 @@
     },
     {
       "slug": "deployment-pipeline",
-      "number": "4.1",
+      "number": "6.2",
       "name": "Deployment Pipeline",
-      "phase": "operation",
+      "phase": "deploy",
       "execution": "CONDITIONAL",
       "condition": "Execute when CD pipeline needs creation or significant modification",
       "lead_agent": "aidlc-pipeline-deploy-agent",
@@ -2715,7 +3024,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
+          "path": "aidlc/spaces/default/memory/phases/deploy.md",
           "scope": "phase"
         }
       ],
@@ -2740,9 +3049,9 @@
     },
     {
       "slug": "environment-provisioning",
-      "number": "4.2",
+      "number": "6.3",
       "name": "Environment Provisioning",
-      "phase": "operation",
+      "phase": "deploy",
       "execution": "CONDITIONAL",
       "condition": "Execute when AWS environments need provisioning or validation",
       "lead_agent": "aidlc-aws-platform-agent",
@@ -2797,7 +3106,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
+          "path": "aidlc/spaces/default/memory/phases/deploy.md",
           "scope": "phase"
         }
       ],
@@ -2822,9 +3131,9 @@
     },
     {
       "slug": "deployment-execution",
-      "number": "4.3",
+      "number": "6.4",
       "name": "Deployment Execution",
-      "phase": "operation",
+      "phase": "deploy",
       "execution": "CONDITIONAL",
       "condition": "Execute after deployment pipeline and environment are ready",
       "lead_agent": "aidlc-pipeline-deploy-agent",
@@ -2875,7 +3184,7 @@
         "express"
       ],
       "summary_confirmation": "required",
-      "inputs": "CD pipeline config from deployment-pipeline stage, provisioned environments from environment-provisioning stage, built artifacts from Construction",
+      "inputs": "CD pipeline config from deployment-pipeline stage, provisioned environments from environment-provisioning stage, built artifacts from Build",
       "outputs": "deployment-log.md, smoke-test-results.md, health-check-report.md, deployment-execution-questions.md (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -2891,7 +3200,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
+          "path": "aidlc/spaces/default/memory/phases/deploy.md",
           "scope": "phase"
         }
       ],
@@ -2916,9 +3225,9 @@
     },
     {
       "slug": "observability-setup",
-      "number": "4.4",
+      "number": "7.1",
       "name": "Observability Setup",
-      "phase": "operation",
+      "phase": "operate",
       "execution": "CONDITIONAL",
       "condition": "Execute when monitoring, dashboards, alarms, or tracing need configuration",
       "lead_agent": "aidlc-operations-agent",
@@ -2988,7 +3297,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
+          "path": "aidlc/spaces/default/memory/phases/operate.md",
           "scope": "phase"
         }
       ],
@@ -3013,9 +3322,9 @@
     },
     {
       "slug": "incident-response",
-      "number": "4.5",
+      "number": "7.2",
       "name": "Incident Response",
-      "phase": "operation",
+      "phase": "operate",
       "execution": "CONDITIONAL",
       "condition": "Execute when operational runbooks and incident response procedures are needed",
       "lead_agent": "aidlc-operations-agent",
@@ -3078,99 +3387,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
-          "scope": "phase"
-        }
-      ],
-      "sensors_applicable": [
-        {
-          "id": "required-sections",
-          "path": ".claude/sensors/aidlc-required-sections.md",
-          "fire_on": "gate",
-          "default_severity": "advisory",
-          "category": "document-shape",
-          "matches": "**/{aidlc-docs,intents,codekb}/**"
-        },
-        {
-          "id": "upstream-coverage",
-          "path": ".claude/sensors/aidlc-upstream-coverage.md",
-          "fire_on": "gate",
-          "default_severity": "advisory",
-          "category": "document-shape",
-          "matches": "**/{aidlc-docs,intents,codekb}/**"
-        }
-      ]
-    },
-    {
-      "slug": "performance-validation",
-      "number": "4.6",
-      "name": "Performance Validation",
-      "phase": "operation",
-      "execution": "CONDITIONAL",
-      "condition": "Execute when NFR performance targets need validation under load",
-      "lead_agent": "aidlc-quality-agent",
-      "support_agents": [],
-      "mode": "inline",
-      "produces": [
-        "load-test-plan",
-        "load-test-results",
-        "nfr-validation-matrix",
-        "performance-validation-questions"
-      ],
-      "consumes": [
-        {
-          "artifact": "performance-requirements",
-          "required": true
-        },
-        {
-          "artifact": "scalability-requirements",
-          "required": true
-        },
-        {
-          "artifact": "performance-design",
-          "required": true
-        },
-        {
-          "artifact": "scalability-design",
-          "required": true
-        },
-        {
-          "artifact": "dashboards",
-          "required": true
-        }
-      ],
-      "requires_stage": [
-        "nfr-requirements",
-        "nfr-design",
-        "observability-setup"
-      ],
-      "sensors": [
-        "required-sections",
-        "upstream-coverage"
-      ],
-      "scopes": [
-        "enterprise",
-        "feature",
-        "workshop"
-      ],
-      "summary_confirmation": "required",
-      "inputs": "NFR requirements from nfr-requirements stage, NFR design from nfr-design stage, deployed application, observability data from observability-setup stage",
-      "outputs": "load-test-plan.md, test-results.md, nfr-validation-matrix.md, performance-validation-questions.md (under this stage's record dir, engine-resolved)",
-      "rules_in_context": [
-        {
-          "path": "aidlc/spaces/default/memory/org.md",
-          "scope": "org"
-        },
-        {
-          "path": "aidlc/spaces/default/memory/team.md",
-          "scope": "team"
-        },
-        {
-          "path": "aidlc/spaces/default/memory/project.md",
-          "scope": "project"
-        },
-        {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
+          "path": "aidlc/spaces/default/memory/phases/operate.md",
           "scope": "phase"
         }
       ],
@@ -3195,9 +3412,9 @@
     },
     {
       "slug": "feedback-optimization",
-      "number": "4.7",
+      "number": "7.3",
       "name": "Feedback & Optimization",
-      "phase": "operation",
+      "phase": "operate",
       "execution": "CONDITIONAL",
       "condition": "Execute when ongoing operational monitoring and optimization are needed",
       "lead_agent": "aidlc-operations-agent",
@@ -3254,7 +3471,7 @@
         "workshop"
       ],
       "summary_confirmation": "required",
-      "inputs": "All Operation phase artifacts, production monitoring data",
+      "inputs": "All Deploy, Test and Operate phase artifacts, production monitoring data",
       "outputs": "slo-report.md, cost-analysis.md, drift-report.md, feedback-loop.md, feedback-optimization-questions.md (under this stage's record dir, engine-resolved)",
       "rules_in_context": [
         {
@@ -3270,7 +3487,7 @@
           "scope": "project"
         },
         {
-          "path": "aidlc/spaces/default/memory/phases/operation.md",
+          "path": "aidlc/spaces/default/memory/phases/operate.md",
           "scope": "phase"
         }
       ],
@@ -3304,11 +3521,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "SKIP",
         "requirements-analysis": "EXECUTE",
         "user-stories": "SKIP",
@@ -3323,13 +3540,16 @@
         "infrastructure-design": "SKIP",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "SKIP",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "SKIP",
         "deployment-execution": "EXECUTE",
         "observability-setup": "SKIP",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3360,11 +3580,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "EXECUTE",
         "requirements-analysis": "EXECUTE",
         "user-stories": "EXECUTE",
@@ -3379,17 +3599,20 @@
         "infrastructure-design": "EXECUTE",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "EXECUTE",
         "ci-pipeline": "SKIP",
         "deployment-pipeline": "SKIP",
         "environment-provisioning": "SKIP",
         "deployment-execution": "SKIP",
         "observability-setup": "SKIP",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [],
-      "description": "V1-style ceremony through Inception and Construction - the implicit default",
+      "description": "V1-style ceremony through Design and the unit loop - the implicit default",
       "skeleton": false,
       "guardPolicy": "off",
       "ceremony": {
@@ -3409,11 +3632,11 @@
         "intent-capture": "EXECUTE",
         "market-research": "EXECUTE",
         "feasibility": "EXECUTE",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "EXECUTE",
         "team-formation": "EXECUTE",
         "rough-mockups": "EXECUTE",
         "approval-handoff": "EXECUTE",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "EXECUTE",
         "requirements-analysis": "EXECUTE",
         "user-stories": "EXECUTE",
@@ -3428,13 +3651,16 @@
         "infrastructure-design": "EXECUTE",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "EXECUTE",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "EXECUTE",
         "ci-pipeline": "EXECUTE",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "EXECUTE",
         "deployment-execution": "EXECUTE",
         "observability-setup": "EXECUTE",
         "incident-response": "EXECUTE",
-        "performance-validation": "EXECUTE",
         "feedback-optimization": "EXECUTE"
       },
       "keywords": [],
@@ -3458,11 +3684,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "SKIP",
         "requirements-analysis": "EXECUTE",
         "user-stories": "SKIP",
@@ -3477,13 +3703,16 @@
         "infrastructure-design": "SKIP",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "SKIP",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "SKIP",
         "deployment-execution": "EXECUTE",
         "observability-setup": "EXECUTE",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3511,11 +3740,11 @@
         "intent-capture": "EXECUTE",
         "market-research": "EXECUTE",
         "feasibility": "EXECUTE",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "EXECUTE",
         "team-formation": "EXECUTE",
         "rough-mockups": "EXECUTE",
         "approval-handoff": "EXECUTE",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "EXECUTE",
         "requirements-analysis": "EXECUTE",
         "user-stories": "EXECUTE",
@@ -3530,13 +3759,16 @@
         "infrastructure-design": "EXECUTE",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "EXECUTE",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "EXECUTE",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "EXECUTE",
         "deployment-execution": "EXECUTE",
         "observability-setup": "EXECUTE",
         "incident-response": "EXECUTE",
-        "performance-validation": "EXECUTE",
         "feedback-optimization": "EXECUTE"
       },
       "keywords": [],
@@ -3561,11 +3793,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "SKIP",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "SKIP",
         "practices-discovery": "EXECUTE",
         "requirements-analysis": "EXECUTE",
         "user-stories": "SKIP",
@@ -3580,13 +3812,16 @@
         "infrastructure-design": "EXECUTE",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "EXECUTE",
         "ci-pipeline": "EXECUTE",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "EXECUTE",
         "deployment-execution": "EXECUTE",
         "observability-setup": "EXECUTE",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3614,11 +3849,11 @@
         "intent-capture": "EXECUTE",
         "market-research": "SKIP",
         "feasibility": "EXECUTE",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "EXECUTE",
         "team-formation": "SKIP",
         "rough-mockups": "EXECUTE",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "EXECUTE",
         "requirements-analysis": "EXECUTE",
         "user-stories": "EXECUTE",
@@ -3633,13 +3868,16 @@
         "infrastructure-design": "EXECUTE",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "EXECUTE",
         "deployment-pipeline": "SKIP",
         "environment-provisioning": "SKIP",
         "deployment-execution": "SKIP",
         "observability-setup": "SKIP",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3667,11 +3905,11 @@
         "intent-capture": "EXECUTE",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "SKIP",
         "requirements-analysis": "EXECUTE",
         "user-stories": "SKIP",
@@ -3686,13 +3924,16 @@
         "infrastructure-design": "SKIP",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "SKIP",
         "deployment-pipeline": "SKIP",
         "environment-provisioning": "SKIP",
         "deployment-execution": "SKIP",
         "observability-setup": "SKIP",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3721,11 +3962,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "SKIP",
         "requirements-analysis": "EXECUTE",
         "user-stories": "SKIP",
@@ -3740,13 +3981,16 @@
         "infrastructure-design": "SKIP",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "SKIP",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "SKIP",
         "deployment-execution": "EXECUTE",
         "observability-setup": "SKIP",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3775,11 +4019,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "SKIP",
         "requirements-analysis": "EXECUTE",
         "user-stories": "SKIP",
@@ -3794,13 +4038,16 @@
         "infrastructure-design": "SKIP",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "SKIP",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "EXECUTE",
         "ci-pipeline": "SKIP",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "SKIP",
         "deployment-execution": "EXECUTE",
         "observability-setup": "SKIP",
         "incident-response": "SKIP",
-        "performance-validation": "SKIP",
         "feedback-optimization": "SKIP"
       },
       "keywords": [
@@ -3831,11 +4078,11 @@
         "intent-capture": "SKIP",
         "market-research": "SKIP",
         "feasibility": "SKIP",
+        "reverse-engineering": "EXECUTE",
         "scope-definition": "SKIP",
         "team-formation": "SKIP",
         "rough-mockups": "SKIP",
         "approval-handoff": "SKIP",
-        "reverse-engineering": "EXECUTE",
         "practices-discovery": "EXECUTE",
         "requirements-analysis": "EXECUTE",
         "user-stories": "EXECUTE",
@@ -3850,13 +4097,16 @@
         "infrastructure-design": "EXECUTE",
         "code-generation": "EXECUTE",
         "build-and-test": "EXECUTE",
+        "performance-validation": "EXECUTE",
+        "code-review": "EXECUTE",
+        "security-review": "EXECUTE",
+        "conformance-review": "SKIP",
         "ci-pipeline": "EXECUTE",
         "deployment-pipeline": "EXECUTE",
         "environment-provisioning": "EXECUTE",
         "deployment-execution": "EXECUTE",
         "observability-setup": "EXECUTE",
         "incident-response": "EXECUTE",
-        "performance-validation": "EXECUTE",
         "feedback-optimization": "EXECUTE"
       },
       "keywords": [
@@ -3896,11 +4146,14 @@
     "cicd-pipeline",
     "code-generation-plan",
     "code-quality-assessment",
+    "code-review-findings",
+    "code-review-report",
     "code-structure",
     "code-summary",
     "competitive-analysis",
     "component-inventory",
     "components",
+    "conformance-report",
     "constraint-register",
     "contract-summary",
     "cost-analysis",
@@ -3976,7 +4229,9 @@
     "scope-definition-questions",
     "scope-document",
     "security-design",
+    "security-findings",
     "security-requirements",
+    "security-review-report",
     "security-test-instructions",
     "skill-matrix",
     "slo-config",

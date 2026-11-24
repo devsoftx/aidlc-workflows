@@ -17,6 +17,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, runOrchestrateNext,
   seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
@@ -105,7 +106,7 @@ function commandAskedOverThePlan(chat?: string): string {
   writeFileSync(join(proj, "src", "base.ts"), "export const base = true;\n", "utf-8");
   // A fixture that wrote its state by hand gets the start row it would have had.
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "poc" }, proj);
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Summary\n\n- Builds: slugify for titles\n- Touches: src/slugify.ts\n" +

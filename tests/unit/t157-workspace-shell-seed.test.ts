@@ -100,7 +100,7 @@ describe("t157 seeded workspace shell + re-rooted .gitignore (SEED)", () => {
       for (const f of ["org.md", "team.md", "project.md"]) {
         expect(existsSync(mem(h, f)), `${h}: ${f}`).toBe(true);
       }
-      for (const p of ["ideation", "inception", "construction", "operation"]) {
+      for (const p of ["discover", "design", "build", "test", "secure", "deploy", "operate"]) {
         expect(existsSync(mem(h, "phases", `${p}.md`)), `${h}: phases/${p}.md`).toBe(true);
       }
     }
@@ -228,7 +228,7 @@ describe("t157 seeded workspace shell + re-rooted .gitignore (SEED)", () => {
         .map((r) => r.scope)
         .sort();
       // org/team/project are always present in the shipped defaults; phase rules
-      // attach the four phase files — so the resolved set spans all four layers.
+      // attach the seven phase files — so the resolved set spans all four layers.
       expect(scopes, `${h}: resolved layers on a fresh copy`).toContain("org");
       expect(scopes, `${h}: resolved layers on a fresh copy`).toContain("team");
       expect(scopes, `${h}: resolved layers on a fresh copy`).toContain("project");
@@ -383,7 +383,7 @@ describe("t157 seeded workspace shell + re-rooted .gitignore (SEED)", () => {
       "aidlc/spaces/default/intents/intents.json",
       `${record}/aidlc-state.md`,
       `${record}/audit/host-clone.md`,
-      `${record}/inception/requirements-analysis/requirements.md`,
+      `${record}/design/requirements-analysis/requirements.md`,
     ];
     for (const h of HARNESSES) {
       const repo = mkdtempSync(join(tmpdir(), `aidlc-t157-committed-${h}-`));

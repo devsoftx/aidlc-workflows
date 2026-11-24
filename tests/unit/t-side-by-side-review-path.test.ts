@@ -150,8 +150,10 @@ describe("a side-by-side Unit's worker writes its records where AI-DLC reads the
     expect(prepared.code, `${prepared.out}\n${prepared.err}`).toBe(0);
     const child = wt(pd);
     writeFileSync(join(child, "src", "alpha.ts"), "export const alpha = 2;\n");
-    // A worker that put its manifest at the worktree's root instead of in the record folder.
-    const stray = join(child, "construction", "alpha", "code-generation");
+    // A worker that put its manifest at the worktree's root instead of in the record folder. Not under
+    // build/: the source boundary leaves an unregistered conditional name out as generated output
+    // (docs/reference/12-state-machine.md), so a manifest there is never counted as a write.
+    const stray = join(child, "code-generation");
     mkdirSync(stray, { recursive: true });
     writeFileSync(join(stray, "source-manifest.json"),
       JSON.stringify({ stage: STAGE, unit: "alpha", version: 1, writes: [{ path: "src/alpha.ts" }] }));
@@ -162,7 +164,7 @@ describe("a side-by-side Unit's worker writes its records where AI-DLC reads the
     const finalized = swarm(pd, ["finalize", "--batch", "1", "--units", "alpha", "--claimed", "alpha"]);
     expect(finalized.code, `${finalized.out}\n${finalized.err}`).toBe(2);
     const { detail } = (JSON.parse(finalized.out) as { units: { detail: string }[] }).units[0];
-    expect(detail).toContain("outside unit \"alpha\"'s source manifest (construction/alpha/code-generation/source-manifest.json)");
+    expect(detail).toContain("outside unit \"alpha\"'s source manifest (code-generation/source-manifest.json)");
     expect(detail).toContain(`update ${toPosix(join(codeGenerationRecordDir(child, "alpha"), "source-manifest.json"))},`);
   });
 });

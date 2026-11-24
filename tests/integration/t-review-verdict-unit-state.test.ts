@@ -48,6 +48,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -147,7 +148,7 @@ class UnitReview {
       "- **Project**: team Unit terminal review regression",
       "- **Project Type**: Greenfield",
       "- **Scope**: feature",
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       "- **Skeleton Stance**: on", "",
       "## Runtime State",
       "- **Revision Count**: 0",
@@ -161,21 +162,23 @@ class UnitReview {
       "- **Test Strategy**: Standard",
       "- **Change Control**: strict (set by you)", "",
       "## Stage Progress", "",
-      "### CONSTRUCTION PHASE",
+      `### ${phaseFor(STAGE).toUpperCase()} PHASE`,
       `- [-] ${STAGE} — EXECUTE`,
       "- [ ] nfr-requirements — EXECUTE",
       "- [ ] nfr-design — EXECUTE",
-      "- [ ] infrastructure-design — EXECUTE",
-      "- [ ] code-generation — EXECUTE",
+      "- [ ] infrastructure-design — EXECUTE", "",
+      `### ${phaseFor("code-generation").toUpperCase()} PHASE`,
+      "- [ ] code-generation — EXECUTE", "",
+      `### ${phaseFor("build-and-test").toUpperCase()} PHASE`,
       "- [ ] build-and-test — EXECUTE", "",
       "## Current Status",
-      "- **Lifecycle Phase**: CONSTRUCTION",
+      `- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}`,
       `- **Current Stage**: ${STAGE}`,
       "- **Status**: Running",
       "- **Last Updated**: 2026-09-11T00:00:00Z", "",
     ].join("\n"));
     seedBoltDag(this.dir, [UNIT]);
-    this.stageDir = join(seededRecordDir(this.dir), "construction", UNIT, STAGE);
+    this.stageDir = join(seededRecordDir(this.dir), phaseFor(STAGE), UNIT, STAGE);
     mkdirSync(this.stageDir, { recursive: true });
     this.questions = join(this.stageDir, `${STAGE}-questions.md`);
   }

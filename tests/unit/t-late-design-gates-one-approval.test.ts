@@ -48,6 +48,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   approvesTogetherStages,
@@ -182,7 +183,7 @@ function constructionState(opts: {
 - **Project**: late design gates test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -196,21 +197,19 @@ ${iteration}${checkpoints}${autonomy}${team}
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${checkboxes}
-
-### INCEPTION PHASE
 - [-] domain-design ${SEP} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${(opts.current ?? "functional-design") === "code-generation" ? "BUILD" : "DESIGN"}
 - **Current Stage**: ${opts.current ?? "functional-design"}
 - **Status**: Running
 `;
 }
 
 function coverUnit(proj: string, unit: string, slug: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of PRODUCES[slug]) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -223,14 +222,14 @@ function logReviewReady(proj: string, stage: string, unit: string, finding?: str
   const reviewer = "aidlc-architecture-reviewer-agent";
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(REVIEW_ARTIFACTS[stage]),
   );
   if (stage === "code-generation") {
     writeFileSync(
-      join(seededRecordDir(proj), "construction", unit, stage, "source-manifest.json"),
+      join(seededRecordDir(proj), phaseFor(stage), unit, stage, "source-manifest.json"),
       `${JSON.stringify({ stage, unit, version: 1, writes: [] }, null, 2)}\n`,
     );
   }
@@ -273,7 +272,7 @@ function logReviewReady(proj: string, stage: string, unit: string, finding?: str
 // A Unit's built Code Generation step: a ready plan beside its instructions,
 // and the start and completion receipts the build records in this attempt.
 function buildUnit(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), unit, "code-generation");
   writeFileSync(
     join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Steps\n\n- [x] Step 1: build `src/" + unit + ".ts`\n\n" +
@@ -652,7 +651,7 @@ describe("t-late-design-gates-one-approval: one question for the late stage appr
     const early = auditBlockField(rows(proj, "HUMAN_TURN").at(-1)?.block ?? "", "Message Id") as string;
     Bun.sleepSync(1100);
     // Beta's code, the last listed stage, is written after it (the write hook's row), then reviewed.
-    const code = join(seededRecordDir(proj), "construction", "beta", "code-generation");
+    const code = join(seededRecordDir(proj), phaseFor("code-generation"), "beta", "code-generation");
     for (const name of PRODUCES["code-generation"]) recordArtifactWriteViaHook(proj, join(code, artifactFilename(name)));
     logReviewReady(proj, "code-generation", "beta");
     openFirstGate(proj);
@@ -782,7 +781,7 @@ describe("t-late-design-gates-one-approval: one question for the late stage appr
       .replace("- **Revision Count**: 0\n", "- **Revision Count**: 0\n- **Guard Policy**: off (set by you)\n"));
   }
   function askedChange(proj: string, stage: string, unit: string): void {
-    const doc = join(seededRecordDir(proj), "construction", unit, stage, artifactFilename(REVIEW_ARTIFACTS[stage]));
+    const doc = join(seededRecordDir(proj), phaseFor(stage), unit, stage, artifactFilename(REVIEW_ARTIFACTS[stage]));
     appendFileSync(doc, "\nA change the person asked for.\n");
     appendAuditEntry("ARTIFACT_UPDATED", { File: relative(proj, doc).replaceAll("\\", "/"), Stage: stage, Unit: unit }, proj);
   }
@@ -823,11 +822,11 @@ describe("t-late-design-gates-one-approval: one question for the late stage appr
     // A Unit is not reported on its own in a solo walk: the report names none.
     expect(String(owed.message)).not.toContain("--unit");
     expect(String(owed.narration)).toMatch(
-      /^Code Generation is ready for your review\. It produced .*, in aidlc\/.*\/construction\/beta\/code-generation\/\.$/,
+      /^Code Generation is ready for your review\. It produced .*, in aidlc\/.*\/build\/beta\/code-generation\/\.$/,
     );
     const reported = runReport(proj, ["--stage", "code-generation", "--result", "awaiting-approval"]);
     expect(reported.message).toStartWith('Stage "code-generation" is already awaiting approval; gate evidence revalidated.');
-    expect(JSON.stringify(reported.change_notices ?? [])).toContain("construction/alpha/code-generation/code-generation-plan.md changed after");
+    expect(JSON.stringify(reported.change_notices ?? [])).toContain("build/alpha/code-generation/code-generation-plan.md changed after");
     expect(nextAfterChange(proj)).toMatchObject({ kind: "run-stage", stage: "code-generation", gate_only: true });
   });
 

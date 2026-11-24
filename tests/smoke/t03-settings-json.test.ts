@@ -421,7 +421,7 @@ describe("companyAnnouncements — the Scopes table says what each plan runs", (
     name: string;
     phase: string;
   }[];
-  const PHASES = ["ideation", "inception", "construction", "operation"];
+  const PHASES = ["discover", "design", "build", "test", "secure", "deploy", "operate"];
   const cells = (line: string) =>
     line
       .trim()

@@ -13,7 +13,7 @@
 // note. The engine reads no meaning into them.
 
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, test, setDefaultTimeout } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,6 +22,8 @@ import {
   AIDLC_SRC,
   cleanupTestProject,
   createOrchestrationTestProject,
+  DEFAULT_RECORD_DIR,
+  DEFAULT_SPACE,
   FIXTURES_DIR,
   createTestProject,
   resetAidlcEnv,
@@ -44,6 +46,22 @@ import { validateDirective } from "../../dist/claude/.claude/tools/aidlc-directi
 import { kiroCliPrompt, kiroCliRecord, kiroCliToolResults, kiroCliToolUse } from "../harness/kiro-cli-record.ts";
 import { kiroV3Prompt, kiroV3Record, kiroV3Steer, kiroV3ToolResult } from "../harness/kiro-v3-chat-record.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
 const BUN = process.execPath;
@@ -62,9 +80,19 @@ const NOTE =
 
 type ParkedReply = { words: string; note: string } | undefined;
 
+// The host's own session markers (Claude Code exports its chat id) would name
+// another chat than the one these cases run as, so they are left out.
+function hostEnvironment(): Record<string, string | undefined> {
+  const inherited: Record<string, string | undefined> = { ...process.env };
+  for (const key of Object.keys(inherited)) {
+    if (/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key)) delete inherited[key];
+  }
+  return inherited;
+}
+
 function env(session: string, extra: Record<string, string> = {}): Record<string, string | undefined> {
   const e: Record<string, string | undefined> = {
-    ...process.env,
+    ...hostEnvironment(),
     AIDLC_SKIP_ARTIFACT_GUARD: "1",
     AIDLC_UNATTENDED: "0",
     AIDLC_SESSION_OVERRIDE: session,
@@ -86,7 +114,9 @@ function run(tool: string, args: string[], extra: Record<string, string> = {}): 
 
 const state = (proj: string, args: string[]) =>
   run(STATE, [...args, "--project-dir", proj], { AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS: "1" });
-const events = (proj: string, name: string) => readAuditShardEvents(proj).filter((row) => row.event === name);
+// The fixture's own record, named, so the rows read do not depend on which chat reads them.
+const events = (proj: string, name: string) =>
+  readAuditShardEvents(proj, DEFAULT_RECORD_DIR, DEFAULT_SPACE).filter((row) => row.event === name);
 
 function report(proj: string, args: string[]): { kind: string; message?: string } {
   const r = run(ORCHESTRATE, ["report", ...args, "--project-dir", proj]);
@@ -138,14 +168,18 @@ function unpark(proj: string): void {
 const keptWordsFile = (proj: string) => join(seededRecordDir(proj), ".aidlc-engine", "gate-words", `${SESSION}.json`);
 
 // The fixture scope confirms summaries; this stage asked none, so the gate
-// would otherwise be held for the summary it never had.
+// would otherwise be held for the summary it never had. Reverse Engineering
+// sits between feasibility and scope-definition in the seven-phase graph, and
+// this greenfield person skips it, so the approval moves on to NEXT.
 function seedStage(proj: string): void {
   seedStateFile(proj, join(FIXTURES_DIR, "state-mid-ideation.md"));
   const file = seededStateFile(proj);
-  writeFileSync(file, readFileSync(file, "utf-8").replace(
-    "- **Change Control**: strict (from scope feature)",
-    "- **Change Control**: strict (from scope feature)\n- **Summary Confirmation**: off (set by you)",
-  ));
+  writeFileSync(file, readFileSync(file, "utf-8")
+    .replace(
+      "- **Change Control**: strict (from scope feature)",
+      "- **Change Control**: strict (from scope feature)\n- **Summary Confirmation**: off (set by you)",
+    )
+    .replace("- [ ] reverse-engineering \u2014 EXECUTE", "- [S] reverse-engineering \u2014 SKIP"));
   state(proj, ["checkbox", `${STAGE}=in-progress`]);
 }
 
@@ -526,7 +560,7 @@ describe("a Unit's step never carries them", () => {
 - **Project**: a park in a unit-major walk
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 
@@ -544,16 +578,21 @@ describe("a Unit's step never carries them", () => {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design ${SEP} EXECUTE
 - [ ] nfr-requirements ${SEP} EXECUTE
 - [ ] nfr-design ${SEP} EXECUTE
 - [ ] infrastructure-design ${SEP} EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation ${SEP} EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test ${SEP} EXECUTE
 
+
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);

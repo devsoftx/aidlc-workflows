@@ -26,6 +26,7 @@ import {
   seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -82,7 +83,7 @@ describe("t323 review verdict closure", () => {
 
     const dir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("functional-design"),
       "alpha",
       "functional-design",
     );

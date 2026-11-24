@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readUnitSourceManifest, sourceClaimCovers } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { aidlcDispatcherInvocation } from "../../dist/claude/.claude/tools/aidlc-runtime-paths.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -58,7 +59,7 @@ function workspace(repos: string[]): { project: string; record: string } {
 }
 
 function writeManifest(record: string, writes: unknown[], eol = "\n"): void {
-  const dir = join(record, "construction", "alpha", "code-generation");
+  const dir = join(record, phaseFor("code-generation"), "alpha", "code-generation");
   mkdirSync(dir, { recursive: true });
   const text = JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes }, null, 2);
   writeFileSync(join(dir, "source-manifest.json"), `${text.replaceAll("\n", eol)}${eol}`);

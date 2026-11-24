@@ -258,7 +258,7 @@ export function updateEngine(proj: string): void {
   const bumped = text.replace(/AIDLC_VERSION = "(\d+)\.(\d+)\.(\d+)"/, (_, a, b) => `AIDLC_VERSION = "${a}.${Number(b) + 1}.0"`);
   if (bumped === text) throw new Error(`no version to bump in ${version}`);
   writeFileSync(version, bumped);
-  for (const stage of ["construction/code-generation.md", "construction/build-and-test.md"]) {
+  for (const stage of ["build/code-generation.md", "test/build-and-test.md"]) {
     appendFileSync(join(proj, ".claude", "aidlc-common", "stages", stage), "\n<!-- updated wording -->\n");
   }
 }
@@ -336,18 +336,22 @@ the work into Units, builds each Unit and runs Build and Test. Nothing else runs
 }
 
 const PLUGIN_STAGES: Record<string, string> = {
-  "requirements-analysis": "inception",
-  "units-generation": "inception",
-  "code-generation": "construction",
-  "build-and-test": "construction",
+  "requirements-analysis": "design",
+  "units-generation": "design",
+  "code-generation": "build",
+  "build-and-test": "test",
+  "code-review": "secure",
+  "security-review": "secure",
+  "conformance-review": "secure",
 };
 
 /**
  * The matrix base as a plugin's scope: a synthetic plugin (never a shipped
  * one) whose scope file names the plugin, and whose contributions put
- * Requirements, Units Generation, Code Generation and Build and Test under it
- * (`adds.scopes`). Its compose hook installs it, as Claude Code runs it.
- * With no `policy`, the scope names no Guard Policy.
+ * Requirements, Units Generation, Code Generation, Build and Test and the three
+ * Secure reviews under it (`adds.scopes`), the stages the composed base runs.
+ * Its compose hook installs it, as Claude Code runs it. With no `policy`, the
+ * scope names no Guard Policy.
  */
 export function pluginCell(plugin: string, policy: GuardPolicy | null, review: ReviewCap): ComposedScope {
   const stages = expectedStages("classic", false).filter((s) => !MATRIX_SKIP.includes(s));

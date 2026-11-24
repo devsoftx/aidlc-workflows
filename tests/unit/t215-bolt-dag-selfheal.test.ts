@@ -36,6 +36,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename,
   parseBoltDag,
@@ -103,7 +104,7 @@ function constructionState(current: string, skeletonStance = "on"): string {
 - **Project**: bolt dag self heal test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: ${skeletonStance}
 
@@ -115,20 +116,22 @@ function constructionState(current: string, skeletonStance = "on"): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
+${row("x", "domain-design")}
+${row("x", "units-generation")}
 ${row(current === "functional-design" ? "-" : " ", "functional-design")}
 ${row(current === "nfr-requirements" ? "-" : " ", "nfr-requirements")}
 ${row(current === "nfr-design" ? "-" : " ", "nfr-design")}
 ${row(current === "infrastructure-design" ? "-" : " ", "infrastructure-design")}
+
+### BUILD PHASE
 ${row(current === "code-generation" ? "-" : " ", "code-generation")}
+
+### TEST PHASE
 ${row(current === "build-and-test" ? "-" : " ", "build-and-test")}
 
-### INCEPTION PHASE
-${row("x", "domain-design")}
-${row("x", "units-generation")}
-
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;
@@ -141,7 +144,7 @@ function inceptionState(current: string): string {
 - **Project**: bolt dag self heal test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 
 ## Scope Configuration
@@ -152,20 +155,22 @@ function inceptionState(current: string): string {
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 ${row(current === "domain-design" ? "-" : " ", "domain-design")}
 ${row(current === "units-generation" ? "-" : " ", "units-generation")}
-
-### CONSTRUCTION PHASE
 ${row(" ", "functional-design")}
 ${row(" ", "nfr-requirements")}
 ${row(" ", "nfr-design")}
 ${row(" ", "infrastructure-design")}
+
+### BUILD PHASE
 ${row(" ", "code-generation")}
+
+### TEST PHASE
 ${row(" ", "build-and-test")}
 
 ## Current Status
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;
@@ -188,7 +193,7 @@ function seedInceptionProject(current: string): string {
 }
 
 function writeDependencyArtifact(proj: string, body: string): void {
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "unit-of-work-dependency.md"), body);
 }
@@ -258,7 +263,7 @@ function coverUnit(
   slug: string,
   producesNames: string[],
 ): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of producesNames) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
@@ -283,7 +288,7 @@ function logReview(
   const reviewer = "aidlc-architecture-reviewer-agent";
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor("functional-design"),
     unit,
     "functional-design",
     artifactFilename("functional-spec"),
@@ -427,7 +432,7 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.stage).toBe("functional-design");
     expect(r.directive.unit).toBe("alpha");
     expect(r.directive.produces).toContain(
-      `${RP}/construction/alpha/functional-design/functional-spec.md`,
+      `${RP}/design/alpha/functional-design/functional-spec.md`,
     );
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -449,7 +454,7 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.stage).toBe("functional-design");
     expect(r.directive.unit).toBeUndefined();
     expect(r.directive.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -582,8 +587,10 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.kind).toBe("run-stage");
     expect(r.directive.stage).toBe("domain-design");
     expect(r.directive.unit).toBeUndefined();
-    expect(r.directive.produces?.some((p) => p.includes("/construction/"))).toBe(false);
-    expect(r.directive.inputs?.some((p) => p.includes("/construction/")) ?? false).toBe(false);
+    // Per-unit records sit under <phase>/<unit>/, so a non-per-unit stage names no seeded unit.
+    const namesUnit = (path: string) => ["alpha", "beta"].some((unit) => path.includes(`/${unit}/`));
+    expect(r.directive.produces?.some(namesUnit)).toBe(false);
+    expect(r.directive.inputs?.some(namesUnit) ?? false).toBe(false);
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -610,7 +617,7 @@ describe("t215 bolt dag self-heal", () => {
     expect(r.directive.kind).toBe("run-stage");
     expect(r.directive.unit).toBeUndefined();
     expect(r.directive.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
     expect(r.stderr).toBe("");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);

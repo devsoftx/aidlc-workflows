@@ -21,7 +21,7 @@ This project uses AI-DLC (AI-Driven Development Life Cycle) for structured devel
 
     prereq_bullets_tail: "",
 
-    agents_note: `On Copilot the expert roles are native custom agents (\`.github/agents/aidlc-<role>-agent.md\`); the \`/aidlc\` session takes on those roles itself for most stages and hands work off to them for the delegated stages (2.1, 2.2, 2.4, 3.5). They carry no \`model:\` pin — the two Copilot surfaces disagree on model-value syntax, so agents always inherit the session model.`,
+    agents_note: `On Copilot the expert roles are native custom agents (\`.github/agents/aidlc-<role>-agent.md\`); the \`/aidlc\` session takes on those roles itself for most stages and hands work off to them for the delegated stages (\`reverse-engineering\`, \`practices-discovery\`, \`user-stories\`, \`code-generation\`). They carry no \`model:\` pin — the two Copilot surfaces disagree on model-value syntax, so agents always inherit the session model.`,
 
     structure_extra: "",
 
@@ -54,10 +54,13 @@ which the engine refreshes at session start and on \`/aidlc space <name>\`):
 @aidlc/active-memory/org.md
 @aidlc/active-memory/team.md
 @aidlc/active-memory/project.md
-@aidlc/active-memory/phases/ideation.md
-@aidlc/active-memory/phases/inception.md
-@aidlc/active-memory/phases/construction.md
-@aidlc/active-memory/phases/operation.md
+@aidlc/active-memory/phases/discover.md
+@aidlc/active-memory/phases/design.md
+@aidlc/active-memory/phases/build.md
+@aidlc/active-memory/phases/test.md
+@aidlc/active-memory/phases/secure.md
+@aidlc/active-memory/phases/deploy.md
+@aidlc/active-memory/phases/operate.md
 `,
   },
 };

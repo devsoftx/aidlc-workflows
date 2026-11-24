@@ -31,6 +31,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -67,7 +68,7 @@ function constructionStateAtCodeGen(strategy: string): string {
 - **Project**: unit-test-instructions coverage test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Scope Configuration
@@ -78,19 +79,21 @@ function constructionStateAtCodeGen(strategy: string): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("domain-design").toUpperCase()} PHASE
+- [x] domain-design — EXECUTE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
+
+### ${phaseFor("code-generation").toUpperCase()} PHASE
 - [-] code-generation — EXECUTE
+
+### ${phaseFor("build-and-test").toUpperCase()} PHASE
 - [ ] build-and-test — EXECUTE
 
-### INCEPTION PHASE
-- [x] domain-design — EXECUTE
-
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}
 - **Current Stage**: code-generation
 - **Status**: Running
 `;
@@ -151,7 +154,7 @@ Cover the unit's requirements with isolated fixtures and stub external services.
 }
 
 function coverUnit(proj: string, unit: string, names: readonly string[]): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of names) {
     writeFileSync(join(dir, artifactFilename(name)), realisticArtifact(name, unit));
@@ -183,7 +186,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
       expect(directive.stage).toBe("code-generation");
       expect(directive.unit).toBe("alpha");
       expect(directive.produces).toContain(
-        `${RP}/construction/alpha/code-generation/unit-test-instructions.md`,
+        `${RP}/build/alpha/code-generation/unit-test-instructions.md`,
       );
     }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -218,7 +221,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
         "core",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("code-generation"),
         "code-generation.md",
       ),
       "utf-8",
@@ -229,7 +232,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
         "core",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       ),
       "utf-8",
@@ -252,7 +255,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
   test("stage prose judges a project-wide coverage floor on the full suite, not a Unit run", () => {
     const stage = (slug: string) =>
       readFileSync(
-        join(REPO_ROOT, "core", "aidlc-common", "stages", "construction", `${slug}.md`),
+        join(REPO_ROOT, "core", "aidlc-common", "stages", phaseFor(slug), `${slug}.md`),
         "utf-8",
       ).replace(/\s+/g, " ");
     const codeGeneration = stage("code-generation");
@@ -288,7 +291,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
     // command whose exit stopped a later step is not exempt. The reference
     // mirrors the stage rule.
     const reference = readFileSync(
-      join(REPO_ROOT, "docs", "reference", "04-stages", "construction.md"),
+      join(REPO_ROOT, "docs", "reference", "04-stages", "test.md"),
       "utf-8",
     ).replace(/\s+/g, " ");
     for (const prose of [buildAndTest, reference]) {
@@ -324,7 +327,7 @@ describe("t290 code-generation coverage requires per-unit test instructions", ()
   test("Express stage-level test instructions execute and traceability joins the final gate", () => {
     const proj = createTestProject();
     tempDirs.push(proj);
-    const codeDir = join(seededRecordDir(proj), "construction", "code-generation");
+    const codeDir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
     const sourceDir = join(proj, "src");
     mkdirSync(codeDir, { recursive: true });
     mkdirSync(sourceDir, { recursive: true });
@@ -364,16 +367,16 @@ ${quotedExecutable} -e 'await Bun.write("${marker}", "passed")'
         "core",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("build-and-test"),
         "build-and-test.md",
       ),
       "utf-8",
     );
     expect(buildAndTest).toContain(
-      "<record>/construction/code-generation/unit-test-instructions.md",
+      "<record>/build/code-generation/unit-test-instructions.md",
     );
     expect(buildAndTest).toContain(
-      "<record>/construction/*/code-generation/unit-test-instructions.md",
+      "<record>/build/*/code-generation/unit-test-instructions.md",
     );
     expect(buildAndTest).toContain(
       "{{INVOKE}} engine sensor-traceability --stage build-and-test",
@@ -394,7 +397,7 @@ ${quotedExecutable} -e 'await Bun.write("${marker}", "passed")'
     // The final gate's check reads the stage-level table and finds FR1 built.
     mkdirSync(join(seededStateFile(proj), ".."), { recursive: true });
     writeFileSync(seededStateFile(proj), "# State\n");
-    const requirementsDir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+    const requirementsDir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(requirementsDir, { recursive: true });
     writeFileSync(join(requirementsDir, "requirements.md"), "# Requirements\n\n- FR1 Express flow\n");
     const finalGate = spawnSync("bun", [join(AIDLC_SRC, "tools", "aidlc-sensor-traceability.ts"), "--stage", "build-and-test"], {

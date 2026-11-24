@@ -137,7 +137,7 @@ export function switchAndFinish(
   // Both Units' Functional Design is still on disk.
   const { space, intent } = activeRecord(run.proj);
   for (const unit of ["alpha", "beta"]) {
-    expect(existsSync(join(run.proj, "aidlc", "spaces", space, "intents", intent, "construction", unit, "functional-design"))).toBe(true);
+    expect(existsSync(join(run.proj, "aidlc", "spaces", space, "intents", intent, "design", unit, "functional-design"))).toBe(true);
   }
   return { run, said, rows, asked, worked: run.agent.worked.slice(workedFrom), printed };
 }

@@ -19,6 +19,7 @@
 |-------|------|----------------------|
 | build-and-test | Build and Test | Defines test strategy, generates test suites, validates coverage against acceptance criteria, enforces quality gates |
 | performance-validation | Performance Validation and Load Testing | Designs and executes load tests, validates NFR targets, identifies bottlenecks, produces capacity planning recommendations |
+| code-review | Code Review | Reviews every unit's changed code for correctness, edge cases, readability and test coverage; lists the blockers to fix before deployment |
 
 ### Support Stages
 

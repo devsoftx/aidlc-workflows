@@ -31,6 +31,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -70,7 +71,7 @@ function project(scope = "feature"): string {
 - **Project**: questions before the wave
 - **Project Type**: Greenfield
 - **Scope**: ${scope}
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 
@@ -94,7 +95,7 @@ function project(scope = "feature"): string {
 - [-] domain-design ${DASH} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -140,7 +141,7 @@ function tool(path: string, args: string[], proj: string) {
 }
 
 function questionsFile(proj: string, unit: string): string {
-  return join(seededRecordDir(proj), "construction", unit, STAGE, `${STAGE}-questions.md`);
+  return join(seededRecordDir(proj), phaseFor(STAGE), unit, STAGE, `${STAGE}-questions.md`);
 }
 
 function writeAnswers(proj: string, unit: string, withSummary: boolean): string {
@@ -234,7 +235,7 @@ describe("t-wave-questions-first: a wave's Units are asked their questions in th
     confirmSummary(proj, "alpha");
     // A builder from before the change wrote one of alpha's documents with no
     // answers behind it: the wave checks it, the question step does not.
-    const dir = join(seededRecordDir(proj), "construction", "alpha", STAGE);
+    const dir = join(seededRecordDir(proj), phaseFor(STAGE), "alpha", STAGE);
     writeFileSync(join(dir, "entities.md"), "# Entities\n");
     expect(next(proj)).toMatchObject({ unit: "beta", questions_only: true });
     confirmSummary(proj, "beta");

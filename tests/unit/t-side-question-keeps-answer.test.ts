@@ -24,6 +24,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -63,7 +64,7 @@ function fixture(): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -84,7 +85,7 @@ function fixture(): string {
 ${stages.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -94,7 +95,7 @@ ${stages.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stag
   appendAuditEntry("WORKFLOW_STARTED", { Scope: "feature" }, p);
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", "alpha", slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), "alpha", slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# alpha ${name}\n`);
     if (stage.workspace_requires) {

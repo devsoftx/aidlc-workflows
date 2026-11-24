@@ -34,6 +34,7 @@ import {
   prepareCandidate,
   runMergeTool,
 } from "../harness/team-unit-merge.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -81,7 +82,7 @@ function claimedCheckout(harness: Harness, edit: (checkout: string) => void = ()
 // approval and the stage's gate not on record, in the tracked shards and in
 // the claimed checkout's local record.
 function codeGenerationNotDone(checkout: string): void {
-  const questions = join(seededRecordDir(checkout), "construction", "alpha", "code-generation", "code-generation-questions.md");
+  const questions = join(seededRecordDir(checkout), phaseFor("code-generation"), "alpha", "code-generation", "code-generation-questions.md");
   writeFileSync(questions, readFileSync(questions, "utf-8").replace(/^\[Answer\]:.*$/m, "[Answer]:"));
   const auditDirs = [seededAuditDir(checkout), join(seededRecordDir(checkout), ".aidlc-engine", "audit")];
   for (const path of auditDirs.flatMap((dir) =>

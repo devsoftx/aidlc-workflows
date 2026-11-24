@@ -15,7 +15,7 @@ function vocab(): RowVocab {
       "feature", "billing", "table", "user", "product", "api", "Way of Working",
     ]),
     stages: new Set(["requirements-analysis", "code-generation", "contract-design", "functional-design"]),
-    phases: new Set(["inception", "construction", "initialization"]),
+    phases: new Set(["design", "build", "initialization"]),
     agents: new Set(["aidlc-architecture-reviewer-agent", "aidlc-developer-agent"]),
     scopes: new Set(["classic", "feature"]),
     sensors: new Set(["required-sections", "traceability"]),
@@ -51,8 +51,8 @@ describe("a value AI-DLC's word list holds is kept only where its field holds AI
     expect(shapeValue(v, s, "HUMAN_TURN", "Person Reply", "feature")).toBe("<custom-text-1>");
     expect(shapeValue(v, s, "QUESTION_ASKED", "Options", "billing,Request Changes")).toEqual(["<custom-text-2>", "Request Changes"]);
     expect(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "src/billing/user.ts")).toBe("<custom-file-1>.ts");
-    expect(shapeValue(v, s, "ARTIFACT_UPDATED", "Context", "construction > billing > code-generation > plan.md")).toBe(
-      "construction > <custom-unit-1> > code-generation > <custom-file-2>.md",
+    expect(shapeValue(v, s, "ARTIFACT_UPDATED", "Context", "build > billing > code-generation > plan.md")).toBe(
+      "build > <custom-unit-1> > code-generation > <custom-file-2>.md",
     );
   });
   test("a stage, an agent, a scope and an event stay", () => {
@@ -113,7 +113,7 @@ describe("what the rule wrote reads back as it was", () => {
       ["ERROR_LOGGED", "Command", "aidlc-log engine next --foo=bar"],
       ["ERROR_LOGGED", "Command", "aidlc-log engine next --foo bar"],
       ["ERROR_LOGGED", "Error", 'x Refusing to complete unit "u2-cart-order"'],
-      ["ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/payments"],
+      ["ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/payments"],
     ];
     for (const [event, name, raw] of cases) {
       const out = shapeValue(v, s, event, name, raw);
@@ -153,39 +153,39 @@ describe("what the rule wrote reads back as it was", () => {
   test("a well-known file with no dot in AI-DLC's path is a file, not a folder", () => {
     const v = vocab();
     const s = shape();
-    const out = String(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/u1/Makefile"));
+    const out = String(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/u1/Makefile"));
     expect(out.split("/").pop()).toMatch(/^<custom-file-\d+>$/);
     expect(valueOk(v, "ARTIFACT_UPDATED", "File", out)).toBe(true);
   });
   test("a well-known file name is read in any case at the end, and a folder of that name in the middle is a folder", () => {
     const v = vocab();
     const s = shape();
-    expect(String(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/u1/makefile")).split("/").pop()).toMatch(/^<custom-file-\d+>$/);
-    expect(String(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/VERSION/notes.md")).split("/").at(-2)).toMatch(/^<custom-dir-\d+>$/);
+    expect(String(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/u1/makefile")).split("/").pop()).toMatch(/^<custom-file-\d+>$/);
+    expect(String(shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/VERSION/notes.md")).split("/").at(-2)).toMatch(/^<custom-dir-\d+>$/);
   });
   test("two files of one name in two folders are two files", () => {
     const v = vocab();
     const s = shape();
-    const a = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/u1/notes.md");
-    const b = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/u2/notes.md");
+    const a = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/u1/notes.md");
+    const b = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/u2/notes.md");
     expect(String(a).split("/").pop()).not.toBe(String(b).split("/").pop());
   });
   test("a Unit's name in AI-DLC's path is the Unit's label wherever it stands; another name is a folder before the end and a file at it", () => {
     const v = vocab();
     const s = { ...shape(), known: (raw: string) => (raw === "billing" ? "<unit-1>" : undefined) };
-    const end = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/billing");
-    const middle = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/billing/plan.md");
-    expect(String(end).endsWith("/construction/<unit-1>")).toBe(true);
-    expect(String(middle)).toMatch(/\/construction\/<unit-1>\/<custom-file-\d+>\.md$/);
+    const end = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/billing");
+    const middle = shapeValue(v, s, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/billing/plan.md");
+    expect(String(end).endsWith("/build/<unit-1>")).toBe(true);
+    expect(String(middle)).toMatch(/\/build\/<unit-1>\/<custom-file-\d+>\.md$/);
     const t = shape();
-    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/notes")).toBe(
-      "aidlc/spaces/default/intents/<custom-intent-1>/construction/<custom-file-1>",
+    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/notes")).toBe(
+      "aidlc/spaces/default/intents/<custom-intent-1>/build/<custom-file-1>",
     );
-    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/construction/notes/plan.md")).toBe(
-      "aidlc/spaces/default/intents/<custom-intent-1>/construction/<custom-dir-1>/<custom-file-2>.md",
+    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/build/notes/plan.md")).toBe(
+      "aidlc/spaces/default/intents/<custom-intent-1>/build/<custom-dir-1>/<custom-file-2>.md",
     );
-    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/inception/requirements-analysis/requirements.md")).toBe(
-      "aidlc/spaces/default/intents/<custom-intent-1>/inception/requirements-analysis/requirements.md",
+    expect(shapeValue(v, t, "ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/i/design/requirements-analysis/requirements.md")).toBe(
+      "aidlc/spaces/default/intents/<custom-intent-1>/design/requirements-analysis/requirements.md",
     );
   });
 
@@ -195,13 +195,13 @@ describe("a gate's check states", () => {
   test("each entry keeps its check, its result and AI-DLC's layout; a value of another shape is one label", () => {
     const v = vocab();
     const s = shape();
-    const raw = "required-sections@aidlc/spaces/default/intents/261022-x/inception/requirements-analysis/requirements.md=passed; traceability@aidlc/spaces/default/intents/261022-x/construction/u1/plan.md=failed(2) [detail: aidlc/spaces/default/intents/261022-x/.aidlc-engine/sensors/code-generation/required-sections-1a2b3c4d.md]; +3 more";
+    const raw = "required-sections@aidlc/spaces/default/intents/261022-x/design/requirements-analysis/requirements.md=passed; traceability@aidlc/spaces/default/intents/261022-x/build/u1/plan.md=failed(2) [detail: aidlc/spaces/default/intents/261022-x/.aidlc-engine/sensors/code-generation/required-sections-1a2b3c4d.md]; +3 more";
     const out = String(shapeValue(v, s, "STAGE_AWAITING_APPROVAL", "Sensor State", raw));
     expect(out.split("; ").map((e) => e.replace(/@.*=/, "@=").replace(/ \[detail: .*\]/, " [detail]"))).toEqual(["required-sections@=passed", "traceability@=failed(2) [detail]", "+3 more"]);
     expect(out).not.toContain("261022-x");
     expect(valueOk(v, "STAGE_AWAITING_APPROVAL", "Sensor State", out)).toBe(true);
     expect(shapeValue(v, s, "STAGE_AWAITING_APPROVAL", "Sensor State", "none")).toBe("none");
-    const plugin = String(shapeValue(v, s, "STAGE_AWAITING_APPROVAL", "Sensor State", "plugin-check@aidlc/spaces/default/intents/x/construction/u1/plan.md=passed"));
+    const plugin = String(shapeValue(v, s, "STAGE_AWAITING_APPROVAL", "Sensor State", "plugin-check@aidlc/spaces/default/intents/x/build/u1/plan.md=passed"));
     expect([plugin.startsWith("<custom-value-"), valueOk(v, "STAGE_AWAITING_APPROVAL", "Sensor State", plugin)]).toEqual([true, true]);
     expect(shapeValue(v, s, "STAGE_AWAITING_APPROVAL", "Sensor State", "required-sections looked fine to Kim")).toMatch(/^<custom-text-\d+>$/);
   });
@@ -211,11 +211,11 @@ describe("paths", () => {
   test("AI-DLC's layout stays, the person's names in it are labels", () => {
     const v = vocab();
     const s = shape();
-    expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/default/intents/261022-table-order/inception/requirements-analysis/requirements.md")).toBe(
-      "aidlc/spaces/default/intents/<custom-intent-1>/inception/requirements-analysis/requirements.md",
+    expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/default/intents/261022-table-order/design/requirements-analysis/requirements.md")).toBe(
+      "aidlc/spaces/default/intents/<custom-intent-1>/design/requirements-analysis/requirements.md",
     );
-    expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/acme-team/intents/x/construction/u1/notes.md")).toBe(
-      "aidlc/spaces/<custom-space-1>/intents/<custom-intent-2>/construction/<custom-dir-1>/<custom-file-1>.md",
+    expect(shapeValue(v, s, "ARTIFACT_CREATED", "File", "aidlc/spaces/acme-team/intents/x/build/u1/notes.md")).toBe(
+      "aidlc/spaces/<custom-space-1>/intents/<custom-intent-2>/build/<custom-dir-1>/<custom-file-1>.md",
     );
     expect(shapeValue(v, s, "REVIEW_COMPLETED", "Review File", ".aidlc-engine/reviews/code-generation/stage/aac1a74fe7dc7bbc/1.e9adff770ddb3ca88e6a635ed47dfdb9.review.md")).toBe(
       ".aidlc-engine/reviews/code-generation/stage/<custom-hash-1>/1.<custom-hash-2>.review.md",
@@ -239,7 +239,7 @@ describe("the check refuses a raw value in every kind of field", () => {
     ["HUMAN_TURN", "Person Reply", "feature"],
     ["ARTIFACT_UPDATED", "File", "src/billing/user.ts"],
     ["ARTIFACT_UPDATED", "File", "aidlc/spaces/default/intents/261022-table-order/x.md"],
-    ["ARTIFACT_UPDATED", "Context", "construction > u1-single-order > code-generation > plan.md"],
+    ["ARTIFACT_UPDATED", "Context", "build > u1-single-order > code-generation > plan.md"],
     ["ERROR_LOGGED", "Command", "npm run deploy-billing"],
     ["ERROR_LOGGED", "Command", "aidlc-log engine log review --unit u1-single-order"],
     ["ERROR_LOGGED", "Error", 'Refusing to complete unit "u2-cart-order"'],
@@ -267,7 +267,7 @@ describe("the check refuses a raw value in every kind of field", () => {
 describe("what the rule writes always passes the check, and carries no planted name", () => {
   const NAMES = ["Unit", "Stage", "Person Reply", "File", "Context", "Error", "Command", "Options", "Details", "Status", "Exit Code", "Source", "Target", "Session", "Mystery Field", "Changed", "Sensor State"];
   const PLANTED = ["ContosoPay", "zorbleq", "acme-ledger", "kimjiwoo", "Project Falcon", "481516"];
-  const PIECES = [...PLANTED, "billing", "feature", "code-generation", "construction", "typed", "src/", "aidlc/spaces/default/intents/", "Refusing to complete unit \"", "\"", " > ", ", ", ".ts", "--unit ", "aidlc-log engine log review ", "Q1: A", "aidlc", ".claude", "--foo=", "x ", "<repo>", "<user>", " (and 3 more)", "required-sections@", "=passed", "; ", "=failed(2) [detail: ", "]"];
+  const PIECES = [...PLANTED, "billing", "feature", "code-generation", "build", "typed", "src/", "aidlc/spaces/default/intents/", "Refusing to complete unit \"", "\"", " > ", ", ", ".ts", "--unit ", "aidlc-log engine log review ", "Q1: A", "aidlc", ".claude", "--foo=", "x ", "<repo>", "<user>", " (and 3 more)", "required-sections@", "=passed", "; ", "=failed(2) [detail: ", "]"];
   let seed = 7;
   const rnd = (n: number) => {
     seed = (seed * 1103515245 + 12345) % 2147483648;

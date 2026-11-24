@@ -47,6 +47,7 @@ import {
   runMergeTool,
   tempDirs,
 } from "../harness/team-unit-merge.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 process.env.AIDLC_DISABLE_SENSORS = "1";
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS * 2);
@@ -60,15 +61,16 @@ const FD = "functional-design";
 const BT = "build-and-test";
 const REVIEWER = "aidlc-architecture-reviewer-agent";
 const PER_UNIT = ["functional-design", "nfr-requirements", "nfr-design", "infrastructure-design", "code-generation"];
+// The stages feature runs after Build and Test, skipped here so Build and Test is the last stage the plan runs.
 const LATER = [
-  "ci-pipeline", "deployment-pipeline", "environment-provisioning", "deployment-execution",
-  "observability-setup", "incident-response", "performance-validation", "feedback-optimization",
+  "performance-validation", "code-review", "security-review", "ci-pipeline", "deployment-pipeline",
+  "environment-provisioning", "deployment-execution", "observability-setup", "incident-response", "feedback-optimization",
 ];
 const MOVED = "Moved to Build and Test.";
 const BOARD_BROKEN = "could not compose its local board";
 
 // --- The lead's main: Units alpha, beta and gamma; Functional Design the one
-// Unit stage on the plan, Build and Test the last stage. ---
+// Unit stage on the plan, Build and Test the last stage the plan runs. ---
 
 function leadsCheckout(): { lead: string; remote: string } {
   const lead = createTestProject();
@@ -80,7 +82,7 @@ function leadsCheckout(): { lead: string; remote: string } {
 - **Project**: moving on while teams build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State
@@ -108,7 +110,7 @@ ${LATER.map((slug) => `- [ ] ${slug} \u2014 SKIP\n`).join("")}
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
 `);
-  const depDir = join(seededRecordDir(lead), "inception", "units-generation");
+  const depDir = join(seededRecordDir(lead), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(join(depDir, "unit-of-work-dependency.md"),
     `# Unit dependencies\n\n\`\`\`yaml\nunits:\n${["alpha", "beta", "gamma"].map((u) => `  - name: ${u}\n    depends_on: []\n`).join("")}\`\`\`\n`);
@@ -136,7 +138,7 @@ const unitVerb = (c: string, action: string, unit: string) =>
 
 function writeAndReview(checkout: string, unit: string): void {
   const stage = loadStageGraphAll().find((entry) => entry.slug === FD)!;
-  const dir = join(seededRecordDir(checkout), "construction", unit, FD);
+  const dir = join(seededRecordDir(checkout), phaseFor(FD), unit, FD);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n${unit}\n`);
   for (const args of [
@@ -208,6 +210,9 @@ const status = (checkout: string) => runMergeTool(UTIL, ["status"], checkout);
 const message = (d: Record<string, unknown>) => String(d.message ?? d.question ?? d.error ?? "");
 const lastJump = (checkout: string) => readAuditShardEvents(checkout).filter((row) => row.event === "STAGE_JUMPED").at(-1)!;
 
+// The move runs from Functional Design (design) into Build and Test (test), a forward
+// jump across a phase boundary: the phase events come before STAGE_JUMPED, as the
+// forward-jump contract in t232-phase-progress-flip pins.
 function moveOn(lead: string): { directive: Record<string, unknown>; said: string[]; events: string[] } {
   const from = readAuditShardEvents(lead).length;
   const moved = nextSaying(lead, ["next", "--stage", BT]);
@@ -241,7 +246,7 @@ describe("a lead's main whose team holds a Unit moves on to Build and Test", () 
     const { lead } = gammaClaimed();
     const alphaRow = rowOf(lead, "alpha");
     const moved = moveOn(lead);
-    expect(moved.events).toEqual(["STAGE_JUMPED", "STAGE_STARTED"]);
+    expect(moved.events).toEqual(["PHASE_COMPLETED", "PHASE_VERIFIED", "PHASE_STARTED", "STAGE_JUMPED", "STAGE_STARTED"]);
     expect(stateOf(lead)).toContain("- [-] functional-design");
     expect([moved.directive.kind, moved.directive.stage]).toEqual(["run-stage", BT]);
     expect(moved.said).toEqual([
@@ -365,7 +370,7 @@ describe("moving on where no team holds a Unit of the lead's", () => {
     const teamG = clone(remote, "team-g");
     expect(runMergeTool(UNIT, ["claim", "gamma", "--team", "team-g"], teamG).status).toBe(0);
     const moved = moveOn(lead);
-    expect(moved.events).toEqual(["STAGE_JUMPED", "STAGE_STARTED"]);
+    expect(moved.events).toEqual(["PHASE_COMPLETED", "PHASE_VERIFIED", "PHASE_STARTED", "STAGE_JUMPED", "STAGE_STARTED"]);
     expect([moved.directive.kind, moved.directive.stage]).toEqual(["run-stage", BT]);
     expect(moved.said).toEqual([`${MOVED} Still open on main, and landing as they finish: gamma (team-g).`]);
   });
@@ -399,7 +404,7 @@ describe("moving on where no team holds a Unit of the lead's", () => {
     finish(lead, "alpha");
     nextDirective(lead);
     const moved = moveOn(lead);
-    expect(moved.events).toEqual(["STAGE_SKIPPED", "STAGE_JUMPED", "STAGE_STARTED"]);
+    expect(moved.events).toEqual(["STAGE_SKIPPED", "PHASE_COMPLETED", "PHASE_VERIFIED", "PHASE_STARTED", "STAGE_JUMPED", "STAGE_STARTED"]);
     expect(auditBlockField(lastJump(lead).block, "Unit Work")).toBeNull();
     expect(stateOf(lead)).toContain("- [S] functional-design");
     expect([moved.directive.kind, moved.directive.stage]).toEqual(["run-stage", BT]);

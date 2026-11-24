@@ -49,21 +49,24 @@ the schema accepts and checks it, but nothing acts on it yet, so a stage with
 
 Stage files live under
 `core/aidlc-common/stages/<phase>/<slug>.md`. The phase is the directory.
-There are five:
+There are eight: the hidden Initialization setup and the seven delivery phases.
 
 ```
 core/aidlc-common/stages/
 ├── initialization/
-├── ideation/
-├── inception/
-├── construction/
-└── operation/
+├── discover/
+├── design/
+├── build/
+├── test/
+├── secure/
+├── deploy/
+└── operate/
 ```
 
 The phase a stage sits in is not cosmetic. It determines which
 `phases/<phase>.md` rule layer attaches to the stage at compile time — a
-construction-phase stage inherits the construction phase rule, an inception
-stage inherits the inception rule. (Initialization has no phase rule file.) Put
+build stage inherits the build phase rule, a design stage inherits the design
+rule. (Initialization has no phase rule file.) Put
 the stage where its work actually happens in the lifecycle, not where it's
 convenient to file it.
 
@@ -95,7 +98,7 @@ only under `feature`, looks like this (it compiles as it stands):
 ```markdown
 ---
 slug: glossary-capture
-phase: inception
+phase: design
 execution: CONDITIONAL
 condition: Execute when the requirements use domain terms the team must agree on. Skip when every term is already defined.
 lead_agent: aidlc-product-agent
@@ -112,7 +115,7 @@ sensors:
   - required-sections
 scopes:
   - feature
-inputs: <record>/inception/requirements-analysis/requirements.md
+inputs: <record>/design/requirements-analysis/requirements.md
 outputs: glossary.md (under this stage's record dir, engine-resolved)
 ---
 
@@ -122,14 +125,14 @@ Collect the domain terms the requirements use and agree one meaning for each.
 
 ## Steps
 
-1. Read `<record>/inception/requirements-analysis/requirements.md` and list every domain term it uses.
+1. Read `<record>/design/requirements-analysis/requirements.md` and list every domain term it uses.
 2. For each term, write one plain definition and the requirement IDs that use it.
 3. Write `glossary.md` with `## Terms` and `## Open Terms` sections.
 4. Follow stage-protocol.md for the approval gate.
 
 ## Sensors
 
-This stage's output is a markdown artefact under `<record>/inception/glossary-capture/`.
+This stage's output is a markdown artefact under `<record>/design/glossary-capture/`.
 
 Imports: `required-sections`.
 
@@ -232,7 +235,7 @@ aidlc engine graph validate-scope <scope-name>
 ```
 
 For the glossary stage above, dropped into an installed Claude Code tree as
-`.claude/aidlc-common/stages/inception/glossary-capture.md` and compiled with
+`.claude/aidlc-common/stages/design/glossary-capture.md` and compiled with
 `aidlc engine graph compile`, the feature path now includes it (shortened):
 
 ```text
@@ -245,16 +248,20 @@ domain-design
 units-generation
 contract-design
 delivery-planning
-glossary-capture
 functional-design
+nfr-requirements
+nfr-design
+infrastructure-design
+glossary-capture
+code-generation
 ...
 $ aidlc engine graph producers glossary
 glossary-capture
 ```
 
-It lands at the end of Inception, not right after Requirements Analysis: a new
-stage takes the next free number in its phase, after the stages already there,
-and no existing stage is renumbered. A new stage that runs once per Unit
+It lands at the end of Design, after the per-Unit design stages, not right after
+Requirements Analysis: a new stage takes the next free number in its phase,
+after the stages already there, and no existing stage is renumbered. A new stage that runs once per Unit
 (`for_each: unit-of-work`) still runs with the other per-Unit stages of its
 phase, whatever its number
 ([Stage Definition](../reference/15-stage-definition.md#for_each)). An edge from an earlier stage to the new
@@ -263,7 +270,7 @@ one is refused at compile; with `glossary-capture` added to User Stories'
 
 ```text
 $ aidlc engine graph compile
-aidlc-graph compile: Compile invariant violated: stage "user-stories" (2.4) requires "glossary-capture" (2.10) - dependency must be lower-numbered. Fix: either renumber in stage-graph.json to match the dependency direction, or remove the offending requires_stage edge.
+aidlc-graph compile: Compile invariant violated: stage "user-stories" (2.3) requires "glossary-capture" (2.13) - dependency must be lower-numbered. Fix: either renumber in stage-graph.json to match the dependency direction, or remove the offending requires_stage edge.
 ```
 
 A brand-new stage does **not** automatically run in any scope. Scope

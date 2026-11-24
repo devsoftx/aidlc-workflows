@@ -48,7 +48,6 @@ import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
   appendFileSync,
-  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -108,6 +107,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -636,7 +636,7 @@ function launch(
 // The zero-Unit Code Generation plan, approved the way the engine records an
 // approval (questions-file tags plus the receipt), as t265's seedUnit does.
 function seedApprovedStagePlan(dir: string): string {
-  const recordDir = join(seededRecordDir(dir), "construction", "code-generation");
+  const recordDir = join(seededRecordDir(dir), phaseFor("code-generation"), "code-generation");
   mkdirSync(recordDir, { recursive: true });
   const authority = resolveCodeGenerationAuthority(dir, { unit: null });
   const contract = resolveTestingPosture(dir);
@@ -1000,7 +1000,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     const originalInput = {
       agent: "aidlc-product-agent",
       prompt:
-        "Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution.",
+        "Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution.",
     };
     const first = runAdapter(dir, "guard-tool-call", {
       hook_event_name: "PreToolUse",
@@ -1067,7 +1067,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
       tool_input: {
         agent: "aidlc-product-agent",
         prompt:
-          "Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution.",
+          "Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution.",
       },
     });
     expect(result.code).toBe(0);
@@ -1085,7 +1085,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
 
   test("6: post-tool Write into the record lands ARTIFACT_CREATED (path re-keyed)", () => {
     const dir = scratchProject(true);
-    const artifact = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+    const artifact = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
     mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(artifact, "# Intent\n", "utf-8");
     // The live capture's tool_input carries Copilot's `path` key — the shim
@@ -1200,7 +1200,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     // calls carry a toolu_* id as session_id (live-verified in the compat
     // spike, T6b/T12). The ledger must resolve the identity and the core
     // reviewer-scope hook must convert the block to the deny JSON.
-    const sibling = join(record, "construction", "U02", "functional-design", "design.md");
+    const sibling = join(record, phaseFor("functional-design"), "U02", "functional-design", "design.md");
     const r = runAdapter(dir, "guard-tool-call", {
       hook_event_name: "PreToolUse",
       session_id: "toolu_test0000000000000001",
@@ -1253,8 +1253,8 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
 
   test("17: createFile/filePath and editFiles/files reach audit and sensors", () => {
     const dir = scratchProject(true);
-    const first = join(seededRecordDir(dir), "construction", "U01", "code", "first.ts");
-    const second = join(seededRecordDir(dir), "construction", "U01", "code", "second.ts");
+    const first = join(seededRecordDir(dir), phaseFor("code-generation"), "U01", "code", "first.ts");
+    const second = join(seededRecordDir(dir), phaseFor("code-generation"), "U01", "code", "second.ts");
     mkdirSync(dirname(first), { recursive: true });
     writeFileSync(first, "export const first = true;\n", "utf-8");
     writeFileSync(second, "export const second = true;\n", "utf-8");
@@ -1284,7 +1284,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     const dir = scratchProject(true);
     const added = join(
       seededRecordDir(dir),
-      "construction",
+      phaseFor("code-generation"),
       "U01",
       "code",
       "added.ts",
@@ -1313,7 +1313,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
   // patch text itself, not an object (the GitHub Copilot app on Windows).
   test("17b: apply_patch given the patch as plain text is audited", () => {
     const dir = scratchProject(true);
-    const added = join(seededRecordDir(dir), "inception", "plain.md");
+    const added = join(seededRecordDir(dir), phaseFor("requirements-analysis"), "plain.md");
     mkdirSync(dirname(added), { recursive: true });
     writeFileSync(added, "# Plain\n", "utf-8");
 
@@ -1333,7 +1333,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
   // The CLI's own hook payload carries the arguments as toolArgs, a JSON string.
   test("17c: an apply_patch whose arguments come as toolArgs is audited", () => {
     const dir = scratchProject(true);
-    const files = ["as-text.md", "as-json.md"].map((name) => join(seededRecordDir(dir), "inception", name));
+    const files = ["as-text.md", "as-json.md"].map((name) => join(seededRecordDir(dir), phaseFor("requirements-analysis"), name));
     mkdirSync(dirname(files[0]), { recursive: true });
     for (const file of files) writeFileSync(file, "# Doc\n", "utf-8");
     const patch = (file: string) => `*** Begin Patch\n*** Add File: ${relative(dir, file)}\n+# Doc\n*** End Patch\n`;
@@ -1355,7 +1355,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
   test("17d: an apply_patch Copilot CLI names Edit records each file it adds, updates, deletes or moves", () => {
     for (const eol of ["\n", "\r\n"]) {
       const dir = scratchProject(true);
-      const doc = (name: string) => join(seededRecordDir(dir), "inception", name);
+      const doc = (name: string) => join(seededRecordDir(dir), phaseFor("requirements-analysis"), name);
       mkdirSync(dirname(doc("added.md")), { recursive: true });
       // The tree after the patch: deleted.md and moved-from.md are gone.
       for (const name of ["added.md", "updated.md", "moved-to.md"]) writeFileSync(doc(name), `# ${name}\n`, "utf-8");
@@ -1448,7 +1448,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
       ...identity,
     });
 
-    const sibling = join(record, "construction", "U02", "functional-design", "design.md");
+    const sibling = join(record, phaseFor("functional-design"), "U02", "functional-design", "design.md");
     const blocked = runAdapter(dir, "guard-tool-call", {
       hook_event_name: "PreToolUse",
       session_id: hostSessionId,
@@ -1503,7 +1503,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
       agent_id: "vscode-agent-patch",
     });
 
-    const sibling = join(record, "construction", "U02", "code", "sibling.ts");
+    const sibling = join(record, phaseFor("code-generation"), "U02", "code", "sibling.ts");
     const result = runAdapter(dir, "guard-tool-call", {
       hook_event_name: "PreToolUse",
       session_id: hostSessionId,
@@ -1566,12 +1566,12 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
         tool_name: "file_search",
         tool_input: { query },
       });
-    const currentUnit = search(join(record, "construction", "U01", "**", "*.ts"));
+    const currentUnit = search(join(record, phaseFor("code-generation"), "U01", "**", "*.ts"));
     expect(currentUnit.stdout.trim()).toBe("");
 
     for (const query of [
-      join(record, "construction", "U02", "**", "*.ts"),
-      join(record, "construction", "*", "**", "*.ts"),
+      join(record, phaseFor("code-generation"), "U02", "**", "*.ts"),
+      join(record, phaseFor("code-generation"), "*", "**", "*.ts"),
       "**/*",
     ]) {
       const blocked = search(query);
@@ -1617,8 +1617,8 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
         tool_name: "grep",
         tool_input: { pattern: "TODO", paths },
       });
-    const own = join(record, "construction", "U01");
-    const sibling = join(record, "construction", "U02");
+    const own = join(record, phaseFor("functional-design"), "U01");
+    const sibling = join(record, phaseFor("functional-design"), "U02");
     expect(grep(own).stdout.trim()).toBe("");
     expect(grep([own]).stdout.trim()).toBe("");
     for (const paths of [sibling, [sibling], [own, sibling]]) {
@@ -3096,7 +3096,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     writeFileSync(seededStateFile(dir), [
       "# AI-DLC State Tracking", "",
       "## Project Information", "- **Project**: unit-major walk", "- **Project Type**: Greenfield",
-      "- **Scope**: feature", "- **State Version**: 8", "- **Skeleton Stance**: on", "",
+      "- **Scope**: feature", "- **State Version**: 10", "- **Skeleton Stance**: on", "",
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major",
       "- **Unit Ownership**: solo", "- **Summary Confirmation**: off (set by you)", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none",
@@ -3152,7 +3152,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     writeFileSync(seededStateFile(dir), [
       "# AI-DLC State Tracking", "",
       "## Project Information", "- **Project**: unit-major walk", "- **Project Type**: Greenfield",
-      "- **Scope**: feature", "- **State Version**: 8", "- **Skeleton Stance**: on", "",
+      "- **Scope**: feature", "- **State Version**: 10", "- **Skeleton Stance**: on", "",
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major",
       "- **Unit Ownership**: solo", "- **Summary Confirmation**: off (set by you)", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none",
@@ -3232,15 +3232,16 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     walk.unitVerb("start");
     walk.writeArtifacts();
     walk.unitVerb("complete");
+    // A directory named like a shard: the lister still returns it, and opening it
+    // as a regular file fails for every uid, where mode 0o000 does not stop root.
     const unreadable = join(seededAuditDir(walk.dir), "zzzz-unreadable.md");
-    writeFileSync(unreadable, "# AI-DLC Audit Log\n");
-    chmodSync(unreadable, 0o000);
+    mkdirSync(unreadable, { recursive: true });
     try {
       const kept = walk.stop();
       expect(kept.decision).toBe("block");
       expect(kept.reason).toBe(carryingOn("functional-design", "alpha"));
     } finally {
-      chmodSync(unreadable, 0o600);
+      rmSync(unreadable, { recursive: true, force: true });
     }
   });
 
@@ -4092,7 +4093,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     );
     const contract = posture(["render"]);
     expect(contract.status, contract.stderr).toBe(0);
-    const recordDir = join(seededRecordDir(dir), "construction", "code-generation");
+    const recordDir = join(seededRecordDir(dir), phaseFor("code-generation"), "code-generation");
     mkdirSync(recordDir, { recursive: true });
     writeFileSync(
       join(recordDir, "code-generation-plan.md"),
@@ -4552,7 +4553,7 @@ describe("t249 Copilot hook adapter (live-captured payload fixtures)", () => {
     // Every launch tool rewrites the brief with the stage rules; the subagent's
     // first message is the rewritten brief, whatever its line endings.
     for (const [index, launcher] of LAUNCHERS.entries()) {
-      const original = `Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution (${launcher.toolName}).`;
+      const original = `Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution (${launcher.toolName}).`;
       const pre = launch(dir, launcher, "aidlc-product-agent", original, session);
       expect(pre.code, pre.stderr).toBe(0);
       const rewritten = String(hostRewrite(pre.stdout)?.prompt ?? "");
@@ -5746,7 +5747,7 @@ function reviewerOnU01(dir: string, session: string): void {
 // Requirements Analysis with its review recorded READY: the requirements file
 // is frozen until the person decides at the gate.
 function frozenRequirements(dir: string): string {
-  const stage = join(seededRecordDir(dir), "inception", "requirements-analysis");
+  const stage = join(seededRecordDir(dir), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(stage, { recursive: true });
   writeFileSync(join(stage, "requirements.md"), "# Requirements\n");
   writeFileSync(join(stage, "requirements-analysis-questions.md"), "# Requirements Questions\n");
@@ -5817,7 +5818,7 @@ describe("t249 Copilot guard-tool-call runs the four guards in the adapter's own
   test("G3: every guard decision is byte for byte the one the guard's own process gave", () => {
     const session = "11111111-2222-4333-8444-555555555557";
     const sibling = (dir: string, unit: string, file: string) =>
-      join(seededRecordDir(dir), "construction", unit, "functional-design", file);
+      join(seededRecordDir(dir), phaseFor("functional-design"), unit, "functional-design", file);
     const cases: Array<{
       name: string;
       project: () => string;
@@ -5930,7 +5931,7 @@ describe("t249 Copilot guard-tool-call runs the four guards in the adapter's own
           hook_event_name: "PreToolUse",
           cwd: dir,
           tool_name: "agent",
-          tool_input: { agent: "aidlc-product-agent", prompt: "Run .aidlc/aidlc-common/stages/inception/user-stories.md and write the contribution." },
+          tool_input: { agent: "aidlc-product-agent", prompt: "Run .aidlc/aidlc-common/stages/design/user-stories.md and write the contribution." },
         }),
         expect: (d) => expect(d.stdout).toContain("AIDLC_DISPATCH_RULES_BEGIN"),
       },
@@ -5987,7 +5988,7 @@ describe("t249 a jump the person asks for starts its step in the claimed next", 
     const dir = orchestrationProject();
     const session = "jump-one-step-owner";
     driveToRunStage(dir, session);
-    let routed = runLifecycle(dir, session, "direct", ["next", "--phase", "ideation"], `${session}-jump`);
+    let routed = runLifecycle(dir, session, "direct", ["next", "--phase", "discover"], `${session}-jump`);
     // No command handed back to type: the claimed `next` made the jump itself.
     expect(String(routed.directive.message ?? ""), JSON.stringify(routed.directive)).not.toContain("to perform the jump");
     expect(readFileSync(seededStateFile(dir), "utf-8")).toContain("- **Current Stage**: intent-capture");

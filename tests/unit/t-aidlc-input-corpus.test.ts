@@ -46,6 +46,16 @@ import {
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
+// No chat names itself to the tools: a run from inside a host's own chat would otherwise lend the fixture projects'
+// hooks that chat, and a gate's first write (no chat of its own) would bind to it and miss the record's audit shard.
+// The variables are restored after this file's tests.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "SANDBOX_RUNTIME",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+
 const PARALLEL = Math.max(1, Number.parseInt(process.env.AIDLC_INPUT_PARALLEL ?? "6", 10) || 6);
 const ONLY = process.env.AIDLC_INPUT_ONLY?.split(",").map((s) => s.trim()).filter(Boolean);
 // How many items per category also take their turn through the Codex, Kiro CLI and Kiro IDE hooks. Fixed, not seeded:
@@ -107,6 +117,11 @@ beforeAll(async () => {
 
 afterAll(() => {
   while (projects.length > 0) cleanupTestProject(projects.pop());
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
 });
 
 test("the corpus is well formed", () => {

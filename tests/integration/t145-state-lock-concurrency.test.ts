@@ -35,7 +35,7 @@
 //
 // FIXTURE DISCIPLINE: each test gets a fresh createTestProject() (temp dir with
 // an aidlc/ shell) seeded by a REAL `aidlc-utility intent-create --scope bugfix`
-// run, so the state file is the genuine v8 template the handlers expect
+// run, so the state file is the genuine creation template the handlers expect
 // (Revision Count, checkbox slugs, Scope, the lot). cleanup rm -rf's the temp
 // dir; the audit lock lives under tmpdir() and is asserted-then-removed
 // (afterEach safety). Nothing is written under tests/fixtures/**.
@@ -56,6 +56,7 @@ import {
   cleanupTestProject,
   createTestProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   auditLockDir,
   getField,
@@ -144,7 +145,7 @@ function stateSync(args: string[], p: string): { status: number; stdout: string;
 /** Record a terminal READY review so a reviewer-bearing stage passes the §12a
  *  gate precondition (these tests target the state lock, not the reviewer gate). */
 function logReview(slug: string, reviewer: string, p: string): void {
-  const artifact = join(recordDirOf(p), "inception", slug, "requirements.md");
+  const artifact = join(recordDirOf(p), phaseFor(slug), slug, "requirements.md");
   mkdirSync(dirname(artifact), { recursive: true });
   const current = existsSync(artifact)
     ? readFileSync(artifact, "utf-8")
@@ -217,8 +218,8 @@ async function fireParallel(p: string, argSets: string[][]): Promise<number[]> {
 describe("t145 C2b state-lock lost-update safety (mechanism cli — parallel spawn)", () => {
   beforeEach(() => {
     proj = createTestProject();
-    // Seed a genuine v8 state file via the real intent-create path (Scope=bugfix
-    // gives a running INCEPTION workflow at requirements-analysis with
+    // Seed a genuine state file via the real intent-create path (Scope=bugfix
+    // gives a running DESIGN workflow at requirements-analysis with
     // code-generation next - the shape the gate handlers expect).
     const init = Bun.spawnSync({
       cmd: [BUN, UTIL_TOOL, "intent-create", "--scope", "bugfix", "--project-dir", proj],

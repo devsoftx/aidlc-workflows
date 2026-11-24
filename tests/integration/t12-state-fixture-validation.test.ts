@@ -24,6 +24,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC, FIXTURES_DIR } from "../harness/fixtures.ts";
+import { CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 const MID = readFileSync(join(FIXTURES_DIR, "state-mid-ideation.md"), "utf-8");
 const INIT = readFileSync(
@@ -50,10 +51,13 @@ const SECTION_HEADINGS = [
 
 const PHASE_HEADINGS = [
   "### INITIALIZATION PHASE",
-  "### IDEATION PHASE",
-  "### INCEPTION PHASE",
-  "### CONSTRUCTION PHASE",
-  "### OPERATION PHASE",
+  "### DISCOVER PHASE",
+  "### DESIGN PHASE",
+  "### BUILD PHASE",
+  "### TEST PHASE",
+  "### SECURE PHASE",
+  "### DEPLOY PHASE",
+  "### OPERATE PHASE",
 ];
 
 describe("t12 state-fixture structural meta-test (migrated from t12-state-fixture-validation.sh, plan 20)", () => {
@@ -66,7 +70,7 @@ describe("t12 state-fixture structural meta-test (migrated from t12-state-fixtur
     }
   });
 
-  test("mid-ideation carries all 5 template phase headings [.sh 9-13]", () => {
+  test("mid-ideation carries all 8 template phase headings [.sh 9-13]", () => {
     for (const h of PHASE_HEADINGS) {
       expect(MID.includes(h)).toBe(true);
     }
@@ -80,8 +84,8 @@ describe("t12 state-fixture structural meta-test (migrated from t12-state-fixtur
     expect(MID.includes("**Current Stage**:")).toBe(true);
     expect(TEMPLATE.includes("**Current Stage**:")).toBe(true);
 
-    expect(MID.includes("**State Version**: 8")).toBe(true);
-    expect(TEMPLATE.includes("**State Version**: 8")).toBe(true);
+    expect(MID.includes(`**State Version**: ${CURRENT_STATE_VERSION}`)).toBe(true);
+    expect(TEMPLATE.includes(`**State Version**: ${CURRENT_STATE_VERSION}`)).toBe(true);
 
     expect(MID.includes("**Worktree Path**:")).toBe(true);
     expect(TEMPLATE.includes("**Worktree Path**:")).toBe(true);
@@ -93,11 +97,11 @@ describe("t12 state-fixture structural meta-test (migrated from t12-state-fixtur
     expect(TEMPLATE.includes("**Practices Affirmed Timestamp**:")).toBe(true);
   });
 
-  test("init-done declares Lifecycle Phase IDEATION (the key differentiator) [.sh 20]", () => {
-    expect(INIT.includes("**Lifecycle Phase**: IDEATION")).toBe(true);
-    // The template enumerates IDEATION as a valid Lifecycle Phase value, so the
+  test("init-done declares Lifecycle Phase DISCOVER (the key differentiator) [.sh 20]", () => {
+    expect(INIT.includes("**Lifecycle Phase**: DISCOVER")).toBe(true);
+    // The template enumerates DISCOVER as a valid Lifecycle Phase value, so the
     // fixture's value is a real template option, not a typo.
-    expect(TEMPLATE.includes("IDEATION")).toBe(true);
+    expect(TEMPLATE.includes("DISCOVER")).toBe(true);
   });
 });
 
@@ -105,9 +109,9 @@ describe("t12 state-fixture structural meta-test (migrated from t12-state-fixtur
 // Graph-parity meta-test. The tests above only pin headings/version, so a
 // fixture's Stage Progress grid could silently drift from the compiled stage
 // graph (the exact defect that let the 32-stage grids survive the 33-stage
-// contract-design insertion). This block reads the COMPILED inception slugs
+// contract-design insertion). This block reads the COMPILED design slugs
 // from the shipped stage-graph.json and asserts every full-grid fixture's
-// inception rows track it — specifically that contract-design was inserted
+// design rows track it — specifically that contract-design was inserted
 // between units-generation and delivery-planning and the old application-design
 // slug is gone. Deriving the expected slugs from the graph (not a hardcoded
 // list) means this check follows future graph changes instead of pinning a
@@ -124,8 +128,8 @@ const STAGE_GRAPH = JSON.parse(
   readFileSync(join(AIDLC_SRC, "tools", "data", "stage-graph.json"), "utf-8"),
 ) as StageGraphNode[];
 
-const COMPILED_INCEPTION_SLUGS = STAGE_GRAPH.filter(
-  (node) => node.phase === "inception",
+const COMPILED_DESIGN_SLUGS = STAGE_GRAPH.filter(
+  (node) => node.phase === "design",
 )
   .sort((a, b) => {
     const [amaj, amin] = a.number.split(".").map(Number);
@@ -135,19 +139,19 @@ const COMPILED_INCEPTION_SLUGS = STAGE_GRAPH.filter(
   .map((node) => node.slug);
 
 // Every shipped state-* fixture — the row-parity check applies to the ones that
-// actually enumerate the inception phase (see the units-generation guard below).
+// actually enumerate the design phase (see the units-generation guard below).
 const STATE_FIXTURES = readdirSync(FIXTURES_DIR).filter((f) =>
   /^state-.*\.md$/.test(f),
 );
 
 /**
- * Extract the ordered stage slugs listed under a fixture's `### INCEPTION PHASE`
+ * Extract the ordered stage slugs listed under a fixture's `### DESIGN PHASE`
  * heading (the `- [x]/[ ]/[-]/[S] <slug> — ...` rows), stopping at the next
- * `### ` phase heading. Returns [] when the fixture carries no inception grid.
+ * `### ` phase heading. Returns [] when the fixture carries no design grid.
  */
-function inceptionSlugs(md: string): string[] {
+function designSlugs(md: string): string[] {
   const lines = md.split("\n");
-  const start = lines.findIndex((l) => l.trim() === "### INCEPTION PHASE");
+  const start = lines.findIndex((l) => l.trim() === "### DESIGN PHASE");
   if (start === -1) return [];
   const slugs: string[] = [];
   for (let i = start + 1; i < lines.length; i++) {
@@ -159,30 +163,30 @@ function inceptionSlugs(md: string): string[] {
   return slugs;
 }
 
-describe("t12 stage-graph parity — fixture inception grids track the compiled graph", () => {
+describe("t12 stage-graph parity — fixture design grids track the compiled graph", () => {
   test("compiled graph inserts contract-design between units-generation and delivery-planning and drops application-design", () => {
-    expect(COMPILED_INCEPTION_SLUGS).toContain("contract-design");
-    expect(COMPILED_INCEPTION_SLUGS).not.toContain("application-design");
-    const ug = COMPILED_INCEPTION_SLUGS.indexOf("units-generation");
-    const cd = COMPILED_INCEPTION_SLUGS.indexOf("contract-design");
-    const dp = COMPILED_INCEPTION_SLUGS.indexOf("delivery-planning");
+    expect(COMPILED_DESIGN_SLUGS).toContain("contract-design");
+    expect(COMPILED_DESIGN_SLUGS).not.toContain("application-design");
+    const ug = COMPILED_DESIGN_SLUGS.indexOf("units-generation");
+    const cd = COMPILED_DESIGN_SLUGS.indexOf("contract-design");
+    const dp = COMPILED_DESIGN_SLUGS.indexOf("delivery-planning");
     expect(ug).toBeGreaterThanOrEqual(0);
     expect(cd).toBeGreaterThan(ug);
     expect(dp).toBeGreaterThan(cd);
   });
 
   for (const fixture of STATE_FIXTURES) {
-    const slugs = inceptionSlugs(
+    const slugs = designSlugs(
       readFileSync(join(FIXTURES_DIR, fixture), "utf-8"),
     );
-    // Only fixtures that actually enumerate inception carry a full grid; skip
+    // Only fixtures that actually enumerate design carry a full grid; skip
     // phase-partial fixtures (no units-generation row) so we don't assert
-    // row-parity on grids that never listed the inception stages.
+    // row-parity on grids that never listed the design stages.
     if (!slugs.includes("units-generation")) continue;
 
-    test(`${fixture} inception rows match the compiled inception slugs`, () => {
+    test(`${fixture} design rows match the compiled design slugs`, () => {
       // Row-for-row parity with the compiled graph — tracks any future change.
-      expect(slugs).toEqual(COMPILED_INCEPTION_SLUGS);
+      expect(slugs).toEqual(COMPILED_DESIGN_SLUGS);
       const ug = slugs.indexOf("units-generation");
       const cd = slugs.indexOf("contract-design");
       const dp = slugs.indexOf("delivery-planning");

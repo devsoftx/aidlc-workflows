@@ -14,8 +14,11 @@ import { loadVocab } from "../../core/skills/aidlc-issue-report/scripts/lib-voca
 import { gateContext } from "../../core/skills/aidlc-issue-report/scripts/lib-check.ts";
 import { safeHits } from "../../core/skills/aidlc-issue-report/scripts/lib-gate.ts";
 import { importAidlcTools } from "../../core/skills/aidlc-issue-report/scripts/lib-project.ts";
+import { pointAtCompiledData } from "../harness/fixtures.ts";
 
 // The AI-DLC install whose own file-match rule the vocabulary borrows.
+pointAtCompiledData();
+
 const RULES = `${import.meta.dir}/../../core/tools/aidlc-doctor-bundle.ts`; // rules-path
 
 function install(): string {
@@ -28,7 +31,7 @@ function install(): string {
     ".kiro/hooks/aidlc-plan-approval-guard.ts": `const H = 'plan-approval-guard'; const M = "Code generation cannot run until the plan is approved:";`,
     ".kiro/sensors/aidlc-traceability.md": "",
     ".kiro/scopes/feature.md": "",
-    ".kiro/aidlc-common/stages/inception/requirements-analysis.md": "# Requirements Analysis",
+    ".kiro/aidlc-common/stages/design/requirements-analysis.md": "# Requirements Analysis",
   };
   for (const [rel, text] of Object.entries(files)) {
     mkdirSync(dirname(join(project, rel)), { recursive: true });
@@ -39,14 +42,14 @@ function install(): string {
   const sha = (t: string) => `sha256:${createHash("sha256").update(t).digest("hex")}`;
   writeFileSync(join(data, "aidlc-manifest.json"), JSON.stringify({ files: Object.fromEntries(Object.entries(files).map(([f, t]) => [f, sha(t)])) }));
   // A team's own stage, added the documented way, has no `plugin` owner and no stage file in the manifest.
-  mkdirSync(join(project, ".kiro", "aidlc-common", "stages", "inception"), { recursive: true });
-  writeFileSync(join(project, ".kiro", "aidlc-common", "stages", "inception", "globex-pci-review.md"), "# PCI review");
+  mkdirSync(join(project, ".kiro", "aidlc-common", "stages", "design"), { recursive: true });
+  writeFileSync(join(project, ".kiro", "aidlc-common", "stages", "design", "globex-pci-review.md"), "# PCI review");
   writeFileSync(
     join(data, "stage-graph.json"),
     JSON.stringify([
-      { slug: "requirements-analysis", phase: "inception" },
-      { slug: "contoso-review", phase: "inception", plugin: "acme-pack" },
-      { slug: "globex-pci-review", phase: "inception" },
+      { slug: "requirements-analysis", phase: "design" },
+      { slug: "contoso-review", phase: "design", plugin: "acme-pack" },
+      { slug: "globex-pci-review", phase: "design" },
     ]),
   );
   return project;

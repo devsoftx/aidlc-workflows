@@ -1203,7 +1203,7 @@ describe("t266 conversation-language rule layer", () => {
   // countermands the deterministic writers a stage invokes by contract —
   // practices-discovery Step 7 runs `aidlc-state.ts practices-promote`, which
   // replaces five sections of `team.md` and appends to `project.md`
-  // (core/aidlc-common/stages/inception/practices-discovery.md,
+  // (core/aidlc-common/stages/design/practices-discovery.md,
   // core/tools/aidlc-state.ts). So every reference to the memory tree that sits
   // near a write/edit verb has to be scoped to a language switch, whatever the
   // wording. Pinning one past phrasing would only pin the one regression.

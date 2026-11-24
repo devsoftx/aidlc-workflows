@@ -25,6 +25,7 @@ import { join } from "node:path";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { activeDirectiveStorageDir, sessionsDir } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { cleanupTestProject, resetAidlcEnv, seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   A, B, BUN, C, D, built, codeGeneration, engine, field, inception, lastTurn, openIn, reviewedStage, rows, say, shellQuote,
   STAGE, staffing, step, tool,
@@ -35,6 +36,17 @@ resetAidlcEnv();
 
 const ID = /^[0-9a-f]{8}$/;
 const SHOWS = /^sha256:[0-9a-f]{64}$/;
+
+// `next` as the agent runs it: a load-steering directive (the stage's run directive is over the
+// delivery budget) is consumed by its continuation, and the step it stands for is what the agent gets.
+// Same path as the corpus `next` helper; kept local so the shared step() stays as the raw call.
+function nextAsAgent(proj: string, chat: string, args: string[]): Record<string, unknown> {
+  let directive = step(proj, chat, args);
+  for (let attempts = 0; directive.kind === "load-steering" && attempts < 10; attempts++) {
+    directive = step(proj, chat, ["continue", String(directive.receipt)]);
+  }
+  return directive;
+}
 
 const projects: string[] = [];
 afterEach(() => {
@@ -71,7 +83,7 @@ describe("the gate", () => {
       .toEqual([[id, B]]);
     // A new chat's `next` shows the open gate again under the same id.
     say(proj, C, "/aidlc");
-    const again = step(proj, C, ["next"]);
+    const again = nextAsAgent(proj, C, ["next"]);
     expect(again.gate_only, JSON.stringify(again)).toBe(true);
     expect(again.question_id).toBe(id);
     expect(rows(proj, "QUESTION_SHOWN").map((row) => field(row, "Question Chat"))).toEqual([B, C]);
@@ -173,7 +185,7 @@ describe("a checkpoint question", () => {
 describe("an engine question", () => {
   test("is recorded once when it is handed out, shown again in a new chat, and found again in a clone", () => {
     const proj = staffing(projects);
-    const ask = step(proj, A, ["next"]);
+    const ask = nextAsAgent(proj, A, ["next"]);
     expect(ask.ask_type, JSON.stringify(ask)).toBe("construction-staffing");
     const [asked] = rows(proj, "QUESTION_ASKED");
     expect(field(asked, "Question Id")).toMatch(ID);
@@ -182,10 +194,10 @@ describe("an engine question", () => {
     expect(field(asked, "Question Chat")).toBe(A);
     expect(field(asked, "Question Shows")).toMatch(SHOWS);
     expect(field(asked, "Stage")).toBe("functional-design");
-    expect(step(proj, A, ["next"]).question_id).toBe(ask.question_id);
+    expect(nextAsAgent(proj, A, ["next"]).question_id).toBe(ask.question_id);
     expect(rows(proj, "QUESTION_ASKED")).toHaveLength(1);
     expect(rows(proj, "QUESTION_SHOWN")).toEqual([]);
-    expect(step(proj, B, ["next"]).question_id).toBe(ask.question_id);
+    expect(nextAsAgent(proj, B, ["next"]).question_id).toBe(ask.question_id);
     expect(rows(proj, "QUESTION_SHOWN").map((row) => field(row, "Question Chat"))).toEqual([B]);
     say(proj, B, "just me I think");
     expect(openIn(proj)).toEqual([ask.question_id as string]);
@@ -194,7 +206,7 @@ describe("an engine question", () => {
     for (const runtime of [join(sessionsDir(proj), "plan-approval"), activeDirectiveStorageDir(proj)]) {
       rmSync(runtime, { recursive: true, force: true });
     }
-    expect(step(proj, C, ["next"]).question_id).toBe(ask.question_id);
+    expect(nextAsAgent(proj, C, ["next"]).question_id).toBe(ask.question_id);
     expect(rows(proj, "QUESTION_ASKED")).toHaveLength(1);
     expect(rows(proj, "QUESTION_SHOWN").map((row) => field(row, "Question Chat"))).toEqual([B, C]);
   });
@@ -205,7 +217,7 @@ describe("an engine question", () => {
 describe("the code plan question", () => {
   test("goes on the record with its id beside the ask's own, and is shown again in a new chat under it", () => {
     const proj = codeGeneration(projects);
-    const ask = step(proj, A, ["next"]);
+    const ask = nextAsAgent(proj, A, ["next"]);
     expect(ask.ask_type, JSON.stringify(ask)).toBe("plan-approval");
     const [asked] = rows(proj, "QUESTION_ASKED");
     expect(field(asked, "Question Type")).toBe("plan-approval");
@@ -213,8 +225,8 @@ describe("the code plan question", () => {
     expect(ask.question_id).toBe(field(asked, "Question Id"));
     expect(field(asked, "Ask Id")).toMatch(/^[0-9a-f]{32}$/);
     expect(field(asked, "Question Chat")).toBe(A);
-    expect(step(proj, A, ["next"]).question_id).toBe(ask.question_id);
-    expect(step(proj, B, ["next"]).question_id).toBe(ask.question_id);
+    expect(nextAsAgent(proj, A, ["next"]).question_id).toBe(ask.question_id);
+    expect(nextAsAgent(proj, B, ["next"]).question_id).toBe(ask.question_id);
     expect(rows(proj, "QUESTION_ASKED")).toHaveLength(1);
     expect(rows(proj, "QUESTION_SHOWN").map((row) => field(row, "Question Chat"))).toEqual([B]);
   });
@@ -248,7 +260,7 @@ describe("the questions file", () => {
     const questionEntryDigests = await digests();
     const proj = inception(projects);
     appendAuditEntry("STAGE_STARTED", { Stage: STAGE }, proj);
-    const file = join(seededRecordDir(proj), "inception", STAGE, `${STAGE}-questions.md`);
+    const file = join(seededRecordDir(proj), phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
     mkdirSync(join(file, ".."), { recursive: true });
     const summary = `${QUESTIONS.replaceAll("[Answer]:", "[Answer]: A")}\n## Consolidated Summary Confirmation\n\n` +
       "- Staff use it daily.\n\nLooks correct\nRequest changes\n\n[Answer]:\n";
@@ -259,7 +271,7 @@ describe("the questions file", () => {
     const id = field(rows(proj, "DECISION_RECORDED").at(-1), "Question Id");
     expect(field(rows(proj, "DECISION_RECORDED").at(-1), "Question Type")).toBe("summary-confirmation");
     say(proj, B, "/aidlc --resume");
-    const again = step(proj, B, ["next", "--resume"]);
+    const again = nextAsAgent(proj, B, ["next", "--resume"]);
     expect(again.question_id, String(again.message ?? again.kind)).toBe(id);
     expect(rows(proj, "QUESTION_SHOWN").map((row) => [field(row, "Question Chat"), field(row, "Questions File")]))
       .toEqual([[B, relative]]);
@@ -273,16 +285,16 @@ describe("the questions file", () => {
   test("a turn carries the digest of each question in the stage's file the engine handed out", async () => {
     const questionEntryDigests = await digests();
     const proj = inception(projects);
-    const run = step(proj, A, ["next"]);
+    const run = nextAsAgent(proj, A, ["next"]);
     expect(run.kind, JSON.stringify(run)).toBe("run-stage");
-    const file = join(seededRecordDir(proj), "inception", STAGE, `${STAGE}-questions.md`);
+    const file = join(seededRecordDir(proj), phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
     mkdirSync(join(file, ".."), { recursive: true });
     writeFileSync(file, QUESTIONS);
     say(proj, A, "staff, daily");
     const stamped = JSON.parse(field(lastTurn(proj), "Questions Digest") ?? "{}") as {
       file?: string; entries?: Record<string, string>;
     };
-    expect(stamped.file).toBe(`${seededRecordDir(proj).slice(proj.length + 1).replaceAll("\\", "/")}/inception/${STAGE}/${STAGE}-questions.md`);
+    expect(stamped.file).toBe(`${seededRecordDir(proj).slice(proj.length + 1).replaceAll("\\", "/")}/${phaseFor(STAGE)}/${STAGE}/${STAGE}-questions.md`);
     expect(stamped.entries).toEqual(questionEntryDigests(QUESTIONS));
     writeFileSync(file, QUESTIONS.replace("[Answer]:\n\n## Q2", "[Answer]: A\n\n## Q2").replaceAll("\n", "\r\n"));
     say(proj, A, "and weekly");

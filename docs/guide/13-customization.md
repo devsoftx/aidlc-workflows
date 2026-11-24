@@ -134,7 +134,7 @@ You can override scope at any time during a workflow:
 
 - **At any approval gate**: request a different scope or depth
 - **Via utility command**: `/aidlc --scope enterprise` changes the active scope
-- **Stage inclusion**: at approval gates in Ideation and Inception, you can add a previously skipped stage back into the workflow
+- **Stage inclusion**: at approval gates in Discover and Design, you can add a previously skipped stage back into the workflow
 
 ---
 
@@ -304,7 +304,7 @@ plan. The `plan_approval` ceremony decides whether it asks on this piece of work
 - **Off** (express and poc): once the plan is written you see one line, and the
   build starts:
 
-  > Plan written: aidlc/spaces/default/intents/260820-checkout/construction/code-generation/code-generation-plan.md. Plan approval (you approve each code plan before it is built) is off for this piece of work (from scope poc). Starting code generation now. You can ask me to go over the plan at any time.
+  > Plan written: aidlc/spaces/default/intents/260820-checkout/build/code-generation/code-generation-plan.md. Plan approval (you approve each code plan before it is built) is off for this piece of work (from scope poc). Starting code generation now. You can ask me to go over the plan at any time.
 
   The audit trail gets a `PLAN_APPROVAL_SKIPPED` row carrying the fingerprint of
   the plan that was built, and the questions file reads
@@ -480,7 +480,7 @@ Memory-held strict also overrides a fence you lowered earlier. The persisted `Gu
 
 Switching one off writes `- **Guards Off**: review-freeze (set by you)` into `aidlc-state.md` and one `GUARD_DISABLED` audit row (the line has one label: `set by you` while every check on it is yours, `set by a command` once one is not); switching it back on removes it from that list and writes `GUARD_RESTORED`. Setting `on` also raises a policy-lowered fence, records `- **Guards On**: review-freeze (set by you)`, and writes `GUARD_RESTORED`. The lines name only the switchable fences (a `plan-approval` entry written before plan approval became its own setting is still read); a persisted human-presence entry is ignored. `/aidlc --status` prints a `Checks off:` line naming each check that someone switched off (you for this work, or this machine's environment) and where that came from; the plan approval fence shows there as `plan re-approval`, the check on a plan edited after approval. The checks a lower Guard Policy turns off are not listed there: they go with the `Guard Policy:` line, which says where the policy came from. Precedence is the machine-wide kill switch, then per-work off unless memory holds strict, then per-work on, then the Guard Policy word, then on by default. Setting the Guard Policy word yourself covers every check in its own direction (each change written as `GUARD_DISABLED` or `GUARD_RESTORED`): `off` clears the checks this work kept on, so none is left on, `strict` clears the checks it turned off, so none is left off, and `relaxed` clears neither, so it never turns a check back on or off. A memory-held strict still wins, and a single check you switch after it still applies.
 
-The reviewer-scope setting governs the dispatched reviewer's read/search bound. A checkout stamped as owning one team Unit still cannot write another Unit's `construction/` subtree; that ownership boundary is not switchable by Guard Policy, a per-work fence setting, or `AIDLC_DISABLE_REVIEWER_SCOPE_HOOK`.
+The reviewer-scope setting governs the dispatched reviewer's read/search bound. A checkout stamped as owning one team Unit still cannot write another Unit's `design/<unit>/` or `build/<unit>/` folders; that ownership boundary is not switchable by Guard Policy, a per-work fence setting, or `AIDLC_DISABLE_REVIEWER_SCOPE_HOOK`.
 
 Ask in your own words and the agent carries it out; a typed switch is the same setter, run by the agent from its first `next`. A switchable fence's main-session refusal names its switch. A setter that would turn a fence off, run without naming the message you asked in, says:
 
@@ -559,7 +559,7 @@ On **Claude Code** and **Codex CLI**, AI-DLC can show where the work stands in t
 On Claude Code it looks like this, from a run on the `mvp` plan (drawing characters shown as plain text; the model, context and cost follow on the right):
 
 ```text
-[AIDLC] inventory-api - IDEATION [##--------] 1/4 > Feasibility -- Architect Agent
+[AIDLC] inventory-api - DISCOVER [##--------] 1/4 > Feasibility -- Architect Agent
 ```
 
 This shows, in order: the piece of work, the current phase, phase progress (as a bar and a ratio, both scoped to the current phase), stage display name, and lead agent. While Reverse Engineering analyses ten or more repositories, the stage name is followed by how many of them are done, as in `> Reverse Engineering 37/190`. Before any work is selected it reads `[AIDLC] ready`. On the right come Claude Code's model, then `ctx:N%`, how much of the context window is used. When the Claude usage ledger has data, the tokens in and out and `$<usd>` follow for the active workflow and current transcript/session only; prior workflows and sessions are excluded. Setting `AIDLC_DISABLE_USAGE_TRACKING=1` turns usage tracking off entirely and removes this segment. [Your First Workflow](02-your-first-workflow.md) explains each segment.
@@ -663,7 +663,7 @@ Only add tools to the allow list if you create custom stages that need additiona
 
 ### Narrowing permissions
 
-Remove tools from the allow list to require manual approval for each use. Note that removing `Task` causes the four dispatched stages (2.1 Reverse Engineering pipeline, 2.2 Practices Discovery subagent, 2.4 User Stories mob, 3.5 Code Generation subagent) to prompt for permission on each delegation. Workspace detection (0.2) runs deterministically inside `aidlc-utility intent-create` — it does not use `Task`.
+Remove tools from the allow list to require manual approval for each use. Note that removing `Task` causes the four dispatched stages (1.4 Reverse Engineering pipeline, 2.1 Practices Discovery subagent, 2.3 User Stories mob, 3.1 Code Generation subagent) to prompt for permission on each delegation. Workspace detection (0.2) runs deterministically inside `aidlc-utility intent-create` — it does not use `Task`.
 
 ---
 

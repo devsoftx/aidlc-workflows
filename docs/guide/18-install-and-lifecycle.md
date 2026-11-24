@@ -1514,6 +1514,101 @@ registered project pin, then prunes older unprotected versions automatically.
 There is no separate rollback or retained-version management command; to go
 back, see [Go Back to an Earlier Version](#go-back-to-an-earlier-version).
 
+### Projects on 2.8.0 to 2.11.0
+
+AI-DLC runs seven phases: Discover, Design, Build, Test, Secure, Deploy and
+Operate. A project whose own AI-DLC tool is 2.8.0 to 2.11.0 cannot refresh
+straight to a seven-phase release: that tool reads the new release's stage
+files with its own rules, does not know the seven phase names, and stops with
+`schema validation failed`. Take one step first:
+
+- **Native install:** run `aidlc update` on that computer, then `aidlc config`
+  in the project. On a team, a teammate whose computer still runs 2.8.0 to
+  2.11.0 runs `aidlc update` before `aidlc config` on a clone pinned to the
+  newer release.
+- **Copied project:** refresh to 2.11.4 first, with
+  `bun <harness dir>/tools/aidlc.ts config --from <the 2.11.4 copy runtime>`,
+  then refresh to the newer release the same way. The 2.11.4 tool takes the
+  seven-phase stage files as they are.
+
+Work already under way carries on where it stood. AI-DLC 2.11.4 and earlier
+recorded work on five phases (Initialization, Ideation, Inception,
+Construction, Operation). The first time the newer AI-DLC takes a step on that
+work, it brings the record up to the seven phases in place, and asks you
+nothing: every stage keeps its mark and every approval stays in the record,
+each stage's folder moves to its seven-phase folder (for example
+`inception/requirements-analysis` to `design/requirements-analysis`), and the
+record as it stood just before is kept beside it in the record dir as
+`aidlc-state.v8.md` (`aidlc-state.v7.md` for work begun on 2.1.x to 2.3.0;
+when that file is already there and holds something else, the next free
+number, such as `aidlc-state.v8.2.md`, so no kept copy is ever overwritten).
+`/aidlc --status` and `/aidlc --doctor` say when it was brought up and name
+the kept copy. A Unit's folders move with it whatever the Unit is called, even
+a stage's name; a Unit named like Build and Test or CI Pipeline shared that
+stage's folder, and the stage's own documents go to the stage's new folder.
+Anything it could not move (a file whose new folder already holds one of the
+same name, or a folder no stage owns) stays where it was, and `/aidlc
+--doctor` names it with the move to make; the files Finder and Windows
+Explorer leave in folders you browse (`.DS_Store`, `Thumbs.db`, `desktop.ini`)
+are not counted, and go with the old folders.
+
+If a folder cannot be moved at all, AI-DLC changes nothing, keeps no copy, and
+stops with one line that names the folder and what frees it; once you have
+done that and ask it to carry on, it brings the work up whole and picks up
+where you were. A program can hold a folder open (a dev server or test
+watcher, a terminal or an editor inside it, a file sync or backup app) on
+Windows, and on Linux and macOS too when the project is on a network share or,
+under WSL, on a Windows drive (such as `/mnt/c`); the step is to close it. On
+every platform a folder your user cannot change (one `sudo` or a container
+made, or one on a read-only drive) holds the move back, and the step is to
+give your user write access to it. The line names only that step when AI-DLC can see
+the folder cannot be changed (it checks on Linux and macOS; Windows cannot
+tell), and otherwise names both, with a step for each. A folder something is
+mounted on (a container's volume, a network drive), or one on another drive
+than where it goes, cannot be moved at all, so the line asks you to move what
+is in it yourself; a full drive asks you to free some space. Each piece of
+work is brought up when AI-DLC first takes a step on it, so parked work waits
+until you pick it up again. Until then `/aidlc --status` and the status line
+already show it in the seven phases, and status says `Brought up: at AI-DLC's
+next step` (or that the step names a folder in the way) and already counts a
+stage that step goes back to (below). On Linux and macOS, while a folder your
+user cannot change holds the work back, status says `Brought up: waiting`
+instead and names that folder and the step, and `/aidlc --doctor` fails its
+State Version row with the same folder and step. A folder a program holds
+open, a mount and a full drive show only when the step tries the move (and on
+Windows so does a folder your user cannot change), so status and doctor never
+say the step brings the work up, only that it does so or names what is in
+the way.
+Finished stages keep their approvals through the move: a stage reads as
+changed only when your work or what the stage does really changed, never for a
+new phase name alone, a plugin's stages included.
+
+The seven phases run two stages earlier than 2.11.4 did: Reverse Engineering
+now comes before Scope Definition, and Performance Validation before the code
+reviews and CI Pipeline. If your plan still had one of them to run and your
+work is already past its new place, it runs once at the next stage boundary
+(after you settle a gate that is open), and then the work carries on from where
+it stood; nothing you finished runs again, and AI-DLC tells you which stage
+comes next once you approve it. If you skip it instead, you can undo the skip
+until the work is finished, and it runs at the next stage boundary as before.
+A stage your work had passed over on 2.11.4
+that now comes later stays passed over. Code Review and Security Review, the
+new Secure stages, stay passed over on work that had already started past
+them; if you had only just entered the stage that follows them, such as CI
+Pipeline, they run first. If you skip them there, you can undo that until work
+on that stage starts, even once Performance Validation has run in between.
+
+Work a teammate set up with AI-DLC 2.12's team work is not carried on by a
+seven-phase release, and updating does not change that: AI-DLC says
+so and names the step that carries it on, pinning the project to the 2.12
+release your teammate uses (`aidlc config --pin <that version> --yes`, then
+`aidlc config --yes`), or, on a copied project, that release's copy runtime.
+
+On a shared project, everyone should update together. Once one person's
+AI-DLC has brought the work up and they commit it, a teammate still on 2.11.4
+or earlier cannot carry it on: their AI-DLC says the plan was set up with a
+newer AI-DLC and that they need to update.
+
 ## Go Back to an Earlier Version
 
 To put this machine back on an earlier release, run `aidlc use <version>`, for
@@ -1534,6 +1629,27 @@ git add .aidlc-version
 The pin switches the project to 2.10.0; the refresh brings its files to that
 release and lists any file 2.10.0 does not ship. `aidlc config --unpin` makes
 the project follow the machine again ([Project Pins and CI](#project-pins-and-ci)).
+
+Going back to 2.11.4 or earlier from a seven-phase release also has to put
+back any work the newer release has already brought up
+([Projects on 2.8.0 to 2.11.0](#projects-on-280-to-2110)). Work it has not
+taken a step on yet is unchanged, and the earlier release carries it on. Work
+it has brought up is recorded on the seven phases, which the earlier release
+does not read: it says the plan was set up with a newer AI-DLC. To carry that
+work on with 2.11.4, put its record back by hand, in the record dir: move
+(rename) the kept copy over `aidlc-state.md` rather than copying it, so no
+stale copy stays behind for a later update to find, then move each stage's
+folder back from its seven-phase folder to the five-phase folder it came from.
+The kept copy is the one `/aidlc --status` and `/aidlc --doctor` name
+(`aidlc-state.v8.md` unless the work was brought up more than once), and the
+record's audit lists every move the bring-up made (its `STATE_UPGRADED` entry,
+under `Moved`). That entry stays in the audit, and 2.11.4 reads it, so its
+`/aidlc --status` and `/aidlc --doctor` go on saying the work was brought up
+on that date; that is the update you undid, and nothing else is affected. The
+kept file holds the work only as it stood at the update, so anything done on
+the newer release after that is lost when you put it back; go back before you
+carry on, or stay on the newer release. On a shared project, everyone goes
+back together, as everyone updates together.
 
 Releases before 2.8.0 have no native release, so `aidlc use` and
 `aidlc config --pin` cannot select them; they stop with `No published native
@@ -1620,7 +1736,7 @@ Previews are `main` as it stands, including project state-schema changes. A
 preview that raises the state schema writes project state a stable build does
 not understand. A build never advances work newer than it reads: on a native
 install it asks once whether to update AI-DLC and carry on ("This plan was set
-up with AI-DLC 2.12 or newer, and this computer has 2.11.5. Want me to update
+up with a newer AI-DLC, and this computer has 2.11.5. Want me to update
 AI-DLC now and carry on?"), and on yes runs `aidlc update` and the project's
 refresh and carries on with what you asked; a copied, pinned or
 package-managed install says its own one step instead. That project cannot be

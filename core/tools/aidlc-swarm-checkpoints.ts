@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { appendAuditEntries, appendAuditEntryUnlocked } from "./aidlc-audit.ts";
 import { personGitNameField } from "./aidlc-git-name.ts";
+import { fivePhaseFingerprintForm } from "./aidlc-five-phase-record.ts";
 import {
   autonomyGranted, checkpointRecordForms, loadConstructionEvidence, type ApprovalFindingDispositions,
   type ConstructionEvidence, type RejectedFindingDispositions,
@@ -240,7 +241,7 @@ function snapshot(pd: string, batch: number, requested: string[], stateContent?:
     }
     let source: string | null = null;
     try {
-      const path = recordFileTargetOrThrow(root, `construction/${unit}/${STAGE}/source-manifest.json`);
+      const path = recordFileTargetOrThrow(root, `${definition.phase}/${unit}/${STAGE}/source-manifest.json`);
       const bytes = readRegularFileNoFollowOrThrow(path, "Swarm Unit source manifest");
       const repo = merged && auditBlockField(merged.block, "Repo");
       if ((repos.length > 0 && (!repo || !repos.includes(repo))) ||
@@ -306,12 +307,19 @@ function snapshot(pd: string, batch: number, requested: string[], stateContent?:
   });
   const fingerprint = fingerprintFor(record);
   // The same evidence as recorded before (backslashes on Windows, raw line
-  // endings in documents) still counts.
+  // endings in documents, documents hashed by a five-phase release under the
+  // folders the 8 to 10 state step moved them from) still counts.
   const rawForm = (value: unknown): unknown => typeof value === "string" ? rawFingerprintForm(value) ?? value : value;
-  const rawEvidence = (evidence as Array<Record<string, unknown>>).map((entry) =>
-    ({ ...entry, artifact: rawForm(entry.artifact), source: rawForm(entry.source) }));
+  const fivePhaseForm = (raw: boolean) => (value: unknown): unknown =>
+    typeof value === "string" ? fivePhaseFingerprintForm(value, raw) ?? value : value;
+  const formOf = (artifact: (value: unknown) => unknown, source: (value: unknown) => unknown) =>
+    (evidence as Array<Record<string, unknown>>).map((entry) =>
+      ({ ...entry, artifact: artifact(entry.artifact), source: source(entry.source) }));
+  const rawEvidence = formOf(rawForm, rawForm);
+  const fivePhaseEvidence = [formOf(fivePhaseForm(false), (value) => value), formOf(fivePhaseForm(true), rawForm)];
   const olderForms = new Set([
     fingerprintFor(olderRecord), fingerprintFor(record, rawEvidence), fingerprintFor(olderRecord, rawEvidence),
+    ...fivePhaseEvidence.flatMap((each) => [fingerprintFor(record, each), fingerprintFor(olderRecord, each)]),
   ]);
   olderForms.delete(fingerprint);
   const isFingerprint = (value: string | null): boolean =>

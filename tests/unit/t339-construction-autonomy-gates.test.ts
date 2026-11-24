@@ -17,6 +17,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { saveMessage } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import {
@@ -194,8 +195,8 @@ describe("t339 on-demand autonomy preserves protected stage approvals", () => {
       "- [ ] nfr-requirements — EXECUTE",
       "- [ ] functional-design — EXECUTE",
     ].join("\n");
-    const functional = { slug: "functional-design", phase: "construction" };
-    const nfr = { slug: "nfr-requirements", phase: "construction" };
+    const functional = { slug: "functional-design", phase: phaseFor("functional-design") };
+    const nfr = { slug: "nfr-requirements", phase: phaseFor("nfr-requirements") };
     // The approved plan promotes Functional Design ahead of infra's stock anchor.
     expect(isAutonomousConstructionGate(state, functional)).toBe(false);
     expect(isAutonomousConstructionGate(state, nfr)).toBe(true);

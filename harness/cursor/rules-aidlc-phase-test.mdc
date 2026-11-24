@@ -1,0 +1,8 @@
+---
+description: AI-DLC Test phase practices
+alwaysApply: false
+---
+
+When working in the Test phase of an AI-DLC workflow, read and follow:
+
+- aidlc/active-memory/phases/test.md

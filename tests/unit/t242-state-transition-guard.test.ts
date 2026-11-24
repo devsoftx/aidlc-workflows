@@ -23,11 +23,14 @@ import {
   isLifecycleBoundaryCommand,
 } from "../../dist/claude/.claude/hooks/aidlc-state-transition-guard.ts";
 import { violatesRuntimeIntegrity } from "../../dist/claude/.claude/hooks/runtime-integrity.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { resolveAction, ROUTES } from "../../dist/claude/.claude/tools/aidlc.ts";
 import {
   ENGINE_OWNED_STATE_TRANSITIONS,
   MESSAGE_FILL,
   MESSAGE_SLOT,
+  PHASE_LABELS,
+  PHASES,
   UTILITY_COMMANDS,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { RECORDABLE_PROJECT_BYPASSES } from "../../dist/claude/.claude/tools/aidlc-settings.ts";
@@ -94,12 +97,9 @@ const ENGINE_OWNED = [
   "fold-unit-merge",
 ] as const;
 const STAGES_ROOT = join(REPO_ROOT, "core", "aidlc-common", "stages");
-const NON_INITIALIZATION_STAGES = [
-  "ideation",
-  "inception",
-  "construction",
-  "operation",
-].flatMap((phase) =>
+const NON_INITIALIZATION_STAGES = PHASES.filter(
+  (phase) => phase !== "initialization",
+).flatMap((phase) =>
   readdirSync(join(STAGES_ROOT, phase))
     .filter((name) => name.endsWith(".md"))
     .map((name) => join(STAGES_ROOT, phase, name))
@@ -110,8 +110,12 @@ const DIRECT_LIFECYCLE_VERB = new RegExp(
 const DIRECT_CHECKBOX_COMPLETION =
   /\b(?:mark|update)\b[^\n]*`\[x\]`[^\n]*\bcomplete(?:d)?\b/i;
 const DIRECT_STATE_HEADING = /^### Step \d+: .*Update State\b/m;
-const DIRECT_PHASE_BOOKKEEPING =
-  /\b(?:update|set)\s+(?:the\s+)?Lifecycle Phase\b|\bmark\s+(?:IDEATION|INCEPTION|CONSTRUCTION|OPERATION)\s+phase\s+(?:as\s+)?complete\b/i;
+const DIRECT_PHASE_BOOKKEEPING = new RegExp(
+  String.raw`\b(?:update|set)\s+(?:the\s+)?Lifecycle Phase\b|\bmark\s+(?:${PHASES.filter((phase) => phase !== "initialization")
+    .map((phase) => PHASE_LABELS[phase])
+    .join("|")})\s+phase\s+(?:as\s+)?complete\b`,
+  "i",
+);
 
 const projects: string[] = [];
 afterAll(() => {
@@ -2054,8 +2058,8 @@ describe("t242 state-transition ownership guard", () => {
       ["Bash", { command: "echo x > aidlc/.aidlc-sessions-backup/foo.json" }],
       ["Bash", { command: "MY_AIDLC_SESSION_OVERRIDE=abc git status" }],
       ["Write", { file_path: "aidlc/spaces/default/intents/x/.aidlc-engine/reviewer-dispatch.json" }],
-      ["Edit", { file_path: "aidlc/spaces/default/intents/x/inception/requirements.md" }],
-      ["MultiEdit", { edits: [{ file_path: "aidlc/spaces/default/intents/x/inception/requirements.md" }] }],
+      ["Edit", { file_path: `aidlc/spaces/default/intents/x/${phaseFor("requirements-analysis")}/requirements.md` }],
+      ["MultiEdit", { edits: [{ file_path: `aidlc/spaces/default/intents/x/${phaseFor("requirements-analysis")}/requirements.md` }] }],
       ["NotebookEdit", { notebook_path: "aidlc/analysis.ipynb" }],
       // Prose that names a hook, a helper, or the engine hook route is ordinary
       // project content; only a concrete import or execution is a reference.
@@ -2573,7 +2577,7 @@ describe("t242 state-transition ownership guard", () => {
   });
 
   test("non-initialization stages delegate lifecycle transitions and Learn writes through the conditional module", () => {
-    expect(NON_INITIALIZATION_STAGES).toHaveLength(30);
+    expect(NON_INITIALIZATION_STAGES).toHaveLength(33);
     for (const path of NON_INITIALIZATION_STAGES) {
       const body = readFileSync(path, "utf-8");
       const label = relative(REPO_ROOT, path);
@@ -2610,16 +2614,16 @@ describe("t242 state-transition ownership guard", () => {
     const stage = (phase: string, slug: string): string =>
       readFileSync(join(STAGES_ROOT, phase, `${slug}.md`), "utf-8");
 
-    expect(stage("inception", "reverse-engineering")).toContain(
+    expect(stage(phaseFor("reverse-engineering"), "reverse-engineering")).toContain(
       "{{INVOKE}} engine orchestrate report --stage reverse-engineering --result skipped --reason '<reason>'",
     );
-    expect(stage("inception", "user-stories")).toContain(
+    expect(stage(phaseFor("user-stories"), "user-stories")).toContain(
       "{{INVOKE}} engine orchestrate report --stage user-stories --result skipped --reason '<reason>'",
     );
-    expect(stage("inception", "requirements-analysis")).toContain(
+    expect(stage(phaseFor("requirements-analysis"), "requirements-analysis")).toContain(
       "{{INVOKE}} engine orchestrate next --add user-stories",
     );
-    expect(stage("inception", "domain-design")).toContain(
+    expect(stage(phaseFor("domain-design"), "domain-design")).toContain(
       "{{INVOKE}} engine orchestrate next --add units-generation",
     );
   });

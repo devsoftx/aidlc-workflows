@@ -61,6 +61,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { appendAuditEntry, CLI_PROTECTED_EVENT_TYPES } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   auditBlockField,
   findAllEvents,
@@ -243,7 +244,16 @@ describe("t261 public audit CLI refuses authority-bearing receipts", () => {
   test("receipt capture failure completes untracked with a visible warning", () => {
     proj = autonomousConstructionProject();
     const record = dirname(seededStateFile(proj));
-    const dagDir = join(record, "inception", "units-generation");
+    // The engine resolves per-unit artifacts at stage level while Units Generation's box is
+    // open, and only then opens the unit DAG this test corrupts. Mark it completed, as a project
+    // that has reached Build has it.
+    const statePath = seededStateFile(proj);
+    writeFileSync(
+      statePath,
+      readFileSync(statePath, "utf-8").replace("- [ ] units-generation — EXECUTE", "- [x] units-generation — EXECUTE"),
+      "utf-8",
+    );
+    const dagDir = join(record, phaseFor("units-generation"), "units-generation");
     mkdirSync(dagDir, { recursive: true });
     writeFileSync(
       join(dagDir, "unit-of-work-dependency.md"),
@@ -918,13 +928,13 @@ describe("t261 a decision's text is recorded as passed; the person's reply decid
     expect(readAllAuditShards(proj)).toContain("GATE_REJECTED");
   });
 
-  test("autonomous exemption is phase-scoped to Construction", () => {
+  test("autonomous exemption is scoped to unit-loop stages, not to a phase", () => {
     const state = "- **Construction Autonomy Mode**: autonomous\n";
-    expect(isAutonomousConstructionDecision(state, "initialization")).toBe(false);
-    expect(isAutonomousConstructionDecision(state, "ideation")).toBe(false);
-    expect(isAutonomousConstructionDecision(state, "inception")).toBe(false);
-    expect(isAutonomousConstructionDecision(state, "construction")).toBe(true);
-    expect(isAutonomousConstructionDecision(state, "operation")).toBe(false);
+    const perUnit = { slug: "code-generation", phase: "build", for_each: "unit-of-work" };
+    const stageLevel = { slug: "requirements-analysis", phase: "design", for_each: null };
+    expect(isAutonomousConstructionDecision(state, perUnit)).toBe(true);
+    expect(isAutonomousConstructionDecision(state, stageLevel)).toBe(false);
+    expect(isAutonomousConstructionDecision(state, null)).toBe(false);
   });
 
   test("autonomous Construction reject and ordinary answer record the conductor's text", () => {

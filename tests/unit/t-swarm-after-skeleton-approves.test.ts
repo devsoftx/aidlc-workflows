@@ -34,6 +34,7 @@ import { seedBoltDagBatches, seededRecordDir, seededStateFile } from "../harness
 import { AIDLC_SRC } from "../harness/fixtures.ts";
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { ISOLATED_GIT_ENV } from "../harness/swarm-checkpoint.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   approvePlan, CHECK, cleanupCheckpointFixtures, fixture, fixtureWithSource, git, humanChoice, nextDirective, publish,
   reviewRevisedSource, runCheckpointTool, STAGE, swarm, writeUnitSource,
@@ -80,7 +81,7 @@ async function skeletonApproved(
   for (const path of deletes) unlinkSync(join(pd, path));
   for (const stage of unitMajorConstructionStageSlugs("feature", readFileSync(statePath, "utf-8"), true)) {
     const definition = findStageBySlug(stage)!;
-    const dir = join(seededRecordDir(pd), "construction", "alpha", stage);
+    const dir = join(seededRecordDir(pd), phaseFor(stage), "alpha", stage);
     mkdirSync(dir, { recursive: true });
     for (const name of definition.produces ?? []) {
       const path = join(dir, artifactFilename(name));

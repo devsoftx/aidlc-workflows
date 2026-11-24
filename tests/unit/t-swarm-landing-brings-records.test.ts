@@ -29,7 +29,7 @@ setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 afterEach(cleanupCheckpointFixtures);
 
 const CONTRACTS = "inception/application-design/component-contracts.md";
-const RULES = "construction/alpha/functional-design/business-rules.md";
+const RULES = "design/alpha/functional-design/business-rules.md";
 
 type Finalized = {
   units: Array<{ unit: string; status: string; change_notices?: string[] }>;
@@ -40,7 +40,7 @@ const record = (pd: string, path: string) => join(recordDir(pd)!, path);
 const read = (pd: string, path: string) => readFileSync(record(pd, path), "utf-8");
 // A path as the person's project names it: from its root, forward slashes.
 const shown = (pd: string, path: string) => relative(pd, record(pd, path)).replace(/\\/g, "/");
-const saved = (unit: string, path: string) => `construction/${unit}/code-generation/not-merged/${path}`;
+const saved = (unit: string, path: string) => `build/${unit}/code-generation/not-merged/${path}`;
 
 function write(pd: string, path: string, text: string): void {
   mkdirSync(dirname(record(pd, path)), { recursive: true });
@@ -112,7 +112,7 @@ describe("a side-by-side Unit's record edits come home when it lands", () => {
     expect(read(pd, RULES)).toBe("# Business rules\n\n- BR-1: one\n- BR-2: two\n");
     expect(read(pd, CONTRACTS)).toBe("# Contracts\n\n- C1: one\n- C2: two\n");
     expect(read(pd, "inception/application-design/alpha-notes.md")).toBe("# Notes\n\nalpha is 2.\n");
-    expect(existsSync(record(pd, "construction/alpha/code-generation/not-merged"))).toBe(false);
+    expect(existsSync(record(pd, "build/alpha/code-generation/not-merged"))).toBe(false);
     expect((nextDirective(pd) as { kind: string }).kind).toBe("run-stage");
   });
 
@@ -302,6 +302,6 @@ describe("what other merges own, and a workspace of several repositories", () =>
     });
     expect(finalized.code, `${finalized.out}\n${finalized.err}`).toBe(0);
     expect(notices(finalized.envelope, "alpha")).toEqual([]);
-    expect(existsSync(record(pd, "construction/alpha/code-generation/not-merged"))).toBe(false);
+    expect(existsSync(record(pd, "build/alpha/code-generation/not-merged"))).toBe(false);
   });
 });

@@ -129,7 +129,7 @@ const EXTENSIONS = new Set([
 // AI-DLC's own folders inside `aidlc/` (spaces/<space>/intents/<intent>/<phase>/<unit>/…).
 const RECORD_DIRS = new Set([
   "aidlc", "spaces", "intents", "audit", "verification", "knowledge", "memory", "diagnostics", "sessions", "plans",
-  "reviews", "questions", "construction", "inception", "ideation", "operation", "initialization", "phases", "active-memory",
+  "reviews", "questions", "discover", "design", "build", "test", "secure", "deploy", "operate", "initialization", "phases", "active-memory",
   "issue-reports", "learnings", "units", "bolts", "artifacts", "requests", ".aidlc-engine", "stage", "unit", "sensors",
 ]);
 // The AI tools' own folders at the project's top (`.kiro/steering/`), and the folders under them they name.

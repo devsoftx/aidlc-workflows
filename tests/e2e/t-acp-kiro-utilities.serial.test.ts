@@ -100,7 +100,7 @@ describe("t-acp-kiro-utilities (single-turn utility contracts over ACP)", () => 
         // would never fire); the conductor only relays prose. Drive to the
         // natural end_turn and assert the deterministic surfaces: clean turn end
         // + the read-only state byte no-op. The verbatim status FIELDS
-        // (IDEATION/feature/Feasibility) are covered by the SDK twin t20 + the
+        // (DISCOVER/feature/Feasibility) are covered by the SDK twin t20 + the
         // CLI twin t27 (see header).
         const r = await driveKiroAcp({
           projectDir: proj,

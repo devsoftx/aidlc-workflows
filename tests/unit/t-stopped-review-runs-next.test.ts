@@ -18,6 +18,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -122,7 +123,7 @@ function fixture(policy: Policy, reviewClass: "advisory" | "adversarial" = "advi
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -138,12 +139,12 @@ function fixture(policy: Policy, reviewClass: "advisory" | "adversarial" = "advi
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### ${phaseFor(CG).toUpperCase()} PHASE
 ${skipped.map((stage) => `- [S] ${stage} ${DASH} SKIP`).join("\n")}
 - [-] code-generation ${DASH} EXECUTE
 - [ ] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(CG).toUpperCase()}
 - **Current Stage**: code-generation
 - **Status**: Running
 `);
@@ -174,7 +175,7 @@ function recordCommand(p: string): void {
 
 function build(p: string, unit: string): void {
   const stage = findStageBySlug(CG)!;
-  const output = join(seededRecordDir(p), "construction", unit, CG);
+  const output = join(seededRecordDir(p), phaseFor(CG), unit, CG);
   mkdirSync(output, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
   writeFileSync(join(output, "source-manifest.json"), JSON.stringify({
@@ -272,7 +273,7 @@ function inception(policy: Policy): string {
   seedStateFile(p, "state-mid-inception.md");
   const path = seededStateFile(p);
   writeFileSync(path, readFileSync(path, "utf-8").replace(/^- \*\*Change Control\*\*: .*$/m, `- **Guard Policy**: ${policy} (set by you)`));
-  const dir = join(seededRecordDir(p), "inception", RA);
+  const dir = join(seededRecordDir(p), phaseFor(RA), RA);
   mkdirSync(dir, { recursive: true });
   for (const name of ["requirements.md", "requirements-analysis-questions.md"]) writeFileSync(join(dir, name), `# ${name}\n`);
   return p;

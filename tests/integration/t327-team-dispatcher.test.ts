@@ -41,6 +41,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // Every case spawns several tool processes plus real git remotes; bun's 5s default is too tight under --parallel 4.
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -117,7 +118,7 @@ function teamState(): string {
 - **Project**: dispatcher fixture
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0
@@ -129,7 +130,7 @@ function teamState(): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
@@ -148,7 +149,7 @@ function teamState(): string {
 | blocked | - | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Active Agent**: aidlc-architect-agent
@@ -324,7 +325,7 @@ function writeIntent(
   if (dependency) {
     const path = join(
       record,
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
     );
@@ -932,10 +933,11 @@ describe("t327 team construction dispatcher", () => {
       {},
       ["--scope", "feature"],
     ).question as string;
-    // Solo work says where each piece stands; Unit-by-Unit stages by their phase.
+    // Solo work says where each piece stands; Unit-by-Unit stages by their phase
+    // (functional-design is design, code-generation is build, per the compiled stage graph).
     expect(soloQuestion).toContain(
-      "`team-work` (record: `team-work-11111111`) (in Construction), " +
-        "`parked-work` (record: `parked-work-22222222`) (in Construction). ",
+      "`team-work` (record: `team-work-11111111`) (in Design), " +
+        "`parked-work` (record: `parked-work-22222222`) (in Build). ",
     );
     expect(soloQuestion).not.toContain("done-work-33333333");
     expect(soloQuestion).toContain("2 pieces of work in progress");
@@ -947,7 +949,8 @@ describe("t327 team construction dispatcher", () => {
       writeFileSync(statePath, readFileSync(statePath, "utf-8").replace("- **Construction Iteration**: unit-major", "- **Construction Iteration**: stage-major"));
     }
     const stageMajor = nextDirective(solo, {}, ["--scope", "feature"]).question as string;
-    expect(stageMajor).not.toContain("(in Construction)");
+    expect(stageMajor).not.toContain("(in Design)");
+    expect(stageMajor).not.toContain("(in Build)");
     expect(stageMajor.match(/\(at [A-Z][^)]*\)/g) ?? []).toHaveLength(2);
 
     const single = pickerFixture(true, 1);

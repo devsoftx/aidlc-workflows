@@ -25,6 +25,7 @@ import {
   reviewArtifactFingerprint, setField,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { seedBoltDagBatches, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts";
 import {
   CHECK, cleanupCheckpointFixtures, fixture, git, humanChoice, nextDirective, runCheckpointTool,
@@ -72,7 +73,7 @@ function taskInProgress(pd: string, stage: string): void {
 // completion receipt recorded at the stage's run floor.
 function alphaDone(pd: string, stage: string): void {
   const definition = findStageBySlug(stage)!;
-  const dir = join(seededRecordDir(pd), "construction", "alpha", stage);
+  const dir = join(seededRecordDir(pd), phaseFor(stage), "alpha", stage);
   mkdirSync(dir, { recursive: true });
   for (const name of definition.produces ?? []) {
     const path = join(dir, artifactFilename(name));

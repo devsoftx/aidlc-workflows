@@ -1,0 +1,8 @@
+---
+description: AI-DLC Secure phase practices
+alwaysApply: false
+---
+
+When working in the Secure phase of an AI-DLC workflow, read and follow:
+
+- aidlc/active-memory/phases/secure.md

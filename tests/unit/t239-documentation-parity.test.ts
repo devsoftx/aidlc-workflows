@@ -9,6 +9,7 @@ import { guardStandAsideSpeaks, knowledgeDir, parseStageFrontmatter } from "../.
 import { compareVersions } from "../../core/tools/aidlc-channel.ts";
 import { validateStageFrontmatter } from "../../core/tools/aidlc-stage-schema.ts";
 import { harnessIdFromTyped } from "../../core/tools/aidlc-runtime-paths.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { copyChannelOmits, projectionFiles } from "../../core/tools/aidlc-distribution.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
 
@@ -700,7 +701,10 @@ describe("documentation parity derives current behavior from authored implementa
       expect(stages, `missing compiled grid entry for ${scope}`).toBeDefined();
       expect(count, `${scope} stage count`).toBe(`${runsAfterSetup(stages)} / ${afterSetup.length}`);
     }
-    expect(normalized(onboarding)).toContain(`A full \`feature\` runs all ${runsAfterSetup(scopeGrid.feature.stages)} stages after setup.`);
+    // feature skips one stage the grid marks SKIP, so the sentence counts stages rather than saying all.
+    expect(normalized(onboarding)).toContain(
+      `A full \`feature\` runs ${runsAfterSetup(scopeGrid.feature.stages)} of ${afterSetup.length} stages after setup.`,
+    );
     // The example saves a plan running mvp; the line counts what that scope runs after setup.
     expect(read("docs", "guide", "12-cli-commands.md")).toContain(
       `Saved as scope quick-fix (${runsAfterSetup(scopeGrid.mvp.stages)} stages, `,
@@ -717,7 +721,7 @@ describe("documentation parity derives current behavior from authored implementa
   });
 
   test("the bugfix walkthrough's end state has Code Generation where a run with no Units writes it", () => {
-    // Without Units Generation there is no Unit folder: Code Generation writes <record>/construction/code-generation/.
+    // Without Units Generation there is no Unit folder: Code Generation writes <record>/build/code-generation/.
     expect(scopeGrid.bugfix.stages["units-generation"]).not.toBe("EXECUTE");
     const walkthrough = sliceBetween(
       read("docs", "guide", "16-worked-examples.md"),
@@ -726,11 +730,11 @@ describe("documentation parity derives current behavior from authored implementa
     );
     const tree = sliceBetween(walkthrough, "### End state", "\n### ").split(/\r?\n/);
     const indent = (line: string): number => line.length - line.trimStart().length;
-    const construction = tree.findIndex((line) => line.trim() === "construction/");
-    expect(construction, "the end state lists construction/").toBeGreaterThan(-1);
-    const next = tree[construction + 1] ?? "";
-    expect(next.trimStart(), "the first entry under construction/").toMatch(/^code-generation\//);
-    expect(indent(next), "code-generation/ sits right under construction/").toBe(indent(tree[construction]) + 2);
+    const build = tree.findIndex((line) => line.trim() === "build/");
+    expect(build, "the end state lists build/").toBeGreaterThan(-1);
+    const next = tree[build + 1] ?? "";
+    expect(next.trimStart(), "the first entry under build/").toMatch(/^code-generation\//);
+    expect(indent(next), "code-generation/ sits right under build/").toBe(indent(tree[build]) + 2);
   });
 
   test("each scope summary's skipped stages match its compiled plan", () => {
@@ -738,7 +742,7 @@ describe("documentation parity derives current behavior from authored implementa
       slug: string;
       phase: string;
     }>;
-    const operation = graph.filter((stage) => stage.phase === "operation").map((stage) => stage.slug);
+    const operation = graph.filter((stage) => stage.phase === phaseFor("observability-setup")).map((stage) => stage.slug);
     const design = [
       "user-stories",
       "refined-mockups",
@@ -760,10 +764,10 @@ describe("documentation parity derives current behavior from authored implementa
       const runs = (slug: string): boolean => stages[slug] === "EXECUTE";
       const text = normalized(section);
       const operationRuns = operation.filter(runs).length;
-      if (/\bmost Operation stages\b/.test(text)) {
-        expect(operationRuns > 0 && operationRuns < operation.length, `${scope}: "most Operation stages"`).toBe(true);
+      if (/\bmost Operate stages\b/.test(text)) {
+        expect(operationRuns > 0 && operationRuns < operation.length, `${scope}: "most Operate stages"`).toBe(true);
       }
-      if (/\ball (?:\d+ )?Operation stages\b/i.test(text)) expect(operationRuns, `${scope}: "all Operation stages"`).toBe(0);
+      if (/\ball (?:\d+ )?Operate stages\b/i.test(text)) expect(operationRuns, `${scope}: "all Operate stages"`).toBe(0);
       if (/\bfrom intent capture\b/i.test(text)) expect(runs("intent-capture"), `${scope}: "from intent capture"`).toBe(true);
       if (/\bmost design and architecture stages\b/.test(text)) {
         expect(design.some(runs), `${scope}: "most design and architecture stages"`).toBe(true);
@@ -922,8 +926,8 @@ describe("documentation parity derives current behavior from authored implementa
     // A team writes its phase rules into the space's phases/*.md, which the copy runtime ships (it leaves out only
     // team.md, project.md and active-space). A contents copy would replace them with no word.
     const owned: Array<[string, string, string[]]> = [
-      ["codex-cli.md", "codex/aidlc", ["spaces/default/memory/phases/construction.md"]],
-      ["opencode.md", "opencode/aidlc", ["spaces/default/memory/phases/construction.md"]],
+      ["codex-cli.md", "codex/aidlc", ["spaces/default/memory/phases/build.md"]],
+      ["opencode.md", "opencode/aidlc", ["spaces/default/memory/phases/build.md"]],
     ];
     for (const [page, folder, names] of owned) {
       const shipped = names.filter((name) => existsSync(at("dist", folder, name)));
@@ -1295,7 +1299,7 @@ describe("documentation parity derives current behavior from authored implementa
     // Authors copy these blocks into a stage: each must parse whole, comments
     // included, keep every documented child, and validate.
     const stage = (block: string): string =>
-      `---\nslug: syn-example\nphase: construction\nexecution: ALWAYS\ncondition: x\nlead_agent: aidlc-quality-agent\nmode: inline\n${block}inputs: a\noutputs: b\n---\n`;
+      `---\nslug: syn-example\nphase: ${phaseFor("code-generation")}\nexecution: ALWAYS\ncondition: x\nlead_agent: aidlc-quality-agent\nmode: inline\n${block}inputs: a\noutputs: b\n---\n`;
     for (const doc of ["docs/reference/15-stage-definition.md", "docs/harness-engineering/10-authoring-a-plugin.md"]) {
       const blocks = [...read(doc).matchAll(/```yaml\n(ars:\n[\s\S]*?)```/g)].map((match) => match[1]);
       expect(blocks.length, doc).toBeGreaterThan(0);
@@ -1312,18 +1316,38 @@ describe("documentation parity derives current behavior from authored implementa
   test("documented agent stage-involvement matrix matches stage frontmatter", () => {
     const lead = new Map<string, number>();
     const support = new Map<string, number>();
+    // The phases each agent works in, as the compiled stage graph files each stage.
+    const phasesOf = new Map<string, Set<string>>();
+    const graphPhase = new Map(
+      (JSON.parse(read("dist", "claude", ".claude", "tools", "data", "stage-graph.json")) as Array<{
+        slug: string;
+        phase: string;
+      }>).map((stage) => [stage.slug, stage.phase]),
+    );
     const bump = (map: Map<string, number>, key: string): void => {
       map.set(key, (map.get(key) ?? 0) + 1);
     };
 
     for (const path of filesBelow(at("core", "aidlc-common", "stages"), ".md")) {
       const frontmatter = sliceBetween(readFileSync(path, "utf8"), "---", "\n---");
+      const slug = basename(path, ".md");
+      expect(graphPhase.has(slug), `${slug} is a stage of the compiled graph`).toBe(true);
+      const phase = graphPhase.get(slug) as string;
+      const involve = (agent: string): void => {
+        phasesOf.set(agent, (phasesOf.get(agent) ?? new Set<string>()).add(phase));
+      };
       const leadAgent = frontmatter.match(/^lead_agent:\s*(\S+)$/m)?.[1];
-      if (leadAgent?.startsWith("aidlc-")) bump(lead, leadAgent);
+      if (leadAgent?.startsWith("aidlc-")) {
+        bump(lead, leadAgent);
+        involve(leadAgent);
+      }
       const block = frontmatter.match(/^support_agents:\s*\n((?:[ \t]*-[ \t]*\S+[ \t]*\n?)+)/m)?.[1];
       for (const entry of block?.split("\n") ?? []) {
         const agent = entry.replace(/^[ \t]*-[ \t]*/, "").trim();
-        if (agent.startsWith("aidlc-")) bump(support, agent);
+        if (agent.startsWith("aidlc-")) {
+          bump(support, agent);
+          involve(agent);
+        }
       }
     }
     expect(lead.size, "expected lead_agent frontmatter on the stage set").toBeGreaterThan(0);
@@ -1377,12 +1401,13 @@ describe("documentation parity derives current behavior from authored implementa
         `${path.join("/")} must name a broadest agent with ${broadestTotal} stages`,
       ).toBe(true);
     }
+    const phaseCount = (agent: string): number => phasesOf.get(agent)?.size ?? 0;
     const agentGuide = normalized(read("docs", "guide", "06-agents.md"));
     expect(
       broadest.some(
         (row) =>
           agentGuide.includes(row.agent) &&
-          agentGuide.includes(`(${row.total} stages across 3 phases)`),
+          agentGuide.includes(`(${row.total} stages across ${phaseCount(row.agent)} phases)`),
       ),
       `the guide must name a broadest agent with ${broadestTotal} stages`,
     ).toBe(true);
@@ -1418,13 +1443,13 @@ describe("documentation parity derives current behavior from authored implementa
       if (!skipped) expect(next, `${where}: the listing ends where the plan ends`).toBe(plan.length);
     }
     for (const slug of ["code-generation", "build-and-test"]) expect(scopeGrid.infra.stages[slug]).toBe("EXECUTE");
-    const construction = normalized(read("docs", "reference", "04-stages", "construction.md"));
-    expect(/infra (?:runs no Code Generation|has neither)/.test(construction), "construction.md says infra skips them").toBe(false);
+    const build = normalized(read("docs", "reference", "04-stages", "build.md"));
+    expect(/infra (?:runs no Code Generation|has neither)/.test(build), "build.md says infra skips them").toBe(false);
   });
 
   test("the stage reference's Refined Mockups condition is the stage's own", () => {
-    const condition = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", "inception", "refined-mockups.md")).condition);
-    const metadata = sliceBetween(read("docs", "reference", "04-stages", "inception.md"), "## Stage 2.5: Refined Mockups", "### Purpose");
+    const condition = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", phaseFor("refined-mockups"), "refined-mockups.md")).condition);
+    const metadata = sliceBetween(read("docs", "reference", "04-stages", "design.md"), "## Stage 2.4: Refined Mockups", "### Purpose");
     const row = metadata.match(/^\| Condition\s*\| (.*?) \|\r?$/m)?.[1];
     expect(row).toBe(`CONDITIONAL -- ${condition[0].toLowerCase()}${condition.slice(1)}`);
   });
@@ -1472,7 +1497,7 @@ describe("documentation parity derives current behavior from authored implementa
       slug: string;
       phase: string;
     }>;
-    const operation = graph.filter((stage) => stage.phase === "operation").map((stage) => stage.slug);
+    const operation = graph.filter((stage) => stage.phase === phaseFor("observability-setup")).map((stage) => stage.slug);
     const none = Object.keys(scopeGrid)
       .filter((scope) => operation.every((slug) => scopeGrid[scope].stages[slug] !== "EXECUTE"))
       .sort();
@@ -1506,7 +1531,13 @@ describe("documentation parity derives current behavior from authored implementa
     expect(read("core", "tools", "aidlc-utility.ts")).toMatch(
       /severity: "warn",\s*label: `Your replies are not being recorded: /,
     );
-    expect(flat).toContain(`\`feature\` runs every stage (${stageCount("feature")})`);
+    const [featureRan, featureTotal] = stageCount("feature").split(" / ");
+    expect(flat).toContain(`\`feature\` runs ${featureRan} of ${featureTotal} stages`);
+    // Every stage the feature grid marks SKIP is named in the guide, so the skip is not hidden.
+    for (const slug of afterSetup.filter((stage) => scopeGrid.feature.stages[stage] !== "EXECUTE")) {
+      const name = String(parseStageFrontmatter(read("core", "aidlc-common", "stages", phaseFor(slug), `${slug}.md`)).name);
+      expect(flat, `the guide names the stage feature skips: ${name}`).toContain(name);
+    }
     const [classicRan, classicTotal] = stageCount("classic").split(" / ");
     expect(flat).toContain(`\`classic\`, the default, runs ${classicRan} of ${classicTotal} stages`);
     expect(flat).toContain(`It is a ${stageCount("workshop").split(" / ")[0]}-stage run`);

@@ -3,17 +3,29 @@
 // render, so this stays a few file reads.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fivePhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { parseBoltDag, validateUnitName } from "./aidlc-unit-dag.ts";
+
+const UNIT_DAG = "design/units-generation/unit-of-work-dependency.md";
 
 // The planned Units, in the order Construction walks them: read from the Unit
 // DAG's edge block with the engine's own parser, or, when that file is not
 // there, from the engine's compiled copy of the same DAG (runtime-graph.json).
 // A file the parser refuses gives none, as the engine reads no Units from it.
-function plannedUnits(recordDir: string): string[] {
-  let dag: string;
-  try {
-    dag = readFileSync(join(recordDir, "inception", "units-generation", "unit-of-work-dependency.md"), "utf-8");
-  } catch {
+// A record whose folders may still be where a five-phase release kept them
+// (the step that moves them has not run) is read there first, by the frozen
+// table, as the step will move it.
+function plannedUnits(recordDir: string, fivePhaseFolders = false): string[] {
+  let dag: string | undefined;
+  for (const path of [fivePhaseFolders ? fivePhaseRecordPath(UNIT_DAG) : null, UNIT_DAG]) {
+    if (path === null || dag !== undefined) continue;
+    try {
+      dag = readFileSync(join(recordDir, ...path.split("/")), "utf-8");
+    } catch {
+      // Not at this path.
+    }
+  }
+  if (dag === undefined) {
     try {
       const graph = JSON.parse(readFileSync(join(recordDir, "runtime-graph.json"), "utf-8")) as {
         bolt_dag?: { units?: Array<{ name?: unknown }> };
@@ -42,15 +54,17 @@ function plannedUnits(recordDir: string): string[] {
 // own record): it misses a skeleton's approval and a walk without checkpoints,
 // so the status line counts only with a step. Null
 // when the walk is not Unit-by-Unit, the DAG cannot be read, or every Unit is
-// done.
+// done. `fivePhaseFolders` reads a record AI-DLC's next step brings up from the
+// five phases, before that step has moved its folders.
 export function unitProgress(
   recordDir: string,
   constructionIteration: string,
   stepUnit?: string,
+  fivePhaseFolders = false,
 ): { current: number; total: number } | null {
   if (constructionIteration.trim() !== "unit-major") return null;
   try {
-    const units = plannedUnits(recordDir);
+    const units = plannedUnits(recordDir, fivePhaseFolders);
     if (units.length === 0) return null;
     const rows: Array<{ at: string; approved: boolean; unit: string }> = [];
     // The tracked shards, and a claimed team Unit's local record (its whole

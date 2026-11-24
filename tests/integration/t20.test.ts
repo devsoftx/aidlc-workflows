@@ -10,12 +10,12 @@
 // status utility in a print directive the conductor runs. That stdout is the
 // deterministic surface: handleStatus (aidlc-utility.ts) reads the fields
 // straight off aidlc-state.md (Scope/Phase/Current Stage) and renders a fixed
-// "AI-DLC Workflow Status" block - so "IDEATION", "Feasibility", and "feature"
+// "AI-DLC Workflow Status" block - so "DISCOVER", "Feasibility", and "feature"
 // appear because the TOOL read them from the seeded state, not because the LLM
 // echoed them. We assert those literals on the Bash tool_result bytes.
 //
 // ASSERTION MAP:
-//   1 Phase                           -> Bash tool_result contains "IDEATION" (status block Phase line, read from state)
+//   1 Phase                           -> Bash tool_result contains "DISCOVER" (status block Phase line, read from state)
 //   2 Current Stage                   -> Bash tool_result contains "Feasibility" (Current Stage name)
 //   3 Scope                           -> Bash tool_result contains "feature" (Scope line, read from state)
 //   4 state unchanged                 -> readStateFile before === after (the read-only contract, on disk)
@@ -27,7 +27,7 @@
 //   - status block fields:  aidlc-utility.ts handleStatus() (Scope/Phase/Current Stage lines)
 //   - no-workflow literal:   "No active AI-DLC workflow found." (handleStatus)
 //   - --status dispatch:     SKILL.md -> `bun .claude/tools/aidlc-utility.ts status` via Bash, stdout verbatim
-//   - state-mid-ideation fixture carries Scope=feature, Lifecycle Phase=IDEATION,
+//   - state-mid-ideation fixture carries Scope=feature, Lifecycle Phase=DISCOVER,
 //     Current Stage=feasibility ("Feasibility & Constraints").
 //
 // It SPENDS TOKENS — each driveAidlc drives the real /aidlc on Opus/Bedrock.
@@ -48,6 +48,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { driveAidlc, readStateFile } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The case and file own the work budget; each SDK call uses what remains.
 const TIMEOUT_S = Number.parseInt(process.env.AIDLC_TEST_TIMEOUT ?? String(LIVE_LONG_OPERATION_TIMEOUT_MS / 1000), 10);
@@ -64,7 +65,7 @@ const STOP_AFTER_NO_WORKFLOW = { toolName: "Bash", resultIncludes: NO_WORKFLOW }
 // The seeded state-mid-ideation fixture's Phase/Scope/Current-Stage values, as
 // the status block renders them (Phase line uppercase, Scope verbatim, the
 // stage-1.3 name title-cased).
-const STATE_PHASE = "IDEATION";
+const STATE_PHASE = phaseFor("feasibility").toUpperCase();
 const STATE_SCOPE = "feature";
 const STATE_STAGE = "Feasibility"; // "Feasibility & Constraints" (1.3)
 
@@ -117,7 +118,7 @@ describe("t20 /aidlc --status (sdk)", () => {
         assertToolResultContains(r, "Bash", STATUS_HEADER);
 
         // The status block the TOOL emitted (read from the seeded state) carries
-        // IDEATION / feature / Feasibility. These are the tool's stdout bytes, NOT the
+        // DISCOVER / feature / Feasibility. These are the tool's stdout bytes, NOT the
         // LLM's prose.
         assertToolResultContains(r, "Bash", STATE_PHASE);
         assertToolResultContains(r, "Bash", STATE_SCOPE);

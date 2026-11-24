@@ -24,6 +24,8 @@ import {
   gateEventMatchesUnit,
   installedKiroLayout,
   isScopedReviewCopy,
+  isUnitLoopStage,
+  loadStageGraphAll,
   maximalAttemptEvents,
   readAuditShardEvents,
   recordDir,
@@ -35,6 +37,7 @@ import {
   scopedReviewCopyName,
   sortAttemptEvents,
   swarmWorkerWorktreeMeta,
+  UNIT_RECORD_PHASES,
   unitGateStatus,
   withAuditLock,
   writeFileAtomic,
@@ -43,19 +46,35 @@ import { resolveHarnessPath } from "./aidlc-runtime-paths.ts";
 
 // Where the reviewer can reach the Units' folders: every intent's record, and
 // a parallel batch's worktrees under .aidlc/worktrees/ (the reviewer's own
-// filesystem rule reaches them). All of them are denied; only this review's
-// Unit folder, in this intent's record, is opened again.
-const DENIED_ROOTS = [
-  "aidlc/spaces/*/intents/*/construction",
-  ".aidlc/worktrees/*/aidlc/spaces/*/intents/*/construction",
-];
+// filesystem rule reaches them). The unit-phase folders (design/ and build/)
+// of all of them are denied; this review's Unit folder, and the stage folders
+// beside the Units in this intent's record, are opened again.
+const DENIED_ROOTS = UNIT_RECORD_PHASES.flatMap((phase) => [
+  `aidlc/spaces/*/intents/*/${phase}`,
+  `.aidlc/worktrees/*/aidlc/spaces/*/intents/*/${phase}`,
+]);
+
+function unitFolderExcludes(record: string, unit: string): string[] {
+  return UNIT_RECORD_PHASES.flatMap((phase) => [
+    `        - "${record}/${phase}/${unit}"`,
+    `        - "${record}/${phase}/${unit}/**"`,
+  ]);
+}
+
+// The stage folders beside the Units (design/requirements-analysis and the
+// rest) hold the intent's context, not one Unit's, so they stay readable.
+function stageFolderExcludes(record: string): string[] {
+  return loadStageGraphAll()
+    .filter((stage) => (UNIT_RECORD_PHASES as readonly string[]).includes(stage.phase) && !isUnitLoopStage(stage))
+    .map((stage) => `        - "${record}/${stage.phase}/${stage.slug}/**"`);
+}
 
 /**
  * The copy's text: the installed reviewer file with its `name` set to the copy's
  * name, its `display_name` marked as this review's, and one rule added at the
- * end of `permissions.rules` that denies reads in every construction folder
- * (every intent's, and every batch worktree's) except this Unit's folder in
- * this intent's record. Everything else (the person's own edits included)
+ * end of `permissions.rules` that denies reads in every unit-phase folder
+ * (design/ and build/ of every intent, and of every batch worktree) except this
+ * Unit's folder and the stage folders beside the Units in this intent's record. Everything else (the person's own edits included)
  * stays as installed. `record` is the intent record's path from the project
  * root (`aidlc/spaces/<space>/intents/<intent>`). Null when the record or the
  * unit cannot be written as an exact pattern, or the file has no frontmatter,
@@ -108,8 +127,8 @@ export function renderReviewCopy(reviewerText: string, copyName: string, record:
     "      match:",
     ...DENIED_ROOTS.map((root) => `        - "${root}/**"`),
     "      exclude:",
-    `        - "${record}/construction/${unit}"`,
-    `        - "${record}/construction/${unit}/**"`,
+    ...unitFolderExcludes(record, unit),
+    ...stageFolderExcludes(record),
   );
   return [lines[0], ...front, ...lines.slice(end)].join(eol);
 }

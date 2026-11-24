@@ -42,6 +42,7 @@ import {
   replan,
   stageLine,
 } from "../harness/team-unit-replan.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 afterEach(cleanupTempDirs);
@@ -147,7 +148,7 @@ describe("t-team-unit-replan-no-claims: the Unit plan changes with no claim open
     expect(stageLine(seed, "delivery-planning")).toContain("[ ]");
     for (const stage of CONSTRUCTION_STAGES) expect(stageLine(seed, stage), stage).toContain("[ ]");
     expect(currentStage(seed)).toBe("units-generation");
-    expect(readFileSync(seededStateFile(seed), "utf-8")).toContain("**Lifecycle Phase**: INCEPTION");
+    expect(readFileSync(seededStateFile(seed), "utf-8")).toContain(`**Lifecycle Phase**: ${phaseFor("units-generation").toUpperCase()}`);
     expect(eventBlocks(seed, "STAGE_JUMPED").some((block) => block.includes("**Target**: units-generation"))).toBe(true);
 
     // Nothing the Units landed is undone: rows, merge receipts, claim ref.
@@ -188,8 +189,11 @@ describe("t-team-unit-replan-no-claims: the Unit plan changes with no claim open
     const invalidated = /\*\*Invalidated Downstream Reviews\*\*: (.*)/.exec(jumped!)?.[1] ?? "";
     // Their code is on main and is not being redone; only Units not yet
     // landed owe their per-stage reviews again.
-    expect(invalidated, jumped).not.toContain("/construction/alpha/");
-    expect(invalidated, jumped).not.toContain("/construction/skeleton/");
+    const unitPhases = new Set(CONSTRUCTION_STAGES.slice(0, 5).map(phaseFor));
+    for (const phase of unitPhases) {
+      expect(invalidated, jumped).not.toContain(`/${phase}/alpha/`);
+      expect(invalidated, jumped).not.toContain(`/${phase}/skeleton/`);
+    }
   });
 
   test("the revised plan is approved: the walk restarts at Functional Design, landed Units stay landed and are not offered, the new Unit is claimable (before main takes a step)", () => {

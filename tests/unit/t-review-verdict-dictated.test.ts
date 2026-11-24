@@ -58,6 +58,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -86,7 +87,7 @@ function project(mode: "strict" | "relaxed" = "strict"): string {
     expect(getField(state, GUARD_POLICY_FIELD)).toBe("relaxed (set by you)");
     writeFileSync(statePath, state);
   }
-  const dir = join(seededRecordDir(p), "inception", STAGE);
+  const dir = join(seededRecordDir(p), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "requirements.md"), "# Requirements\n");
   writeFileSync(join(dir, "requirements-analysis-questions.md"), "# Requirements Questions\n");

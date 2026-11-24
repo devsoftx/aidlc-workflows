@@ -4,25 +4,25 @@
 
 The aidlc-product-agent is your product manager and business analyst. It transforms raw business needs, user requests, and domain knowledge into structured requirements, prioritized user stories, and well-defined scope boundaries. It ensures that every downstream artifact traces back to a validated requirement, bridging the gap between what stakeholders want and what developers build.
 
-The aidlc-product-agent leads five stages spanning Ideation and Inception. It is the primary agent you interact with early in a workflow, asking clarifying questions about your intent, defining what is in and out of scope, and producing the requirements and stories that drive all subsequent design and implementation.
+The aidlc-product-agent leads five stages spanning Discover and Design. It is the primary agent you interact with early in a workflow, asking clarifying questions about your intent, defining what is in and out of scope, and producing the requirements and stories that drive all subsequent design and implementation.
 
 ## Stages Led
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 1.1 Intent Capture & Framing | Ideation | Captures your project intent and stakeholder context |
-| 1.2 Market Research | Ideation | Competitive analysis and build-vs-buy assessment |
-| 1.4 Scope Definition | Ideation | Defines scope boundaries and prioritized intent backlog |
-| 2.3 Requirements Analysis | Inception | Produces structured functional and non-functional requirements |
-| 2.4 User Stories | Inception | Creates user stories with acceptance criteria from personas |
+| 1.1 Intent Capture & Framing | Discover | Captures your project intent and stakeholder context |
+| 1.2 Market Research | Discover | Competitive analysis and build-vs-buy assessment |
+| 1.5 Scope Definition | Discover | Defines scope boundaries and prioritized intent backlog |
+| 2.2 Requirements Analysis | Design | Produces structured functional and non-functional requirements |
+| 2.3 User Stories | Design | Creates user stories with acceptance criteria from personas |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 1.6 Rough Mockups | Ideation | Validates mockups against captured intent |
-| 1.7 Approval & Handoff | Ideation | Validates initiative brief completeness |
-| 2.5 Refined Mockups | Inception | Validates mockups against user stories |
+| 1.7 Rough Mockups | Discover | Validates mockups against captured intent |
+| 1.8 Approval & Handoff | Discover | Validates initiative brief completeness |
+| 2.4 Refined Mockups | Design | Validates mockups against user stories |
 
 ## What to Expect
 

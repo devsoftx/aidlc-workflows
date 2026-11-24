@@ -31,6 +31,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -111,7 +112,7 @@ function saysNothingBack(out: string): void {
 // The stage's summary confirmation, asked after its questions: the question recorded, their reply, then the answer
 // the agent read in it, with the summary's own check on as the agent meets it.
 function summaryConfirmed(proj: string, reply: string) {
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const questions = join(dir, `${STAGE}-questions.md`);
   writeFileSync(questions, [
@@ -283,7 +284,7 @@ function construction(policy: Policy): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Construction Iteration**: unit-major

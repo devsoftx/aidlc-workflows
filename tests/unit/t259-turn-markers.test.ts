@@ -49,6 +49,7 @@ import {
   turnMarkersShowConversational,
 } from "../../core/tools/aidlc-lib.ts";
 import { FIXTURES_DIR, runOrchestrateNext, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const tempDirs: string[] = [];
 afterEach(() => {
@@ -488,7 +489,7 @@ describe("t259 the engine's last word ended the turn", () => {
         delete env[STOP_HOOK_PROBE_ENV];
         const run = (args: string[]) =>
           spawnSync(process.execPath, [".claude/tools/aidlc.ts", ...args], { cwd: proj, encoding: "utf-8", env });
-        const dir = stageDir(proj, "ideation", "feasibility");
+        const dir = stageDir(proj, phaseFor("feasibility"), "feasibility");
         mkdirSync(dir, { recursive: true });
         const file = join(dir, "feasibility-questions.md");
         writeFileSync(file, QUESTIONS);

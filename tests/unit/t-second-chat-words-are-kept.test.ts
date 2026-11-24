@@ -59,7 +59,7 @@ afterEach(() => {
   while (created.length > 0) cleanupTestProject(created.pop());
 });
 
-/** Open work mid-Inception, and a second chat bound to nothing by the lone-record rule. */
+/** Open work in Design, and a second chat bound to nothing by the lone-record rule. */
 function openWork(): string {
   const proj = createOrchestrationTestProject();
   created.push(proj);

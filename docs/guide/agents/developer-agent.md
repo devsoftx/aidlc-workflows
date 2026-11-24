@@ -4,7 +4,7 @@
 
 The aidlc-developer-agent is your senior software developer. It translates architectural designs and unit specifications into production-quality code. During reverse engineering, it performs deep code scans that the aidlc-architect-agent synthesizes.
 
-The aidlc-developer-agent leads the Reverse Engineering code scan and Code Generation, and is a dispatched collaborator in both Inception ensembles: it examines code-pattern evidence in the Practices Discovery hub-and-spoke and provides the implementability voice in the User Stories mob. Code Generation runs as a focused subagent. It is expected to use Bash for running build tools, package managers, and test commands.
+The aidlc-developer-agent leads the Reverse Engineering code scan and Code Generation, and is a dispatched collaborator in both Design ensembles: it examines code-pattern evidence in the Practices Discovery hub-and-spoke and provides the implementability voice in the User Stories mob. Code Generation runs as a focused subagent. It is expected to use Bash for running build tools, package managers, and test commands.
 
 Initialization, Workspace Detection included, runs as a deterministic tool; the aidlc-developer-agent takes no part in it.
 
@@ -12,17 +12,17 @@ Initialization, Workspace Detection included, runs as a deterministic tool; the 
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 2.1 Reverse Engineering (code scan) | Inception | Deep code scan producing structured analysis for architect synthesis; with collaborators off it also writes the 9 artifacts itself |
-| 3.5 Code Generation | Construction | Implements units of work from design specifications (per unit) |
+| 1.4 Reverse Engineering (code scan) | Discover | Deep code scan producing structured analysis for architect synthesis; with collaborators off it also writes the 9 artifacts itself |
+| 3.1 Code Generation | Build | Implements units of work from design specifications (per unit) |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 2.2 Practices Discovery | Inception | Mutually blind code-pattern spoke when collaborators are on; writes its own contribution file |
-| 2.4 User Stories | Inception | Implementability voice in the mob ensemble when collaborators are on; writes its own contribution file |
-| 3.1 Functional Design | Construction | API contracts and data model input |
-| 4.3 Deployment Execution | Operation | Database migrations |
+| 2.1 Practices Discovery | Design | Mutually blind code-pattern spoke when collaborators are on; writes its own contribution file |
+| 2.3 User Stories | Design | Implementability voice in the mob ensemble when collaborators are on; writes its own contribution file |
+| 2.9 Functional Design | Design | API contracts and data model input |
+| 6.4 Deployment Execution | Deploy | Database migrations |
 
 ## What to Expect
 

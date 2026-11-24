@@ -17,6 +17,7 @@
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -48,7 +49,6 @@ function temp(prefix: string): string {
 function overlayPlugin(parent: string, key: string): string {
   const root = join(parent, `plugin-${key}`);
   mkdirSync(join(root, ".claude-plugin"), { recursive: true });
-  mkdirSync(join(root, "contributions", "construction"), { recursive: true });
   mkdirSync(join(root, "hooks"), { recursive: true });
   writeFileSync(
     join(root, ".claude-plugin", "plugin.json"),
@@ -60,8 +60,9 @@ function overlayPlugin(parent: string, key: string): string {
   );
   cpSync(COMPOSE_HOOK, join(root, "hooks", "compose.ts"));
   for (const target of ["nfr-design", "build-and-test"]) {
+    mkdirSync(join(root, "contributions", phaseFor(target)), { recursive: true });
     writeFileSync(
-      join(root, "contributions", "construction", `${target}.md`),
+      join(root, "contributions", phaseFor(target), `${target}.md`),
       [
         "---",
         `target: ${target}`,
@@ -143,11 +144,11 @@ describe("t353 parallel plugin sync", () => {
       const results = await Promise.all(roots.map((root) => runSync(project, root)));
 
       expect(results.map((result) => result.code), results.map((r) => r.stderr).join("\n")).toEqual(KEYS.map(() => 0));
-      const stages = join(project, ".claude", "aidlc-common", "stages", "construction");
+      const stages = join(project, ".claude", "aidlc-common", "stages");
       for (const key of KEYS) {
         expect(existsSync(join(project, ".claude", "tools", "data", `plugin-compose-${key}.json`))).toBe(true);
         for (const target of ["nfr-design", "build-and-test"]) {
-          expect(readFileSync(join(stages, `${target}.md`), "utf-8")).toContain(`marker ${key}-${target}`);
+          expect(readFileSync(join(stages, phaseFor(target), `${target}.md`), "utf-8")).toContain(`marker ${key}-${target}`);
         }
       }
     }

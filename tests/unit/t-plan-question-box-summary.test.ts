@@ -50,6 +50,7 @@ import {
   seededStateFile,
   setupWorktreeFixture,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   codeGenerationRecordDir,
   renderTestingContract,
@@ -114,7 +115,7 @@ function project(): string {
 }
 
 function planDir(proj: string): string {
-  return join(seededRecordDir(proj), "construction", "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 }
 
 function planPath(proj: string): string {
@@ -556,12 +557,12 @@ function groupedProject(changed: boolean, repos: string[] = []): { pd: string; q
   seedAidlcMemory(pd);
   writeFileSync(seededStateFile(pd), [
     "# State", "## Project Information", "- **Project**: Grouped plan approval", "- **Scope**: feature",
-    "- **Project Type**: Greenfield", "- **State Version**: 8", "## Runtime State",
+    "- **Project Type**: Greenfield", "- **State Version**: 10", "## Runtime State",
     "- **Construction Checkpoints**: enabled", "- **Construction Iteration**: stage-major",
     "- **Construction Execution**: swarm", "- **Construction Autonomy Mode**: gated", "- **Skeleton Stance**: off",
     "- **Unit Ownership**: solo", "- **Guard Policy**: strict (set by you)", "## Stage Progress",
-    "### CONSTRUCTION PHASE", "- [-] code-generation \u2014 EXECUTE", "- [ ] build-and-test \u2014 EXECUTE",
-    "## Current Status", "- **Current Stage**: code-generation", "- **Lifecycle Phase**: CONSTRUCTION",
+    "### BUILD PHASE", "- [-] code-generation \u2014 EXECUTE", "### TEST PHASE", "- [ ] build-and-test \u2014 EXECUTE",
+    "## Current Status", "- **Current Stage**: code-generation", "- **Lifecycle Phase**: BUILD",
     "- **Status**: Running", "",
   ].join("\n"), "utf-8");
   seedBoltDagBatches(pd, [GROUP]);
@@ -668,7 +669,7 @@ function twoWorks(): string {
   setActiveIntentCursor(proj, WORKS[0].record);
   for (const work of WORKS) {
     writeSessionBinding(proj, work.chat, DEFAULT_SPACE, work.record, "switch");
-    const dir = join(intents, work.record, "construction", "code-generation");
+    const dir = join(intents, work.record, phaseFor("code-generation"), "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "code-generation-plan.md"),
       `# Code Generation Plan\n\n## Summary\n\n- Builds: ${work.builds}\n- Touches: src/slugify.ts\n- Tests: 3 unit tests\n\n` +
@@ -733,7 +734,7 @@ describe("two pieces of work open in two chats", () => {
 describe("an isolated Code Generation run in a project with no work", () => {
   const SINGLE = ["--stage", "code-generation", "--single", "--scope", "enterprise"];
   const SPACE_RECORD = ["aidlc", "spaces", "default", "intents"];
-  const ownPlanDir = (proj: string) => join(proj, ...SPACE_RECORD, "construction", "code-generation");
+  const ownPlanDir = (proj: string) => join(proj, ...SPACE_RECORD, phaseFor("code-generation"), "code-generation");
 
   test("the box gets the plan's lines and path, and the answer records against its question", () => {
     const proj = createOrchestrationTestProject();

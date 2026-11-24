@@ -10,13 +10,29 @@
 //     separate agent lists the ones the shipped stage graph runs that way
 //     (Cursor and opencode said two, where the graph has four).
 // Every shipped tree is read, with the stage list from its own shipped graph.
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
 
-type GraphStage = { number: string; mode: string };
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
+type GraphStage = { slug: string; number: string; mode: string };
 
 const read = (path: string): string => readFileSync(path, "utf-8").replace(/\r\n/g, "\n");
 
@@ -48,10 +64,16 @@ describe("t-handover-and-onboarding-match-what-ships", () => {
       const graph = JSON.parse(read(join(harness.engineRoot, "tools", "data", "stage-graph.json"))) as GraphStage[];
       const delegated = graph.filter((stage) => stage.mode !== "inline").map((stage) => stage.number).sort();
       expect(delegated.length).toBeGreaterThan(0);
+      // A list names a stage by its number, or by its slug as the Copilot
+      // files do; both map to the same number through the shipped graph.
+      const numberOfSlug = new Map(graph.map((stage) => [stage.slug, stage.number]));
       const found: string[] = [];
       for (const file of markdownFiles(harness.distRoot)) {
         for (const match of read(file).matchAll(/delegated stages \(([^)]*)\)/g)) {
-          const named = [...match[1].matchAll(/\b\d+\.\d+\b/g)].map((n) => n[0]).sort();
+          const named = [
+            ...[...match[1].matchAll(/\b\d+\.\d+\b/g)].map((n) => n[0]),
+            ...[...match[1].matchAll(/\b[a-z][a-z-]*\b/g)].flatMap((word) => numberOfSlug.get(word[0]) ?? []),
+          ].sort();
           if (named.join(",") !== delegated.join(",")) found.push(`${relative(harness.distRoot, file)}: (${match[1]})`);
         }
       }

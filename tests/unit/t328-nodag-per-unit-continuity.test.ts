@@ -33,6 +33,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -102,7 +103,7 @@ function project(): string {
 function seedOutputs(proj: string, unit: string): void {
   const dir = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(STAGE),
     unit,
     STAGE,
   );
@@ -118,7 +119,7 @@ function seedOutputs(proj: string, unit: string): void {
 }
 
 function seedStageOutputs(proj: string): void {
-  const dir = join(seededRecordDir(proj), "construction", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   for (const name of [
     "entities.md",
@@ -349,7 +350,7 @@ function forgeUnitReceipt(proj: string, unit: string): void {
     Iteration: "1",
     "Artifact Fingerprint": fingerprint,
     "Review Appendix Artifact":
-      `construction/${unit}/${STAGE}/functional-spec.md`,
+      `${phaseFor(STAGE)}/${unit}/${STAGE}/functional-spec.md`,
     "Review Appendix Offset": "0",
   };
   appendAuditEntry("REVIEW_REQUESTED", fields, proj);
@@ -875,7 +876,7 @@ describe("t328 no-DAG per-unit review continuity", () => {
       Iteration: "1",
       "Artifact Fingerprint": fingerprint,
       "Review Appendix Artifact":
-        `construction/alpha/${STAGE}/functional-spec.md`,
+        `${phaseFor(STAGE)}/alpha/${STAGE}/functional-spec.md`,
       "Review Appendix Offset": "0",
     };
     const timestamp = "2026-08-25T02:00:00Z";

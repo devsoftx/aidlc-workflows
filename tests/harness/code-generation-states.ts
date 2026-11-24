@@ -124,7 +124,7 @@ export function createCodeGenerationProject(
 }
 
 export function stageDir(proj: string, unit: string | null = null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), "build", ...(unit ? [unit] : []), "code-generation");
 }
 
 export function writePlan(proj: string, extra = "", unit: string | null = null, contract = resolveTestingPosture(proj)): void {
@@ -564,7 +564,7 @@ export const STATES: StateBuilder[] = [
 - **Project**: Grouped plan approval
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major
@@ -574,16 +574,18 @@ export const STATES: StateBuilder[] = [
 - **Unit Ownership**: solo
 - **Guard Policy**: strict (set by you)
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
 - **Current Stage**: code-generation
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Status**: Running
 `, "utf-8");
       seedBoltDagBatches(proj, [group, ["later"]]);

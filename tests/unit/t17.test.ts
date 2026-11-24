@@ -42,11 +42,14 @@ import {
   cleanupTestProject,
   createTestProject,
   FIXTURES_DIR,
+  markGreenfieldReverseEngineeringSkipped,
   resetAidlcEnv,
   seedAuditFile,
   seededAuditShard,
   seedStateFile,
+  seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -117,7 +120,7 @@ function reviewAppendix(reviewer: string, iteration: number): string {
 function recordRequirementsReview(proj: string): void {
   const reviewer = "aidlc-product-lead-agent";
   const iteration = 1;
-  const dir = join(recordDirOf(proj), "inception", "requirements-analysis");
+  const dir = join(recordDirOf(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   const artifact = join(dir, "requirements.md");
   mkdirSync(dir, { recursive: true });
   if (!existsSync(artifact)) writeFileSync(artifact, "# Requirements\n");
@@ -408,8 +411,8 @@ describe("t17 lookup", () => {
     );
   });
 
-  test("15: lookup validate-stage 3.5 resolves to code-generation", () => {
-    expect(runStateBare(["lookup", "validate-stage", "3.5"]).combined).toContain(
+  test("15: lookup validate-stage 3.1 resolves to code-generation", () => {
+    expect(runStateBare(["lookup", "validate-stage", "3.1"]).combined).toContain(
       '"slug":"code-generation"',
     );
   });
@@ -455,6 +458,7 @@ describe("t17 finalize", () => {
   test("23: finalize advances Current Stage to next", () => {
     proj = createTestProject();
     seedStateFile(proj, MID_IDEATION);
+    markGreenfieldReverseEngineeringSkipped(seededStateFile(proj));
     runState(proj, ["finalize", "feasibility"]);
     expect(runState(proj, ["get", "Current Stage"]).combined.trim()).toBe("scope-definition");
   });
@@ -469,6 +473,7 @@ describe("t17 finalize", () => {
   test("25: finalize returns next_stage in JSON", () => {
     proj = createTestProject();
     seedStateFile(proj, MID_IDEATION);
+    markGreenfieldReverseEngineeringSkipped(seededStateFile(proj));
     expect(runState(proj, ["finalize", "feasibility"]).combined).toContain(
       '"next_stage":"scope-definition"',
     );
@@ -612,13 +617,15 @@ describe("t17 advance validation", () => {
     expect(r.combined).toContain("SKIP");
   });
 
-  test("33: init emits PHASE_COMPLETED + PHASE_VERIFIED + PHASE_STARTED(inception)", () => {
+  test("33: init emits PHASE_COMPLETED + PHASE_VERIFIED + PHASE_STARTED(design)", () => {
     proj = createTestProject();
     runInit(proj, "bugfix");
     const audit = readAudit(proj);
     expect(hasEvent(audit, "PHASE_COMPLETED")).toBe(true);
     expect(hasEvent(audit, "PHASE_VERIFIED")).toBe(true);
-    expect(audit.split("\n").some((l) => l.startsWith("**Phase**: inception"))).toBe(true);
+    // A greenfield bugfix skips reverse-engineering, so the first stage after init
+    // is requirements-analysis, in the design phase.
+    expect(audit.split("\n").some((l) => l.startsWith(`**Phase**: ${phaseFor("requirements-analysis")}`))).toBe(true);
   });
 
   test("34: advance past last in-scope stage exits 1, mentions complete-workflow", () => {
@@ -823,6 +830,7 @@ describe("t17 approve", () => {
   test("69: resume reports advanced current_stage post-approve", () => {
     proj = createTestProject();
     seedStateFile(proj, MID_IDEATION);
+    markGreenfieldReverseEngineeringSkipped(seededStateFile(proj));
     runState(proj, ["gate-start", "feasibility"]);
     runState(proj, ["approve", "feasibility"]);
     expect(runState(proj, ["resume"]).combined).toContain(
@@ -849,6 +857,7 @@ describe("t17 approve", () => {
   test("73: advance after approve moves Current Stage forward", () => {
     proj = createTestProject();
     seedStateFile(proj, MID_IDEATION);
+    markGreenfieldReverseEngineeringSkipped(seededStateFile(proj));
     runState(proj, ["gate-start", "feasibility"]);
     runState(proj, ["approve", "feasibility"]);
     runState(proj, ["advance", "feasibility"]);

@@ -60,8 +60,8 @@ describe("t-agent-reference-agrees-with-the-stages", () => {
       expect(personas.length).toBeGreaterThan(0);
       for (const file of personas) {
         const persona = read(file);
-        expect(persona, relative(harness.distRoot, file)).not.toContain("Ideation to Construction");
-        expect(persona, relative(harness.distRoot, file)).not.toContain("ideation into construction");
+        expect(persona, relative(harness.distRoot, file)).not.toMatch(/\b(?:Ideation|Discover) to (?:Construction|Build)\b/);
+        expect(persona, relative(harness.distRoot, file)).not.toMatch(/\b(?:ideation|discover) into (?:construction|build)\b/);
         expect(persona, relative(harness.distRoot, file)).not.toContain("architecture, and units");
       }
       const knowledge = join(harness.engineRoot, "knowledge");

@@ -19,6 +19,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { auditBlockField, readAuditShardEvents, setGuardPolicyLine } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { env, exec, projectAt, say, templateProjects, type Exec } from "../harness/aidlc-answers-corpus.ts";
 
@@ -64,7 +65,7 @@ async function gateAfterTheirAnswer(policy: "off" | "strict", harness: "claude" 
   projects.push(proj);
   const file = seededStateFile(proj);
   writeFileSync(file, setGuardPolicyLine(readFileSync(file, "utf-8"), `${policy} (set by you)`));
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "requirements.md"), "# Requirements\n\n- FR-1: a blank title is refused.\n", "utf-8");
   writeFileSync(join(dir, `${STAGE}-questions.md`), "# Questions\n\n## Q1\n\nRefuse a blank title?\n\n[Answer]: Yes\n", "utf-8");

@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/construction/code-generation.md, file:aidlc-common/stages/construction/build-and-test.md, file:aidlc-common/protocols/stage-protocol.md, file:memory/org.md
+// covers: file:aidlc-common/stages/build/code-generation.md, file:aidlc-common/stages/test/build-and-test.md, file:aidlc-common/protocols/stage-protocol.md, file:memory/org.md
 //
 // t317 - Defined quality targets remain binding during generation and are
 // measured explicitly at the Build and Test approval gate.
@@ -22,8 +22,8 @@ const CLAUDE_ORG = join(
 );
 
 const FILES = {
-  codeGeneration: "aidlc-common/stages/construction/code-generation.md",
-  buildAndTest: "aidlc-common/stages/construction/build-and-test.md",
+  codeGeneration: "aidlc-common/stages/build/code-generation.md",
+  buildAndTest: "aidlc-common/stages/test/build-and-test.md",
   stageProtocol: "aidlc-common/protocols/stage-protocol.md",
   org: "memory/org.md",
 } as const;

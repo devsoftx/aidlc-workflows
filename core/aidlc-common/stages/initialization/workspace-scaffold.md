@@ -63,11 +63,11 @@ intent's record dir `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` (no READMEs
 idempotent (created on demand):
 
 - one directory per phase the SCOPE RUNS: `<record>/initialization/`, and each of
-  `ideation/`, `inception/`, `construction/`, `operation/` that holds at least one
-  EXECUTE stage under the active scope
+  `discover/`, `design/`, `build/`, `test/`, `secure/`, `deploy/`, `operate/` that
+  holds at least one EXECUTE stage under the active scope
 - `<record>/verification/` (scope-independent)
 
-A phase the scope excludes entirely gets NO directory. An empty `operation/` in a
+A phase the scope excludes entirely gets NO directory. An empty `operate/` in a
 bugfix record would read as work that was planned and skipped, when that phase was
 never in the plan; the phases that appear are exactly the phases the workflow will
 run, and the audit trail's `PHASE_SKIPPED` events name the rest.
@@ -79,7 +79,7 @@ the record only ever shows stages that produced something. This is also why
 deliverables to the space-level per-repo store `aidlc/spaces/<space>/codekb/<repo>/`
 (one shared view per repo, rewritten by each brownfield rerun), not into the intent
 record, and only its own `memory.md` diary lands at
-`<record>/inception/reverse-engineering/` when the stage runs. See the stage file
+`<record>/discover/reverse-engineering/` when the stage runs. See the stage file
 for the write paths.
 
 ### Step 4: Display Confirmation

@@ -42,6 +42,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   codekbRepoName,
@@ -152,7 +153,7 @@ function runLog(
 function developerHandoffPath(proj: string, repo?: string): string {
   return join(
     dirname(seededStateFile(proj)),
-    "inception",
+    phaseFor(RE_STAGE),
     RE_STAGE,
     repo ? `developer-scan-${repo}.md` : "developer-scan.md",
   );
@@ -2081,7 +2082,7 @@ describe("t315 each link's exact command, and a held link lands again", () => {
   test("the stage file and the protocols hand no link-command template and say the strict rule as strict", () => {
     const read = (...parts: string[]): string => readFileSync(join(AIDLC_SRC, "aidlc-common", ...parts), "utf-8");
     const ensemble = read("protocols", "stage-protocol-ensemble.md");
-    const stage = read("stages", "inception", "reverse-engineering.md");
+    const stage = read("stages", phaseFor(RE_STAGE), `${RE_STAGE}.md`);
     const collaborators = read("protocols", "stage-protocol-collaborators.md");
     for (const text of [ensemble, stage, collaborators]) {
       expect(text).not.toMatch(/aidlc-log\.ts link/);
@@ -2158,7 +2159,7 @@ describe("t315 an isolated run in a project with no work", () => {
     const directive = startIsolated(proj);
     const record = (directive.pipeline as { record: Array<{ link: string; command: string }> }).record;
     expect(record.map((row) => row.link)).toEqual([LEAD, FINAL]);
-    const handoff = `${NO_WORK_RECORD.join("/")}/inception/${RE_STAGE}/developer-scan.md`;
+    const handoff = `${NO_WORK_RECORD.join("/")}/${phaseFor(RE_STAGE)}/${RE_STAGE}/developer-scan.md`;
     expect(record[0].command).toContain(`--artifact ${handoff}`);
     mkdirSync(join(proj, dirname(handoff)), { recursive: true });
     writeFileSync(

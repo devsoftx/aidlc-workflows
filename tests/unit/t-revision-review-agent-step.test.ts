@@ -29,6 +29,7 @@ import { env, exec, LOG, ORCHESTRATE, say } from "../harness/aidlc-input-corpus.
 import {
   cleanupTestProject, createOrchestrationTestProject, recordArtifactWriteViaHook, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -84,7 +85,7 @@ async function changeRecordedAndMade(proj: string): Promise<void> {
   expect((await say(proj, CHANGE, "claude")).status).toBe(0);
   const rejected = await report(proj, "rejected", ["--user-input", "Request Changes", "--reason", "Add the case-sensitive check"]);
   expect(rejected.directive?.kind, rejected.out).toBe("print");
-  const doc = join(seededRecordDir(proj), "inception", STAGE, "requirements.md");
+  const doc = join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "requirements.md");
   writeFileSync(doc, `${readFileSync(doc, "utf-8")}\n- FR-9: the password check is case-sensitive.\n`, "utf-8");
   recordArtifactWriteViaHook(proj, doc);
 }

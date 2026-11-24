@@ -42,10 +42,13 @@ body:
       description: What area of AI-DLC does this relate to?
       options:
         - Initialization or workspace setup
-        - Ideation
-        - Inception
-        - Construction
-        - Operation
+        - Discover
+        - Design
+        - Build
+        - Test
+        - Secure
+        - Deploy
+        - Operate
         - Harness support
         - Plugin ecosystem
         - Documentation

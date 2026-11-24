@@ -1,4 +1,4 @@
-// covers: stage:inception/reverse-engineering
+// covers: stage:discover/reverse-engineering
 //
 // t183 — codekb placement re-verify (live SDK). The shipped end-to-end proof of
 // the codekb-determinism effort: drive the REAL reverse-engineering stage through
@@ -208,7 +208,7 @@ describe("t183 codekb placement re-verify (sdk) — RE artifacts land at the eng
         const repo = codekbRepoName(proj, activeSpace(proj));
         const codekbRel = relativeCodekbDir(proj, repo, activeSpace(proj)); // posix
         const recordRel = relative(proj, seededRecordDir(proj)).split("\\").join("/");
-        const oldReRel = `${recordRel}/inception/reverse-engineering`;
+        const oldReRel = `${recordRel}/discover/reverse-engineering`;
 
         const mds = capturedMarkdown as string[];
 

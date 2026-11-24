@@ -19,11 +19,13 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   openSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   cleanupTestProject,
@@ -247,6 +249,43 @@ function assertMarkerMatchesDirective(
   }
 }
 
+// Two real `continue` processes on one receipt, made a real race: each waits,
+// once it has read the cursor and before it can commit, until both have read
+// it. Without the barrier a process that starts late under load reads the
+// winner's commit instead, and that call is a replay, which the cursor answers
+// as a bare `next` (commit order, not start time, decides).
+async function raceContinue(
+  installed: InstalledProject,
+  receipt: string,
+): Promise<Array<{ code: number; directive: Directive; stdout: string; stderr: string }>> {
+  const barrierDir = mkdtempSync(join(tmpdir(), "t283-race-"));
+  const barriers = [0, 1].map((index) => join(barrierDir, `racer-${index}`));
+  let exited = 0;
+  const racers = barriers.map((barrier) =>
+    invokeAsync(installed, "continue", receipt, {
+      AIDLC_TEST_CONTINUE_READ_BARRIER: barrier,
+    }).finally(() => {
+      exited++;
+    })
+  );
+  // A racer that exits first never reached its barrier, and one that hangs
+  // before it never will: release the other either way and let the caller's
+  // assertions report what each printed.
+  const deadline = Date.now() + (remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS) ?? NATIVE_STARTUP_TIMEOUT_MS);
+  try {
+    while (exited === 0 && Date.now() < deadline && !barriers.every((barrier) => existsSync(`${barrier}.read`))) {
+      await Bun.sleep(10);
+    }
+  } finally {
+    for (const barrier of barriers) writeFileSync(`${barrier}.release`, "release\n", "utf-8");
+  }
+  try {
+    return await Promise.all(racers);
+  } finally {
+    rmSync(barrierDir, { recursive: true, force: true });
+  }
+}
+
 // Race two real processes on one receipt. At least one advances to part
 // `part + 1`; nobody is answered with an error. Callers pin the exact shape.
 async function raceReceipt(
@@ -256,10 +295,7 @@ async function raceReceipt(
 ): Promise<Array<{ code: number; directive: Directive; stdout: string }>> {
   const receipt = directive.receipt ?? "";
   expect(receipt, label).toMatch(RECEIPT_PATTERN);
-  const results = await Promise.all([
-    invokeAsync(installed, "continue", receipt),
-    invokeAsync(installed, "continue", receipt),
-  ]);
+  const results = await raceContinue(installed, receipt);
   expect(results.map((result) => result.code), label).toEqual([0, 0]);
   expect(
     results.filter((result) => result.directive.kind === "error"),
@@ -626,10 +662,7 @@ describe("t283 engine-owned continuation cursor", () => {
         );
       }
 
-      const results = await Promise.all([
-        invokeAsync(installed, "continue", receipt),
-        invokeAsync(installed, "continue", receipt),
-      ]);
+      const results = await raceContinue(installed, receipt);
       expect(results.map((result) => result.code), shape).toEqual([0, 0]);
       expect(
         results.filter((result) => result.directive.kind === "error"),

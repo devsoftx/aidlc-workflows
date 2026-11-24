@@ -27,6 +27,7 @@ import {
 import {
   AIDLC_SRC, cleanupTestProject, createTestProject, recordArtifactWriteViaHook, seededRecordDir, seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { env, exec, next, projectAt, say, templateProjects } from "../harness/aidlc-answers-corpus.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -53,7 +54,7 @@ function project(policy: "off" | "strict", approval?: { message: string | null }
     .replace("- **Change Control**: strict (from scope bugfix)",
       policy === "off" ? "- **Guard Policy**: off (from scope bugfix)" : "- **Guard Policy**: strict (set by you)")
     .replace(/^- \[.\] requirements-analysis/m, "- [x] requirements-analysis"));
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const requirements = join(dir, "requirements.md");
   writeFileSync(requirements, "# Requirements\n\n- FR-1: a blank title is refused.\n");
@@ -133,7 +134,7 @@ async function gateUnderStrict(): Promise<{ proj: string; requirements: string }
   created.push(proj);
   const file = seededStateFile(proj);
   writeFileSync(file, setGuardPolicyLine(readFileSync(file, "utf-8"), "strict (set by you)"));
-  return { proj, requirements: join(seededRecordDir(proj), "inception", STAGE, "requirements.md") };
+  return { proj, requirements: join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "requirements.md") };
 }
 
 // The person's message through the human-turn hook; the id it is on record as.

@@ -32,6 +32,7 @@ import {
   seededRecordDir,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -176,8 +177,8 @@ class Journey {
     }
     projects.push(this.dir);
     this.record = seededRecordDir(this.dir);
-    this.questions = join(this.record, "inception", STAGE, `${STAGE}-questions.md`);
-    this.artifact = join(this.record, "inception", STAGE, "requirements.md");
+    this.questions = join(this.record, phaseFor(STAGE), STAGE, `${STAGE}-questions.md`);
+    this.artifact = join(this.record, phaseFor(STAGE), STAGE, "requirements.md");
     this.env = { ...process.env, TMPDIR: runDir, CLAUDE_PROJECT_DIR: this.dir };
     delete this.env.AWS_AIDLC_DEFAULT_SCOPE;
     console.log(`Production journey entrypoint trace: ${this.trace}`);
@@ -899,8 +900,8 @@ describe("production guards: summary, terminal review, and recovery compose", ()
     let directive = json(p.tool("orchestrate", ["next"]));
     for (let steps = 0; steps < 40; steps++) {
       if (directive.kind === "load-steering") {
-        expect(typeof directive.continue_token).toBe("string");
-        directive = json(p.tool("orchestrate", ["continue", directive.continue_token as string]));
+        expect(typeof directive.receipt).toBe("string");
+        directive = json(p.tool("orchestrate", ["continue", directive.receipt as string]));
       } else if (directive.kind === "run-stage" && directive.gate === "unresolved") {
         succeeded(p.tool("orchestrate", ["report", "--skeleton-stance", "off"]), "Resolve walking skeleton stance");
         directive = json(p.tool("orchestrate", ["next"]));
@@ -921,11 +922,12 @@ describe("production guards: summary, terminal review, and recovery compose", ()
     expect(String(held.message), JSON.stringify(held)).toStartWith("The code plan is not approved yet: run ");
     directive = json(p.tool("orchestrate", ["next"]));
     for (let steps = 0; directive.kind === "load-steering" && steps < 40; steps++) {
-      directive = json(p.tool("orchestrate", ["continue", directive.continue_token as string]));
+      expect(typeof directive.receipt).toBe("string");
+      directive = json(p.tool("orchestrate", ["continue", directive.receipt as string]));
     }
     expect(directive).toMatchObject({ kind: "run-stage", stage: "code-generation" });
 
-    const dir = join(p.record, "construction", "code-generation");
+    const dir = join(p.record, phaseFor("code-generation"), "code-generation");
     const contract = succeeded(p.tool("testing-posture", ["render"]), "Render the actual Testing Contract");
     p.write(join(dir, "code-generation-plan.md"), [
       "# Code Generation Plan", "", contract.stdout.trim(), "",

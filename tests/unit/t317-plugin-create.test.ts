@@ -123,7 +123,7 @@ describe("t317 standalone plugin creator", () => {
       "README.md",
       "agents/example-plugin-example-agent.md",
       "scopes/example-plugin-example.md",
-      "stages/construction/example-plugin-example-stage.md",
+      "stages/build/example-plugin-example-stage.md",
       "tests/README.md",
     ]);
     expect(

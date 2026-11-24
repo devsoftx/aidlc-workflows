@@ -19,14 +19,14 @@
 |-------|------|----------------------|
 | observability-setup | Observability Setup | Configures CloudWatch dashboards, alarms, X-Ray tracing, structured logging, and custom metrics |
 | incident-response | Incident Response | Authors SSM runbooks, defines severity levels, establishes on-call structure, designs chaos experiments |
-| feedback-optimization | Feedback and Optimization | Analyzes production metrics, channels insights back to Ideation, recommends infrastructure and architecture improvements |
+| feedback-optimization | Feedback and Optimization | Analyzes production metrics, channels insights back to Discover, recommends infrastructure and architecture improvements |
 
 ### Support Stages
 
 None. The stage graph records `support_agents: []` for performance-validation
-(4.6) — that stage is led by the aidlc-quality-agent. The operational telemetry
-and baselines this agent stands up in observability-setup (4.4) feed performance
-validation informally, but operations is not a formal support agent on 4.6.
+(4.2) — that stage is led by the aidlc-quality-agent. The operational telemetry
+and baselines this agent stands up in observability-setup (7.1) can feed performance
+validation informally, but operations is not a formal support agent on 4.2.
 
 ---
 
@@ -43,7 +43,7 @@ validation informally, but operations is not a formal support agent on 4.6.
 
 | Target | Artifacts |
 |--------|-----------|
-| aidlc-product-agent | Operational feedback for next Ideation cycle (closes the lifecycle loop) |
+| aidlc-product-agent | Operational feedback for next Discover cycle (closes the lifecycle loop) |
 | aidlc-architect-agent | Architectural improvement recommendations based on production observations |
 | Orchestrator | Feedback report for iteration planning |
 

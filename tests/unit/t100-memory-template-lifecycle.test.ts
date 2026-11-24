@@ -56,7 +56,9 @@ import {
   DEFAULT_RECORD_DIR,
   DEFAULT_SPACE,
   FIXTURES_DIR,
+  markGreenfieldReverseEngineeringSkipped,
   resetAidlcEnv,
+  seededRecordDir,
   seedStateFile,
 } from "../harness/fixtures.ts";
 
@@ -226,11 +228,16 @@ afterAll(() => {
   for (const p of tempProjects) cleanupTestProject(p);
 });
 
-/** Seed a mid-ideation project (Current Stage = feasibility, Scope = feature). */
+/**
+ * Seed a mid-ideation project (Current Stage = feasibility, Scope = feature,
+ * Greenfield). Reverse Engineering is skipped, as the engine writes it for a
+ * Greenfield project, so advancing past feasibility lands on scope-definition.
+ */
 function midIdeationProject(): string {
   const proj = createTestProject();
   tempProjects.push(proj);
   seedStateFile(proj, join(FIXTURES_DIR, "state-mid-ideation.md"));
+  markGreenfieldReverseEngineeringSkipped(join(seededRecordDir(proj), "aidlc-state.md"));
   return proj;
 }
 
@@ -270,7 +277,7 @@ describe("t100 advance/approve memory_path key (Bun spawn — CLI env seam)", ()
     const r = runState(proj, ["advance", "feasibility", "scope-definition"]);
     expect(r.status).toBe(0);
     expect(memoryPath(r.out)).toBe(
-      `${RP}/ideation/scope-definition/memory.md`,
+      `${RP}/discover/scope-definition/memory.md`,
     );
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -295,7 +302,7 @@ describe("t100 advance/approve memory_path key (Bun spawn — CLI env seam)", ()
     const ap = runState(proj, ["approve", "feasibility"]);
     expect(ap.status).toBe(0);
     expect(memoryPath(ap.out)).toBe(
-      `${RP}/ideation/scope-definition/memory.md`,
+      `${RP}/discover/scope-definition/memory.md`,
     );
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 });

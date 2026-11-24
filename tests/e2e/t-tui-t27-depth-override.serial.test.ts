@@ -20,7 +20,7 @@
 //     Minimal` (the .sh's `Depth.*Minimal` grep) + audit.md has a DEPTH_CHANGED
 //     event (the .sh's `DEPTH_CHANGED` grep). Assert RENDERED: the pane shows the
 //     printed confirmation `Depth changed: Standard -> Minimal` AND the
-//     workflow statusline `[AIDLC] IDEATION` is still painted (the override does
+//     workflow statusline `[AIDLC] DISCOVER` is still painted (the override does
 //     not start/stop a workflow).
 //
 //   Case C — a depth word the engine does not take:
@@ -60,7 +60,7 @@
 // field — aidlc-statusline.ts paints phase + progress bar + counter + stage name,
 // never the depth value. So the tui-only render observation is
 // that the workflow statusline row survives the override (the workflow was not
-// torn down or started). The persisting `[AIDLC] IDEATION` row is the render
+// torn down or started). The persisting `[AIDLC] DISCOVER` row is the render
 // surface asserted here.
 //
 // COST: spends real Bedrock tokens (the orchestrator LLM reads SKILL.md and
@@ -81,7 +81,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import * as os from "node:os";
 import { dirname, join } from "node:path";
-import { nextFlagShape, parseLiteralShellInvocation, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { nextFlagShape, PHASES, parseLiteralShellInvocation, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { seededAuditDir, seededStateFile } from "../harness/fixtures.ts";
 import { type NativeToolCall, nativeToolCalls } from "../harness/t139-fidelity.ts";
 import {
@@ -330,11 +330,14 @@ function capitalized(level: DepthLevel): string {
   return level[0].toUpperCase() + level.slice(1);
 }
 
+// A path under one of the delivery phases' record folders (setup writes none).
+const DELIVERY_PHASE_PATH = new RegExp(`^(${PHASES.filter((phase) => phase !== "initialization").join("|")})[/\\\\]`);
+
 function workflowArtifacts(statePath: string): Record<string, string> {
   const record = dirname(statePath);
   return Object.fromEntries(
     readdirSync(record, { recursive: true, encoding: "utf8" })
-      .filter((path) => /^(ideation|inception|construction|operation)[/\\]/.test(path))
+      .filter((path) => DELIVERY_PHASE_PATH.test(path))
       .filter((path) => statSync(join(record, path)).isFile())
       .map((path) => [path, readFileSync(join(record, path)).toString("base64")]),
   );
@@ -402,12 +405,12 @@ function bootSeededWorkflow(tag: string, sessionId?: string): { session: string;
 
   const startup = drive([
     "startup", "--session", session,
-    "--ready-pattern", "\\[AIDLC\\].*IDEATION", "--timeout-ms", String(remainingWorkMs()),
+    "--ready-pattern", "\\[AIDLC\\].*DISCOVER", "--timeout-ms", String(remainingWorkMs()),
   ]);
   expect(startup.rc).toBe(0);
-  // The seeded mid-ideation state paints the WORKFLOW line (IDEATION), not the
+  // The seeded mid-ideation state paints the WORKFLOW line (DISCOVER), not the
   // no-workflow "ready" line. Anchor the override against the live workflow row.
-  expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 1000)).toBe(true);
+  expect(waitFor(session, "\\[AIDLC\\].*DISCOVER", remainingWorkMs(), 1000)).toBe(true);
   return { session, proj };
 }
 
@@ -469,9 +472,9 @@ describe("t-tui-t27 depth override (config-change lands + renders)", () => {
         // The workflow statusline row SURVIVES the override (a config-only command
         // does not tear down / start a workflow). Depth is not a statusline field,
         // and the confirmation prose is LLM-reworded, so the persisting `[AIDLC]
-        // IDEATION` row is the honest, deterministic tui-only observation here —
+        // DISCOVER` row is the honest, deterministic tui-only observation here —
         // what the headless SDK path could not see, asserted without grepping prose.
-        expect(pane).toContain("· IDEATION");
+        expect(pane).toContain("· DISCOVER");
       } finally {
         cleanupTuiProjectAfterKill(
           proj,

@@ -21,6 +21,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, FIXTURES_DIR, runOrchestrateNext, seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   readAuditShardEvents, readIssuedDirectiveMarker, stateDigest, writeActiveDirectiveMarker,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -80,7 +81,7 @@ function alicesCheckout(policy: "strict" | "relaxed" | "off", locked = false): s
   return proj;
 }
 
-const stageDir = (proj: string) => join(seededRecordDir(proj), "construction", "code-generation");
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 
 function writePlan(proj: string, extra = ""): void {
   mkdirSync(stageDir(proj), { recursive: true });
@@ -181,7 +182,7 @@ function receipts(proj: string): string[] {
     .map((name) => (JSON.parse(readFileSync(join(dir, name), "utf-8")) as { status: string }).status);
 }
 
-const QUESTIONS = "aidlc/spaces/default/intents/fixture-8000000000000001/construction/code-generation/code-generation-questions.md";
+const QUESTIONS = "aidlc/spaces/default/intents/fixture-8000000000000001/build/code-generation/code-generation-questions.md";
 
 describe("a code plan approved on one checkout holds on a clone of it", () => {
   for (const [policy, locked] of [["strict", false], ["relaxed", false], ["off", false], ["strict", true]] as const) {

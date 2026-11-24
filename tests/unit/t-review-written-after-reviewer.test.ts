@@ -57,6 +57,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -85,7 +86,7 @@ function project(mode: "strict" | "relaxed" = "strict"): string {
     expect(getField(state, GUARD_POLICY_FIELD)).toBe("relaxed (set by you)");
     writeFileSync(statePath, state);
   }
-  const dir = join(seededRecordDir(p), "inception", STAGE);
+  const dir = join(seededRecordDir(p), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "requirements.md"), "# Requirements\n");
   writeFileSync(join(dir, "requirements-analysis-questions.md"), "# Requirements Questions\n");
@@ -263,7 +264,7 @@ describe("the pure helpers", () => {
     expect(open.reviewFile).toBe(FILE);
     expect(open.unit).toBeNull();
     expect(openReviewRequests([requested(1, { "Review File": "../elsewhere/1.review.md" })])).toEqual([]);
-    expect(openReviewRequests([requested(1, { "Review File": "inception/requirements-analysis/requirements.md" })])).toEqual([]);
+    expect(openReviewRequests([requested(1, { "Review File": "design/requirements-analysis/requirements.md" })])).toEqual([]);
   });
 
   test("reviewerCompletionAfter: the latest completion of that reviewer after the row", () => {

@@ -33,6 +33,7 @@ import {
   unitProgressRow,
 } from "../harness/team-unit-merge.ts";
 import { seededAuditDir, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename,
   auditBlockField,
@@ -77,7 +78,7 @@ function teamSeed(): { seed: string; remote: string } {
   const statePath = seededStateFile(made.seed);
   writeFileSync(
     statePath,
-    readFileSync(statePath, "utf-8").replace("- **State Version**: 8", "- **State Version**: 8\n- **Skeleton Stance**: on"),
+    readFileSync(statePath, "utf-8").replace("- **State Version**: 10", "- **State Version**: 10\n- **Skeleton Stance**: on"),
   );
   git(made.seed, ["commit", "-am", "skeleton stance"]);
   git(made.seed, ["push", "origin", "main"]);
@@ -86,7 +87,7 @@ function teamSeed(): { seed: string; remote: string } {
 
 function writeStageFiles(checkout: string): void {
   const stage = loadStageGraphAll().find((entry) => entry.slug === STAGE)!;
-  const dir = join(seededRecordDir(checkout), "construction", "alpha", STAGE);
+  const dir = join(seededRecordDir(checkout), phaseFor(STAGE), "alpha", STAGE);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\nwritten\n`);
 }
@@ -258,7 +259,7 @@ describe("t-team-unit-skip-handed-out-step: a team Unit's skip of the step the e
       stages: ["functional-design", "nfr-requirements", "nfr-design", STAGE],
       beforeCommit: (checkout) => {
         // A skipped Code Generation writes no plan, instructions or questions.
-        const codeDir = join(seededRecordDir(checkout), "construction", "alpha", "code-generation");
+        const codeDir = join(seededRecordDir(checkout), phaseFor("code-generation"), "alpha", "code-generation");
         for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-generation-questions.md"]) {
           rmSync(join(codeDir, name));
         }

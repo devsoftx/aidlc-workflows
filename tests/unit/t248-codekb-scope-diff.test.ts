@@ -40,6 +40,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   aidlcRootIntegrations,
   codekbFingerprintExcludes,
@@ -591,7 +592,7 @@ describe("t248 codekb-scope-diff verb — compare mode", () => {
     seedStore(proj, timestampBody({ fingerprint: "abc" }));
     // A live record, as during Reverse Engineering: its state file selects it.
     writeFileSync(seededStateFile(proj), "# AI-DLC State\n\n**Current Stage**: reverse-engineering\n");
-    const reDir = join(seededRecordDir(proj), "inception", "reverse-engineering");
+    const reDir = join(seededRecordDir(proj), phaseFor("reverse-engineering"), "reverse-engineering");
     mkdirSync(reDir, { recursive: true });
     const draft = join(reDir, `scope-draft-${basename(proj)}.md`);
     writeFileSync(draft, timestampBody({ fingerprint: "abc" }));
@@ -613,7 +614,7 @@ describe("t248 codekb-scope-diff verb — compare mode", () => {
   test("a compare removes only the compared repo's draft, whatever the store says", () => {
     const proj = freshProject();
     writeFileSync(seededStateFile(proj), "# AI-DLC State\n\n**Current Stage**: reverse-engineering\n");
-    const reDir = join(seededRecordDir(proj), "inception", "reverse-engineering");
+    const reDir = join(seededRecordDir(proj), phaseFor("reverse-engineering"), "reverse-engineering");
     mkdirSync(reDir, { recursive: true });
     const draftFor = (repo: string) => {
       const path = join(reDir, `scope-draft-${repo}.md`);
@@ -973,7 +974,7 @@ describe("t248 codekb freshness: AI-DLC's own files", () => {
   });
 
   test("the stage's completion summary leaves the freshness check out", () => {
-    const stage = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", "inception", "reverse-engineering.md"), "utf-8")
+    const stage = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", phaseFor("reverse-engineering"), "reverse-engineering.md"), "utf-8")
       .replace(/\s+/g, " ");
     const step5 = stage.slice(stage.indexOf("### Step 5:"), stage.indexOf("## Sensors"));
     expect(step5).toContain("Leave the knowledge base's freshness check out of the summary");

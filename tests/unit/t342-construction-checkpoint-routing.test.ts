@@ -35,6 +35,7 @@ import {
 import {
   copilotAdapter, copilotRuns, copilotStep, namedCommands, SHAPES, type Step,
 } from "../harness/code-generation-states.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { readMessage } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
 import { guardOperationInvocation } from "../../dist/claude/.claude/tools/aidlc-guard-operation.ts";
@@ -82,7 +83,7 @@ function fixture(options: Options = {}) {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: ${options.scope ?? "feature"}
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -99,11 +100,11 @@ ${options.legacy ? "" : `- **Construction Checkpoints**: enabled
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### ${phaseFor(current).toUpperCase()} PHASE
 ${stages.map((stage) => `- [${stage === current ? "-" : " "}] ${stage} — EXECUTE`).join("\n")}
 - [ ] build-and-test — EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `);
@@ -125,7 +126,7 @@ ${stages.map((stage) => `- [${stage === current ? "-" : " "}] ${stage} — EXECU
 function cover(p: string, unit: string, selected = stages, receipts = true) {
   for (const slug of selected) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), name === "unit-test-instructions" ? "" : `# ${unit} ${name}\n`);
@@ -392,7 +393,7 @@ describe("t342 Construction checkpoint routing", () => {
     const p = fixture();
     const surface = learningsSurface(p);
     const dash = "\u2014"; // the diary line's separator, an em dash
-    const diary = join(seededRecordDir(p), "construction", "functional-design", "memory.md");
+    const diary = join(seededRecordDir(p), phaseFor("functional-design"), "functional-design", "memory.md");
     mkdirSync(dirname(diary), { recursive: true });
     writeFileSync(diary, [
       "## Interpretations",
@@ -429,7 +430,7 @@ describe("t342 Construction checkpoint routing", () => {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, `${lines.join("\n")}\n`);
     };
-    const construction = join(seededRecordDir(p), "construction");
+    const construction = join(seededRecordDir(p), phaseFor("functional-design"));
     write(join(construction, "functional-design", "memory.md"), [
       "## Interpretations",
       `- 2026-10-05T10:00:00Z [unit alpha] ${dash} alpha keeps its own store; it owns the data`,
@@ -1246,9 +1247,11 @@ describe("t342 Construction checkpoint routing", () => {
     expect(policyCli(p, "state", ["set-construction-checkpoints", "disabled"]).status).not.toBe(0);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
-  test("Inception policy setters keep their receipt-free behavior", () => {
+  test("policy setters before Construction keep their receipt-free behavior", () => {
     const p = fixture();
-    writeFileSync(seededStateFile(p), setField(readFileSync(seededStateFile(p), "utf-8"), "Lifecycle Phase", "INCEPTION"));
+    // The setters' refusal is decided by Current Stage, so the stage is set too: requirements-analysis is in design.
+    const inDesign = setField(readFileSync(seededStateFile(p), "utf-8"), "Lifecycle Phase", "DESIGN");
+    writeFileSync(seededStateFile(p), setField(inDesign, "Current Stage", "requirements-analysis"));
     for (const args of [
       ["set-construction-iteration", "stage-major"],
       ["set-construction-execution", "swarm"],
@@ -1346,7 +1349,7 @@ describe("t342 Construction checkpoint routing", () => {
     const root = join(import.meta.dir, "..", "..");
     const files = [
       "core/aidlc-common/protocols/stage-protocol-construction.md",
-      "core/aidlc-common/stages/inception/delivery-planning.md",
+      "core/aidlc-common/stages/design/delivery-planning.md",
       "docs/guide/12-cli-commands.md",
       "docs/guide/facilitator-guide.md",
       "docs/guide/07-interaction-modes.md",
@@ -1377,7 +1380,7 @@ describe("t342 Construction checkpoint routing", () => {
     const env: NodeJS.ProcessEnv = { ...process.env, AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS: "1" };
     delete env.AIDLC_SKIP_HUMAN_PRESENCE_GUARD;
     const refused = spawnSync(process.execPath, [
-      join(AIDLC_SRC, "tools/aidlc-state.ts"), "set", "Lifecycle Phase=inception",
+      join(AIDLC_SRC, "tools/aidlc-state.ts"), "set", `Lifecycle Phase=${phaseFor("requirements-analysis")}`,
       "Construction Checkpoints=disabled", "--project-dir", p,
     ], { timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8", env });
     const output = `${refused.stdout}${refused.stderr}`;
@@ -1568,7 +1571,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   // line names the steps units have not finished, and the way back (#3530);
   // there is no confirmation question and no refusal.
   test("leaving Construction early goes through and names the steps it skips", () => {
-    for (const args of [["--stage", "build-and-test"], ["--phase", "operation"]]) {
+    for (const args of [["--stage", "build-and-test"], ["--phase", "operate"]]) {
       const p = betaBuilding();
       const before = readFileSync(seededStateFile(p), "utf-8");
       const jump = JSON.parse(tool(p, "orchestrate", ["next", ...args]).stdout);
@@ -1802,7 +1805,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   test("a jump back to a stage beta finished reopens it for beta only; alpha keeps its work", () => {
     const p = betaBuilding();
     expect(tool(p, "state", ["unit", "start", "--stage", "code-generation", "--unit", "beta"]).status).toBe(0);
-    const alphaFile = join(seededRecordDir(p), "construction", "alpha", "nfr-design");
+    const alphaFile = join(seededRecordDir(p), phaseFor("nfr-design"), "alpha", "nfr-design");
     const said = reopenFor(p, ["--stage", "nfr-design"]);
     expect(said).toContain(
       "reopen --target nfr-design --stages nfr-design,infrastructure-design,code-generation --units beta ",
@@ -1854,7 +1857,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     const fields = {
       Stage: slug, Reviewer: stage.reviewer!, Unit: unit, Iteration: "1",
       "Artifact Fingerprint": reviewArtifactFingerprint(p, stage, unit)!,
-      "Review Appendix Artifact": `construction/${unit}/${slug}/${artifactFilename(stage.review_artifact!)}`,
+      "Review Appendix Artifact": `${phaseFor(slug)}/${unit}/${slug}/${artifactFilename(stage.review_artifact!)}`,
       "Review Appendix Offset": "0",
     };
     appendAuditEntry("REVIEW_REQUESTED", fields, p);
@@ -3055,7 +3058,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     approve(p, "alpha");
     expect(next(p)).toMatchObject({ stage: "functional-design", unit: "beta" });
     const design = findStageBySlug("functional-design")!;
-    const designDir = join(seededRecordDir(p), "construction", "alpha", design.slug);
+    const designDir = join(seededRecordDir(p), phaseFor(design.slug), "alpha", design.slug);
     for (const name of design.produces ?? []) rmSync(join(designDir, artifactFilename(name)), { force: true });
 
     const handedBack = next(p);
@@ -3097,7 +3100,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       cover(p, "alpha", [slug]);
     }
     const design = findStageBySlug("functional-design")!;
-    const designDir = join(seededRecordDir(p), "construction", "alpha", design.slug);
+    const designDir = join(seededRecordDir(p), phaseFor(design.slug), "alpha", design.slug);
     const review = (iteration: string) => reviewThroughLog(p, [
       "review", "--stage", design.slug, "--reviewer", design.reviewer!, "--unit", "alpha", "--iteration", iteration,
     ]);
@@ -3161,7 +3164,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   // records it.
   function editAlphaDocument(p: string, words: string): string {
     const slug = "nfr-requirements";
-    const document = join(seededRecordDir(p), "construction", "alpha", slug,
+    const document = join(seededRecordDir(p), phaseFor(slug), "alpha", slug,
       artifactFilename(findStageBySlug(slug)!.produces![0]));
     const file = relative(p, document).replaceAll("\\", "/");
     writeFileSync(document, `${readFileSync(document, "utf-8")}\n${words}\n`);
@@ -3266,7 +3269,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       const p = policyFixture("classic", policy);
       buildReviewed(p, "alpha");
       approve(p, "alpha");
-      const manifest = join(seededRecordDir(p), "construction", "beta", "code-generation", "source-manifest.json");
+      const manifest = join(seededRecordDir(p), phaseFor("code-generation"), "beta", "code-generation", "source-manifest.json");
       const built = buildReviewed(p, "beta", () => {
         writeFileSync(manifest, JSON.stringify({
           stage: "code-generation", unit: "beta", version: 1, writes: [{ path: "src/beta.ts" }, { path: "src/alpha.ts" }],
@@ -3522,7 +3525,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
   // a plain edit, is not the person's redo.
   function redoAlphaDocument(p: string, byPerson: boolean) {
     if (byPerson) {
-      const document = join(seededRecordDir(p), "construction", "alpha", "nfr-requirements",
+      const document = join(seededRecordDir(p), phaseFor("nfr-requirements"), "alpha", "nfr-requirements",
         artifactFilename(findStageBySlug("nfr-requirements")!.produces![0]));
       const redo = tool(p, "state", [
         "reuse-artifact", "nfr-requirements", "--decision", "redo",
@@ -3578,7 +3581,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     buildReviewed(p, "alpha", undefined, true);
     approve(p, "alpha");
     const redo = tool(p, "state", [
-      "reuse-artifact", "nfr-requirements", "--decision", "redo", "--artifacts", "construction/beta/nfr-requirements/x.md",
+      "reuse-artifact", "nfr-requirements", "--decision", "redo", "--artifacts", "design/beta/nfr-requirements/x.md",
     ]);
     expect(redo.status, redo.out).toBe(0);
     const checkpoint = redoAlphaDocument(p, false);
@@ -3589,7 +3592,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     const p = policyFixture("classic", "off (set by you)");
     buildReviewed(p, "alpha", undefined, true);
     approve(p, "alpha");
-    const document = join(seededRecordDir(p), "construction", "alpha", "nfr-requirements",
+    const document = join(seededRecordDir(p), phaseFor("nfr-requirements"), "alpha", "nfr-requirements",
       artifactFilename(findStageBySlug("nfr-requirements")!.produces![0]));
     // The path as the stage directive names it, from the project root.
     const redo = tool(p, "state", [
@@ -3667,7 +3670,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       const p = policyFixture("classic", policy);
       buildReviewed(p, "alpha");
       approve(p, "alpha");
-      const manifest = join(seededRecordDir(p), "construction", "beta", "code-generation", "source-manifest.json");
+      const manifest = join(seededRecordDir(p), phaseFor("code-generation"), "beta", "code-generation", "source-manifest.json");
       buildReviewed(p, "beta", () => {
         writeFileSync(manifest, JSON.stringify({
           stage: "code-generation", unit: "beta", version: 1, writes: [{ path: "src/beta.ts" }, { path: "src/alpha.ts" }],
@@ -3998,7 +4001,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
       expect(started.status, started.out).toBe(0);
       const plan = planApproved(p, "alpha");
       writeFileSync(plan, readFileSync(plan, "utf-8").replaceAll("- [ ] Step", "- [x] Step"));
-      const built = join(seededRecordDir(p), "construction", "alpha", "code-generation");
+      const built = join(seededRecordDir(p), phaseFor("code-generation"), "alpha", "code-generation");
       for (const name of ["code-summary", "traceability"]) writeFileSync(join(built, artifactFilename(name)), `# alpha ${name}\n`);
       writeFileSync(join(built, "source-manifest.json"), JSON.stringify({
         stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "src/alpha.ts" }],
@@ -4041,7 +4044,7 @@ describe("t342 a unit-major recovery keeps every Unit's finished work", () => {
     });
     writeFileSync(plan, readFileSync(plan, "utf-8").replaceAll("- [ ] Step", "- [x] Step"));
     for (const n of [1, 2, 3, 4]) writeFileSync(join(p, "src", `part${n}.ts`), `export const part${n} = ${n};\n`);
-    const built = join(seededRecordDir(p), "construction", "beta", "code-generation");
+    const built = join(seededRecordDir(p), phaseFor("code-generation"), "beta", "code-generation");
     for (const name of ["code-summary", "traceability"]) writeFileSync(join(built, artifactFilename(name)), `# beta ${name}\n`);
     writeFileSync(join(built, "source-manifest.json"), JSON.stringify({
       stage: "code-generation", unit: "beta", version: 1,
@@ -4317,9 +4320,10 @@ describe("t342 status names the Unit's step and a typed switch says where the wo
     const out = status(p);
     expect(out).toContain("Current Stage:  Functional Design");
     expect(out).toContain("Current Step:   code-generation for unit beta");
-    const construction = out.split("\n").find((line) => line.trimStart().startsWith("CONSTRUCTION")) ?? "";
-    expect(construction).toContain("Unit 2 of 2");
-    expect(construction).not.toMatch(/\b0\/\d+\b/);
+    // The Unit count sits on the phase row of Current Stage (functional-design is DESIGN).
+    const design = out.split("\n").find((line) => line.trimStart().startsWith("DESIGN")) ?? "";
+    expect(design).toContain("Unit 2 of 2");
+    expect(design).not.toMatch(/\b0\/\d+\b/);
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
   test("a typed setting says where the work picks up", () => {

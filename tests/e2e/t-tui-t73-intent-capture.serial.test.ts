@@ -1,6 +1,6 @@
-// covers: stage:ideation/intent-capture
+// covers: stage:discover/intent-capture
 //
-// t-tui-t73-intent-capture.serial.test.ts - drive the IDEATION intent-capture
+// t-tui-t73-intent-capture.serial.test.ts - drive the DISCOVER intent-capture
 // stage through a REAL keystroke-driven claude TUI and prove it produces its
 // on-disk artifacts.
 //
@@ -24,11 +24,11 @@
 //
 // What it proves:
 //   - the intent-capture stage starts from a --stage jump
-//     (statusline shows a live IDEATION phase),
+//     (statusline shows a live DISCOVER phase),
 //   - the answer-gate clears the stage's rendered AUQ menu(s) by taking the
 //     Recommended default and TERMINATES on approval AND advancement,
 //   - ON DISK:
-//       * <record>/ideation/intent-capture/ exists,
+//       * <record>/discover/intent-capture/ exists,
 //       * a *questions* file exists AND carries >=1 `[Answer]:` line
 //         (the gate's answers were written back),
 //       * a *intent*statement* artifact exists, is > 100 bytes, and has at least
@@ -37,13 +37,13 @@
 //         Questions section,
 //       * aidlc-state.md Completed counter == the number of `- [x]` lines
 //         (internal consistency invariant), Completed >= 4 (monotonic from the
-//         fixture's 3 + this stage), and Lifecycle Phase == IDEATION,
+//         fixture's 3 + this stage), and Lifecycle Phase == DISCOVER,
 //       * audit recorded a STAGE_COMPLETED for intent-capture,
 //   - RENDER (the tui-only value-add the SDK/claude-p path is blind to): the
 //     captured grid showed the AUQ select footer (`Enter to select`) and/or the
 //     multi-tab `Submit` strip at least once while the gate was up.
 //
-// REACHABILITY: intent-capture is a normal IDEATION stage
+// REACHABILITY: intent-capture is a normal DISCOVER stage
 // (not the heavy reverse-engineering stage). If approval and advancement never
 // land inside the overall-timeout, answer-gate exits nonzero (HANG BACKSTOP) and
 // this test RED — that red is a finding about stage reachability, NOT a thing to
@@ -64,6 +64,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTuiProjectAfterKill,
   markdownH2Section,
@@ -170,6 +171,9 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
     `intent-capture jump commits intent-statement + answered questions on disk${SKIP_REASON ? ` — SKIP: ${SKIP_REASON}` : ""}`,
     async () => {
       const session = `aidlc_tui_t73_${process.pid}`;
+      // intent-capture's phase: its record folder and the statusline's label.
+      const phase = phaseFor("intent-capture");
+      const phaseLabel = phase.toUpperCase();
       // Seed state at init-done (intent-capture next/current),
       // greenfield stub (drives workspace-detection to Greenfield), audit present.
       const sandbox = setupTuiProject({
@@ -204,12 +208,12 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
 
         const startup = drive([
           "startup", "--session", session,
-          "--ready-pattern", "\\[AIDLC\\].*IDEATION", "--timeout-ms", String(remainingWorkMs()),
+          "--ready-pattern", `\\[AIDLC\\].*${phaseLabel}`, "--timeout-ms", String(remainingWorkMs()),
         ]);
         expect(startup.rc).toBe(0);
-        // Seeded state => the workflow statusline paints the live IDEATION phase
+        // Seeded state => the workflow statusline paints the live DISCOVER phase
         // (not the no-workflow "ready" line). Wait for it before driving.
-        expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 800)).toBe(true);
+        expect(waitFor(session, `\\[AIDLC\\].*${phaseLabel}`, remainingWorkMs(), 800)).toBe(true);
 
         // --- submit the stage-jump WITH a build description -------------------
         // intent-capture.md Step 2 reads the project description from "$ARGUMENTS
@@ -232,9 +236,9 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
         drive(["send", "--session", session, "--keys", "Enter", "--no-enter"]);
 
         // Confirm the stage actually started running (the statusline stays in a
-        // live IDEATION phase while turns stream). --stable-ms 0: the screen is
+        // live DISCOVER phase while turns stream). --stable-ms 0: the screen is
         // streaming (token counter / spinner), so match the instant it appears.
-        expect(waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 0)).toBe(true);
+        expect(waitFor(session, `\\[AIDLC\\].*${phaseLabel}`, remainingWorkMs(), 0)).toBe(true);
 
         // Begin tailing the grid for the render assertion BEFORE answer-gate runs,
         // so we catch the AUQ select footer + multi-tab Submit strip while the
@@ -281,7 +285,7 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
               "--assert-file-absent-at-option",
               "Looks correct",
               "--assert-file-absent",
-              "aidlc/spaces/default/intents/*/ideation/intent-capture/*intent*statement*",
+              "aidlc/spaces/default/intents/*/discover/intent-capture/*intent*statement*",
               // Wait for approval AND advancement (aidlc-state.ts handleApprove and
               // handleAdvance), not just the first write. Keep the completed
               // stage anchored exactly so the kill cannot land mid-approve.
@@ -300,7 +304,7 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
         expect(gateRc).toBe(0);
 
         // --- assert ON DISK --------------
-        const icDir = join(seededRecordDir(sandbox), "ideation", "intent-capture");
+        const icDir = join(seededRecordDir(sandbox), phase, "intent-capture");
         expect(existsSync(icDir)).toBe(true);
 
         // A *questions* file exists AND has >=1 [Answer]: line.
@@ -351,8 +355,8 @@ describe("t-tui-t73-intent-capture (answering the stage gate produces artifacts 
         expect(completed).toBe(xCount);
         // Completed >= 4 (monotonic - fixture seeds 3, this stage adds >=1).
         expect(xCount).toBeGreaterThan(3);
-        // Lifecycle phase is IDEATION (set by fixture, held by the stage).
-        expect(stateMd).toContain("IDEATION");
+        // Lifecycle phase is DISCOVER (set by fixture, held by the stage).
+        expect(stateMd).toContain(phaseLabel);
 
         // The redo-jump advancement: intent-capture is [x] and Current
         // Stage moved off it. The fixture set Current Stage == target, so the jump

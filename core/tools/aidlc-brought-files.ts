@@ -49,6 +49,8 @@ import {
   type WorkspaceSourceListing,
   workspaceSourceState,
   writeEngineFileNoFollow,
+  UNIT_RECORD_PHASES,
+  loadStageGraphAll,
 } from "./aidlc-lib.ts";
 
 const STAGE = "code-generation";
@@ -266,13 +268,19 @@ type UnitSourceManifest = Extract<ReturnType<typeof readUnitSourceManifest>, { o
 /** Each Unit's Code Generation `source-manifest.json` kept with the record, the ones that read. */
 export function unitSourceManifests(projectDir: string): { unit: string; manifest: UnitSourceManifest }[] {
   const record = recordDir(projectDir);
-  let units: string[] = [];
-  try {
-    units = record === null ? [] : readdirSync(join(record, "construction"));
-  } catch {
-    // Nothing built yet.
+  if (record === null) return [];
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const units = new Set<string>();
+  for (const phase of UNIT_RECORD_PHASES) {
+    try {
+      for (const name of readdirSync(join(record, phase))) {
+        if (!stageSlugs.has(name)) units.add(name);
+      }
+    } catch {
+      // Nothing built yet.
+    }
   }
-  return units.flatMap((unit) => {
+  return [...units].flatMap((unit) => {
     const read = readUnitSourceManifest(projectDir, STAGE, unit);
     return read.ok ? [{ unit, manifest: read }] : [];
   });

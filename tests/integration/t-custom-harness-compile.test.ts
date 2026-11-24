@@ -60,6 +60,7 @@ import {
   seededStateFile,
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -187,15 +188,16 @@ describe("t-custom-harness-compile (deterministic — harness-engineer edits res
 
       // rule chain attached to BOTH stages by compile (resolveRulesForStage).
       // The fixture pre-seeds rules_in_context: [] — compile fills it. The
-      // PHASE rule (phases/inception.md) attaches because the stage's
-      // `phase: inception` matches the rule filename — a value NO pre-seed
-      // carries, so its presence is airtight proof compile resolved the chain.
+      // PHASE rule (phases/<phase>.md) attaches because the stage's `phase:`
+      // matches the rule filename. The fixture's SNAPSHOT_STAGE_PHASE value is
+      // the one no pre-seed carries, so its presence is airtight proof compile
+      // resolved the chain.
       // The method lives in the harness-neutral aidlc/spaces/default/memory/ tree,
       // so the display paths are neutral.
       for (const node of [head, tail]) {
         const paths = (node?.rules_in_context ?? []).map((r) => r.path);
         expect(paths).toContain("aidlc/spaces/default/memory/project.md");
-        expect(paths).toContain("aidlc/spaces/default/memory/phases/inception.md");
+        expect(paths).toContain(`aidlc/spaces/default/memory/phases/${SNAPSHOT_STAGE_PHASE}.md`);
       }
 
       // what each stage produces (compile recomputes produces[] from the YAML
@@ -259,7 +261,7 @@ describe("t-custom-harness-compile (deterministic — harness-engineer edits res
       // the hook, and assert the derived display renders.
       // The statusline renders the agent display only for an ACTIVE workflow —
       // it prints "[AIDLC] ready" unless Lifecycle Phase + Current Stage are
-      // present (aidlc-statusline.ts). Seed the same minimal CONSTRUCTION shape
+      // present (aidlc-statusline.ts). Seed the same minimal ci-pipeline shape
       // t61's statusline proof uses. The statusline reads the ACTIVE INTENT's
       // state via stateFilePathForSelection(), so seed into the per-intent record
       // (seededStateFile — the cursor setupIntegrationProject seeds resolves it),
@@ -268,7 +270,7 @@ describe("t-custom-harness-compile (deterministic — harness-engineer edits res
       mkdirSync(dirname(stateFile), { recursive: true });
       writeFileSync(
         stateFile,
-        `# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: ci-pipeline\n- **Active Agent**: ${CUSTOM_AGENT_SLUG}\n- **Status**: Running\n`,
+        `# AI-DLC State Tracking\n## Current Status\n- **Lifecycle Phase**: ${phaseFor("ci-pipeline").toUpperCase()}\n- **Current Stage**: ci-pipeline\n- **Active Agent**: ${CUSTOM_AGENT_SLUG}\n- **Status**: Running\n`,
         "utf8",
       );
       const sl = spawnSync(
@@ -378,7 +380,7 @@ describe("t-custom-harness-compile (deterministic — harness-engineer edits res
 
   // E3 — a stage requires a HIGHER-numbered stage (the edge-local invariant:
   // every requires_stage dep must be lower-numbered). schema-snapshot (2.0)
-  // requiring migration-plan (2.9) violates it.
+  // requiring migration-plan (2.10) violates it.
   // Guard: edge-local invariant in aidlc-graph.ts.
   test("E3: a requires_stage edge to a higher-numbered stage fails compile (edge-local invariant)", () => {
     const proj = setupIntegrationProject({ customHarness: true });
@@ -432,9 +434,9 @@ outputs: none
       ) as Array<{ slug: string; number: string; name: string; phase: string }>;
       const seeded = compiled.find((s) => s.slug === "unseeded-stage");
       expect(seeded).toBeDefined();
-      // Number = next free index in the inception phase (prefix 2); name defaults
+      // Number = next free index in the design phase (prefix 2); name defaults
       // to the title-cased slug. (The exact index depends on the fixture's
-      // inception stages, so assert the shape + phase, not a hard-coded index.)
+      // design stages, so assert the shape + phase, not a hard-coded index.)
       expect(seeded?.phase).toBe(SNAPSHOT_STAGE_PHASE);
       expect(seeded?.number).toMatch(/^2\.\d+$/);
       expect(seeded?.name).toBe("Unseeded Stage");
@@ -461,7 +463,7 @@ outputs: none
     const proj = setupIntegrationProject({ customHarness: true });
     try {
       const src = stagePath(proj, SNAPSHOT_STAGE_PHASE, SNAPSHOT_STAGE_SLUG);
-      const dupe = stagePath(proj, "construction", SNAPSHOT_STAGE_SLUG);
+      const dupe = stagePath(proj, "build", SNAPSHOT_STAGE_SLUG);
       mkdirSync(dirname(dupe), { recursive: true });
       writeFileSync(dupe, readFileSync(src, "utf8"));
       const r = graph(proj, ["compile"]);

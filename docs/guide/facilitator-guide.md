@@ -86,7 +86,7 @@ week before the workshop. That costs them minutes and shows whether the
 hooks, the PATH and the folder trust are wired.
 
 The `workshop` scope (`/aidlc workshop`) is for the facilitated group session
-itself. It is a 23-stage run, not a readiness check.
+itself. It is a 25-stage run, not a readiness check.
 
 ---
 
@@ -117,18 +117,19 @@ vision note.
 ## Keep side tasks small: name the scope
 
 A plain `/aidlc <description>` has the agent propose a plan from its words, or
-offer to compose one, and `classic`, the default, runs 15 of 30 stages after setup. A bug
+offer to compose one, and `classic`, the default, runs 18 of 33 stages after setup. A bug
 report in plain words is usually proposed `bugfix`; when the agent offers to
 compose instead, the list beside the offer names `bugfix` first, and picking
 the default runs a much larger workflow. Name the scope as the first word:
 
 | The side task is... | Type | Stages |
 |---|---|---|
-| A known bug with a known fix | `/aidlc bugfix <what is broken>` | 6 / 30 |
-| A small change or a quick end-to-end try | `/aidlc express <the change>` | 7 / 30 |
+| A known bug with a known fix | `/aidlc bugfix <what is broken>` | 8 / 33 |
+| A small change or a quick end-to-end try | `/aidlc express <the change>` | 9 / 33 |
 
-`feature` runs every stage (30 / 30). It suits a production feature, not a
-side task. See [Workflow Profiles](workflow-profiles.md) for every scope.
+`feature` runs 32 of 33 stages, skipping only Conformance Review. It suits a
+production feature, not a side task. See [Workflow Profiles](workflow-profiles.md)
+for every scope.
 
 Start a side task in its own project folder, so it does not mix with the
 team's main workflow.
@@ -177,9 +178,9 @@ session. See
 
 ---
 
-## Construction: one Unit at a time
+## Build: one Unit at a time
 
-When Inception splits the work into several Units, Construction can run them
+When Design splits the work into several Units, Build can run them
 two ways:
 
 - `unit-major`: one Unit goes through its design stages and Code Generation
@@ -191,10 +192,10 @@ two ways:
 
 New solo workflows whose scope splits work into Units and writes code record
 `Construction Iteration: unit-major` when they are created. Before
-Construction starts, open the work's `aidlc-state.md` (under
+unit-by-unit work starts, open the work's `aidlc-state.md` (under
 `aidlc/spaces/<space>/intents/`) and check that line. If it says
 `stage-major`, or the line is missing (which also means stage-major), switch
-it during Inception. Ask the agent, or run this in the project folder:
+it during Design. Ask the agent, or run this in the project folder:
 
 ```bash
 aidlc engine state set-construction-iteration unit-major
@@ -204,7 +205,7 @@ If that is refused with `Select Construction Execution: serial`, the work is
 set to build Units in parallel: run
 `aidlc engine state set-construction-execution serial` first, then switch.
 
-Once Construction has started, say it in the chat ("from here on, build one
+Once unit-by-unit work has started, say it in the chat ("from here on, build one
 unit at a time"): the agent switches it at once and says how to undo it, and
 the Units already finished keep their work. See
 [Construction order and execution](12-cli-commands.md#construction-order-and-execution).

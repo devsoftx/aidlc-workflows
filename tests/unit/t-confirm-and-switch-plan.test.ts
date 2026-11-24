@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, createOrchestrationTestProject, removeWorkspaceRecord } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { env, exec, next, say, type Exec } from "../harness/aidlc-input-corpus.ts";
 import { getField, stateFilePath } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -31,7 +32,7 @@ afterAll(() => {
 const state = (proj: string): string => readFileSync(stateFilePath(proj), "utf-8");
 const box = (proj: string, slug: string): string =>
   new RegExp(`^- \\[(.)\\] ${slug} \u2014 (EXECUTE|SKIP)`, "m").exec(state(proj))?.slice(1).join(" ") ?? "";
-const stageFolder = (proj: string): string => join(dirname(stateFilePath(proj)), "ideation", "intent-capture");
+const stageFolder = (proj: string): string => join(dirname(stateFilePath(proj)), phaseFor("intent-capture"), "intent-capture");
 
 /** A command a step names (`bun .claude/tools/<tool>.ts ...`), run from the shipped tree on this project. */
 async function runNamed(proj: string, command: string): Promise<Exec> {
@@ -109,7 +110,7 @@ describe("t-confirm-and-switch-plan: a confirmed summary's documents are written
     const message = await switchStep(proj, "express");
     const folder = "aidlc/spaces/default/intents/";
     expect(message).toContain("The person confirmed Intent Capture & Framing's summary, and express does not run Intent Capture & Framing");
-    expect(message).toMatch(new RegExp(`${folder}[^\`]+/ideation/intent-capture/intent-statement\\.md`));
+    expect(message).toMatch(new RegExp(`${folder}[^\`]+/discover/intent-capture/intent-statement\\.md`));
     expect(message).toContain("stakeholder-map.md");
     expect(message).not.toContain("intent-capture-questions.md");
     expect(message).toContain("do nothing else of Intent Capture & Framing");

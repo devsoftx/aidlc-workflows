@@ -17,12 +17,14 @@
   "infrastructure-design",
   "code-generation",
   "build-and-test",
+  "performance-validation",
+  "code-review",
+  "security-review",
   "ci-pipeline",
   "deployment-pipeline",
   "environment-provisioning",
   "deployment-execution",
   "observability-setup",
   "incident-response",
-  "performance-validation",
   "feedback-optimization"
 ]

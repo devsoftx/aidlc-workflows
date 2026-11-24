@@ -32,7 +32,7 @@ Guard Policy defaults to off: a patch whose inputs move after approval is record
 ## Why these stages, why skip those
 
 A security patch is urgent, incremental, and must deploy. It skips the
-whole design ceremony (ideation, domain-design, units-generation,
+whole design ceremony (the discover stages but reverse-engineering, domain-design, units-generation,
 nfr-design, infrastructure-design) because the change is targeted. Like the
 other incremental scopes it keeps deployment-pipeline and
 deployment-execution EXECUTE — a patch that never deploys does not close the
@@ -46,5 +46,6 @@ the three incremental scopes that skip the walking-skeleton ceremony.
 
 Keyword triggers: `security`, `CVE`, `vulnerability`, `patch`.
 Initialization, reverse-engineering, requirements-analysis,
-nfr-requirements, code-generation, build-and-test, deployment-pipeline,
-and deployment-execution execute; the rest is SKIP.
+nfr-requirements, code-generation, build-and-test, code-review,
+security-review, conformance-review, deployment-pipeline, and
+deployment-execution execute; the rest is SKIP.

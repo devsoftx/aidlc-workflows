@@ -25,6 +25,7 @@ import {
   cleanupTestProject, createTestProject, DEFAULT_SPACE, REPO_ROOT, seedAidlcMemory, seededRecordDir,
   seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS * 2);
 
@@ -123,7 +124,7 @@ function scanned(tree: Tree, options: { asked?: boolean; policy?: "relaxed" } = 
   // The seeded state already has the stage in progress, so its start is written here.
   appendAuditEntry("STAGE_STARTED", { Stage: STAGE, Agent: LEAD }, proj);
   Bun.sleepSync(1100);
-  const dir = join(seededRecordDir(proj), "inception", STAGE);
+  const dir = join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
   mkdirSync(dir, { recursive: true });
   const handoff = join(dir, "developer-scan.md");
   writeFileSync(handoff, "## Developer Code Scan Results\n\n### Scan Coverage\n\n- ./\n\n## Handoff Summary\n\nDone.\n");
@@ -305,7 +306,7 @@ describe("t-new-chat-keeps-the-gate: what stays as it was", () => {
   });
 
   test("the stage's rerun guard says what SCANNED means", () => {
-    const stage = readFileSync(join(REPO_ROOT, "dist", "claude", ".claude", "aidlc-common", "stages", "inception",
+    const stage = readFileSync(join(REPO_ROOT, "dist", "claude", ".claude", "aidlc-common", "stages", phaseFor(STAGE),
       `${STAGE}.md`), "utf-8");
     const guard = stage.slice(stage.indexOf("#### Rerun guard"), stage.indexOf("Reuse question (CURRENT"))
       .replace(/\s+/g, " ");

@@ -89,7 +89,7 @@ function swarm(units: string[]): { pd: string; child: Record<string, string> } {
 - **Project**: A side-by-side Unit's reviewer finishing
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major

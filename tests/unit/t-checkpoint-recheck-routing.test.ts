@@ -17,6 +17,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   runOrchestrateNext, seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename, findStageBySlug, latestMainWorkflowStageRunFloorForProject,
@@ -47,7 +48,7 @@ function fixture(policy: string) {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -63,11 +64,12 @@ function fixture(policy: string) {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${stages.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -176,7 +178,7 @@ function review(stage: string, unit: string, iteration: number): string[] {
 function buildReviewed(p: string, unit: string) {
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
@@ -194,7 +196,7 @@ function buildReviewed(p: string, unit: string) {
 
 // An edit to alpha's first NFR Requirements document, as the write hook records it.
 function editAlphaDocument(p: string) {
-  const document = join(seededRecordDir(p), "construction", "alpha", DOCUMENT_STAGE,
+  const document = join(seededRecordDir(p), phaseFor(DOCUMENT_STAGE), "alpha", DOCUMENT_STAGE,
     artifactFilename(findStageBySlug(DOCUMENT_STAGE)!.produces![0]));
   writeFileSync(document, `${readFileSync(document, "utf-8")}\nTests use a temporary notes file.\n`);
   appendAuditEntry("ARTIFACT_UPDATED", {

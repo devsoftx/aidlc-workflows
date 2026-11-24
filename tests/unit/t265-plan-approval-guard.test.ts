@@ -34,6 +34,7 @@ import {
 import { hostname, tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { renderGuardOperation } from "../../core/tools/aidlc-guard-operation.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   evaluatePlanApprovalDispatch,
   blockReason,
@@ -404,7 +405,7 @@ describe("t265a plan-approval decision table", () => {
       const proj = scratchProject();
       try {
         seedState(proj);
-        seedUnit(proj, null, { plan: true, answer: null });
+        seedUnit(proj, null, { plan: true, answer: null, touches: ["src/"] });
         const refused = runHook(proj, shell ? BASH(target) : WRITE(join(proj, target)));
         expect(refused.code, target).toBe(2);
         expect(refused.stderr).toContain(shell ? "cannot run mutation-capable shell commands" : "cannot modify workspace paths");
@@ -438,7 +439,7 @@ describe("t265a plan-approval decision table", () => {
       const proj = scratchProject();
       try {
         seedState(proj, { planApproval: "off" });
-        seedUnit(proj, null, { plan, answer: null });
+        seedUnit(proj, null, { plan, answer: null, touches: ["src/x.ts"] });
         const refused = runHook(proj, WRITE(join(proj, "src", "x.ts")));
         expect(refused.code, `plan=${plan}: ${refused.stderr}`).toBe(2);
         expect(refused.stderr).toContain("plan approval is off for this work, so it starts the build without asking anyone");
@@ -503,6 +504,7 @@ function scratchProject(): string {
   for (const t of [
     "aidlc.ts",
     "aidlc-lib.ts",
+    "aidlc-phases.ts",
     "aidlc-settings.ts",
     "aidlc-markdown.ts",
     "aidlc-locks.ts",
@@ -526,11 +528,24 @@ function scratchProject(): string {
     "aidlc-runtime-budget.ts",
     "aidlc-lock-line.ts",
     "aidlc-review-manifest.ts",
+    "aidlc-five-phase-record.ts",
     "aidlc-guard-fences.ts",
     // The hook reads the plan approval setting when it refuses (the setting
     // decides the refusal's last clause); the setting resolver and what it imports.
     "aidlc-guard-switch.ts",
     "aidlc-question-store.ts",
+    // The hook loads the plan-approval ask lazily while a plan waits, for the
+    // paths the plans name and the question's state. Without it no plan names a
+    // path, so only a document passes beside the build; the shipped install
+    // carries it, so the copy does too.
+    "aidlc-plan-approval-ask.ts",
+    // aidlc-lib.ts loads the stage graph and its schemas on demand (the plan helpers live there).
+    "aidlc-graph.ts",
+    "aidlc-plugin-rules.ts",
+    "aidlc-rule-schema.ts",
+    "aidlc-sensor-schema.ts",
+    "aidlc-stage-schema.ts",
+    "aidlc-tiers.ts",
     // The question record the hook stamps turns from, and the tools write.
     "aidlc-questions.ts",
     // What the agent writes before a plan is picked, kept whatever the hook decides.
@@ -603,7 +618,7 @@ function seedState(proj: string, fields: { stage?: string; autonomy?: string; pl
 - **Scope**: poc
 ${planApproval}${autonomy}
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(stage).toUpperCase()}
 - **Current Stage**: ${stage}
 `,
     "utf-8",
@@ -723,12 +738,17 @@ function seedUnit(
     mutateInstructions?: boolean;
     instructionsPrefix?: string;
     receipt?: boolean;
+    // Project paths the plan names, as its Touches line does. Once the plan is
+    // written and before it is approved, a write to a project file it names
+    // waits; one it does not name passes beside the build (isPlanWaitSideWrite
+    // in the hook).
+    touches?: string[];
   } = {},
 ): void {
   const dir =
     unit === null
-      ? join(proj, RECORD_REL, "construction", "code-generation")
-      : join(proj, RECORD_REL, "construction", unit, "code-generation");
+      ? join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation")
+      : join(proj, RECORD_REL, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   seedActiveDirective(proj, "code-generation", unit ?? undefined);
   const authority = resolveCodeGenerationAuthority(proj, { unit });
@@ -736,10 +756,13 @@ function seedUnit(
   let instructions = "";
   if (opts.plan) {
     const contract = resolveTestingPosture(proj);
+    const touches = opts.touches && opts.touches.length > 0
+      ? `Touches: ${opts.touches.map((path) => `\`${path}\``).join(", ")}\n\n`
+      : "";
     plan =
       opts.plan === "empty"
         ? "  \n"
-        : `# Plan\n\n${renderTestingContract(contract)}\n## Steps\n\n- [ ] Step 1\n`;
+        : `# Plan\n\n${renderTestingContract(contract)}\n${touches}## Steps\n\n- [ ] Step 1\n`;
     instructions = `${opts.instructionsPrefix ?? ""}# Unit Test Instructions\n\n## Command\n\n\`bun test todo-core.test.ts\`\n`;
     writeFileSync(
       join(dir, "code-generation-plan.md"),
@@ -884,15 +907,25 @@ const BASH = (command: string) => ({
   tool_input: { command },
 });
 
+// The variables of the chat that runs this test. The hook would read them as a
+// live chat that has taken no AI-DLC step; the same set fuzzEnvironment clears
+// in tests/harness/gate-fuzz.ts.
+const HOST_SESSION_VARIABLES = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDECODE", "CLAUDE_PID", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_ENTRYPOINT",
+  "CODEX_THREAD_ID", "KIRO_SESSION_ID", "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+
 function runHook(
   proj: string,
   payload: Record<string, unknown> | string,
   env: Record<string, string> = {},
 ): { code: number; stderr: string; stdout: string } {
+  const inherited: NodeJS.ProcessEnv = { ...process.env };
+  for (const name of HOST_SESSION_VARIABLES) delete inherited[name];
   const r = spawnSync(BUN, [join(proj, ".claude", "hooks", "aidlc-plan-approval-guard.ts")], {
     timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS),
     input: typeof payload === "string" ? payload : JSON.stringify(payload),
-    env: { ...process.env, CLAUDE_PROJECT_DIR: proj, ...env },
+    env: { ...inherited, CLAUDE_PROJECT_DIR: proj, ...env },
     encoding: "utf-8",
   });
   return { code: r.status ?? -1, stderr: r.stderr ?? "", stdout: r.stdout ?? "" };
@@ -907,13 +940,13 @@ function seedTwoBoundIntents(proj: string): void {
     mkdirSync(join(intents, intent), { recursive: true });
     writeFileSync(
       join(intents, intent, "aidlc-state.md"),
-      `# AI-DLC State Tracking\n\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: ${stage}\n`,
+      `# AI-DLC State Tracking\n\n## Current Status\n- **Lifecycle Phase**: ${phaseFor(stage).toUpperCase()}\n- **Current Stage**: ${stage}\n`,
       "utf-8",
     );
   };
   seed("intent-a", "code-generation");
   seed("intent-b", "functional-design");
-  mkdirSync(join(intents, "intent-a", "construction", "todo-core", "code-generation"), { recursive: true });
+  mkdirSync(join(intents, "intent-a", phaseFor("code-generation"), "todo-core", "code-generation"), { recursive: true });
   setActiveIntentCursor(proj, "intent-a");
   const stateA = readFileSync(join(intents, "intent-a", "aidlc-state.md"), "utf-8");
   writeActiveDirectiveMarker(proj, {
@@ -935,7 +968,7 @@ describe("t265b hook lifecycle", () => {
       seedActiveDirective(proj, "code-generation", "todo-core");
       for (const prefix of ["aidlc", "bun .claude/tools/aidlc.ts"]) {
         for (const verb of ["decision", "answer"]) {
-          const command = `${prefix} engine log ${verb} --stage code-generation --checkpoint summary-confirmation --questions-file ${RECORD_REL}/construction/todo-core/code-generation/questions.md --unit todo-core --details 'Looks correct'`;
+          const command = `${prefix} engine log ${verb} --stage code-generation --checkpoint summary-confirmation --questions-file ${RECORD_REL}/build/todo-core/code-generation/questions.md --unit todo-core --details 'Looks correct'`;
           const result = runHook(proj, BASH(command));
           expect(result.code, `${command}\n${result.stderr}`).toBe(0);
           // Another stage's or checkpoint's record is the log tool's to judge.
@@ -1292,7 +1325,7 @@ describe("t265b hook lifecycle", () => {
       seedActiveDirective(proj, "code-generation");
       seedUnit(proj, null, { plan: true, answer: null });
       expect(codeGenerationRecordDir(proj, null)).toBe(
-        join(proj, RECORD_REL, "construction", "code-generation"),
+        join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation"),
       );
       expect(evaluateCodeGenerationApproval(proj, { unit: null }).ok).toBe(false);
       const fingerprint = spawnSync(
@@ -1329,7 +1362,7 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/inline.ts"] });
       for (const command of [
         "aidlc engine orchestrate next",
         'aidlc engine orchestrate next "Approve Plan"',
@@ -1436,7 +1469,7 @@ describe("t265b hook lifecycle", () => {
         }
         // The stage's own record files, read and written by file tool and by a
         // shell the guard reads, pass under every Guard Policy.
-        const record = join(RECORD_REL, "construction", "code-generation");
+        const record = join(RECORD_REL, phaseFor("code-generation"), "code-generation");
         const trace = join(record, "traceability.json");
         writeFileSync(join(proj, trace), "{}\n");
         // A shell line names the file with forward slashes, as an agent writes it
@@ -1722,7 +1755,7 @@ describe("t265b hook lifecycle", () => {
           const result = runHook(proj, BASH(admitted));
           expect(result.code, `[${checkbox}] ${admitted}\n${result.stderr}`).toBe(0);
         }
-        const plan = join(proj, RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+        const plan = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
         // A completion the person did not pick is the engine's to refuse:
         // `report` holds it while the plan waits.
         for (const completion of [
@@ -1904,7 +1937,7 @@ describe("t265b hook lifecycle", () => {
     const proj = scratchProject();
     try {
       seedState(proj);
-      seedUnit(proj, "u1", { plan: true, answer: null });
+      seedUnit(proj, "u1", { plan: true, answer: null, touches: ["src/inline.ts"] });
       const spellings = (args: string) => [`aidlc ${args}`, `bun .claude/tools/aidlc.ts ${args}`];
       const expectCode = (command: string, code: number) => {
         const result = runHook(proj, BASH(command));
@@ -1962,7 +1995,7 @@ describe("t265b hook lifecycle", () => {
     const proj = scratchProject();
     try {
       seedState(proj);
-      seedUnit(proj, "u1", { plan: true, answer: null });
+      seedUnit(proj, "u1", { plan: true, answer: null, touches: ["src/inline.ts"] });
       const spellings = (args: string) => [`aidlc ${args}`, `bun .claude/tools/aidlc.ts ${args}`];
       const expectCode = (command: string, code: number, env: Record<string, string> = {}) => {
         const result = runHook(proj, BASH(command), env);
@@ -2120,6 +2153,15 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(proj);
       seedUnit(proj, "u1", { plan: true, answer: null });
+      // The engine's plan question is open, so the person's word is what turns
+      // plan approval off (planApprovalOffStands). A plan not yet asked about
+      // takes nothing they send for that, which is why the question is open here.
+      writeActiveDirectiveMarker(proj, {
+        kind: "ask",
+        ask_type: "plan-approval",
+        stage: "code-generation",
+        state_sha256: stateDigest(readFileSync(join(proj, RECORD_REL, "aidlc-state.md"), "utf-8")),
+      });
       const off = "config flags --bypass AIDLC_DISABLE_PLAN_APPROVAL_GUARD --local --yes";
       const on = "config flags --clear-bypass AIDLC_DISABLE_PLAN_APPROVAL_GUARD --local --yes";
       const spellings = (args: string) => [`aidlc ${args}`, `bun .claude/tools/aidlc.ts ${args}`];
@@ -2182,7 +2224,7 @@ describe("t265b hook lifecycle", () => {
     const proj = scratchProject();
     try {
       seedState(proj);
-      seedUnit(proj, "u1", { plan: true, answer: null });
+      seedUnit(proj, "u1", { plan: true, answer: null, touches: ["src/x.ts"] });
       const spellings = (args: string) => [`aidlc engine ${args}`, `bun .claude/tools/aidlc.ts engine ${args}`];
       const code = (command: string, env: Record<string, string> = {}) => runHook(proj, BASH(command), env).code;
       const on = [
@@ -2240,9 +2282,9 @@ describe("t265b hook lifecycle", () => {
   // later. The engine names park and unpark itself, so both pass whether the
   // fence holds or stands aside; anything joined to them is still judged, and
   // nothing is built while the plan waits. Parked where it stands, the work is
-  // not being built, so the person's other work goes on (#3227): a commit and a
-  // document (this project has no plan reader installed, so only a document is
-  // beside the build); a park the work has moved past holds nothing.
+  // not being built, so the person's other work goes on (#3227): a commit, and a
+  // document the plan does not name (the plan here names the code file only);
+  // a park the work has moved past holds nothing.
   for (const policy of ["strict", "off"] as const) {
     test(`park and unpark pass at every point of Code Generation (${policy})`, () => {
       const proj = scratchProject();
@@ -2260,7 +2302,9 @@ describe("t265b hook lifecycle", () => {
               ? `\n## Runtime State\n- **Parked**: 2026-10-01T00:00:00Z\n- **Parked At Stage**: ${opts.parkedAt ?? "code-generation"}\n`
               : ""
           }`);
-          seedUnit(proj, null, { plan: true, answer: opts.approved ? "Approve Plan" : null });
+          seedUnit(proj, null, {
+            plan: true, answer: opts.approved ? "Approve Plan" : null, touches: ["src/inline.ts"],
+          });
           if (opts.kind) {
             writeActiveDirectiveMarker(proj, {
               kind: opts.kind,
@@ -2319,7 +2363,7 @@ describe("t265b hook lifecycle", () => {
     const proj = scratchProject();
     try {
       seedState(proj);
-      seedUnit(proj, "u1", { plan: true, answer: null });
+      seedUnit(proj, "u1", { plan: true, answer: null, touches: ["src/inline.ts"] });
       for (const tool of ["state", "orchestrate"]) {
         writeFileSync(join(proj, ".claude", "tools", `aidlc-${tool}.ts`), "// installed tool\n");
       }
@@ -2367,7 +2411,7 @@ describe("t265b hook lifecycle", () => {
       // Nothing is built for them: the code waits with the person's sentence.
       // The plan file is AI-DLC's record and passes (a changed plan is asked
       // about again).
-      const plan = join(proj, RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+      const plan = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
       expect(runHook(proj, WRITE(plan)).code).toBe(0);
       const result = runHook(proj, WRITE(join(proj, "src", "inline.ts")));
       expect(result.code).toBe(2);
@@ -2411,7 +2455,7 @@ describe("t265b hook lifecycle", () => {
           expect(result.code, `${doc}\n${result.stderr}`).toBe(0);
         }
         // AI-DLC's records pass: the questions file holds no receipt.
-        const record = join(proj, RECORD_REL, "construction", "code-generation");
+        const record = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation");
         const questions = runHook(proj, WRITE(join(record, "code-generation-questions.md")));
         expect(questions.code, questions.stderr).toBe(0);
         // A completion report is the engine's own command: `report` holds it
@@ -2451,7 +2495,7 @@ describe("t265b hook lifecycle", () => {
         const statePath = join(proj, RECORD_REL, "aidlc-state.md");
         writeFileSync(statePath, readFileSync(statePath, "utf-8")
           .replace("- **Scope**: poc\n", `- **Scope**: poc\n- **Guard Policy**: ${policy}\n`), "utf-8");
-        seedUnit(proj, null, { plan: true, answer: null });
+        seedUnit(proj, null, { plan: true, answer: null, touches: ["src/inline.ts"] });
         const marker = (fields: Record<string, unknown>) => writeActiveDirectiveMarker(proj, {
           stage: "code-generation",
           state_sha256: stateDigest(readFileSync(statePath, "utf-8")),
@@ -2510,27 +2554,27 @@ describe("t265b hook lifecycle", () => {
       };
       const states: Array<[string, (proj: string) => void]> = [
         ["the plan is written and not yet asked about", (proj) => {
-          seedUnit(proj, "todo-core", { plan: true, answer: null });
+          seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/"] });
         }],
         ["the engine's plan question is open", (proj) => {
-          seedUnit(proj, "todo-core", { plan: true, answer: null });
+          seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/"] });
           marker(proj, { kind: "ask", ask_type: "plan-approval", unit: "todo-core" });
         }],
         ["the rules are still arriving", (proj) => {
-          seedUnit(proj, "todo-core", { plan: true, answer: null });
+          seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/"] });
           marker(proj, { kind: "load-steering", unit: "todo-core", part: 1, parts: 2, continue_token: "part-one" });
         }],
         ["a swarm batch is issued", (proj) => {
-          seedUnit(proj, "todo-core", { plan: true, answer: null });
+          seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/"] });
           marker(proj, { kind: "invoke-swarm", units: ["todo-core"] });
         }],
         ["the step went out of date", (proj) => {
-          seedUnit(proj, "todo-core", { plan: true, answer: null });
+          seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/"] });
           marker(proj, { kind: "error", unit: "todo-core" });
         }],
         ["the approved plan's Testing Contract was edited", (proj) => {
-          seedUnit(proj, "todo-core", { plan: true, answer: "Approve Plan" });
-          const plan = join(proj, RECORD_REL, "construction", "todo-core", "code-generation", "code-generation-plan.md");
+          seedUnit(proj, "todo-core", { plan: true, answer: "Approve Plan", touches: ["src/"] });
+          const plan = join(proj, RECORD_REL, phaseFor("code-generation"), "todo-core", "code-generation", "code-generation-plan.md");
           writeFileSync(plan, readFileSync(plan, "utf-8").replace('"contract_sha256"', '"contractSha256"'), "utf-8");
         }],
       ];
@@ -2600,6 +2644,25 @@ describe("t265b hook lifecycle", () => {
     });
   }
 
+  // The exception to the plan-wait refusal: once the plan is written and before
+  // the person approves it, a file-tool or shell write to a project file the
+  // plan does not name passes beside the build, and a file it names still waits.
+  test("while the plan waits, a project file the plan does not name passes and a file it names waits", () => {
+    const proj = scratchProject();
+    try {
+      seedState(proj);
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/named.ts"] });
+      mkdirSync(join(proj, "src"), { recursive: true });
+      expect(runHook(proj, WRITE(join(proj, "src", "named.ts"))).code).toBe(2);
+      expect(runHook(proj, WRITE(join(proj, "src", "unnamed.ts"))).code).toBe(0);
+      expect(runHook(proj, BASH("printf code > src/unnamed.ts")).code).toBe(0);
+      expect(runHook(proj, BASH("printf code > src/named.ts")).code).toBe(2);
+      expect(runHook(proj, STAGE_DISPATCH(proj, "Build the plan.")).code).toBe(2);
+    } finally {
+      rmSync(proj, { recursive: true, force: true });
+    }
+  });
+
   test("a selected restart continues in its source-install spelling too", () => {
     const proj = scratchProject();
     try {
@@ -2668,7 +2731,7 @@ describe("t265b hook lifecycle", () => {
         );
         if (published) {
           seedActiveDirective(proj, "code-generation");
-          seedUnit(proj, null, { plan: true, answer: null });
+          seedUnit(proj, null, { plan: true, answer: null, touches: ["src/inline.ts"] });
         }
         const entry = ".claude/tools/aidlc.ts";
         for (const nonShellBlank of ["\u00a0", "\r", "\v", "\f", "\u2028", "\u2029"]) {
@@ -2902,7 +2965,7 @@ describe("t265b hook lifecycle", () => {
         seedActiveDirective(proj, "code-generation");
         seedUnit(proj, null, { plan: true, answer: null });
         const short = windowsShortSpelling(proj);
-        const plan = join(RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+        const plan = join(RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
         // Every row's exit code beside the one expected, so one run shows them all.
         const expected: Record<string, number> = {};
         const actual: Record<string, number> = {};
@@ -2949,8 +3012,8 @@ describe("t265b hook lifecycle", () => {
       const linked = join(links, "outer", "proj");
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
-      seedUnit(proj, null, { plan: true, answer: null });
-      const record = join(RECORD_REL, "construction", "code-generation");
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/inline.ts"] });
+      const record = join(RECORD_REL, phaseFor("code-generation"), "code-generation");
       const plan = join(record, "code-generation-plan.md");
       // A link inside the project is still a link, whichever spelling reaches it.
       mkdirSync(join(proj, "src"), { recursive: true });
@@ -3007,7 +3070,7 @@ describe("t265b hook lifecycle", () => {
         seedState(proj);
         seedActiveDirective(proj, "code-generation");
         seedUnit(proj, null, { plan: true, answer: null });
-        const plan = join(RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+        const plan = join(RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
         const expected: Record<string, number> = {};
         const actual: Record<string, number> = {};
         const stderr: Record<string, string> = {};
@@ -3116,7 +3179,7 @@ describe("t265b hook lifecycle", () => {
       const linked = join(links, "outer", "proj");
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/inline.ts"] });
       mkdirSync(join(proj, "other", ".claude", "tools"), { recursive: true });
       cpSync(join(proj, ".claude", "tools", "aidlc.ts"), join(proj, "other", ".claude", "tools", "aidlc.ts"));
       const expected: Record<string, number> = {};
@@ -3204,7 +3267,7 @@ describe("t265b hook lifecycle", () => {
     const unapproved = scratchProject();
     try {
       seedState(unapproved);
-      seedUnit(unapproved, null, { plan: true, answer: null });
+      seedUnit(unapproved, null, { plan: true, answer: null, touches: ["src/"] });
       const payload = WRITE(join(unapproved, "src", "inline.ts"));
       const main = runHook(unapproved, payload);
       expect(main.code).toBe(2);
@@ -3231,7 +3294,7 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(edited);
       seedUnit(edited, null, { plan: true, answer: "Approve Plan" });
-      const planPath = join(edited, RECORD_REL, "construction", "code-generation", "code-generation-plan.md");
+      const planPath = join(edited, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
       writeFileSync(planPath, `${readFileSync(planPath, "utf-8")}- [ ] Step 2\n`, "utf-8");
       const payload = WRITE(join(edited, "src", "inline.ts"));
       const main = runHook(edited, payload);
@@ -3266,7 +3329,7 @@ describe("t265b hook lifecycle", () => {
       // Approved, then the plan was emptied: a lowered fence has nothing to
       // build from.
       writeFileSync(
-        join(emptied, RECORD_REL, "construction", "code-generation", "code-generation-plan.md"),
+        join(emptied, RECORD_REL, phaseFor("code-generation"), "code-generation", "code-generation-plan.md"),
         "  \n",
         "utf-8",
       );
@@ -3289,12 +3352,12 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/"] });
       const source = join(proj, "src", "inline.ts");
       const questions = join(
         proj,
         RECORD_REL,
-        "construction",
+        phaseFor("code-generation"),
         "code-generation",
         "code-generation-questions.md",
       );
@@ -3434,7 +3497,7 @@ describe("t265b hook lifecycle", () => {
       ).toBe(2);
       expect(runHook(proj, WRITE(questions)).code).toBe(0);
 
-      seedUnit(proj, null, { plan: true, answer: "A. Approve Plan" });
+      seedUnit(proj, null, { plan: true, answer: "A. Approve Plan", touches: ["src/"] });
       expect(runHook(proj, WRITE(source)).code).toBe(0);
       expect(runHook(proj, BASH("printf code > src/inline.ts")).code).toBe(0);
       expect(
@@ -3459,7 +3522,7 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/"] });
       mkdirSync(join(proj, "other"));
       const windows = process.platform === "win32";
       const executableName = windows ? "aidlc.exe" : "aidlc";
@@ -3577,7 +3640,7 @@ describe("t265b hook lifecycle", () => {
       seedActiveDirective(proj, "code-generation");
       mkdirSync(join(proj, "other"));
       const windows = process.platform === "win32";
-      const rec = join(RECORD_REL, "construction", "code-generation").replaceAll("/", "\\");
+      const rec = join(RECORD_REL, phaseFor("code-generation"), "code-generation").replaceAll("/", "\\");
       const pwsh = (command: string, cwd = proj) =>
         runHook(proj, { ...BASH(command), cwd, aidlc_shell: "powershell" });
       for (const [command, cwd] of [
@@ -3634,7 +3697,7 @@ describe("t265b hook lifecycle", () => {
     writeFileSync(
       join(record, "aidlc-state.md"),
       "# AI-DLC State Tracking\n\n## Project Information\n- **Project**: t265 fixture\n- **Scope**: bugfix\n\n" +
-        "## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: code-generation\n",
+        `## Current Status\n- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}\n- **Current Stage**: code-generation\n`,
       "utf-8",
     );
     writeActiveDirectiveMarker(proj, {
@@ -3642,8 +3705,8 @@ describe("t265b hook lifecycle", () => {
       stage: "code-generation",
       state_sha256: stateDigest(readFileSync(join(record, "aidlc-state.md"), "utf-8")),
     });
-    mkdirSync(join(record, "construction", "code-generation"), { recursive: true });
-    return `aidlc/spaces/default/intents/${intent}/construction/code-generation/code-generation-plan.md`;
+    mkdirSync(join(record, phaseFor("code-generation"), "code-generation"), { recursive: true });
+    return `aidlc/spaces/default/intents/${intent}/build/code-generation/code-generation-plan.md`;
   };
 
   // An agent with no file-edit tool (Codex on a model its catalog does not
@@ -3997,7 +4060,7 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(proj);
       seedActiveDirective(proj, "code-generation");
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/app.ts"] });
       const windows = process.platform === "win32";
       const launcher = join(machine, "bin", windows ? "aidlc.cmd" : "aidlc");
       const active = join(machine, "versions", "9.9.9", windows ? "aidlc.exe" : "aidlc");
@@ -4072,7 +4135,7 @@ describe("t265b hook lifecycle", () => {
         });
         expect(off.code, `${command}\n${off.stderr}`).toBe(0);
       }
-      seedUnit(proj, null, { plan: true, answer: "A. Approve Plan" });
+      seedUnit(proj, null, { plan: true, answer: "A. Approve Plan", touches: ["src/app.ts"] });
       for (const command of reads) {
         const result = runHook(proj, { ...BASH(command), cwd: elsewhere }, env);
         expect(result.code, `${command}\n${result.stderr}`).toBe(0);
@@ -4108,7 +4171,7 @@ describe("t265b hook lifecycle", () => {
       const lowerDrive = (path: string) => path.replace(/^[A-Z](?=:)/, (drive) => drive.toLowerCase());
       const upperDrive = (path: string) => path.replace(/^[a-z](?=:)/, (drive) => drive.toUpperCase());
       for (const asked of [false, true]) {
-        seedUnit(proj, null, { plan: true, answer: null });
+        seedUnit(proj, null, { plan: true, answer: null, touches: ["src/"] });
         if (asked) {
           writeActiveDirectiveMarker(proj, {
             kind: "ask", ask_type: "plan-approval", stage: "code-generation",
@@ -4488,7 +4551,7 @@ describe("t265b hook lifecycle", () => {
     const proj = scratchProject();
     try {
       seedState(proj);
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/inline.ts"] });
       const planPath = join(codeGenerationRecordDir(proj, null), "code-generation-plan.md");
       const original = readFileSync(planPath, "utf-8");
       expect("contract" in readTestingContract(original)).toBe(true);
@@ -4915,7 +4978,7 @@ describe("t265b hook lifecycle", () => {
     const alias = `${proj}-alias`;
     try {
       seedState(proj);
-      seedUnit(proj, null, { plan: true, answer: null });
+      seedUnit(proj, null, { plan: true, answer: null, touches: ["src/blocked.ts"] });
       symlinkSync(
         proj,
         alias,
@@ -4973,11 +5036,11 @@ describe("t265b hook lifecycle", () => {
     try {
       seedState(proj);
       seedActiveDirective(proj, "code-generation", "todo-core");
-      seedUnit(proj, "todo-core", { plan: true, answer: null });
+      seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/todo.ts"] });
       const source = join(proj, "src", "todo.ts");
       expect(runHook(proj, WRITE(source)).code).toBe(2);
 
-      seedUnit(proj, "todo-core", { plan: true, answer: "A. Approve Plan" });
+      seedUnit(proj, "todo-core", { plan: true, answer: "A. Approve Plan", touches: ["src/todo.ts"] });
       expect(runHook(proj, WRITE(source)).code).toBe(0);
       expect(runHook(proj, DISPATCH(proj, "Implement todo-core")).code).toBe(0);
     } finally {
@@ -5062,7 +5125,7 @@ describe("t265b hook lifecycle", () => {
       const instructions = join(
         proj,
         RECORD_REL,
-        "construction",
+        phaseFor("code-generation"),
         "todo-core",
         "code-generation",
         "unit-test-instructions.md",
@@ -5173,7 +5236,7 @@ describe("t265b hook lifecycle", () => {
 // scratch file (only validate-grid reads it) passes whatever the Plan Approval
 // state, and writing it never starts generation. Everything else is judged as
 // before, including the OS temp file the composer used to write.
-// The stage's learnings diary (`<record>/construction/code-generation/memory.md`)
+// The stage's learnings diary (`<record>/build/code-generation/memory.md`)
 // is appended to while the agent plans, for every Unit; it lives in the stage's
 // folder, not the Unit's, so a per-Unit plan wait used to refuse it and the
 // diary was skipped in silence. A file-tool write of exactly that file passes in
@@ -5201,7 +5264,7 @@ describe("t265b the stage diary during a per-Unit plan wait", () => {
           writeFileSync(statePath, readFileSync(statePath, "utf-8")
             .replace("- **Scope**: poc\n", `- **Scope**: poc\n- **Guard Policy**: ${policy}\n`), "utf-8");
           seed(proj);
-          const stageDir = join(proj, RECORD_REL, "construction", "code-generation");
+          const stageDir = join(proj, RECORD_REL, phaseFor("code-generation"), "code-generation");
           const diary = runHook(proj, WRITE(join(stageDir, "memory.md")));
           expect(diary.code, `${state}\n${diary.stderr}`).toBe(0);
           expect(diary.stderr, state).toBe("");
@@ -5259,7 +5322,7 @@ describe("t265b the composer's grid proposal during Code Generation", () => {
     const proj = scratchProject();
     try {
       seedState(proj);
-      seedUnit(proj, "todo-core", { plan: true, answer: null });
+      seedUnit(proj, "todo-core", { plan: true, answer: null, touches: ["src/app.ts"] });
       neverExempt(proj);
       expect(runHook(proj, WRITE(join(proj, PROPOSAL))).code).toBe(0);
       expect(runHook(proj, { ...WRITE(PROPOSAL), cwd: proj }).code).toBe(0);
@@ -5352,7 +5415,7 @@ describe("t265c registrations", () => {
         ".claude",
         "aidlc-common",
         "stages",
-        "construction",
+        phaseFor("code-generation"),
         "code-generation.md",
       ),
       "utf-8",
@@ -5379,7 +5442,7 @@ describe("t265c registrations", () => {
           harness.capabilities.harnessDir,
           "aidlc-common",
           "stages",
-          "construction",
+          phaseFor("code-generation"),
           "code-generation.md",
         ),
         "utf-8",

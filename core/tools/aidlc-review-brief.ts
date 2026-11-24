@@ -60,11 +60,13 @@ import {
   toPosix,
   type UnitGateScope,
   unitMajorConstructionStageSlugs,
+  UNIT_RECORD_PHASES,
   unreadableFindingsTableFinding,
   validateUnitName,
   writeRecordFileNoFollow,
 } from "./aidlc-lib.js";
 import { aidlcDispatcherInvocation } from "./aidlc-runtime-paths.ts";
+import { sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import {
   checkpointGateStages,
   constructionCheckpointKind,
@@ -153,8 +155,12 @@ function workspaceArtifactPath(
     : toPosix(relative(projectDir, entry.path));
 }
 
+// The unit-record phases a per-Unit stage's Unit folders sit under, as a regex
+// alternation: `<phase>/<unit>/<stage>/` in a record path.
+const UNIT_RECORD_PHASE_PATTERN = UNIT_RECORD_PHASES.join("|");
+
 function entryUnit(logicalPath: string, stageSlug: string): string | undefined {
-  const match = /^construction\/([^/]+)\/([^/]+)\//.exec(logicalPath);
+  const match = new RegExp(`^(?:${UNIT_RECORD_PHASE_PATTERN})\\/([^/]+)\\/([^/]+)\\/`).exec(logicalPath);
   return match?.[2] === stageSlug ? match[1] : undefined;
 }
 
@@ -641,8 +647,9 @@ function gateAppliesToScope(
 }
 
 // Redo from scratch begins a new list for the scope it covers. The row carries
-// no Unit, so on a per-Unit stage the Units are read from its artifact paths; a
-// row naming no Unit's path covers every Unit.
+// no Unit, so on a per-Unit stage the Units are read from its artifact paths (a
+// five-phase release's at the folder it moved to); a row naming no Unit's path
+// covers every Unit.
 function redoAppliesToScope(
   event: AuditShardEvent,
   stageSlug: string,
@@ -659,7 +666,7 @@ function redoAppliesToScope(
   if (unit === undefined) return true;
   const units = (auditBlockField(event.block, "Artifacts") ?? "")
     .split(",")
-    .map((path) => pathUnit(toPosix(path.trim()), stageSlug))
+    .map((path) => pathUnit(sevenPhaseRecordPath(toPosix(path.trim())), stageSlug))
     .filter((pathUnitName) => pathUnitName !== undefined);
   return units.length === 0 || units.includes(unit);
 }
@@ -1192,6 +1199,10 @@ function parseDispositionField(
   if (envelope.version !== 1 || !Array.isArray(envelope.dispositions)) {
     return [];
   }
+  // A decision a five-phase release recorded names its document at the
+  // folder the 8 to 10 step moved it from: it is read at the folder it moved
+  // to, so it attaches to the finding it was made on. The finding's own path
+  // is never translated, and its fingerprint is still compared exactly.
   return envelope.dispositions.filter((entry): entry is ReviewFindingDisposition => {
     if (!entry || typeof entry !== "object") return false;
     const row = entry as Partial<ReviewFindingDisposition>;
@@ -1221,11 +1232,14 @@ function parseDispositionField(
         )
       )
     );
+  }).map((entry) => {
+    const artifact = sevenPhaseRecordPath(entry.artifact);
+    return artifact === entry.artifact ? entry : { ...entry, artifact };
   });
 }
 
 // The open findings an approval recorded on the documents under one folder
-// (`construction/<unit>/<stage>/`); a disposition names its document by its
+// (`<phase>/<unit>/<stage>/`); a disposition names its document by its
 // path in the project.
 function approvalDispositionsOn(block: string, documents: string): ReviewFindingDisposition[] {
   return parseDispositionField(auditBlockField(block, REVIEW_FINDING_DISPOSITIONS_FIELD))
@@ -1796,9 +1810,10 @@ function parseFindingDispositionSpec(
 }
 
 // A selector names the finding the way it was said: the full path, a path
-// tail, the file name with or without .md, or no artifact at all.
+// tail, the file name with or without .md, or no artifact at all. A finding a
+// five-phase release recorded is named by the path its file moved to too.
 function selectorNamesArtifact(selector: string, artifact: string): boolean {
-  if (selector === "" || selector === artifact) return true;
+  if (selector === "" || selector === artifact || selector === sevenPhaseRecordPath(artifact)) return true;
   const file = selector.endsWith(".md") ? selector : `${selector}.md`;
   return artifact === file || artifact.endsWith(`/${file}`);
 }
@@ -2177,7 +2192,7 @@ function parseAuditPathArray(value: string | null): string[] {
 }
 
 function pathUnit(path: string, stageSlug: string): string | undefined {
-  const match = /(?:^|\/)construction\/([^/]+)\/([^/]+)\//.exec(path);
+  const match = new RegExp(`(?:^|\\/)(?:${UNIT_RECORD_PHASE_PATTERN})\\/([^/]+)\\/([^/]+)\\/`).exec(path);
   return match?.[2] === stageSlug ? match[1] : undefined;
 }
 
@@ -2292,9 +2307,10 @@ export function reviewInvalidationDetails(
       }
       const file = auditBlockField(event.block, "File");
       if (!file) continue;
-      const normalized = toPosix(
+      // A five-phase release's write, read at the folder its file moved to.
+      const normalized = sevenPhaseRecordPath(toPosix(
         relative(projectDir, resolveAuditProjectPath(projectDir, file)),
-      );
+      ));
       if (currentArtifacts.has(normalized)) {
         const changedUnit = pathUnit(normalized, stage.slug);
         if (
@@ -2308,10 +2324,9 @@ export function reviewInvalidationDetails(
         addContextReviews(changedUnit ?? unit);
         continue;
       }
-      const sourceManifest =
-        /(?:^|\/)construction\/([^/]+)\/([^/]+)\/source-manifest\.json$/.exec(
-          normalized,
-        );
+      const sourceManifest = new RegExp(
+        `(?:^|\\/)(?:${UNIT_RECORD_PHASE_PATTERN})\\/([^/]+)\\/([^/]+)\\/source-manifest\\.json$`,
+      ).exec(normalized);
       if (sourceManifest?.[2] === stage.slug) {
         if (unit !== undefined && sourceManifest[1] !== unit) continue;
         changedUpstream.add(normalized);
@@ -2365,7 +2380,7 @@ export function reviewInvalidationDetails(
                 projectDir,
                 resolve(
                   record,
-                  "construction",
+                  stage.phase,
                   unit,
                   stage.slug,
                   "source-manifest.json",
@@ -2408,15 +2423,16 @@ export function reviewInvalidationDetails(
   // upstream source as context for stages that still require re-check.
   const boundary = backwardJumpBoundary(attemptFrontier);
   if (boundary) {
-    const jumpChanged = parseAuditPathArray(
-      auditBlockField(boundary.block, "Changed Upstream Artifacts"),
-    );
-    const jumpArtifacts = parseAuditPathArray(
-      auditBlockField(boundary.block, "Invalidated Downstream Artifacts"),
-    );
-    const jumpReviews = parseAuditPathArray(
-      auditBlockField(boundary.block, "Invalidated Downstream Reviews"),
-    );
+    // A jump a five-phase release recorded names each path at the folder the
+    // 8 to 10 step moved it from, a review by its document's path and `#Review`.
+    const jumpPaths = (field: string): string[] =>
+      parseAuditPathArray(auditBlockField(boundary.block, field)).map((path) => {
+        const review = path.endsWith("#Review") ? "#Review" : "";
+        return `${sevenPhaseRecordPath(path.slice(0, path.length - review.length))}${review}`;
+      });
+    const jumpChanged = jumpPaths("Changed Upstream Artifacts");
+    const jumpArtifacts = jumpPaths("Invalidated Downstream Artifacts");
+    const jumpReviews = jumpPaths("Invalidated Downstream Reviews");
     const consumedArtifacts = new Set<string>();
     const consumedReviews = new Set<string>();
     for (const event of events) {

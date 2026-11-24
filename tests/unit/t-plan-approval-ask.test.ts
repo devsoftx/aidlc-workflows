@@ -90,6 +90,7 @@ import {
   seededStateFile,
   setupWorktreeFixture,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   codeGenerationRecordDir,
   evaluateCodeGenerationApproval,
@@ -192,7 +193,7 @@ function project(policy: "strict" | "relaxed" | "off" = "relaxed", planApproval:
 }
 
 function stageDir(proj: string, unit: string | null = null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), ...(unit ? [unit] : []), "code-generation");
 }
 
 function writePlan(proj: string, extra = "", unit: string | null = null, touches = "src/slugify.ts"): void {
@@ -712,7 +713,7 @@ describe("the engine asks for Plan Approval", () => {
     expect(planning.mode).toBe("inline");
     // The record's cursor is past User Stories to Infrastructure Design, never
     // started, so the count leaves them out, as a plan switch's line does.
-    expect(planning.narration).toBe("Writing the code plan for Code Generation (stage 11 of 20) first; the developer builds from it.");
+    expect(planning.narration).toBe("Writing the code plan for Code Generation (stage 11 of 22) first; the developer builds from it.");
 
     const ask = askFor(proj);
     expect(ask.question).toBe("Approve the code plan?");
@@ -721,7 +722,7 @@ describe("the engine asks for Plan Approval", () => {
     expect(ask.plan_approval.editing).toBe(false);
     const [target] = ask.plan_approval.targets ?? [];
     expect(target.unit).toBeNull();
-    expect(target.plan_path).toEndWith("construction/code-generation/code-generation-plan.md");
+    expect(target.plan_path).toEndWith("build/code-generation/code-generation-plan.md");
     expect(target.summary).toEqual(["Builds: slugify for titles", "Touches: src/slugify.ts", "Tests: 3 unit tests"]);
     expect(questions(proj)).toContain("## Plan Approval");
     expect(questions(proj)).toMatch(/^\[Approval Fingerprint\]: sha256:v3:[0-9a-f]{64}$/m);
@@ -747,7 +748,7 @@ describe("the engine asks for Plan Approval", () => {
     expect(guardWrite(proj, join(learnings, "code-generation-selections.json")).code).toBe(0);
     // A traversal out of it lands on the plan file: AI-DLC's record, which
     // passes on its own (a plan changed under the question is asked about again).
-    expect(guardWrite(proj, join(answerText, "..", "..", "construction", "code-generation", "code-generation-plan.md")).code)
+    expect(guardWrite(proj, join(answerText, "..", "..", phaseFor("code-generation"), "code-generation", "code-generation-plan.md")).code)
       .toBe(0);
     // So does a person's request for `next --request-file`, directly inside the
     // project's request-text folder, the only place the engine reads it.
@@ -1931,7 +1932,7 @@ function unitProject(...units: string[]): string {
 - **Project**: Per-Unit build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: relaxed (set by you)
 
@@ -1943,16 +1944,18 @@ function unitProject(...units: string[]): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");
@@ -2246,8 +2249,8 @@ describe("when the stage rules arrive in parts", () => {
       const said = answer(proj, "Review the plan").message;
       expect(said, JSON.stringify(step)).toContain("show them the plan now");
       expect(said).toContain("y" in step
-        ? "construction/unit-a/code-generation/code-generation-plan.md"
-        : "construction/code-generation/code-generation-plan.md");
+        ? "build/unit-a/code-generation/code-generation-plan.md"
+        : "build/code-generation/code-generation-plan.md");
       expect(said).not.toContain("shown for approval before anything else is built");
       expect(said).not.toContain("When it arrives");
       expect(planApprovalReviewRequested(proj, "stage:code-generation", intent)).toBe(false);
@@ -2294,7 +2297,7 @@ describe("when the stage rules arrive in parts", () => {
     reply(proj, "review the plan first");
     const after = answer(proj, "Review the plan").message;
     expect(after).toContain("show them the plan now");
-    expect(after).toContain("construction/unit-b/code-generation/code-generation-plan.md");
+    expect(after).toContain("build/unit-b/code-generation/code-generation-plan.md");
     expect(after).not.toContain("unit-a");
     expect(planApprovalReviewRequested(proj, "unit:unit-a", intent)).toBe(false);
   });
@@ -2576,7 +2579,7 @@ function swarmFixture(plans: boolean, group: string[] = GROUP, planApproval: "on
 - **Project**: Grouped plan approval
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major
@@ -2586,16 +2589,18 @@ function swarmFixture(plans: boolean, group: string[] = GROUP, planApproval: "on
 - **Unit Ownership**: solo
 - **Guard Policy**: strict (set by you)${planApproval === "off" ? "\n- **Plan Approval**: off (set by you)" : ""}
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
 - **Current Stage**: code-generation
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Status**: Running
 `, "utf-8");
   seedBoltDagBatches(pd, [group, ["later"]]);
@@ -2860,7 +2865,7 @@ describe("'review the plan' next to other questions and for groups", () => {
     reply(proj, "review the plan");
     const atGate = answer(proj, "Review the plan").message;
     expect(atGate).toContain("show them the plan now");
-    expect(atGate).toContain("construction/code-generation/code-generation-plan.md");
+    expect(atGate).toContain("build/code-generation/code-generation-plan.md");
     expect(atGate).toContain("carry on with this gate");
     expect(atGate).not.toContain("before anything else is built");
     // Sent back at the gate: the plan is asked about before it is rebuilt.
@@ -3068,7 +3073,7 @@ describe("an isolated Code Generation run in a project with no work", () => {
   const SINGLE = ["--stage", "code-generation", "--single", "--scope", "enterprise"];
   const OWN_NEXT = "bun .claude/tools/aidlc-orchestrate.ts next";
   const SPACE_RECORD = ["aidlc", "spaces", "default", "intents"];
-  const planDir = (proj: string) => join(proj, ...SPACE_RECORD, "construction", "code-generation");
+  const planDir = (proj: string) => join(proj, ...SPACE_RECORD, phaseFor("code-generation"), "code-generation");
   // A project with code and no work, the harness installed, and the run started.
   function noWork(start = true): string {
     const proj = createOrchestrationTestProject();
@@ -3191,7 +3196,7 @@ describe("an isolated Code Generation run in a project with no work", () => {
 // records as any answer does, and the build waits for it. Once the build has
 // started, or with plan approval off again, the skip stands.
 describe("plan approval turned on after a plan was built without asking", () => {
-  const PLAN_PATH = /construction\/code-generation\/code-generation-plan\.md$/;
+  const PLAN_PATH = /build\/code-generation\/code-generation-plan\.md$/;
   const CHANGE = "print one decimal place, and add a test for that.";
   const count = (proj: string, event: string): number => auditText(proj).split(`**Event**: ${event}\n`).length - 1;
   const setLines = (proj: string, edit: (state: string) => string): void => {
@@ -3833,7 +3838,7 @@ describe("what the engine names while a plan waits", () => {
     expect(guardBash(proj, `rm ${dispatchInShell}`).code).toBe(0);
     // Other records pass too; the code the plan names still waits.
     expect(guardWrite(proj, join(record, ".aidlc-engine", "reviews", "code-generation", "stage", "a1", "3.other.review.md")).code).toBe(0);
-    expect(guardWrite(proj, join(record, "construction", "code-generation", "code-summary.md")).code).toBe(0);
+    expect(guardWrite(proj, join(record, phaseFor("code-generation"), "code-generation", "code-summary.md")).code).toBe(0);
     expect(guardWrite(proj, join(proj, "src", "slugify.ts")).code).toBe(2);
     expect(guardBash(proj, `printf x > ${dispatchInShell}; printf x > src/slugify.ts`).code).toBe(2);
     // Once the review completes, its files are still the reviewer's records.
@@ -4081,7 +4086,7 @@ describe("what the engine names while a plan waits", () => {
     const run = next(proj, ["--stage", "reverse-engineering", "--single"]);
     expect(run.kind, JSON.stringify(run)).toBe("run-stage");
     expect(run.stage).toBe("reverse-engineering");
-    const record = guardWrite(proj, join(seededRecordDir(proj), "inception", "reverse-engineering", "notes.md"));
+    const record = guardWrite(proj, join(seededRecordDir(proj), phaseFor("reverse-engineering"), "reverse-engineering", "notes.md"));
     expect(record.code, record.stderr).toBe(0);
     const scan = guardBash(proj, "bun .claude/tools/aidlc.ts engine workspace codekb-scope-diff");
     expect(scan.code, scan.stderr).toBe(0);
@@ -4090,7 +4095,7 @@ describe("what the engine names while a plan waits", () => {
     expect(guardWrite(proj, join(proj, "src", "slugify.ts")).code).toBe(2);
     expect(guardBash(proj, "printf x > src/slugify.ts").code).toBe(2);
     expect(guardWrite(proj, seededStateFile(proj)).code).toBe(2);
-    const linked = join(seededRecordDir(proj), "inception", "reverse-engineering", "linked.md");
+    const linked = join(seededRecordDir(proj), phaseFor("reverse-engineering"), "reverse-engineering", "linked.md");
     mkdirSync(dirname(linked), { recursive: true });
     linkSync(join(proj, "src", "base.ts"), linked);
     expect(guardWrite(proj, linked).code).toBe(2);
@@ -4458,7 +4463,7 @@ describe("stopping for now at Code Generation", () => {
       const state = seededStateFile(proj);
       writeFileSync(state, readFileSync(state, "utf-8")
         .replace("## Scope Configuration", "## Runtime State\n- **Revision Count**: 0\n\n## Scope Configuration")
-        .replace("### CONSTRUCTION PHASE", "### INCEPTION PHASE\n- [x] units-generation \u2014 EXECUTE\n\n### CONSTRUCTION PHASE"));
+        .replace("### DESIGN PHASE", "### DESIGN PHASE\n- [x] units-generation \u2014 EXECUTE"));
       writePlan(proj, "", "unit-a", "src/a.ts");
       expect(next(proj)).toMatchObject({ kind: "ask", ask_type: "plan-approval" });
       replyAndRecord(proj, "1", "Approve Plan");
@@ -4629,7 +4634,7 @@ function zeroUnitProject(scope: "refactor" | "bugfix"): string {
       `- **Guard Policy**: off (from scope ${scope})\n- **Plan Approval**: on (from scope ${scope})`)
     .replace("- [-] requirements-analysis \u2014 EXECUTE", "- [x] requirements-analysis \u2014 EXECUTE")
     .replace("- [ ] code-generation \u2014 EXECUTE", "- [-] code-generation \u2014 EXECUTE")
-    .replace("- **Lifecycle Phase**: INCEPTION", "- **Lifecycle Phase**: CONSTRUCTION")
+    .replace("- **Lifecycle Phase**: DESIGN", "- **Lifecycle Phase**: BUILD")
     .replace("- **Current Stage**: requirements-analysis", "- **Current Stage**: code-generation")
     .replace("- **Next Stage**: code-generation", "- **Next Stage**: build-and-test");
   if (scope === "refactor") {
@@ -4852,7 +4857,7 @@ describe("the plan's record folder is there before the plan is written", () => {
     const linked = project();
     const outside = mkdtempSync(join(tmpdir(), "t-plan-folder-outside-"));
     try {
-      symlinkSync(outside, join(seededRecordDir(linked), "construction"));
+      symlinkSync(outside, join(seededRecordDir(linked), phaseFor("code-generation")));
       expect(next(linked).plan_approval).toEqual({ status: "plan" });
       expect(readdirSync(outside)).toEqual([]);
     } finally {
@@ -5007,7 +5012,7 @@ describe("Code Generation receipt recovery through the Plan Approval hook", () =
     ).replace(
       "## Scope Configuration", "## Runtime State\n- **Revision Count**: 0\n\n## Scope Configuration",
     ).replace(
-      "### CONSTRUCTION PHASE", "### INCEPTION PHASE\n- [x] units-generation — EXECUTE\n\n### CONSTRUCTION PHASE",
+      "### DESIGN PHASE", "### DESIGN PHASE\n- [x] units-generation — EXECUTE",
     ));
     if (unitMajor) {
       writeFileSync(state, readFileSync(state, "utf-8")
@@ -5179,7 +5184,7 @@ describe("what to change is what the person said, as the agent read it", () => {
   });
 
   test("the stage tells the agent to pass what to change, and to ask when the reply only picked the choice", () => {
-    const text = readFileSync(join(AIDLC_SRC, "aidlc-common", "stages", "construction", "code-generation.md"), "utf-8")
+    const text = readFileSync(join(AIDLC_SRC, "aidlc-common", "stages", "build", "code-generation.md"), "utf-8")
       .replace(/\s+/g, " ");
     expect(text).toContain("pass what to change after the choice (`--details 'Request Changes: <what they asked>'`");
     expect(text).toContain("when their reply only picked Request Changes, ask what should change before you record it");

@@ -236,7 +236,7 @@ describe("the stage brief and a dispatched helper get the same rules", () => {
 
     const dispatched = augmentDispatchRules(
       "task",
-      { subagent_type: "aidlc-product-agent", prompt: "Run .claude/aidlc-common/stages/inception/requirements-analysis.md." },
+      { subagent_type: "aidlc-product-agent", prompt: "Run .claude/aidlc-common/stages/design/requirements-analysis.md." },
       proj,
     );
     expect(dispatched.error ?? null).toBeNull();

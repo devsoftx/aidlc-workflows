@@ -21,6 +21,7 @@ import { runNamed } from "../harness/code-generation-states.ts";
 import {
   checkoutCommand, cleanupLayouts, commitRecords, outsideRepo, shellWorkspace, startCodeGeneration, worktreeOf, writeCode,
 } from "../harness/source-work-layouts.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { broughtFileNames } from "../../dist/claude/.claude/tools/aidlc-brought-files.ts";
 import { sourceBaselineAuditFields, workspaceBaselineStageSlugs } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -91,7 +92,7 @@ function lookupWithTool(proj: string, args: string[]): { status: number; out: st
 }
 
 function writeManifest(proj: string, unit: string, paths: string[]): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "source-manifest.json"), `${JSON.stringify({
     stage: "code-generation", unit, version: 1, writes: paths.map((path) => ({ path })),
@@ -117,7 +118,7 @@ function atAlphasBuild(): string {
 - **Project Type**: Brownfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -141,7 +142,7 @@ function atAlphasBuild(): string {
 - [-] code-generation — EXECUTE
 - [ ] build-and-test — EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `);

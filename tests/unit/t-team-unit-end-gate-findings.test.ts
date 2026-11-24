@@ -16,6 +16,7 @@
 // walk's one gate: the checkpoint's brief shows each earlier stage's open
 // findings, and its approval records exactly those, from one stage list.
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   NATIVE_FIXTURE_SETUP_TIMEOUT_MS,
   NATIVE_STARTUP_TIMEOUT_MS,
@@ -101,7 +102,7 @@ function constructionState(rhythm: "per-stage" | "unit-end", guardPolicy?: strin
 - **Project**: team unit-end gate findings
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -119,16 +120,20 @@ ${guardPolicy === undefined ? "" : `- **Guard Policy**: ${guardPolicy}\n`}
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation — EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -138,7 +143,7 @@ ${guardPolicy === undefined ? "" : `- **Guard Policy**: ${guardPolicy}\n`}
 // The requirements as Requirements Analysis writes them: FR{n} and NFR{n} ids
 // in requirements.md and the same ids listed in its traceability.json.
 function seedRequirements(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+  const dir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "requirements.md"),
@@ -205,7 +210,7 @@ function runReport(proj: string, args: string[]): Directive {
 }
 
 function stageDir(proj: string, stage: string): string {
-  return join(seededRecordDir(proj), "construction", "alpha", stage);
+  return join(seededRecordDir(proj), phaseFor(stage), "alpha", stage);
 }
 
 function coverUnit(proj: string, stage: string): void {
@@ -402,7 +407,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     const shown = brief(proj, "code-generation");
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown).toContain("**Review outcome:** Concerns remain for your decision.");
-    expect(shown).toContain("construction/alpha/nfr-design/");
+    expect(shown).toContain("design/alpha/nfr-design/");
     expect(shown).toContain("> R-01 Finding: operability-design.md and testability-design.md do not exist");
     expect(shown).toContain("> R-02 Finding: The traceability file uses ids the requirements do not define");
     expect(shown).not.toContain("Approve accepts");
@@ -416,7 +421,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     expect(record.map(folderOf)).toEqual(shownOpen(shown));
     expect(record).toHaveLength(2);
     for (const entry of record) {
-      expect(entry).toContain("/construction/alpha/nfr-design/");
+      expect(entry).toContain("/design/alpha/nfr-design/");
       expect(entry).toEndWith(" Accepted risk");
     }
   });
@@ -515,7 +520,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     const shown = brief(proj, "code-generation");
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown).toContain("**Review outcome:** Concerns remain for your decision.");
-    expect(shown).toMatch(/construction\/alpha\/nfr-design\/[^`]+`\n\n\| ID \| Severity \| Where \| Status \|\n\|---\|---\|---\|---\|\n\| R-01 \| Major \|/);
+    expect(shown).toMatch(new RegExp(`${phaseFor("nfr-design")}/alpha/nfr-design/[^\`]+\`\\n\\n\\| ID \\| Severity \\| Where \\| Status \\|\\n\\|---\\|---\\|---\\|---\\|\\n\\| R-01 \\| Major \\|`));
     expect(shown).toContain("> R-01 Finding: The review did not finish, so there is no review result to rely on.");
     expect(shown).toContain("- **Approve** - continue with the open findings accepted.");
     expect(shown).not.toContain("No blocking concerns were found.");
@@ -554,7 +559,7 @@ describe("t-team-unit-end-gate-findings: the end-of-Unit gate shows what its App
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown.split("> R-01 Finding: The review did not finish").length - 1).toBe(2);
     expect(shown.split(reason).length - 1).toBe(1);
-    expect(shown.indexOf(reason)).toBeGreaterThan(shown.indexOf("construction/alpha/code-generation/"));
+    expect(shown.indexOf(reason)).toBeGreaterThan(shown.indexOf("build/alpha/code-generation/"));
     const approved = gateReport(proj, "approved", ["--user-input", "Approve"]);
     expect(JSON.stringify(approved)).toContain(
       "Approved. The NFR Design and Code Generation reviews for alpha did not finish.",
@@ -691,7 +696,7 @@ describe("t-team-unit-end-gate-findings: a Unit worked alone shows at its checkp
     const shown = soloCheckpointBrief(proj, { "nfr-design": NFR_DESIGN_FINDINGS });
     expect(shown).toContain("**Stages:** NFR Design, Code Generation");
     expect(shown).toContain("**Review outcome:** Concerns remain for your decision.");
-    expect(shown).toContain("construction/alpha/nfr-design/");
+    expect(shown).toContain("design/alpha/nfr-design/");
     expect(shown).toContain("> R-01 Finding: operability-design.md and testability-design.md do not exist");
     expect(shown).toContain("> R-02 Finding: The traceability file uses ids the requirements do not define");
     expect(shown).toContain("- **Approve** - continue with the open findings accepted.");
@@ -706,7 +711,7 @@ describe("t-team-unit-end-gate-findings: a Unit worked alone shows at its checkp
     expect(record.map(folderOf)).toEqual(shownOpen(shown));
     expect(record).toHaveLength(2);
     for (const entry of record) {
-      expect(entry).toContain("/construction/alpha/nfr-design/");
+      expect(entry).toContain("/design/alpha/nfr-design/");
       expect(entry).toEndWith(" Accepted risk");
     }
   });

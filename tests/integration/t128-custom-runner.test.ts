@@ -134,18 +134,18 @@ Test-only scope authored to drive the custom stage via --single.
 `,
   );
 
-  // Author the custom stage file (operation phase, minimal valid frontmatter).
+  // Author the custom stage file (operate phase, minimal valid frontmatter).
   // No produces/consumes edges so it slots in without disturbing the graph;
   // lead_agent is a real shipped agent so loadAgents() validation passes.
   // `scopes: [fixture-scope]` is the transpose source.
-  mkdirSync(join(claude, "aidlc-common", "stages", "operation"), {
+  mkdirSync(join(claude, "aidlc-common", "stages", "operate"), {
     recursive: true,
   });
   writeFileSync(
-    join(claude, "aidlc-common", "stages", "operation", `${CUSTOM_SLUG}.md`),
+    join(claude, "aidlc-common", "stages", "operate", `${CUSTOM_SLUG}.md`),
     `---
 slug: ${CUSTOM_SLUG}
-phase: operation
+phase: operate
 execution: ALWAYS
 condition: Always runs — a custom stage authored to prove the extensibility path
 lead_agent: aidlc-operations-agent
@@ -175,7 +175,7 @@ outputs: None — the stage body is illustrative
   // Pre-seed the new stage's {slug, number, name} row in the SANDBOX
   // stage-graph.json. The compiler (compileStageGraph) keeps a pre-seeded row's
   // pinned number and auto-seeds a new slug, so pre-seeding pins this fixture's
-  // number. Use a 4.8 number (after the last operation stage 4.7) so it sorts
+  // number. Use a 7.4 number (after the last operate stage 7.3) so it sorts
   // last.
   const graphJsonPath = join(claude, "tools", "data", "stage-graph.json");
   const graph = JSON.parse(readFileSync(graphJsonPath, "utf-8")) as Array<
@@ -183,9 +183,9 @@ outputs: None — the stage body is illustrative
   >;
   graph.push({
     slug: CUSTOM_SLUG,
-    number: "4.8",
+    number: "7.4",
     name: "Custom Smoke Stage",
-    phase: "operation",
+    phase: "operate",
   });
   writeFileSync(graphJsonPath, JSON.stringify(graph, null, 2));
 

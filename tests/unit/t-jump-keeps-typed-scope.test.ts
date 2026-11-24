@@ -22,6 +22,7 @@ import {
   seedStateFile,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -102,9 +103,10 @@ describe("t-jump-keeps-typed-scope: a scope typed with a jump over running work 
 
   test("a phase jump with a scope names the scope change, then the phase jump", () => {
     const proj = runningBugfix();
-    const step = next(proj, ["--scope", "enterprise", "--phase", "construction"]);
+    const phase = phaseFor("code-generation");
+    const step = next(proj, ["--scope", "enterprise", "--phase", phase]);
     expect(commands(step)[0]).toBe("bun .claude/tools/aidlc.ts engine scope change --scope enterprise");
-    expect(commands(step)[1]).toBe("bun .claude/tools/aidlc-orchestrate.ts next --phase construction");
+    expect(commands(step)[1]).toBe(`bun .claude/tools/aidlc-orchestrate.ts next --phase ${phase}`);
   });
 
   test("a setting typed beside the scope rides the scope change, as the guide's --depth example does", () => {

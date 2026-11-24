@@ -2,6 +2,7 @@
 
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
 import { LAUNCHER_GLOBAL_FLAGS, UNIT_GRAMMAR } from "./aidlc-command.ts";
+import { sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -127,6 +128,7 @@ import {
   sourcePathKey,
   type SourceClaimModel,
   classifyStateVersion,
+  UNIT_RECORD_PHASES,
 } from "./aidlc-lib.js";
 import { newerStateStep } from "./aidlc-state-upgrade.ts";
 import {
@@ -848,7 +850,7 @@ function dependencyBodyAtOid(projectDir: string, oid: string): string {
   if (!relative) fail("Cannot resolve the active intent record path.");
   const shown = git(
     projectDir,
-    ["show", `${oid}:${relative}/inception/units-generation/unit-of-work-dependency.md`, "--"],
+    ["show", `${oid}:${relative}/design/units-generation/unit-of-work-dependency.md`, "--"],
   );
   if (!shown.ok) fail("The fetched integration ref has no Unit dependency artifact.");
   return shown.stdout;
@@ -1313,6 +1315,7 @@ function candidateReviewFingerprint(
   unit: string,
   stage: {
     slug: string;
+    phase: string;
     produces?: string[];
     optional_produces?: string[];
     produces_kinds?: Record<string, string[]>;
@@ -1326,7 +1329,7 @@ function candidateReviewFingerprint(
   );
   const manifest: Array<[string, string]> = names.map((name) => {
     const logicalPath =
-      `construction/${unit}/${stage.slug}/${artifactFilename(name)}`;
+      `${stage.phase}/${unit}/${stage.slug}/${artifactFilename(name)}`;
     const path = `${recordPrefix}/${logicalPath}`;
     if (!gitPathExistsAt(projectDir, oid, path)) {
       return [logicalPath, "missing"];
@@ -1352,6 +1355,7 @@ function candidateReviewCoverage(
   generation: number,
   stage: {
     slug: string;
+    phase: string;
     reviewer?: string;
     produces?: string[];
     optional_produces?: string[];
@@ -1375,7 +1379,7 @@ function candidateReviewCoverage(
       if (reviewRecordDigest(bytes) !== ref.digest) return null;
       return parseReviewRecordBytes(bytes);
     });
-  const artifactPrefix = `construction/${unit}/${stage.slug}/`;
+  const artifactPrefix = `${stage.phase}/${unit}/${stage.slug}/`;
   const covered = candidateReviewCoverageProjection(events, {
     unit,
     generation,
@@ -1550,12 +1554,12 @@ function transportedAuditViolation(
     ) {
       return `${event.event} row belongs to attempt generation ${eventGeneration}`;
     }
-    const file = (auditBlockField(event.block, "File") ?? "")
-      .replace(/\\/g, "/");
-    const unitArtifactRoot = `construction/${unit}/`;
+    // A five-phase release's row names the folder its file moved from.
+    const file = sevenPhaseRecordPath((auditBlockField(event.block, "File") ?? "")
+      .replace(/\\/g, "/"));
+    const unitArtifactRoots = UNIT_RECORD_PHASES.map((phase) => `${phase}/${unit}/`);
     if (
-      !file.startsWith(unitArtifactRoot) &&
-      !file.includes(`/${unitArtifactRoot}`)
+      !unitArtifactRoots.some((root) => file.startsWith(root) || file.includes(`/${root}`))
     ) {
       return `${event.event} row is outside claimed Unit artifacts`;
     }
@@ -1709,8 +1713,9 @@ function outsideUnitTreeNextStep(unit: string, integrationRef: string, owner?: s
   const where = owner === undefined
     ? "Take these out of this branch"
     : `In ${claimedCheckout(owner, unit)}, take these out of its branch`;
+  const unitFolders = UNIT_RECORD_PHASES.map((phase) => `${phase}/${unit}/`).join(" or ");
   return "a claimed Unit lands only " +
-    `construction/${unit}/ and its own audit shard, and a shared record (an Inception artifact ` +
+    `${unitFolders} and its own audit shard, and a shared record (a Design artifact ` +
     `such as contract-summary.md, or a stage-level file) is changed on main. ${where} ` +
     "(git rm a file main does not have, or " +
     `git checkout ${integrationRef.replace(/^refs\/(remotes|heads)\//, "")} -- <path> for one it does), commit, and ` +
@@ -1794,11 +1799,11 @@ function candidateBoundary(
   )
     .split(/\r?\n/)
     .filter(Boolean);
-  const unitRoot = `${recordPrefix}/construction/${unit}/`;
-  const constructionRoot = `${recordPrefix}/construction/`;
+  const unitRoots = UNIT_RECORD_PHASES.map((phase) => `${recordPrefix}/${phase}/${unit}/`);
+  const constructionRoots = UNIT_RECORD_PHASES.map((phase) => `${recordPrefix}/${phase}/`);
   const reviewUnitMarker = `/${REVIEW_RECORDS_DIR}/`;
-  const unitRootKey = unitRoot.toLowerCase();
-  const constructionRootKey = constructionRoot.toLowerCase();
+  const unitRootKeys = unitRoots.map((root) => root.toLowerCase());
+  const constructionRootKeys = constructionRoots.map((root) => root.toLowerCase());
   const recordPrefixKey = `${recordPrefix}/`.toLowerCase();
   // A rule the person kept while working the Unit is written to the space's
   // project.md or team.md, not the Unit's folder; it travels with the Unit as
@@ -1818,14 +1823,14 @@ function candidateBoundary(
         reviewParts[2] === unit
       ) continue;
     }
-    if (pathKey.startsWith(unitRootKey)) continue;
+    if (unitRootKeys.some((root) => pathKey.startsWith(root))) continue;
     if (changedAudit.includes(path)) continue;
     if (keptRules.has(path)) {
       outsideUnitRecordPaths.push(path);
       continue;
     }
     if (
-      pathKey.startsWith(constructionRootKey) ||
+      constructionRootKeys.some((root) => pathKey.startsWith(root)) ||
       pathKey.startsWith(recordPrefixKey) ||
       pathKey.startsWith("aidlc/")
     ) {
@@ -2078,7 +2083,7 @@ function candidateEvidence(
       unitKind,
     );
     for (const name of names) {
-      const path = `${recordPrefix}/construction/${claim.unit}/${stageSlug}/${artifactFilename(name)}`;
+      const path = `${recordPrefix}/${stage.phase}/${claim.unit}/${stageSlug}/${artifactFilename(name)}`;
       if (!gitPathExistsAt(projectDir, claim.oid, path)) {
         fail(`Pinned candidate is missing required artifact ${path}.`);
       }
@@ -2110,7 +2115,7 @@ function candidateEvidence(
     }
   }
   const questionsPath =
-    `${recordPrefix}/construction/${claim.unit}/code-generation/code-generation-questions.md`;
+    `${recordPrefix}/build/${claim.unit}/code-generation/code-generation-questions.md`;
   let planFingerprint: string | null = null;
   // A Unit that skipped Code Generation wrote no plan, so none is read or owed.
   const buildsCode = stages.includes("code-generation") && !skipped.has("code-generation");
@@ -2118,12 +2123,12 @@ function candidateEvidence(
     const plan = gitTextAt(
       projectDir,
       claim.oid,
-      `${recordPrefix}/construction/${claim.unit}/code-generation/code-generation-plan.md`,
+      `${recordPrefix}/build/${claim.unit}/code-generation/code-generation-plan.md`,
     );
     const instructions = gitTextAt(
       projectDir,
       claim.oid,
-      `${recordPrefix}/construction/${claim.unit}/code-generation/unit-test-instructions.md`,
+      `${recordPrefix}/build/${claim.unit}/code-generation/unit-test-instructions.md`,
     );
     const questions = gitTextAt(projectDir, claim.oid, questionsPath);
     const fingerprint = recordedApprovalFingerprint(questions);
@@ -2144,6 +2149,7 @@ function candidateEvidence(
       .update(questions, "utf-8")
       .digest("hex");
     const promptSha256 = planApprovalPromptSha256(questions);
+    const recordedQuestions = approvalEvent ? auditBlockField(approvalEvent.block, "Questions File") : null;
     if (
       fingerprint &&
       instructions.trim().length > 0 &&
@@ -2157,8 +2163,8 @@ function candidateEvidence(
         claim.payload.intent_uuid &&
       auditBlockField(approvalEvent.block, "Approval Fingerprint") ===
         fingerprint &&
-      auditBlockField(approvalEvent.block, "Questions File") ===
-        questionsPath &&
+      // Approved on a five-phase release, before its folder moved: the same file.
+      recordedQuestions !== null && sameRecordPath(recordedQuestions, questionsPath) &&
       auditBlockField(approvalEvent.block, "Questions SHA-256") ===
         questionsSha256 &&
       auditBlockField(approvalEvent.block, "Prompt SHA-256") ===
@@ -5001,16 +5007,18 @@ function commitKind(code: string): CommitKind | null {
 function unitSourceClaims(projectDir: string, unit: string): SourceClaimModel[] {
   const record = recordDir(projectDir);
   if (record === null) return [];
-  let stages: string[];
-  try {
-    stages = readdirSync(join(record, "construction", unit));
-  } catch {
-    return [];
-  }
-  return stages.flatMap((stage) => {
-    if (!existsSync(join(record, "construction", unit, stage, "source-manifest.json"))) return [];
-    const read = readUnitSourceManifest(projectDir, stage, unit);
-    return read.ok ? [{ claims: read.claims, prefixes: read.prefixes }] : [];
+  return UNIT_RECORD_PHASES.flatMap((phase) => {
+    let stages: string[];
+    try {
+      stages = readdirSync(join(record, phase, unit));
+    } catch {
+      return [];
+    }
+    return stages.flatMap((stage) => {
+      if (!existsSync(join(record, phase, unit, stage, "source-manifest.json"))) return [];
+      const read = readUnitSourceManifest(projectDir, stage, unit);
+      return read.ok ? [{ claims: read.claims, prefixes: read.prefixes }] : [];
+    });
   });
 }
 
@@ -5276,7 +5284,7 @@ export function shareBlocker(projectDir: string): string | null {
 }
 
 // `aidlc unit share`: commit the work here and push the integration branch to
-// the remote, so the teams can take Units (after Inception) or see a landed
+// the remote, so the teams can take Units (after Design) or see a landed
 // one. A plain push, never forced. A share that did not happen (a commit git
 // refused, a push the remote refused) keeps what it committed and leaves both
 // offers due again (their marks cleared), so the next step asks again instead

@@ -95,7 +95,7 @@ function person(p: Project, prompt: string, extra: NodeJS.ProcessEnv = {}): stri
   return turn === undefined ? "" : auditBlockField(turn.block, "Message Id") ?? "";
 }
 
-// A project mid-Ideation in its own git repository; `name` is the repo's own
+// A project mid-Discover in its own git repository; `name` is the repo's own
 // user.name (none when undefined), `globalName` the person's global one.
 function project(name?: string, globalName?: string): Project {
   resetAidlcEnv();
@@ -120,7 +120,7 @@ function constructionProject(autonomy: "autonomous" | "gated", unitMajor: boolea
 - **Project**: Jumps under autonomy
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -131,14 +131,15 @@ ${unitMajor ? "- **Construction Iteration**: unit-major\n" : ""}- **Construction
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### INCEPTION PHASE
+### DESIGN PHASE
 - [x] requirements-analysis ${DASH} EXECUTE
-### CONSTRUCTION PHASE
 ${skipped.map((stage) => `- [S] ${stage} ${DASH} SKIP`).join("\n")}
+### BUILD PHASE
 - [x] code-generation ${DASH} EXECUTE
+### TEST PHASE
 - [-] build-and-test ${DASH} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: TEST
 - **Current Stage**: build-and-test
 - **Status**: Running
 `);

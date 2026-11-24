@@ -20,8 +20,10 @@ import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import {
   activeDirectiveOutOfDateReason,
+  findStageBySlug,
   listIntents,
   readActiveDirectiveMarker,
   recordCopilotHumanSequence,
@@ -45,6 +47,22 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -146,7 +164,7 @@ function approvedBuild(proj: string, session: string): string {
   );
   const contract = posture(["render"]);
   expect(contract.status, contract.stderr).toBe(0);
-  const recordDir = join(seededRecordDir(proj), "construction", "code-generation");
+  const recordDir = join(seededRecordDir(proj), findStageBySlug("code-generation")!.phase, "code-generation");
   mkdirSync(recordDir, { recursive: true });
   writeFileSync(
     join(recordDir, "code-generation-plan.md"),
@@ -243,7 +261,15 @@ describe("a step that went out of date says which write did it", () => {
     expect(marker(proj).out_of_date).toBeUndefined();
     expect(doctorLines(proj).join("\n")).not.toContain("went out of date");
 
-    const changed = tool(proj, "aidlc-state.ts", ["set-construction-checkpoints", "disabled"]);
+    // A Construction change is the person's to ask for: the write names the
+    // message they asked it in.
+    const asked = adapter(proj, "record-human-turn", {
+      hook_event_name: "UserPromptSubmit", session_id: session, prompt: "turn construction checkpoints off",
+      timestamp: new Date().toISOString(),
+    });
+    expect(asked.code, asked.stderr).toBe(0);
+    const messageId = auditBlockField(readAuditShardEvents(proj).findLast((row) => row.event === "HUMAN_TURN")!.block, "Message Id");
+    const changed = tool(proj, "aidlc-state.ts", ["set-construction-checkpoints", "disabled", "--message", messageId!]);
     expect(changed.code, changed.stderr).toBe(0);
     const afterChange = stop();
     expect(afterChange.code, afterChange.stderr).toBe(0);

@@ -28,6 +28,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { legacyPlanApprovalOffNotice, publishPlanApprovalSkip, withBuiltPlanReviews } from "../../dist/claude/.claude/tools/aidlc-plan-approval-ask.ts";
 import { planApprovalCreationGranted, resolvePlanApprovalSetting } from "../../dist/claude/.claude/tools/aidlc-guard-switch.ts";
@@ -99,10 +100,10 @@ function project(planApproval: "scope" | "on" = "scope"): string {
 }
 
 function stageDir(proj: string): string {
-  return join(seededRecordDir(proj), "construction", "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
 }
 
-const PLAN_PATH_RE = /construction\/code-generation\/code-generation-plan\.md/;
+const PLAN_PATH_RE = /build\/code-generation\/code-generation-plan\.md/;
 
 function writePlan(proj: string): void {
   mkdirSync(stageDir(proj), { recursive: true });
@@ -485,14 +486,14 @@ describe("plan approval off builds the plan as written", () => {
     askToReview(proj);
     // At the plan's own gate, the plan rides on the gate as a notice.
     const gate = withBuiltPlanReviews(proj, {
-      kind: "present-gate", stage: "code-generation", phase: "construction", memory_path: "memory.md",
+      kind: "present-gate", stage: "code-generation", phase: "build", memory_path: "memory.md",
     }) as Emitted;
     expect(gate.kind).toBe("present-gate");
     expect(gate.change_notices?.join(" ")).toContain("You asked to review the plan for this piece of work while it was being built");
     expect(gate.change_notices?.join(" ")).toMatch(PLAN_PATH_RE);
     // Anything else would start other work first, so the plan is asked about instead.
     const held = withBuiltPlanReviews(proj, {
-      kind: "present-gate", stage: "build-and-test", phase: "construction", memory_path: "memory.md",
+      kind: "present-gate", stage: "build-and-test", phase: "test", memory_path: "memory.md",
     }) as Emitted;
     expect(held.kind).toBe("ask");
     expect(held.ask_type).toBe("plan-approval");
@@ -513,7 +514,7 @@ describe("plan approval off builds the plan as written", () => {
     const legacyKey = createHash("sha256").update("stage:code-generation", "utf-8").digest("hex").slice(0, 24);
     writeFileSync(join(dir, `review-request-${legacyKey}.json`), readFileSync(join(dir, kept[0]), "utf-8"), "utf-8");
     const gate = withBuiltPlanReviews(proj, {
-      kind: "present-gate", stage: "code-generation", phase: "construction", memory_path: "memory.md",
+      kind: "present-gate", stage: "code-generation", phase: "build", memory_path: "memory.md",
     }) as Emitted;
     const notices = (gate.change_notices ?? []).filter((notice) => notice.includes("You asked to review the plan"));
     expect(notices).toHaveLength(1);
@@ -1287,7 +1288,7 @@ describe("a Kiro IDE window that passes no message text", () => {
     const off = project();
     writePlan(off);
     const planning = {
-      kind: "run-stage", stage: "code-generation", phase: "construction", memory_path: "memory.md",
+      kind: "run-stage", stage: "code-generation", phase: "build", memory_path: "memory.md",
     } as unknown as Parameters<typeof legacyPlanApprovalOffNotice>[1];
     expect(legacyPlanApprovalOffNotice(off, planning)).toBe(
       "Plan approval is off for this piece of work (from scope poc), but this Kiro IDE build does not pass " +

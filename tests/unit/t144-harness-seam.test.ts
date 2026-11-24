@@ -41,6 +41,7 @@ const CLAUDE_TOOLS = join(REPO_ROOT, "dist", "claude", ".claude", "tools");
 const CLAUDE_LIB = join(CLAUDE_TOOLS, "aidlc-lib.ts");
 const LIB_SIBLINGS = [
   "aidlc-lib.ts",
+  "aidlc-phases.ts",
   "aidlc-settings.ts",
   "aidlc-markdown.ts",
   "aidlc-locks.ts",
@@ -65,6 +66,7 @@ const LIB_SIBLINGS = [
   "aidlc-runtime-budget.ts",
   "aidlc-lock-line.ts",
   "aidlc-review-manifest.ts",
+  "aidlc-five-phase-record.ts",
   "aidlc-command.ts",
   // aidlc-lib.ts reads a plugin command leading a line with this.
   "aidlc-plugin-commands.ts",
@@ -74,6 +76,8 @@ const LIB_SIBLINGS = [
   "aidlc-guard-operation.ts",
   "aidlc-reply-reader.ts",
   "aidlc-stage-schema.ts",
+  // aidlc-lib.ts imports this at load time; a missing copy makes the spawned bun exit 1.
+  "aidlc-phases.ts",
   "aidlc-version.ts",
 ] as const;
 

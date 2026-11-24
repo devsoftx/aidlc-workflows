@@ -60,6 +60,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -75,7 +76,7 @@ const STATE_MD = `# AI-DLC State Tracking
 - **Project**: copied audit shard
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major
 
@@ -91,15 +92,16 @@ const STATE_MD = `# AI-DLC State Tracking
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
 - [S] nfr-requirements \u2014 EXECUTE
 - [S] nfr-design \u2014 EXECUTE
 - [S] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [S] code-generation \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-07-30T00:00:00Z
@@ -406,7 +408,7 @@ describe("t-audit-shard-identity: the Unit walk survives a copied audit file", (
 
     expect(nextUnit()).toBe("unit-a");
     expect(unitVerb("start", "unit-a").rc).toBe(0);
-    const dir = join(seededRecordDir(proj), "construction", "unit-a", SLUG);
+    const dir = join(seededRecordDir(proj), phaseFor(SLUG), "unit-a", SLUG);
     mkdirSync(dir, { recursive: true });
     for (const name of PRODUCES) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\nstub\n`, "utf-8");
     const completed = unitVerb("complete", "unit-a");

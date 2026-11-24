@@ -32,6 +32,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename,
@@ -62,7 +63,14 @@ const SEP = "\u2014";
 // The tools as a person's run calls them: the presence guard on (the suite's
 // bypass removed), the artifact guard off for these bare fixtures.
 function env(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
-  const e: NodeJS.ProcessEnv = { ...process.env, AIDLC_SKIP_ARTIFACT_GUARD: "1", AIDLC_SESSION_OVERRIDE: SESSION, ...extra };
+  const e: NodeJS.ProcessEnv = {
+    ...process.env,
+    AIDLC_SKIP_ARTIFACT_GUARD: "1",
+    // The stage's summary confirmation is its own subject; the fixtures here carry no question flow.
+    AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD: "1",
+    AIDLC_SESSION_OVERRIDE: SESSION,
+    ...extra,
+  };
   delete e.AIDLC_SKIP_HUMAN_PRESENCE_GUARD;
   delete e.AIDLC_UNATTENDED;
   return e;
@@ -116,7 +124,7 @@ function teamProject(findings: string[] = []): string {
 - **Project**: approval needs a reply test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -132,26 +140,35 @@ function teamProject(findings: string[] = []): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design ${SEP} EXECUTE
 - [ ] nfr-requirements ${SEP} EXECUTE
 - [ ] nfr-design ${SEP} EXECUTE
 - [ ] infrastructure-design ${SEP} EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation ${SEP} EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test ${SEP} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
   seedBoltDag(team, ["alpha", "beta"]);
   // The Unit's Functional Design artifacts, as the stage frontmatter lists them.
-  const dir = join(seededRecordDir(team), "construction", "alpha", "functional-design");
+  const dir = join(seededRecordDir(team), phaseFor("functional-design"), "alpha", "functional-design");
   mkdirSync(dir, { recursive: true });
   for (const name of ["entities", "rules", "functional-spec", "frontend-components", "traceability"]) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name} for alpha\n`);
   }
+  // The stage's question flow, its summary confirmed, as the Unit's review requires.
+  writeFileSync(join(dir, "functional-design-questions.md"), [
+    "# Functional Design Questions", "", "## Consolidated Summary Confirmation", "",
+    "- Looks correct", "- Request changes", "", "[Answer]: Looks correct", "",
+  ].join("\n"));
   const floor = latestMainWorkflowStageRunFloorForProject(team, "functional-design", true, "alpha");
   for (const event of ["UNIT_STARTED", "UNIT_COMPLETED"]) {
     appendAuditEntry(event, { Stage: "functional-design", Unit: "alpha", "Run floor": floor }, team);
@@ -161,7 +178,7 @@ function teamProject(findings: string[] = []): string {
   const review = [LOG, "review", "--stage", "functional-design", "--reviewer", reviewer, "--unit", "alpha",
     "--iteration", "1", "--project-dir", team];
   const opts = { timeout: remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS), encoding: "utf-8" as const,
-    env: { ...process.env, AIDLC_DISABLE_PLAN_APPROVAL_GUARD: "1" } };
+    env: { ...process.env, AIDLC_DISABLE_PLAN_APPROVAL_GUARD: "1", AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD: "1" } };
   const requested = spawnSync(BUN, review, opts);
   expect(requested.status, `${requested.stdout}${requested.stderr}`).toBe(0);
   const table = findings.length === 0 ? "No blocking findings.\n" : [
@@ -338,7 +355,7 @@ describe("t-approve-needs-reply-to-question: only the person's reply to the appr
       person(team, "Fix the rule name, then go on");
       const asked = auditBlockField(rows(team, "HUMAN_TURN").at(-1)?.block ?? "", "Message Id") as string;
       Bun.sleepSync(1100);
-      const spec = join(seededRecordDir(team), "construction", "alpha", "functional-design", artifactFilename("functional-spec"));
+      const spec = join(seededRecordDir(team), phaseFor("functional-design"), "alpha", "functional-design", artifactFilename("functional-spec"));
       appendFileSync(spec, "\n- The rule is named in full.\n");
       recordArtifactWriteViaHook(team, spec, "Edit");
       const named = state(team, ["approve", "functional-design", "--unit", "alpha", "--user-input", "Approve", "--message", asked], TEAM_FIXTURE);

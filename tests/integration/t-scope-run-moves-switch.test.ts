@@ -11,6 +11,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanupTestProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   type AgentStandIn,
   activeRecord,
@@ -172,7 +173,7 @@ describe("a gate open when summary confirmation turns on", () => {
 
   test("bugfix to enterprise, then an edit at the open gate: the summary is asked once, and the stage's gate comes back and is approved", () => {
     const { rows, asked, later, refused } = switchAtOpenGate("bugfix", "/aidlc --scope enterprise", (agent) => {
-      const dir = join(activeRecord(agent.host.proj).dir, "inception", RA);
+      const dir = join(activeRecord(agent.host.proj).dir, phaseFor(RA), RA);
       const rel = (name: string) => join(dir, name).slice(agent.host.proj.length + 1).replaceAll("\\", "/");
       const requirements = `${readFileSync(join(dir, "requirements.md"), "utf-8")}\n- The login works offline.\n`;
       agent.person.say("the requirements should also say the login works offline");

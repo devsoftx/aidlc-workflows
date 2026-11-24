@@ -63,15 +63,15 @@
 //     requires_stage dep must be LOWER-numbered than the stage;
 //     numericStageOrder splits on "." and parseInts each part, so 2.05 sorts
 //     AFTER 2.1: parseInt("05")=5 > parseInt("1")=1. The two stages are 2.0 and
-//     2.10; the shipped inception stages 2.1-2.9 are SKIP in this scope, so the
-//     only live inception edge is 2.0->2.10, and numericStageOrder("2.0","2.10")
+//     2.10; the shipped design stages 2.1-2.12 are SKIP in this scope, so the
+//     only live design edge is 2.0->2.10, and numericStageOrder("2.0","2.10")
 //     < 0 satisfies it.)
 //   - reachability .................... aidlc-utility.ts
 //     determineFirstPostInitStage: init marks every initialization-phase stage
 //     [x] complete and determineFirstPostInitStage SKIPS init-phase stages, so a
 //     custom stage must be a NON-init stage AND the lowest-numbered non-init
 //     EXECUTE in its scope to become Current Stage (firstPostInit) at init.
-//     schema-snapshot at 2.0 (inception) is the lowest non-init EXECUTE -> init
+//     schema-snapshot at 2.0 (design) is the lowest non-init EXECUTE -> init
 //     writes Current Stage=schema-snapshot. migration-plan (2.10) is reached
 //     after schema-snapshot's gate.
 //   - sensor->stage binding ........... stage frontmatter `sensors: [<id>]` only
@@ -113,8 +113,8 @@ export const CUSTOM_KNOWLEDGE_MARKER =
 // --- HEAD stage: schema-snapshot — captures the source DB shape ------------
 
 /** The schema-snapshot STAGE — the chain's head and the workflow's firstPostInit
- *  stage. The activity: capture the source database's schema. Lives in INCEPTION
- *  at 2.0 (sorts before reverse-engineering 2.1). Placement is load-bearing for
+ *  stage. The activity: capture the source database's schema. Lives in DESIGN
+ *  at 2.0 (sorts before practices-discovery 2.1). Placement is load-bearing for
  *  reachability: init auto-completes every init-phase stage and
  *  determineFirstPostInitStage (aidlc-utility.ts) skips them, so the custom
  *  head stage must be NON-init; as the scope's lowest-numbered non-init EXECUTE
@@ -124,7 +124,7 @@ export const CUSTOM_KNOWLEDGE_MARKER =
 export const SNAPSHOT_STAGE_SLUG = "schema-snapshot";
 export const SNAPSHOT_STAGE_NUMBER = "2.0";
 export const SNAPSHOT_STAGE_NAME = "Schema Snapshot";
-export const SNAPSHOT_STAGE_PHASE = "inception";
+export const SNAPSHOT_STAGE_PHASE = "design";
 
 /** The artefact the schema-snapshot stage PRODUCES: an inventory of the source
  *  database's tables/columns to migrate. Distinct from the stage slug (shipped
@@ -137,14 +137,14 @@ export const SNAPSHOT_ARTIFACT = "source-schema";
 
 /** The migration-plan STAGE — the chain's tail. The activity: read the captured
  *  source-schema and plan the cutover. Number 2.10 (NOT 2.05: numericStageOrder
- *  parseInts the minor part, so 2.05 would sort AFTER 2.1). 2.10 sorts after 2.0
- *  and after the SKIP'd shipped 2.1-2.9 (delivery-planning owns 2.9); the
- *  only live edge is 2.0->2.10, and numericStageOrder("2.0","2.10") < 0
- *  satisfies the edge-local invariant. */
+ *  parseInts the minor part, so 2.05 would sort AFTER 2.1). 2.10 sorts after 2.0;
+ *  the shipped design stages 2.1-2.12 (nfr-requirements also at 2.10) are SKIP
+ *  in this scope, so the only live edge is 2.0->2.10, and
+ *  numericStageOrder("2.0","2.10") < 0 satisfies the edge-local invariant. */
 export const PLAN_STAGE_SLUG = "migration-plan";
 export const PLAN_STAGE_NUMBER = "2.10";
 export const PLAN_STAGE_NAME = "Migration Plan";
-export const PLAN_STAGE_PHASE = "inception";
+export const PLAN_STAGE_PHASE = "design";
 
 /** The artefact the migration-plan stage PRODUCES: the ordered cutover plan
  *  (which tables move in which order, with what downtime). Built from the

@@ -40,7 +40,7 @@
 //   - .sh C2  org-team-project order o,t,p    -> Test 3:  map(scope) deep-
 //       equals ["org","team","project"] (STRONGER: exact array, plus every
 //        stage carries the same triple, not just stage[0]).
-//   - .sh C3  all-four construction len==4    -> Test 4:  every construction
+//   - .sh C3  all-four construction len==4    -> Test 4:  every design
 //        stage length 4 AND scope tuple is exactly org,team,project,phase
 //        (STRONGER: pins the phase entry's position + scope value).
 //   - .sh C3  all-four init len==3 (no phase) -> Test 5:  every initialization
@@ -60,7 +60,7 @@
 //   - .sh C8(bad pairing) invalid fails       -> Test 10: compileStageGraph
 //        throws, message names the file path AND the pairing diagnostic
 //        (STRONGER: the .sh only checked exit 1).
-//   - .sh C12 BOM construction has phase      -> Test 11: every construction
+//   - .sh C12 BOM construction has phase      -> Test 11: every design
 //        stage's scope set contains "phase" (BOM stripped, frontmatter parsed)
 //        AND length 4 (STRONGER: full chain attaches, not just the phase tag).
 //
@@ -191,15 +191,15 @@ describe("t88 compileStageGraph rules_in_context resolution (migrated from t88-c
   });
 
   // --- Case 3: all-four (cross-phase) --------------------------------------
-  test("4: all-four -> every construction stage has length 4 (org,team,project,phase)", () => {
+  test("4: all-four -> every design stage has length 4 (org,team,project,phase)", () => {
     const { stages } = compileWithRulesDir(join(FIXTURES, "all-four"));
-    const construction = stages.filter((s) => s.phase === "construction");
-    expect(construction.length).toBeGreaterThan(0);
-    expect(construction.every((s) => s.rules_in_context.length === 4)).toBe(
+    const design = stages.filter((s) => s.phase === "design");
+    expect(design.length).toBeGreaterThan(0);
+    expect(design.every((s) => s.rules_in_context.length === 4)).toBe(
       true,
     );
     expect(
-      construction.every(
+      design.every(
         (s) => scopesOf(s).join(",") === "org,team,project,phase",
       ),
     ).toBe(true);
@@ -210,7 +210,7 @@ describe("t88 compileStageGraph rules_in_context resolution (migrated from t88-c
     const init = stages.filter((s) => s.phase === "initialization");
     expect(init.length).toBeGreaterThan(0);
     expect(init.every((s) => s.rules_in_context.length === 3)).toBe(true);
-    // The phase rule (phases/construction.md) must NOT attach to initialization
+    // The phase rule (phases/design.md) must NOT attach to initialization
     // stages - assert phase scope is absent.
     expect(init.every((s) => !scopesOf(s).includes("phase"))).toBe(true);
   });
@@ -311,17 +311,17 @@ describe("t88 compileStageGraph rules_in_context resolution (migrated from t88-c
     }
   });
 
-  test("11: BOM-prefixed frontmatter parses; phase rule attaches to all construction stages", () => {
+  test("11: BOM-prefixed frontmatter parses; phase rule attaches to all design stages", () => {
     const { stages } = compileWithRulesDir(join(FIXTURES, "bom-frontmatter"));
-    const construction = stages.filter((s) => s.phase === "construction");
-    expect(construction.length).toBeGreaterThan(0);
-    // BOM (EF BB BF) on phases/construction.md must be stripped so its
-    // frontmatter parses and the phase rule attaches to every construction
+    const design = stages.filter((s) => s.phase === "design");
+    expect(design.length).toBeGreaterThan(0);
+    // BOM (EF BB BF) on phases/design.md must be stripped so its
+    // frontmatter parses and the phase rule attaches to every design
     // stage.
     expect(
-      construction.every((s) => scopesOf(s).includes("phase")),
+      design.every((s) => scopesOf(s).includes("phase")),
     ).toBe(true);
-    expect(construction.every((s) => s.rules_in_context.length === 4)).toBe(
+    expect(design.every((s) => s.rules_in_context.length === 4)).toBe(
       true,
     );
   });

@@ -23,6 +23,7 @@ import {
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
 import { cleanupTestProject, runOrchestrateNext, setupIntegrationProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   artifactFilename, auditBlockField, MESSAGE_FILL, MESSAGE_SLOT, readAllAuditShards, readAuditShardEvents,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -141,8 +142,8 @@ function walk(units: string[], designed: boolean | number = true): string {
   writeFileSync(path, lines.join("\n")
     .replace(/- \*\*Current Stage\*\*: .*/, "- **Current Stage**: functional-design")
     .replace(/- \*\*In Progress\*\*: .*/, "- **In Progress**: functional-design")
-    .replace(/- \*\*Lifecycle Phase\*\*: .*/, "- **Lifecycle Phase**: CONSTRUCTION")
-    .replace("- **State Version**: 8", "- **State Version**: 8\n- **Unit Ownership**: solo\n- **Skeleton Stance**: on")
+    .replace(/- \*\*Lifecycle Phase\*\*: .*/, `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`)
+    .replace("- **State Version**: 10", "- **State Version**: 10\n- **Unit Ownership**: solo\n- **Skeleton Stance**: on")
     .replace(/- \*\*Summary Confirmation\*\*: .*/, "- **Summary Confirmation**: off (set by you)"));
   writeFileSync(join(record, "runtime-graph.json"), `${JSON.stringify({
     bolt_dag: { units: units.map((name) => ({ name, depends_on: [] })), batches: [units] },
@@ -150,7 +151,7 @@ function walk(units: string[], designed: boolean | number = true): string {
   const unit = units[0];
   const reviewer = "aidlc-architecture-reviewer-agent";
   for (const [stage, { produces, reviewed }] of steps) {
-    const dir = join(record, "construction", unit, stage);
+    const dir = join(record, phaseFor(stage), unit, stage);
     mkdirSync(dir, { recursive: true });
     for (const name of produces) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
     const review = ["review", "--stage", stage, "--reviewer", reviewer, "--unit", unit, "--iteration", "1"];
@@ -228,7 +229,7 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
     expect(after.unit).toBe("beta");
     expect(after.construction_checkpoint ?? null).toBeNull();
     // beta's own question, still unanswered, is not handed the skip.
-    const questions = join(dirname(stateFile(proj)), "construction", "beta", "functional-design", "functional-design-questions.md");
+    const questions = join(dirname(stateFile(proj)), phaseFor("functional-design"), "beta", "functional-design", "functional-design-questions.md");
     mkdirSync(dirname(questions), { recursive: true });
     writeFileSync(questions, "# Functional Design Questions\n\n## Question 1\nWhat does it greet?\n\n[Answer]:\n");
     expect(JSON.stringify(next(proj).kept_replies ?? null)).not.toContain("skip code generation");
@@ -243,7 +244,7 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
     const skipped = runNamed(proj, THIS_UNIT.replace(`'${PERSON}'`, `'${PERSON}: I will write that code myself'`));
     expect(skipped.status, skipped.out).toBe(0);
     expect(skipped.out).toContain('for unit \\"alpha\\" only');
-    const questions = join(dirname(stateFile(proj)), "construction", "beta", "functional-design", "functional-design-questions.md");
+    const questions = join(dirname(stateFile(proj)), phaseFor("functional-design"), "beta", "functional-design", "functional-design-questions.md");
     mkdirSync(dirname(questions), { recursive: true });
     writeFileSync(questions, "# Functional Design Questions\n\n## Question 1\nWhat does it greet?\n\n[Answer]:\n");
     const beta = next(proj);
@@ -266,7 +267,7 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
 
   test("this Unit only when the Unit's code files are already written: still skipped as the person asked", () => {
     const proj = walk(["alpha", "beta"]);
-    const dir = join(dirname(stateFile(proj)), "construction", "alpha", "code-generation");
+    const dir = join(dirname(stateFile(proj)), phaseFor("code-generation"), "alpha", "code-generation");
     mkdirSync(dir, { recursive: true });
     for (const name of CODE) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for alpha\n`);
     const step = next(proj, ["--skip", "code-generation"]);
@@ -312,6 +313,30 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
     expect(jumped.status, jumped.out).toBe(0);
     const late = runNamed(proj, undo);
     expect(late.status).not.toBe(0);
+    expect(late.out).toContain("--stage code-generation --single");
+  });
+
+  // An audit timestamp has a second's resolution, and a quick person (or a
+  // busy machine's clock) puts the undo, the skip again and the jump in one
+  // second: the audit's own order still says the undo came before Build and
+  // Test started.
+  test("Code Generation for every Unit from here: the undo is refused at Build and Test even when every step fell in one second", () => {
+    const proj = walk(["alpha", "beta"]);
+    const step = next(proj, ["--skip", "code-generation"]);
+    const undo = /If they later ask to undo skipping it for every Unit, run `([^`]*)`/.exec(String(step.message))?.[1] ?? "";
+    expect(runNamed(proj, EVERY_UNIT).status).toBe(0);
+    expect(runNamed(proj, undo).status).toBe(0);
+    expect(runNamed(proj, EVERY_UNIT).status).toBe(0);
+    const jumped = run(proj, "aidlc-jump.ts", ["execute", "--target", "build-and-test", "--direction", "forward", "--scope", "feature"]);
+    expect(jumped.status, jumped.out).toBe(0);
+    const shards = [...new Set(readAuditShardEvents(proj).map((row) => row.shard))];
+    expect(shards.length).toBeGreaterThan(0);
+    for (const shard of shards) {
+      const path = existsSync(shard) ? shard : join(proj, shard);
+      writeFileSync(path, readFileSync(path, "utf-8").replace(/^(\*\*Timestamp\*\*: ).*$/gm, "$12026-01-01T00:00:00Z"));
+    }
+    const late = runNamed(proj, undo);
+    expect(late.status, late.out).not.toBe(0);
     expect(late.out).toContain("--stage code-generation --single");
   });
 
@@ -424,7 +449,7 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
 
   test("in a new chat, plain words at the Unit's open code plan question name the skip", () => {
     const proj = walk(["alpha", "beta"]);
-    const dir = join(dirname(stateFile(proj)), "construction", "alpha", "code-generation");
+    const dir = join(dirname(stateFile(proj)), phaseFor("code-generation"), "alpha", "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, artifactFilename("code-generation-plan")),
       "# Code Generation Plan for alpha\n\n## Summary\n\n- Builds: greet()\n- Touches: src/greet.ts\n- Tests: 2 unit tests\n\n" +
@@ -484,7 +509,7 @@ describe("a skip the person asks for while Construction walks Unit by Unit is ca
     const every = message.slice(message.indexOf(EVERY_FROM));
     expect(every).toContain(`engine recompose --skip nfr-requirements,code-generation,build-and-test --reason '${PERSON}'`);
     expect(every).toContain(
-      '"Skipped NFR Requirements and Code Generation for every Unit from here, and Build and Test. You can undo that until CI Pipeline starts."',
+      '"Skipped NFR Requirements and Code Generation for every Unit from here, and Build and Test. You can undo that until Performance Validation starts."',
     );
   });
 
@@ -632,7 +657,7 @@ describe("a skip the person asks for at the walk's first stage, while a Unit is 
     const step = next(proj, ["--skip", "functional-design"]);
     const skipped = runNamed(proj, named(segment(String(step.message), EVERY_FROM))[0]);
     expect(skipped.status, skipped.out).toBe(0);
-    const questions = join(dirname(stateFile(proj)), "construction", "alpha", "nfr-requirements", "nfr-requirements-questions.md");
+    const questions = join(dirname(stateFile(proj)), phaseFor("nfr-requirements"), "alpha", "nfr-requirements", "nfr-requirements-questions.md");
     mkdirSync(dirname(questions), { recursive: true });
     writeFileSync(questions, "# NFR Requirements Questions\n\n## Question 1\nWhich latency target?\n\n[Answer]:\n");
     const asked = next(proj);

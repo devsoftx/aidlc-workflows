@@ -63,7 +63,7 @@ function runStage(extra: Json = {}): Json {
   return {
     kind: "run-stage",
     stage: "requirements-analysis",
-    phase: "inception",
+    phase: "design",
     lead_agent: "aidlc-product-agent",
     support_agents: [],
     mode: "inline",
@@ -72,13 +72,13 @@ function runStage(extra: Json = {}): Json {
       ".claude/knowledge/aidlc-product-agent/requirements.md",
     ],
     gate: true,
-    memory_path: "aidlc/spaces/default/intents/x/aidlc-docs/inception/requirements-analysis/memory.md",
-    consumes: ["aidlc/spaces/default/intents/x/aidlc-docs/ideation/intent-capture/intent.md"],
-    produces: ["aidlc/spaces/default/intents/x/aidlc-docs/inception/requirements-analysis/requirements.md"],
+    memory_path: "aidlc/spaces/default/intents/x/aidlc-docs/design/requirements-analysis/memory.md",
+    consumes: ["aidlc/spaces/default/intents/x/aidlc-docs/discover/intent-capture/intent.md"],
+    produces: ["aidlc/spaces/default/intents/x/aidlc-docs/design/requirements-analysis/requirements.md"],
     rules_in_context: [],
     sensors_applicable: [],
     ceremony: { sensors: "on", learnings: "on", summary_confirmation: "off", plan_approval: "on", collaborators: "on" },
-    stage_file: ".claude/aidlc-common/stages/inception/requirements-analysis.md",
+    stage_file: ".claude/aidlc-common/stages/design/requirements-analysis.md",
     ...extra,
   };
 }
@@ -161,9 +161,9 @@ function askOf(type: string): Json {
         plan_approval: {
           targets: [{
             unit: "auth",
-            plan_path: "aidlc/spaces/default/intents/x/aidlc-docs/construction/auth/code-generation/plan.md",
-            instructions_path: "aidlc/spaces/default/intents/x/aidlc-docs/construction/auth/code-generation/test-instructions.md",
-            questions_path: "aidlc/spaces/default/intents/x/aidlc-docs/construction/auth/code-generation/code-generation-questions.md",
+            plan_path: "aidlc/spaces/default/intents/x/aidlc-docs/build/auth/code-generation/plan.md",
+            instructions_path: "aidlc/spaces/default/intents/x/aidlc-docs/build/auth/code-generation/test-instructions.md",
+            questions_path: "aidlc/spaces/default/intents/x/aidlc-docs/build/auth/code-generation/code-generation-questions.md",
             summary: ["Builds the login form and its session cookie.", "Tests: three unit tests on the cookie."],
           }],
           choices: ["Approve Plan", "Request Changes", "I'll edit the files"],
@@ -334,7 +334,7 @@ describe("the engine renders every question it asks", () => {
 
   test("the plan question shows each plan's summary and path above the choices", () => {
     const rendered = str(notes(ask("plan-approval")).numbered_prose_question);
-    expect(rendered).toContain("Unit auth: the plan is at aidlc/spaces/default/intents/x/aidlc-docs/construction/auth/code-generation/plan.md");
+    expect(rendered).toContain("Unit auth: the plan is at aidlc/spaces/default/intents/x/aidlc-docs/build/auth/code-generation/plan.md");
     expect(rendered).toContain("- Builds the login form and its session cookie.");
     expect(rendered.indexOf("- Tests: three")).toBeLessThan(rendered.indexOf("1. **Approve Plan**"));
   });
@@ -453,13 +453,13 @@ describe("a stage step carries its instructions, not the fields to branch on", (
   test("a missing input the stage needed is one line for the person, then the recovery protocol; a by-design absence is silence", () => {
     const gap = notes(runStage({
       consumes_absent: [
-        { path: "aidlc/spaces/default/intents/x/aidlc-docs/ideation/market-research/research.md", expected: true },
-        { path: "aidlc/spaces/default/intents/x/aidlc-docs/inception/user-stories/stories.md", expected: false },
+        { path: "aidlc/spaces/default/intents/x/aidlc-docs/discover/market-research/research.md", expected: true },
+        { path: "aidlc/spaces/default/intents/x/aidlc-docs/design/user-stories/stories.md", expected: false },
       ],
     }));
     const note = str(gap.inputs_note);
     expect(note).toContain('Say to the person once: "Some inputs this stage usually reads are not here: ' +
-      'aidlc/spaces/default/intents/x/aidlc-docs/inception/user-stories/stories.md. I\'ll go on with what is here."');
+      'aidlc/spaces/default/intents/x/aidlc-docs/design/user-stories/stories.md. I\'ll go on with what is here."');
     expect(note).not.toContain("market-research");
     expect(note).toContain("stage-protocol-recovery.md");
     const byDesign = notes(runStage({ consumes_absent: [{ path: "a.md", expected: true }] }));
@@ -474,7 +474,7 @@ describe("a stage step carries its instructions, not the fields to branch on", (
   });
 
   test("a Code Generation step says whether to plan, revise, repair or build", () => {
-    const plan = (status: Json) => str(notes(runStage({ stage: "code-generation", phase: "construction", plan_approval: status })).plan_note);
+    const plan = (status: Json) => str(notes(runStage({ stage: "code-generation", phase: "build", plan_approval: status })).plan_note);
     expect(plan({ status: "plan" })).toContain("Write this plan and its test instructions");
     expect(plan({ status: "plan" })).toContain("AI-DLC asks the person to approve the plan itself, never you");
     expect(plan({ status: "revise", feedback: "use cookies" })).toContain("asked for changes");

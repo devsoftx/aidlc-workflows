@@ -55,7 +55,7 @@ function scratchProject(): string {
 - **Scope**: poc
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 `;
   writeFileSync(seededStateFile(project), state);

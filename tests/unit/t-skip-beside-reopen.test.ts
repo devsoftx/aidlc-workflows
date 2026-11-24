@@ -27,6 +27,7 @@ import {
   resetAidlcEnv,
   runOrchestrateNext,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -133,7 +134,7 @@ function featureAtFeasibility(box: "in-progress" | "awaiting-approval"): string 
   const done = ["workspace-scaffold", "workspace-detection", "state-init", "intent-capture", "market-research"];
   expect(run(STATE, proj, ["checkbox", ...done.map((s) => `${s}=completed`), `feasibility=${box}`]).rc).toBe(0);
   expect(run(STATE, proj, [
-    "set", "Current Stage=feasibility", "Status=Running", "Lifecycle Phase=IDEATION",
+    "set", "Current Stage=feasibility", "Status=Running", `Lifecycle Phase=${phaseFor("feasibility").toUpperCase()}`,
     "Next Stage=scope-definition", "In Progress=feasibility", "Last Completed Stage=market-research",
   ]).rc).toBe(0);
   return proj;
@@ -181,7 +182,7 @@ describe("t-skip-beside-reopen: a skip typed beside a plan switch on finished wo
 
     const out = actOn(proj, print);
     expect(out).toContain("Switched to feature");
-    expect(out).toContain("11 stages (4 done)");
+    expect(out).toContain("12 stages (6 done)");
     const text = state(proj);
     expect(field(text, "Status")).toBe("Running");
     expect(field(text, "Current Stage")).toBe("deployment-pipeline");
@@ -198,7 +199,7 @@ describe("t-skip-beside-reopen: a skip typed beside a plan switch on finished wo
     const step = next(proj);
     expect(step.kind, JSON.stringify(step)).toBe("run-stage");
     expect(step.stage).toBe("deployment-pipeline");
-    expect(step.narration).toContain("of 11");
+    expect(step.narration).toContain("of 12");
     expect(events(proj).filter((e) => e === "STAGE_STARTED:ci-pipeline")).toEqual([]);
     noDrift(proj);
   });
@@ -233,7 +234,7 @@ describe("t-skip-beside-reopen: a skip typed beside a plan switch on finished wo
     expect(step.stage).toBe("deployment-pipeline");
     const said = (step.change_notices ?? []).join(" ");
     expect(said.startsWith("Switched to feature"), said).toBe(true);
-    expect(said).toContain("11 stages (4 done)");
+    expect(said).toContain("12 stages (6 done)");
     expect(lib.pendingPersonLines(proj, SESSION).lines).toEqual([]);
     const again = next(proj);
     expect(`${(again.change_notices ?? []).join(" ")} ${again.narration ?? ""}`).not.toContain("Switched to");

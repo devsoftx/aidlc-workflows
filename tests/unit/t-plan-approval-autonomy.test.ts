@@ -19,6 +19,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
 import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -61,7 +62,7 @@ function project(policy: "strict" | "relaxed" | "off"): string {
   mkdirSync(join(proj, "src"), { recursive: true });
   writeFileSync(join(proj, "src", "base.ts"), "export const base = true;\n", "utf-8");
   cpSync(join(AIDLC_SRC, "tools"), join(proj, ".claude", "tools"), { recursive: true });
-  const dir = join(seededRecordDir(proj), "construction", "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "code-generation-plan.md"),

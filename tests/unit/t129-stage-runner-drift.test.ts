@@ -14,8 +14,8 @@
 //
 // WHAT THE .sh PROVED (t129-stage-runner-drift.sh prose + the 7 asserts):
 //   The set of `skills/aidlc-<stage>/` runner dirs is EXACTLY the RUNNABLE
-//   compiled stage-slug set (the 29 non-initialization stages) — no stage missing
-//   its runner, no orphan runner for a stage the graph dropped. The 29 runners are
+//   compiled stage-slug set (the 33 non-initialization stages) — no stage missing
+//   its runner, no orphan runner for a stage the graph dropped. The 33 runners are
 //   GENERATED from the compiled graph, so without this guard a stage added to the
 //   graph would silently ship without a runner (or a removed stage would leave a
 //   stale runner). It is a deterministic two-source SET-EQUALITY drift guard, not
@@ -23,7 +23,7 @@
 //   Concretely:
 //     (1) the SHIPPED runner set == the RUNNABLE compiled slug set, verified by an
 //         INDEPENDENT pure cross-check (derive both sets without trusting the tool);
-//     (2) the count is exactly 29 (32 compiled stages minus the 3 bootstrap init
+//     (2) the count is exactly 33 (36 compiled stages minus the 3 bootstrap init
 //         stages, which ship no per-stage runner — the init phase is the single
 //         /aidlc-init wrapper);
 //     (3) the generator's own `check` exits 0 on the shipped (in-sync) tree;
@@ -56,7 +56,7 @@
 //   WITHOUT trusting aidlc-runner-gen.ts.
 //
 // SOURCE UNDER TEST (dist/claude/.claude/tools/aidlc-runner-gen.ts):
-//   isRunnableStage(node) - node.phase !== "initialization" (the 29 runnable
+//   isRunnableStage(node) - node.phase !== "initialization" (the 33 runnable
 //        stages; init stages are bootstrap and ship no per-stage runner).
 //   handleWrite() - (re)generate one skills/aidlc-<slug>/SKILL.md per runnable
 //        stage + the single /aidlc-init wrapper; PRUNE stale init-stage runners.
@@ -74,11 +74,11 @@
 //   .sh test 1 (shipped set == compiled slug set, independent cross-check)
 //        -> test 1: derive both sets WITHOUT the tool; assert deep-equal sorted
 //           arrays (STRONGER than the .sh's string compare — exact element set).
-//   .sh test 2 (the compiled graph has 29 runnable non-init stages)
-//        -> test 2: count == 29 AND zero of them are initialization-phase.
+//   .sh test 2 (the compiled graph has 29 runnable non-init stages; now 33)
+//        -> test 2: count == 33 AND zero of them are initialization-phase.
 //   .sh test 3 (`check` exits 0 on the shipped in-sync tree)
 //        -> test 3: spawn `check`, status 0; STRONGER — also assert the
-//           "in sync … (30 runners)" headline.
+//           "in sync … (33 runners)" headline.
 //   .sh test 4 (`check` exits 1 when a runner is missing)         } tests 4+5 in
 //   .sh test 5 (`check` names the missing runner)                 } the .sh ->
 //        -> test 4: delete a runner in a SANDBOX, spawn `check`: status 1 AND
@@ -204,15 +204,15 @@ describe("t129 stage-runner drift guard (migrated from t129-stage-runner-drift.s
   });
 
   // ===========================================================================
-  // Test 2 — the count is exactly 29 (32 compiled stages minus the 3 bootstrap
+  // Test 2 — the count is exactly 33 (36 compiled stages minus the 3 bootstrap
   // initialization stages). STRONGER: also assert NONE of the runnable stages is
-  // an initialization-phase stage (the very exclusion that yields 29).
+  // an initialization-phase stage (the very exclusion that yields 33).
   // ===========================================================================
-  test("the compiled graph has 30 runnable (non-init) stages, one runner each [.sh test 2]", () => {
+  test("the compiled graph has 33 runnable (non-init) stages, one runner each [.sh test 2]", () => {
     const graph = JSON.parse(readFileSync(STAGE_GRAPH, "utf-8")) as RawStage[];
     const runnable = graph.filter((s) => s.phase !== "initialization");
-    expect(runnable.length).toBe(30);
-    // The exclusion is exactly the 3 init stages: 33 total - 30 runnable = 3.
+    expect(runnable.length).toBe(33);
+    // The exclusion is exactly the 3 init stages: 36 total - 33 runnable = 3.
     expect(graph.length - runnable.length).toBe(3);
     expect(runnable.some((s) => s.phase === "initialization")).toBe(false);
   });
@@ -220,13 +220,13 @@ describe("t129 stage-runner drift guard (migrated from t129-stage-runner-drift.s
   // ===========================================================================
   // Test 3 — the generator's own `check` agrees on the shipped (in-sync) tree.
   // Spawn the SHIPPED tool (read-only; `check` never writes). STRONGER than the
-  // .sh's exit-0-only assertion: also pin the in-sync headline + the 29 count.
+  // .sh's exit-0-only assertion: also pin the in-sync headline + the 33 count.
   // ===========================================================================
   test("aidlc-runner-gen check exits 0 on the shipped in-sync tree [.sh test 3]", () => {
     const r = runGen(GEN, ["check"]);
     expect(r.status).toBe(0);
     expect(r.out).toContain("in sync with the compiled stage graph");
-    expect(r.out).toContain("(30 runners)");
+    expect(r.out).toContain("(33 runners)");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
   // ===========================================================================
@@ -338,7 +338,7 @@ describe("t129 stage-runner drift guard (migrated from t129-stage-runner-drift.s
     const r = runGen(gen, ["check"]);
     expect(r.status).toBe(0);
     expect(r.out).toContain("in sync with the compiled stage graph");
-    expect(r.out).toContain("(30 runners)");
+    expect(r.out).toContain("(33 runners)");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
   // ===========================================================================

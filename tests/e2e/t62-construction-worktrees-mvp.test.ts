@@ -13,7 +13,7 @@
 //       MERGE_DISPATCH_FALLBACK for the scope and grepped the resulting
 //       audit.md rows. A process-boundary seam (the tool emits via
 //       appendAuditEntry then console.logs a JSON envelope and process-exits).
-//   (c) the v7 state template written by `aidlc-utility init` — the .sh
+//   (c) the creation state template written by `aidlc-utility init` — the .sh
 //       grepped the freshly-initialised aidlc-state.md for the v0.4.0
 //       `Worktree Path` + `Bolt Refs` fields.
 //
@@ -33,12 +33,12 @@
 //     mvp` against a fresh integration project (mirrors the .sh's
 //     setup_construction_project helper) and reads back the written aidlc-state.md. The template
 //     interpolation + disk write is the CLI seam (aidlc-utility.ts
-//     handleInit -> the v7 state template carrying `Worktree Path`
+//     handleInit -> the creation state template carrying `Worktree Path`
 //     + `Bolt Refs`).
 //
 // SUBCOMMAND UNITS credited (COLON form): the two CLI subcommands the .sh
 // actually drives — `aidlc-bolt dispatch-event` (INVOKED + FALLBACK arms) and
-// `aidlc-utility init` (the v7-state writer). The scope-grid structural reads
+// `aidlc-utility init` (the state writer). The scope-grid structural reads
 // are an assertion against a shipped DATA file, not a code unit, so they carry
 // no covers id (same convention as the .sh, which `require()`d the JSON
 // directly rather than crediting a function).
@@ -69,8 +69,8 @@
 //       + the JSON envelope — the .sh did a bare file-wide presence grep.
 //   .sh test 5 (v7 state has v0.4.0 fields for mvp)            -> Test 5
 //       init-written aidlc-state.md contains BOTH `- **Worktree Path**:` and
-//       `- **Bolt Refs**:`. STRONGER: also asserts `- **State Version**: 8`
-//       and `- **Scope**: mvp` co-present (the v7 template they ride on).
+//       `- **Bolt Refs**:`. STRONGER: also asserts the current `- **State Version**:`
+//       and `- **Scope**: mvp` co-present (the creation template they ride on).
 //
 // FIXTURE DISCIPLINE: each CLI-emitting case takes a FRESH integration project
 // (setupIntegrationProject({ withGreenfieldStub: true }), toPortablePath'd so
@@ -95,7 +95,7 @@ import {
 // aidlc/spaces/<space>/intents/<YYMMDD>-<slug>/ and audit is SHARDED per clone
 // under <record>/audit/. Read state through the resolved record dir and audit
 // through the shipped merge helper (default-resolves the active intent).
-import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { CURRENT_STATE_VERSION, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -130,7 +130,7 @@ function run(tool: string, args: string[]): CliResult {
 /**
  * Fresh integration sandbox with the greenfield stub, then `aidlc-utility
  * intent-create --force --scope mvp` so the per-intent aidlc-state.md exists
- * (the dispatch tools + the v8-state assertion both resolve it).
+ * (the dispatch tools + the state-version assertion both resolve it).
  */
 function setupConstructionProject(): string {
   const proj = setupIntegrationProject({ withGreenfieldStub: true });
@@ -284,11 +284,11 @@ describe("t62 construction-worktrees mvp (migrated from t62-construction-worktre
     const proj = setupConstructionProject();
     const state = readFileSync(statePath(proj), "utf-8");
     const lines = state.split("\n");
-    // The v8 template (aidlc-utility.ts handleIntentCreateStateBuild) emits them as
+    // The creation template (aidlc-utility.ts handleIntentCreateStateBuild) emits them as
     // empty list-shaped fields.
     expect(lines.some((l) => l.startsWith("- **Worktree Path**:"))).toBe(true);
     expect(lines.some((l) => l.startsWith("- **Bolt Refs**:"))).toBe(true);
-    expect(lines).toContain("- **State Version**: 8");
+    expect(lines).toContain(`- **State Version**: ${CURRENT_STATE_VERSION}`);
     expect(lines).toContain(`- **Scope**: ${SCOPE}`);
   });
 });

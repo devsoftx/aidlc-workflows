@@ -29,7 +29,7 @@ describe("t217 reviewer read-scope bound is stated on every surface", () => {
     expect(readFileSync(join(AIDLC_SRC, PROTOCOL), "utf-8")).toContain("## 12a. Reviewer Invocation");
     const body = readFileSync(join(AIDLC_SRC, UNIT_PROTOCOL), "utf-8");
     expect(body).toMatch(/directive\.unit.*directive\.consumes/s);
-    expect(body).toMatch(/must not read other units'? .*construction/i);
+    expect(body).toMatch(/must not read other units'? .*<phase>\/<other-unit>/i);
     // The bound is tool-agnostic: grep/glob/shell patterns spanning siblings count as reads.
     expect(body).toMatch(/grep, glob, or shell patterns/);
     expect(body.toLowerCase()).toContain("spot-check");

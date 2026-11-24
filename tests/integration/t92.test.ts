@@ -1683,7 +1683,7 @@ describe("t92 Group M: upstream-coverage --consumes resolution", () => {
     );
     const producerDir = join(
       seededRecordDir(proj),
-      "construction",
+      "build",
       "code-generation",
     );
     mkdirSync(producerDir, { recursive: true });
@@ -1694,7 +1694,7 @@ describe("t92 Group M: upstream-coverage --consumes resolution", () => {
     );
     const outputPath = join(
       seededRecordDir(proj),
-      "construction",
+      "test",
       "build-and-test",
       "test-results.md",
     );

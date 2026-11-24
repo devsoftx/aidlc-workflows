@@ -76,6 +76,7 @@ import {
 } from "../harness/fixtures.ts";
 import { setupTuiProject } from "../harness/tui-fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -2568,7 +2569,7 @@ describe("t230 native review-brief dispatch", () => {
     projectDir = makeProject();
     seedAidlcMemory(projectDir);
     seedStateFile(projectDir, "state-mid-inception.md");
-    const stageDir = join(seededRecordDir(projectDir), "inception", "requirements-analysis");
+    const stageDir = join(seededRecordDir(projectDir), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(stageDir, { recursive: true });
     const artifactPath = join(stageDir, "requirements.md");
     const questionsPath = join(stageDir, "requirements-analysis-questions.md");

@@ -37,13 +37,12 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { delegatedLifecycleCommand } from "../../core/hooks/aidlc-state-transition-guard.ts";
-import { customPlanBase, customPlanStart, nearestStockScopes, scopeSettingsOf } from "../../core/tools/aidlc-graph.ts";
+import { customPlanBase, customPlanStart, firstPlannedUnitLoopStage, nearestStockScopes, scopeSettingsOf } from "../../core/tools/aidlc-graph.ts";
 import { grantGuardPolicyAtCreation, recordCeremoniesAtCreation, recordPlanApprovalCreationGrant } from "../../core/tools/aidlc-guard-switch.ts";
 import {
   auditFilePath,
   composedPlanLabel,
   PLAN_NAME_PATTERN,
-  firstInScopeStageOfPhase,
   firstPlannedStageOfPhase,
   guardPolicyAtLeast,
   loadScopeMapping,
@@ -69,6 +68,7 @@ import {
   withEnvAndFreshCaches,
 } from "../harness/fixtures.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const REPO_ROOT = join(import.meta.dir, "..", "..");
@@ -205,15 +205,17 @@ describe("t351 (1) a plan is its scope's grid with its own stage changes", () =>
     for (const bad of ["Date", "-lead", "a b", "a;b", "x".repeat(64)]) expect(PLAN_NAME_PATTERN.test(bad), bad).toBe(false);
   });
 
-  test("the plan's first Construction stage is its skeleton gate", () => {
+  test("the plan's first Unit-loop stage is its skeleton gate", () => {
     withEnvAndFreshCaches(POLICY_ENV, () => {
       const lines = Object.entries(composedGrid()).map(([slug, action]) => `- [ ] ${slug} \u2014 ${action}`).join("\n");
       const plan = `- **Plan**: ${composedPlanLabel("bugfix")}\n${lines}`;
-      expect(firstInScopeStageOfPhase("construction", "bugfix")?.slug).toBe("code-generation");
-      expect(firstPlannedStageOfPhase("construction", "bugfix", plan)?.slug).toBe(ADD);
+      expect(firstPlannedUnitLoopStage("bugfix")?.slug).toBe("code-generation");
+      expect(firstPlannedUnitLoopStage("bugfix", plan)?.slug).toBe(ADD);
+      // The phase helper still reads the plan: code-generation is the only build stage.
+      expect(firstPlannedStageOfPhase("build", "bugfix", plan)?.slug).toBe("code-generation");
       // Any other workflow keeps its scope's anchor, whatever its suffixes say.
-      expect(firstPlannedStageOfPhase("construction", "bugfix", lines)?.slug).toBe("code-generation");
-      expect(firstPlannedStageOfPhase("construction", "bugfix", null)?.slug).toBe("code-generation");
+      expect(firstPlannedUnitLoopStage("bugfix", lines)?.slug).toBe("code-generation");
+      expect(firstPlannedUnitLoopStage("bugfix", null)?.slug).toBe("code-generation");
     });
   });
 });
@@ -441,14 +443,14 @@ describe("t351 (3) creating a composed plan writes it to the work's state, not a
     expect(suffixOf(state, ADD)).toBe("EXECUTE");
     expect(suffixOf(state, "deployment-pipeline")).toBe("SKIP");
     expect(suffixOf(state, "deployment-execution")).toBe("SKIP");
-    expect(state).toContain("- **Operation**: Skipped");
-    expect(existsSync(join(activeRecord(proj), "operation"))).toBe(false);
-    expect(existsSync(join(activeRecord(proj), "construction"))).toBe(true);
+    expect(state).toContain("- **Operate**: Skipped");
+    expect(existsSync(join(activeRecord(proj), "operate"))).toBe(false);
+    expect(existsSync(join(activeRecord(proj), "build"))).toBe(true);
     const audit = auditOf(proj);
     expect(audit).toContain("**Plan**: date-parser-fix");
     expect(audit).toContain("**Stages skipped**: deployment-pipeline, deployment-execution");
     expect(audit).toContain(`**Stages added**: ${ADD}`);
-    expect(audit).toContain("**Reason**: this plan excludes operation");
+    expect(audit).toContain("**Reason**: this plan excludes operate");
     expect(scopeFiles(proj)).toEqual(before);
     expect(savedRecords(proj)).toEqual([]);
     const status = runTool(proj, "aidlc-utility.ts", ["status"]);
@@ -785,7 +787,7 @@ describe("t351 (4) next carries the plan's typed changes and checks every echoed
       .replace("- [x] build-and-test", "- [?] build-and-test")
       .replace("- [x] ci-pipeline", "- [ ] ci-pipeline")
       .replace("- [-] deployment-pipeline", "- [ ] deployment-pipeline")
-      .replace("- **Lifecycle Phase**: OPERATION", "- **Lifecycle Phase**: CONSTRUCTION")
+      .replace(`- **Lifecycle Phase**: ${phaseFor("deployment-pipeline").toUpperCase()}`, `- **Lifecycle Phase**: ${phaseFor("build-and-test").toUpperCase()}`)
       .replace("- **Current Stage**: deployment-pipeline", "- **Current Stage**: build-and-test")
       .replace("- **Next Stage**: environment-provisioning", "- **Next Stage**: ci-pipeline"));
     const d = nextDirective(proj, ["--skip", "deployment-pipeline,deployment-execution"]);

@@ -5,6 +5,7 @@
 // command that puts the person's words on the record beside the choice it read. The unit check
 // (tests/unit/t-aidlc-answers-corpus.test.ts) runs every item; the live check drives a sample through real agents.
 // Shared mechanics (exec, env, next, say, the message record, six of the states) come from aidlc-input-corpus.ts.
+import { phaseFor } from "./stage-phase.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -121,7 +122,7 @@ const CMD_SESSION = "01995000-7a11-7000-8000-00000000d0c1";
 const STATE = join(AIDLC_SRC, "tools", "aidlc-state.ts");
 const BOLT = join(AIDLC_SRC, "tools", "aidlc-bolt.ts");
 const midInception = () => readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8");
-const stageDir = (proj: string) => join(seededRecordDir(proj), "inception", STAGE);
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
 const questionsFile = (proj: string) => join(stageDir(proj), `${STAGE}-questions.md`);
 
 function writeStageFiles(proj: string, summary: boolean): void {
@@ -157,7 +158,7 @@ function constructionFixture(proj: string, current = "functional-design"): void 
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -191,7 +192,7 @@ ${C_STAGES.map((stage) => `- [${stage === current ? "-" : " "}] ${stage} ${DASH}
 function cover(proj: string, unit: string): void {
   for (const slug of C_STAGES) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(proj), "construction", unit, slug);
+    const output = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`, "utf-8");
     if (stage.workspace_requires) {
@@ -239,7 +240,7 @@ async function swarmFixture(proj: string, units: string[][]): Promise<void> {
 ## Project Information
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State
@@ -282,7 +283,7 @@ async function swarmFixture(proj: string, units: string[][]): Promise<void> {
   const definition = findStageBySlug(CG)!;
   for (const unit of units.flat()) {
     writeFileSync(join(proj, "src", `${unit}.ts`), `export const ${unit} = 1;\n`, "utf-8");
-    const dir = join(seededRecordDir(proj), "construction", unit, CG);
+    const dir = join(seededRecordDir(proj), phaseFor(CG), unit, CG);
     mkdirSync(dir, { recursive: true });
     for (const name of definition.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${CG} ${unit} ${name}\n`, "utf-8");
     writeFileSync(join(dir, "source-manifest.json"), JSON.stringify({ stage: CG, unit, version: 1, writes: [{ path: `src/${unit}.ts` }] }), "utf-8");
@@ -446,7 +447,7 @@ export async function buildQuestion(proj: string, question: Question): Promise<v
 - **Project**: Answers corpus
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major
 - **Unit Ownership**: solo

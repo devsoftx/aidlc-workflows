@@ -85,8 +85,8 @@ describe("t300 reusable plugin test kit", () => {
 
     const badRoot = join(tmp, "bad-plugin");
     mkdirSync(join(badRoot, ".aidlc-plugin"), { recursive: true });
-    mkdirSync(join(badRoot, "stages", "construction"), { recursive: true });
-    mkdirSync(join(badRoot, "contributions", "construction"), {
+    mkdirSync(join(badRoot, "stages", "build"), { recursive: true });
+    mkdirSync(join(badRoot, "contributions", "build"), {
       recursive: true,
     });
     writeFileSync(
@@ -98,13 +98,13 @@ describe("t300 reusable plugin test kit", () => {
       }),
     );
     writeFileSync(
-      join(badRoot, "stages", "construction", "bad-stage.md"),
+      join(badRoot, "stages", "build", "bad-stage.md"),
       [
         "---",
         "slug: bad-stage",
         "name: Bad Stage",
         "plugin: bad-plugin",
-        "phase: construction",
+        "phase: build",
         "execution: ALWAYS",
         "condition: always",
         "lead_agent: aidlc-quality-agent",
@@ -126,7 +126,7 @@ describe("t300 reusable plugin test kit", () => {
       join(
         badRoot,
         "contributions",
-        "construction",
+        "build",
         "missing-target.md",
       ),
       [

@@ -12,7 +12,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -36,6 +36,22 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 const BUN = process.execPath;
@@ -48,6 +64,9 @@ let proj: string;
 function run(tool: string, args: string[]): { rc: number; out: string } {
   const env = { ...process.env };
   env.AIDLC_SKIP_ARTIFACT_GUARD = "1";
+  // The feature scope turns the summary confirmation on for Feasibility; these rows are about the gate, not the
+  // questions that confirmation reads (the fixture writes none), so the gate opens without that check.
+  env.AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD = "1";
   env.AIDLC_ALLOW_DIRECT_STATE_TRANSITIONS = "1";
   // The row reads the checks the audit holds; no sensor runs during the test.
   env.AIDLC_DISABLE_SENSORS = "1";
@@ -79,7 +98,7 @@ function openGate(): { block: string } {
 }
 
 function stageDir(): string {
-  const dir = join(seededRecordDir(proj), "ideation", STAGE);
+  const dir = join(seededRecordDir(proj), "discover", STAGE);
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -207,7 +226,7 @@ describe("t-gate-asks-record: the gate row says what the person was asked to dec
   });
 
   test("the row lists the latest result of every applicable check per declared artifact, failures first, with the detail path", () => {
-    const rel = outputPath(join(seededRecordDir(proj), "ideation", STAGE, "feasibility-assessment.md"));
+    const rel = outputPath(join(seededRecordDir(proj), "discover", STAGE, "feasibility-assessment.md"));
     writeArtifact("feasibility-assessment", "# Feasibility Assessment\n\nContent.\n");
     writeArtifact("constraint-register", "# Constraint Register\n\nContent.\n");
     sensorRow("SENSOR_PASSED", "aaaa0001", rel);
@@ -219,7 +238,7 @@ describe("t-gate-asks-record: the gate row says what the person was asked to dec
   });
 
   test("the latest terminal result of a check wins: a pass after a failure reads as passed", () => {
-    const rel = outputPath(join(seededRecordDir(proj), "ideation", STAGE, "feasibility-assessment.md"));
+    const rel = outputPath(join(seededRecordDir(proj), "discover", STAGE, "feasibility-assessment.md"));
     writeArtifact("feasibility-assessment", "# Feasibility Assessment\n\nContent.\n");
     sensorRow("SENSOR_FAILED", "aaaa0002", rel, 3);
     sensorRow("SENSOR_PASSED", "aaaa0003", rel);
@@ -267,7 +286,7 @@ describe("t-gate-asks-record: the gate row says what the person was asked to dec
       for (const name of readdirSync(dir)) {
         const path = join(dir, name);
         if (statSync(path).isDirectory()) walk(path);
-        else if (name.endsWith(".md") && /(continue|proceed) to (Ideation|Inception|Construction|Operation)\b/i.test(readFileSync(path, "utf-8"))) {
+        else if (name.endsWith(".md") && /(?<!\bNOT )(continue|proceed) to (Discover|Design|Build|Test|Secure|Deploy|Operate)\b/i.test(readFileSync(path, "utf-8"))) {
           offenders.push(path.slice(stagesDir.length + 1));
         }
       }

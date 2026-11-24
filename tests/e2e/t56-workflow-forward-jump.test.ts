@@ -31,9 +31,9 @@
 // .sh's auto-init slice (aidlc-docs created, state written, scope recorded at
 // init) is owned by the fresh-init twins t52/t54/t59 — no coverage is lost.
 //
-// THE JOURNEY (verified against the SHIPPED tools, deterministically, 2026-06-10).
+// THE JOURNEY (verified against the SHIPPED tools, deterministically).
 // From state-brownfield-init-done.md (Current Stage=reverse-engineering, idx
-// 2.1), `--stage requirements-analysis` (idx 2.3) resolves direction=forward
+// 1.4), `--stage requirements-analysis` (idx 2.2) resolves direction=forward
 // (aidlc-jump.ts). With state present the person's `next` runs
 // `aidlc-jump.ts execute --target requirements-analysis --direction forward
 // --scope bugfix` itself and returns Requirements Analysis's step in that one
@@ -44,13 +44,13 @@
 // ride inside it, and never the rules part.
 // executeJump's forward branch marks the in-flight intermediate
 // reverse-engineering `[S]` (jump.ts), pivots Current Stage to
-// requirements-analysis (jump.ts), keeps Lifecycle Phase INCEPTION
-// (jump.ts - both stages are inception), and appends STAGE_JUMPED
-// (jump.ts) with Direction FORWARD.
+// requirements-analysis (jump.ts), moves Lifecycle Phase to the target's
+// phase (jump.ts - reverse-engineering is in discover, requirements-analysis
+// in design), and appends STAGE_JUMPED (jump.ts) with Direction FORWARD.
 //
 // KNOWN ANSWERS (from running the SHIPPED resolve+execute on this exact
 // fixture): direction=forward · target=requirements-analysis ·
-// target_phase=INCEPTION · stages_skipped=["reverse-engineering"] ·
+// target_phase=DESIGN · stages_skipped=["reverse-engineering"] ·
 // completed_count=3 · workflow_stopped=false · state gains
 // `- [S] reverse-engineering — EXECUTE` · Current Stage=requirements-analysis ·
 // audit gains **Event**: STAGE_JUMPED + **Direction**: FORWARD +
@@ -84,8 +84,8 @@
 //       -> assertAuditEvent(r,"STAGE_JUMPED") (parsed **Event**: line;
 //          jump.ts) + the raw **Direction**: FORWARD / **Target**:
 //          requirements-analysis field bytes (jump.ts).
-//   8 lifecycle phase is INCEPTION
-//       -> readStateField(state,"Lifecycle Phase") === "INCEPTION" (jump.ts,
+//   8 lifecycle phase is the target's phase
+//       -> readStateField(state,"Lifecycle Phase") === "DESIGN" (jump.ts,
 //          the target phase uppercased).
 //
 // Known-answer literals (read from the SHIPPED tool / fixture, not guessed):
@@ -97,7 +97,7 @@
 //   - STAGE_JUMPED emit:      aidlc-jump.ts, with its Direction and Target fields
 //   - the step's jump line:   aidlc-jump.ts forwardJumpNotice, on the run-stage's change_notices
 //   - fixture: state-brownfield-init-done.md (Scope=bugfix, Current Stage=
-//     reverse-engineering, Completed=3, Lifecycle Phase=INCEPTION)
+//     reverse-engineering, Completed=3, Lifecycle Phase=DISCOVER)
 //
 // It SPENDS TOKENS — driveAidlc drives the real /aidlc on Opus/Bedrock (the
 // jump). Generous per-test timeout; the driver aborts a hair early so a stuck
@@ -118,6 +118,7 @@ import {
   driveAidlc,
   readStateField,
 } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // AIDLC_TEST_TIMEOUT bounds the entire case, including setup and cleanup.
 const TIMEOUT_S = Number(process.env.AIDLC_TEST_TIMEOUT);
@@ -139,9 +140,9 @@ function remainingWorkMs(): number {
 // Known-answer literals from the SHIPPED jump tool run on this exact fixture
 // (see header). The one call, the step's line and the state the jump wrote are
 // the deterministic surfaces under test.
-const TARGET_SLUG = "requirements-analysis"; // jump target (inception 2.3)
-const SKIPPED_SLUG = "reverse-engineering"; // the in-flight stage the jump skips (2.1)
-const TARGET_PHASE = "INCEPTION"; // aidlc-jump.ts movedState / handleExecute
+const TARGET_SLUG = "requirements-analysis"; // jump target (design 2.2)
+const SKIPPED_SLUG = "reverse-engineering"; // the in-flight stage the jump skips (discover 1.4)
+const TARGET_PHASE = phaseFor(TARGET_SLUG).toUpperCase(); // aidlc-jump.ts movedState / handleExecute
 const SCOPE = "bugfix"; // carried by the fixture
 // aidlc-jump.ts forwardJumpNotice: what the jump passed over, said with the step.
 const JUMP_LINE = "Moved to Requirements Analysis; skipped Reverse Engineering.";
@@ -176,7 +177,7 @@ describe("t56 /aidlc --stage requirements-analysis forward jump (sdk)", () => {
   // STAGE_JUMPED/FORWARD lands in the audit.
   // -------------------------------------------------------------------------
   test(
-    "forward jump marks reverse-engineering [S], pivots to requirements-analysis, logs STAGE_JUMPED/FORWARD, phase stays INCEPTION",
+    "forward jump marks reverse-engineering [S], pivots to requirements-analysis, logs STAGE_JUMPED/FORWARD, phase moves to the target's",
     async () => {
       const proj = setupIntegrationProject({
         withState: "state-brownfield-init-done.md",
@@ -239,7 +240,7 @@ describe("t56 /aidlc --stage requirements-analysis forward jump (sdk)", () => {
         expect(auditRaw).toContain("**Event**: STAGE_STARTED");
         expect(auditRaw).not.toContain("**Event**: WORKFLOW_COMPLETED");
 
-        // Lifecycle phase is INCEPTION (aidlc-jump.ts movedState).
+        // Lifecycle phase is the target's phase (aidlc-jump.ts movedState).
         expect(readStateField(state, "Lifecycle Phase")).toBe(TARGET_PHASE);
       } finally {
         cleanupTestProject(proj);

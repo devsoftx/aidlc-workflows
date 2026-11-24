@@ -22,6 +22,7 @@ import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import {
   cleanupTestProject, REPO_ROOT, seedBoltDag, seededRecordDir, seededStateFile, setupIntegrationProject,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { codexRefusal } from "../harness/codex-hook-answer.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
 import {
@@ -80,7 +81,7 @@ const CONSTRUCTION_STAGES = ["functional-design", "nfr-requirements", "nfr-desig
 const UNIT_WALK_STATE = [
   "# AI-DLC State Tracking", "",
   "## Project Information",
-  "- **Project**: Add saved searches", "- **Project Type**: Greenfield", "- **Scope**: feature", "- **State Version**: 8", "",
+  "- **Project**: Add saved searches", "- **Project Type**: Greenfield", "- **Scope**: feature", "- **State Version**: 10", "",
   "## Runtime State",
   "- **Revision Count**: 0", "- **Skeleton Stance**: off", "- **Construction Iteration**: unit-major",
   "- **Unit Ownership**: solo", "- **Construction Checkpoints**: enabled", "- **Construction Execution**: serial",
@@ -88,10 +89,14 @@ const UNIT_WALK_STATE = [
   "## Scope Configuration",
   "- **Stages to Execute**: all", "- **Stages to Skip**: none", "- **Depth**: Standard", "- **Test Strategy**: Standard", "",
   "## Stage Progress", "",
-  "### CONSTRUCTION PHASE",
-  ...CONSTRUCTION_STAGES.map((stage) => `- [ ] ${stage} \u2014 EXECUTE`), "",
+  "### DESIGN PHASE",
+  ...CONSTRUCTION_STAGES.slice(0, 4).map((stage) => `- [ ] ${stage} \u2014 EXECUTE`),
+  "### BUILD PHASE",
+  `- [ ] ${CONSTRUCTION_STAGES[4]} \u2014 EXECUTE`,
+  "### TEST PHASE",
+  `- [ ] ${CONSTRUCTION_STAGES[5]} \u2014 EXECUTE`, "",
   "## Current Status",
-  "- **Lifecycle Phase**: CONSTRUCTION", `- **Current Stage**: ${UNIT_STAGE}`, "- **Status**: Running", "",
+  `- **Lifecycle Phase**: ${phaseFor(UNIT_STAGE).toUpperCase()}`, `- **Current Stage**: ${UNIT_STAGE}`, "- **Status**: Running", "",
 ].join("\n");
 
 function summaryAnswer(text: string): string | null {
@@ -197,8 +202,8 @@ class Work {
     this.unit = unitWalk ? "alpha" : null;
     this.reviewer = unitWalk ? UNIT_REVIEWER : REVIEWER;
     this.stageDir = unitWalk
-      ? join(seededRecordDir(this.dir), "construction", "alpha", UNIT_STAGE)
-      : join(seededRecordDir(this.dir), "inception", STAGE);
+      ? join(seededRecordDir(this.dir), phaseFor(UNIT_STAGE), "alpha", UNIT_STAGE)
+      : join(seededRecordDir(this.dir), phaseFor(STAGE), STAGE);
     this.questions = join(this.stageDir, `${this.stage}-questions.md`);
     this.artifact = join(this.stageDir, unitWalk ? "functional-spec.md" : "requirements.md");
     this.env = {
@@ -515,7 +520,7 @@ describe("t-keep-records-kept-documents: Keep after going back records the kept 
     const row = work.keepRow();
     expect(auditBlockField(row.block, "Summary Authorization Id")).toBe(work.authorization);
     const kept = auditBlockField(row.block, "Kept Outputs") ?? "";
-    expect(kept).toContain("inception/requirements-analysis/requirements.md");
+    expect(kept).toContain("design/requirements-analysis/requirements.md");
     expect(kept).toMatch(/\b[0-9a-f]{64}\b/);
     expect(kept).toContain(sha256(readFileSync(work.artifact, "utf-8").replace(/\r\n/g, "\n")));
   });
@@ -593,14 +598,14 @@ describe("t-keep-records-kept-documents: Keep after going back records the kept 
     work.next();
     work.back();
     // beta's documents for the same stage are on disk too.
-    const betaDir = join(seededRecordDir(work.dir), "construction", "beta", UNIT_STAGE);
+    const betaDir = join(seededRecordDir(work.dir), phaseFor(UNIT_STAGE), "beta", UNIT_STAGE);
     mkdirSync(betaDir, { recursive: true });
     writeFileSync(join(betaDir, `${UNIT_STAGE}-questions.md`), questionsBody("Looks correct"));
     for (const name of UNIT_DOCUMENTS) writeFileSync(join(betaDir, name), `# ${name}\n\nbeta\n`);
     work.keep(["--unit", "alpha"]);
     const kept = auditBlockField(work.keepRow().block, "Kept Outputs") ?? "";
-    expect(kept).toContain(`construction/alpha/${UNIT_STAGE}/functional-spec.md`);
-    expect(kept).not.toContain("construction/beta/");
+    expect(kept).toContain(`${phaseFor(UNIT_STAGE)}/alpha/${UNIT_STAGE}/functional-spec.md`);
+    expect(kept).not.toContain(`${phaseFor(UNIT_STAGE)}/beta/`);
     work.keep();
     const bare = work.keepRow().block;
     expect(auditBlockField(bare, "Kept Outputs")).toBeNull();
@@ -621,7 +626,7 @@ describe("t-keep-records-kept-documents: Keep after going back records the kept 
     const row = work.keepRow().block;
     expect(auditBlockField(row, "Workflow")).toBe(`single-stage:${STAGE}`);
     expect(auditBlockField(row, "Summary Authorization Id")).toBe(isolatedId);
-    expect(auditBlockField(row, "Kept Outputs") ?? "").toContain("inception/requirements-analysis/requirements.md");
+    expect(auditBlockField(row, "Kept Outputs") ?? "").toContain("design/requirements-analysis/requirements.md");
     // Back in the main run, its own confirmation mints another id, and the
     // isolated Keep does not stand in for one.
     work.confirmSummary();
@@ -669,8 +674,8 @@ describe("t-keep-records-kept-documents: Keep after going back records the kept 
       expect(auditBlockField(row, "Summary Authorization Id")).toBe(isolatedId);
       expect(isolatedId).not.toBe(walkId);
       const kept = auditBlockField(row, "Kept Outputs") ?? "";
-      expect(kept).toContain(`construction/alpha/${UNIT_STAGE}/functional-spec.md`);
-      expect(kept).not.toContain("construction/beta/");
+      expect(kept).toContain(`${phaseFor(UNIT_STAGE)}/alpha/${UNIT_STAGE}/functional-spec.md`);
+      expect(kept).not.toContain(`${phaseFor(UNIT_STAGE)}/beta/`);
       const request = work.tool("log", ["review", "--stage", UNIT_STAGE, "--reviewer", UNIT_REVIEWER, "--single", "--iteration", "1"]);
       expect(request.code, `${request.stdout}\n${request.stderr}`).toBe(0);
       expect(work.writeRows()).toBe(writes);

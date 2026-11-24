@@ -1,37 +1,37 @@
 // covers: subcommand:aidlc-jump:execute
 //
-// t25.test.ts - drives the real `/aidlc --phase ideation` through the Claude
-// Agent SDK from a CONSTRUCTION-phase state and asserts ONLY on deterministic
+// t25.test.ts - drives the real `/aidlc --phase discover` through the Claude
+// Agent SDK from a DESIGN-phase state and asserts ONLY on deterministic
 // surfaces (the engine calls the agent made, the state file and parsed audit
 // events as the jump left them, verbatim audit-file bytes) - NEVER on
 // assistantText.
 //
 // THE JOURNEY (verified against the SHIPPED tool, not guessed). The seeded
-// fixture (state-construction.md) sits at Lifecycle Phase=CONSTRUCTION, Current
-// Stage=functional-design, Scope=feature, Completed=20. `--phase ideation`
+// fixture (state-construction.md) sits at Lifecycle Phase=DESIGN, Current
+// Stage=functional-design, Scope=feature, Completed=19. `--phase discover`
 // resolves (aidlc-jump.ts handleResolve -> firstInScopeStageOfPhase,
-// aidlc-lib.ts) to the FIRST in-scope ideation stage = intent-capture.
+// aidlc-lib.ts) to the FIRST in-scope discover stage = intent-capture.
 // intent-capture's display order is BEFORE functional-design, so direction =
-// backward (aidlc-jump.ts). The person's `next --phase ideation` runs
+// backward (aidlc-jump.ts). The person's `next --phase discover` runs
 // `aidlc-jump.ts execute --direction backward` itself and returns Intent
 // Capture's step in the same call, so the agent never runs the jump. It atomically:
 // resets target + downstream EXECUTE stages [x]->[ ] (jump.ts), sets
-// target [-] (jump.ts), rewrites Lifecycle Phase=IDEATION + Current
+// target [-] (jump.ts), rewrites Lifecycle Phase=DISCOVER + Current
 // Stage=intent-capture + recomputed Completed (jump.ts), and
 // appends a STAGE_JUMPED audit event with Direction=BACKWARD / Target=intent-
 // capture (jump.ts). A jump never terminates
 // (jump.ts), so Status stays Running.
 //
 // ASSERTION MAP (.sh test -> deterministic SDK surface, equal-or-stronger):
-//   1 grep STATE 'IDEATION'            -> the state file reads Lifecycle Phase IDEATION and
+//   1 grep STATE 'IDEATION'            -> the state file reads Lifecycle Phase DISCOVER and
 //                                         Current Stage intent-capture when the drive stops on
 //                                         the step that one `next` returned, before the agent
 //                                         does any of the stage's work.
-//   2 assert_lt COMPLETED 20           -> the same state reads the known-answer Completed 4
-//                                         (jump.ts - the value the tool wrote). STRONGER than
+//   2 assert_lt COMPLETED 20           -> the same state reads the known-answer Completed 3
+//                                         (jump.ts - the value the tool writes). STRONGER than
 //                                         the .sh's loose < 20 bound: pins the exact reset
-//                                         arithmetic (confirmed by running the shipped tool on
-//                                         this exact fixture).
+//                                         arithmetic (movedState's backward reset on this exact
+//                                         fixture leaves only the three setup stages [x]).
 //   3 grep AUDIT 'intent-capture'      -> raw audit.md bytes contain "**Target**: intent-capture"
 //                                         (jump.ts Target field), the append-only deterministic
 //                                         origin of the destination.
@@ -41,7 +41,7 @@
 //                                         jump.ts emit, audit.ts **Event**:).
 //   5 grep AUDIT 'BACKWARD'            -> raw audit.md bytes contain "**Direction**: BACKWARD"
 //                                         (jump.ts direction.toUpperCase(); known-answer for a
-//                                         construction->ideation jump).
+//                                         design->discover jump).
 //   6 grep AUDIT 'Timestamp'           -> raw audit.md bytes contain "**Timestamp**:" (audit.ts,
 //                                         emitted on every audit block).
 //
@@ -74,6 +74,7 @@ import {
   readStateField,
   stateFilePathFor,
 } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The case and file own the work budget; each SDK call uses what remains.
 const TIMEOUT_S = Number.parseInt(process.env.AIDLC_TEST_TIMEOUT ?? String(LIVE_LONG_OPERATION_TIMEOUT_MS / 1000), 10);
@@ -86,15 +87,17 @@ const TEST_TIMEOUT_MS = liveCaseTimeoutMs(LIVE_WORK_TIMEOUT_MS);
 // The jump DESTINATION (intent-capture) and DIRECTION (backward) are asserted on
 // the immutable audit STAGE_JUMPED block bytes, and the state on the file as the
 // jump left it: the drive stops on the step it returned, before any stage work.
-const TARGET_STAGE = "intent-capture"; // firstInScopeStageOfPhase("ideation","feature"), aidlc-lib.ts
+const TARGET_STAGE = "intent-capture"; // firstInScopeStageOfPhase("discover","feature"), aidlc-lib.ts
+const TARGET_PHASE = phaseFor(TARGET_STAGE); // the phase `--phase` names
+const SEED_STAGE = "functional-design"; // the fixture's Current Stage
 const AUDIT_TARGET_LINE = `**Target**: ${TARGET_STAGE}`; // handleExecute Target field; aidlc-audit.ts renderAuditBlock **key**: line
 const AUDIT_DIRECTION_LINE = "**Direction**: BACKWARD"; // aidlc-jump.ts handleExecute direction.toUpperCase()
 const AUDIT_TIMESTAMP_PREFIX = "**Timestamp**:"; // aidlc-audit.ts renderAuditBlock, on every block
 
-describe("t25 /aidlc --phase ideation backward jump (sdk)", () => {
+describe("t25 /aidlc --phase discover backward jump (sdk)", () => {
   // -------------------------------------------------------------------------
-  // From CONSTRUCTION, `--phase ideation` is a backward jump that resolves to
-  // intent-capture (first in-scope ideation stage for scope=feature). The driver
+  // From DESIGN, `--phase discover` is a backward jump that resolves to
+  // intent-capture (first in-scope discover stage for scope=feature). The driver
   // stops on the step the person's `next` returned, so we assert the state and
   // audit surfaces the jump tool wrote, and that it took that one call.
   // -------------------------------------------------------------------------
@@ -107,21 +110,19 @@ describe("t25 /aidlc --phase ideation backward jump (sdk)", () => {
         withAudit: true,
       });
       try {
-        // Precondition: the seed truly starts at CONSTRUCTION / Completed=20 /
+        // Precondition: the seed truly starts at DESIGN / Completed=19 /
         // Current Stage=functional-design, so the jump genuinely crosses backward
-        // (no vacuous pass on a pre-seeded ideation state). Read straight off the
+        // (no vacuous pass on a pre-seeded discover state). Read straight off the
         // seeded file. seedStateFile writes under the active intent's record, so
         // stateFilePathFor resolves that record.
         const seedState = readFileSync(stateFilePathFor(proj), "utf8");
-        expect(readStateField(seedState, "Lifecycle Phase")).toBe("CONSTRUCTION");
-        expect(readStateField(seedState, "Completed")).toBe("20");
-        expect(readStateField(seedState, "Current Stage")).toBe(
-          "functional-design",
-        );
+        expect(readStateField(seedState, "Lifecycle Phase")).toBe(phaseFor(SEED_STAGE).toUpperCase());
+        expect(readStateField(seedState, "Completed")).toBe("19");
+        expect(readStateField(seedState, "Current Stage")).toBe(SEED_STAGE);
 
         // The driver stops on the step the jump lands on, before unrelated
         // workflow continuation.
-        const r = await driveAidlc("/aidlc --phase ideation", {
+        const r = await driveAidlc(`/aidlc --phase ${TARGET_PHASE}`, {
           projectDir: proj,
           timeoutMs: remainingOperationTimeoutMs(LIVE_WORK_TIMEOUT_MS, {
             deadlineMs, reserveMs: fileCleanupReserveMs(TEST_TIMEOUT_MS), phase: "integration SDK drive",
@@ -138,9 +139,9 @@ describe("t25 /aidlc --phase ideation backward jump (sdk)", () => {
         // workflow has not moved on): the phase, the stage and the exact reset
         // count the tool wrote.
         const jumpedState = readFileSync(stateFilePathFor(proj), "utf8");
-        expect(readStateField(jumpedState, "Lifecycle Phase")).toBe("IDEATION");
+        expect(readStateField(jumpedState, "Lifecycle Phase")).toBe(TARGET_PHASE.toUpperCase());
         expect(readStateField(jumpedState, "Current Stage")).toBe(TARGET_STAGE);
-        expect(readStateField(jumpedState, "Completed")).toBe("4");
+        expect(readStateField(jumpedState, "Completed")).toBe("3");
 
         // Audit recorded a STAGE_JUMPED event. Asserted on the parsed auditEvents (the
         // **Event**: lines), so an unrelated mention in prose can't satisfy it - this

@@ -23,6 +23,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { artifactFilename, findStageBySlug } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
@@ -53,7 +54,7 @@ function state(reviewOverride: string | null): string {
 - **Project**: checkpoint unit receipt step
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0
@@ -72,12 +73,13 @@ ${reviewOverride === null ? "" : `- **Review Override**: ${reviewOverride}\n`}
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${STAGES.map((stage) => `- [${stage === SLUG ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: ${SLUG}
 - **Status**: Running
 `;
@@ -127,7 +129,7 @@ function unitVerb(proj: string, action: string, unit: string): { rc: number; out
 }
 
 function writeUnitArtifacts(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), unit, SLUG);
   mkdirSync(dir, { recursive: true });
   for (const name of findStageBySlug(SLUG)!.produces ?? []) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n${unit} design\n`, "utf-8");
@@ -262,7 +264,7 @@ describe("t-checkpoint-unit-receipt-step: reviews off, work genuinely left keeps
   test("a required file missing: next hands back the stage", () => {
     project("none");
     bodyWithoutReceipts(false);
-    rmSync(join(seededRecordDir(proj), "construction", FIRST, SLUG, artifactFilename("rules")));
+    rmSync(join(seededRecordDir(proj), phaseFor(SLUG), FIRST, SLUG, artifactFilename("rules")));
     const d = next(proj);
     expect(d.kind, nexts.join("\n")).toBe("run-stage");
     expect(d.unit).toBe(FIRST);

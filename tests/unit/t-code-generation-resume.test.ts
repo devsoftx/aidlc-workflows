@@ -111,7 +111,7 @@ function project(policy: "strict" | "relaxed" = "strict"): string {
 - **Project**: resume an interrupted build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: ${policy} (set by you)
 
@@ -123,16 +123,18 @@ function project(policy: "strict" | "relaxed" = "strict"): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");
@@ -767,7 +769,7 @@ describe("a swarm batch keeps its own continuation rule", () => {
 - **Project**: Swarm continuation
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major
@@ -777,16 +779,18 @@ describe("a swarm batch keeps its own continuation rule", () => {
 - **Unit Ownership**: solo
 - **Guard Policy**: strict (set by you)
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
 - **Current Stage**: code-generation
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Status**: Running
 `, "utf-8");
     const group = ["alpha", "beta"];
@@ -844,27 +848,39 @@ describe("clearing a plan's ticks", () => {
     }
   });
 
-  test("a plan with no ticks needs no write, and an unwritable plan with ticks refuses", () => {
-    const proj = project();
-    writePlan(proj);
-    const stageDir = codeGenerationRecordDir(proj, UNIT);
-    // A read-only directory stops the plan's write on POSIX. Windows ignores a
-    // directory's mode but refuses to replace a read-only file, so the plan
-    // itself is made read-only too.
-    const lock = () => {
-      chmodSync(planPath(proj), 0o444);
-      chmodSync(stageDir, 0o555);
-    };
-    const unlock = () => {
+  // A read-only directory stops the plan's write on POSIX. Windows ignores a
+  // directory's mode but refuses to replace a read-only file, so the plan
+  // itself is made read-only too. Root writes through both.
+  const lockPlan = (proj: string, stageDir: string): (() => void) => {
+    chmodSync(planPath(proj), 0o444);
+    chmodSync(stageDir, 0o555);
+    return () => {
       chmodSync(stageDir, 0o755);
       chmodSync(planPath(proj), 0o644);
     };
-    lock();
+  };
+
+  test("a plan with no ticks needs no write, even one that cannot be written", () => {
+    const proj = project();
+    writePlan(proj);
+    const stageDir = codeGenerationRecordDir(proj, UNIT);
+    const unlock = lockPlan(proj, stageDir);
     try {
       expect(() => clearPlanFileTicks(proj, stageDir)).not.toThrow();
+    } finally {
       unlock();
-      tick(proj, UNIT, 1);
-      lock();
+    }
+  });
+
+  // Root writes through the read-only plan and folder, so the refusal is only checked by a non-root run.
+  const refusesUnwritablePlan = typeof process.getuid === "function" && process.getuid() === 0 ? test.skip : test;
+  refusesUnwritablePlan("an unwritable plan with ticks refuses, and keeps its ticks", () => {
+    const proj = project();
+    writePlan(proj);
+    const stageDir = codeGenerationRecordDir(proj, UNIT);
+    tick(proj, UNIT, 1);
+    const unlock = lockPlan(proj, stageDir);
+    try {
       expect(() => clearPlanFileTicks(proj, stageDir)).toThrow();
     } finally {
       unlock();

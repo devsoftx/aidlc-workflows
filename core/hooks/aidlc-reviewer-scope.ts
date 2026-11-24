@@ -2,7 +2,8 @@
 // read-scope bound (stage-protocol-reviewer.md §12a).
 //
 // The prose bound says a reviewer dispatched for one unit must not read other
-// units' construction/<other-unit>/ content through any tool - not by opening
+// units' content under design/ and build/ (`<record>/design/<other-unit>/`,
+// `<record>/build/<other-unit>/`) through any tool - not by opening
 // files, and not via grep, glob, or shell patterns that span sibling unit
 // paths. Field transcripts showed prose losing that contest: a diligent
 // reviewer swept siblings through recursive greps with cross-unit globs, and
@@ -69,7 +70,9 @@ import {
   reviewerDispatchPath,
   toPosix,
   writeGuardStoodAside,
+  loadStageGraphAll,
   recordGuardBlockedRow,
+  UNIT_RECORD_PHASES,
   validSessionId,
 } from "../tools/aidlc-lib.ts";
 import { scopeStampLanded } from "../tools/aidlc-unit-landing.ts";
@@ -90,13 +93,13 @@ export interface ReviewerDispatch {
   reviewer: string;
   /** Stage slug the review belongs to, e.g. nfr-requirements. */
   stage: string;
-  /** The unit under review - the one construction/<unit>/ subtree in scope. */
+  /** The unit under review - its <unit>/ subtrees under design/ and build/ are in scope. */
   unit: string;
   /** Resolved paths the reviewer may touch beyond the current unit: the
    *  directive.consumes contracts, the stage file, the Q&A file, and (when the
    *  current unit's design explicitly names an integration point) that one
-   *  owning file. Only entries containing a construction/ component matter to
-   *  the matcher - everything outside construction/ is never blocked. */
+   *  owning file. Only entries under a design/ or build/ folder matter to
+   *  the matcher - everything outside those folders is never blocked. */
   exempt: string[];
 }
 
@@ -119,7 +122,7 @@ export interface ScopeContext {
 }
 
 // Glob metacharacters. A sibling segment carrying any of these spans units
-// (a `construction/*/` glob is a sibling read, not a search).
+// (a `design/*/` glob is a sibling read, not a search).
 const WILDCARD_RE = /[*?[\]{}]/;
 
 // Path-shaped tools contribute their path fields; Bash contributes the whole
@@ -171,8 +174,8 @@ function candidateStrings(
 
 // Split a path into components, dropping empty and "." segments and
 // COLLAPSING ".." against its parent. Without the collapse,
-// construction/U03/../U01/design.md would be judged on U03 (the first
-// segment after construction/) and allowed even though the filesystem
+// build/U03/../U01/design.md would be judged on U03 (the first
+// segment after build/) and allowed even though the filesystem
 // resolves it into sibling U01. A leading ".." with no parent to consume is
 // kept as-is (it climbs above the visible string; the sweep/wildcard rules
 // in judgeOccurrence apply to whatever remains).
@@ -197,25 +200,28 @@ function normalizedCompsFolded(p: string): string[] {
   return normalizedComps(p).map(fold);
 }
 
-function globComponentMatchesConstruction(component: string): boolean {
-  const c = fold(component);
-  if (c === "construction") return true;
-  if (!WILDCARD_RE.test(c)) return false;
-  if (c.replace(/[*?[\]{}!,]/g, "").length === 0) return false;
+function globComponentMatchesPhase(component: string, phase: string): boolean {
+  if (!WILDCARD_RE.test(component)) return false;
+  if (component.replace(/[*?[\]{}!,]/g, "").length === 0) return false;
   let re = "^";
-  for (let i = 0; i < c.length; i++) {
-    const ch = c[i];
+  for (let i = 0; i < component.length; i++) {
+    const ch = component[i];
     if (ch === "*") re += ".*";
     else if (ch === "?") re += ".";
     else re += ch.replace(/[\\^$+?.()|[\]{}]/g, "\\$&");
   }
   re += "$";
-  return new RegExp(re).test("construction");
+  return new RegExp(re).test(phase);
 }
 
-function constructionIndex(comps: string[], allowGlob = false): number {
-  return comps.findIndex((c) =>
-    fold(c) === "construction" || (allowGlob && globComponentMatchesConstruction(c))
+// Whether comps[i] is a unit-phase folder (design/ or build/) directly under a
+// record's intents/<record>/ folder. The phase names alone are too common in
+// project paths to mark a unit area; the intents anchor is what makes one.
+function unitPhaseAt(comps: string[], i: number, allowGlob: boolean): boolean {
+  if (i < 2 || fold(comps[i - 2]) !== "intents") return false;
+  const c = fold(comps[i]);
+  return UNIT_RECORD_PHASES.some(
+    (phase) => c === phase || (allowGlob && globComponentMatchesPhase(c, phase)),
   );
 }
 
@@ -223,22 +229,32 @@ function canonicalSuffix(comps: string[]): string {
   return comps.map(fold).join("/");
 }
 
-// The construction/-suffix of an exempt entry, component-normalized, or null
-// when the entry never enters construction/ (those entries are irrelevant to
-// the matcher - non-construction paths are always allowed).
+// The unit-phase suffix (design/<unit>/... or build/<unit>/...) of an exempt
+// entry, component-normalized, or null when the entry never enters a unit
+// phase folder (those entries are irrelevant to the matcher - other paths are
+// always allowed).
 function exemptSuffixOf(entry: string): string | null {
   const comps = normalizedComps(entry);
-  const i = constructionIndex(comps);
+  const i = comps.findIndex((_, k) => unitPhaseAt(comps, k, false));
   if (i === -1) return null;
   return canonicalSuffix(comps.slice(i));
 }
 
-// Judge one construction/ occurrence: the first path segment after the
-// construction component decides. Current unit -> allow; wildcard or missing
-// (a sweep root) -> block; a concrete sibling -> allow only on an exact
-// exempt-suffix match (the single owning file of a named integration point),
-// else block. Exactness is deliberate: browsing an exempt file's parent
-// directory is still a sibling browse.
+// A stage's own folder beside the Units (design/requirements-analysis,
+// build/code-generation): a sibling of the Units, never one of them.
+function isStageFolder(name: string | undefined): boolean {
+  if (name === undefined) return false;
+  const folded = fold(name);
+  return loadStageGraphAll().some((stage) => stage.slug === folded);
+}
+
+// Judge one per-unit occurrence (a design/ or build/ folder under intents/<record>/,
+// or a resolved unit-phase folder): the first path segment after it decides.
+// Current unit -> allow; wildcard or missing (a sweep root) -> block; a
+// concrete sibling -> allow only on an exact exempt-suffix match (the single
+// owning file of a named integration point), else block. Exactness is
+// deliberate: browsing an exempt file's parent directory is still a sibling
+// browse.
 function judgeOccurrence(
   suffixComps: string[],
   unit: string,
@@ -246,7 +262,7 @@ function judgeOccurrence(
 ): boolean {
   const unitFolded = fold(unit);
   const seg = suffixComps[1];
-  if (seg === undefined || seg.length === 0) return true; // bare construction/ sweep root
+  if (seg === undefined || seg.length === 0) return true; // bare sweep root
   if (WILDCARD_RE.test(seg)) return true; // a pattern spanning siblings
   if (fold(seg) === unitFolded) return false;
   return !exemptSuffixes.has(canonicalSuffix(suffixComps));
@@ -257,9 +273,11 @@ interface PreparedScope {
   exemptSuffixes: ReadonlySet<string>;
   exemptPaths: ReadonlySet<string>;
   recordRoot?: string;
-  constructionRoot?: string;
-  unitRoot?: string;
+  unitPhaseRoots: ReadonlyArray<{ phase: string; root: string }>;
   bases: string[];
+  // The current unit's own folders (design/<unit>, build/<unit>) as bases. They
+  // catch sibling paths, but a pattern is not named by them (see patternLimitsToCurrentUnit).
+  unitBases: ReadonlySet<string>;
 }
 
 function normalizeForCompare(p: string): string {
@@ -290,6 +308,27 @@ function isExactExempt(path: string, suffixComps: string[], scope: PreparedScope
   return scope.exemptPaths.has(path) || scope.exemptSuffixes.has(canonicalSuffix(suffixComps));
 }
 
+// The unit-phase folder(s) a resolved path enters, with the components after it.
+// A literal phase root names its folder. Under the record root, a wildcard
+// component that matches a phase (design*/U01-infra/...) enters each phase
+// folder it matches. `head` keeps the component as written, so a wildcard never
+// matches an exempt suffix: an exempt file is named exactly, not by a glob.
+function unitPhaseEntries(path: string, scope: PreparedScope): Array<{ head: string; rest: string[] }> {
+  const entries: Array<{ head: string; rest: string[] }> = [];
+  for (const { phase, root } of scope.unitPhaseRoots) {
+    if (containsPath(root, path)) {
+      entries.push({ head: phase, rest: path === root ? [] : path.slice(root.length + 1).split("/") });
+    }
+  }
+  if (scope.recordRoot !== undefined && path !== scope.recordRoot && containsPath(scope.recordRoot, path)) {
+    const [first, ...rest] = path.slice(scope.recordRoot.length + 1).split("/");
+    if (WILDCARD_RE.test(first) && UNIT_RECORD_PHASES.some((phase) => globComponentMatchesPhase(first, phase))) {
+      entries.push({ head: first, rest });
+    }
+  }
+  return entries;
+}
+
 function prepareScope(
   dispatch: Pick<ReviewerDispatch, "unit" | "exempt">,
   context: ScopeContext | undefined,
@@ -298,10 +337,12 @@ function prepareScope(
   const exemptPaths = new Set<string>();
 
   const recordRoot = context?.recordRoot ? resolve(context.recordRoot) : undefined;
-  const constructionRoot = recordRoot ? resolve(recordRoot, "construction") : undefined;
-  const unitRoot = constructionRoot ? resolve(constructionRoot, dispatch.unit) : undefined;
+  const unitPhaseRoots = recordRoot
+    ? UNIT_RECORD_PHASES.map((phase) => ({ phase, root: resolve(recordRoot, phase) }))
+    : [];
   const cwd = context?.cwd ? resolve(context.cwd) : undefined;
-  const bases = uniqueStrings([cwd ?? "", recordRoot ?? "", unitRoot ?? ""]);
+  const unitRoots = unitPhaseRoots.map(({ root }) => resolve(root, dispatch.unit));
+  const bases = uniqueStrings([cwd ?? "", recordRoot ?? "", ...unitRoots]);
 
   for (const e of dispatch.exempt) {
     const s = exemptSuffixOf(e);
@@ -314,9 +355,9 @@ function prepareScope(
     exemptSuffixes,
     exemptPaths,
     recordRoot: recordRoot ? normalizeForCompare(recordRoot) : undefined,
-    constructionRoot: constructionRoot ? normalizeForCompare(constructionRoot) : undefined,
-    unitRoot: unitRoot ? normalizeForCompare(unitRoot) : undefined,
+    unitPhaseRoots: unitPhaseRoots.map(({ phase, root }) => ({ phase, root: normalizeForCompare(root) })),
     bases,
+    unitBases: new Set(unitRoots),
   };
 }
 
@@ -335,7 +376,7 @@ function markDefaulted(v: ScopeVerdict | null): ScopeVerdict | null {
 function judgeLexicalPath(text: string, scope: PreparedScope): ScopeVerdict | null {
   const comps = normalizedComps(text);
   for (let i = 0; i < comps.length; i++) {
-    if (constructionIndex([comps[i]], true) !== 0) continue;
+    if (!unitPhaseAt(comps, i, true)) continue;
     if (judgeOccurrence(comps.slice(i), scope.unitFolded, scope.exemptSuffixes)) {
       return verdict(text);
     }
@@ -349,23 +390,21 @@ function judgeResolvedPath(
   scope: PreparedScope,
   bases: readonly string[] = scope.bases,
 ): ScopeVerdict | null {
-  if (scope.constructionRoot === undefined) return null;
+  if (scope.unitPhaseRoots.length === 0) return null;
 
   for (const path of normalizeResolved(text, bases)) {
-    if (containsPath(scope.constructionRoot, path)) {
-      const rest = path === scope.constructionRoot
-        ? []
-        : path.slice(scope.constructionRoot.length + 1).split("/");
-      const suffixComps = ["construction", ...rest];
+    for (const { head, rest } of unitPhaseEntries(path, scope)) {
+      const suffixComps = [head, ...rest];
       if (isExactExempt(path, suffixComps, scope)) continue;
+      if (isStageFolder(rest[0])) continue;
       if (judgeOccurrence(suffixComps, scope.unitFolded, scope.exemptSuffixes)) {
         return verdict(text);
       }
     }
 
-    // Recursive/search roots above construction/ sweep every sibling unit even
-    // when the command never spells `construction` (for example `rg X .`).
-    if (mode === "search-root" && containsPath(path, scope.constructionRoot)) {
+    // Recursive/search roots above a per-unit phase folder sweep every sibling
+    // unit even when the command never spells that folder (for example `rg X .`).
+    if (mode === "search-root" && scope.unitPhaseRoots.some(({ root }) => containsPath(path, root))) {
       return verdict(text);
     }
   }
@@ -381,12 +420,22 @@ function judgePathAccess(
   return judgeLexicalPath(text, scope) ?? judgeResolvedPath(text, mode, scope, bases);
 }
 
-function patternLimitsToCurrentUnit(text: string, scope: PreparedScope): boolean {
+// Whether a Glob or rg -g pattern limits the search to the current unit: it names
+// at least one unit folder, and every folder it names is this unit (or an exempt
+// file). Besides the anchored spelling, the pattern is resolved against the
+// judgePathAccess bases minus the unit's own folders. A pattern relative to
+// design/<unit> is not named by the unit, and `**/*.md` resolved there would look
+// constrained while it sweeps the record.
+function patternLimitsToCurrentUnit(
+  text: string,
+  scope: PreparedScope,
+  bases: readonly string[] = scope.bases,
+): boolean {
   const comps = normalizedComps(text);
-  let sawConstruction = false;
+  let sawUnitPhase = false;
   for (let i = 0; i < comps.length; i++) {
-    if (constructionIndex([comps[i]], true) !== 0) continue;
-    sawConstruction = true;
+    if (!unitPhaseAt(comps, i, true)) continue;
+    sawUnitPhase = true;
     const suffix = comps.slice(i);
     const seg = suffix[1];
     if (seg === undefined || WILDCARD_RE.test(seg)) return false;
@@ -394,7 +443,16 @@ function patternLimitsToCurrentUnit(text: string, scope: PreparedScope): boolean
       return false;
     }
   }
-  return sawConstruction;
+  const namingBases = bases.filter((base) => !scope.unitBases.has(base));
+  for (const path of normalizeResolved(text, namingBases)) {
+    for (const { head, rest } of unitPhaseEntries(path, scope)) {
+      sawUnitPhase = true;
+      const seg = rest[0];
+      if (seg === undefined || WILDCARD_RE.test(seg)) return false;
+      if (fold(seg) !== scope.unitFolded && !isExactExempt(path, [head, ...rest], scope)) return false;
+    }
+  }
+  return sawUnitPhase;
 }
 
 interface ShellWord {
@@ -626,7 +684,7 @@ function judgeRipgrep(
     if (glob.length === 0) continue;
     const v = judgePathAccess(glob, "target", scope, bases);
     if (v !== null) return v;
-    constrainedToCurrent ||= patternLimitsToCurrentUnit(glob, scope);
+    constrainedToCurrent ||= patternLimitsToCurrentUnit(glob, scope, bases);
   }
   for (const path of args.paths) {
     if (path === "-") continue;
@@ -661,9 +719,7 @@ function isPathish(word: string): boolean {
     word === "." ||
     word === ".." ||
     word.includes("/") ||
-    WILDCARD_RE.test(word) ||
-    fold(word) === "construction" ||
-    globComponentMatchesConstruction(word)
+    WILDCARD_RE.test(word)
   );
 }
 
@@ -736,7 +792,7 @@ function judgeCommandText(text: string, scope: PreparedScope): ScopeVerdict | nu
 /**
  * The reviewer read-scope decision. Pure: no I/O, no environment.
  * Returns block=true with the offending target when the tool call reaches
- * into a sibling unit's construction/ subtree (or spans siblings via a
+ * into a sibling unit's design/ or build/ folders (or spans siblings via a
  * wildcard) and the target is not on the exempt list.
  */
 export function evaluateReviewerScope(
@@ -810,7 +866,7 @@ export function blockReason(target: string, dispatch: ReviewerDispatch, defaulte
   return (
     `This review cannot open "${target}"${defaultNote} because it belongs to another unit; the current ` +
     `review covers ${dispatch.unit}. Use the files supplied with the review and the files ` +
-    `under this unit's construction path. If the design depends on another unit, note that ` +
+    `under this unit's own design and build folders. If the design depends on another unit, note that ` +
     `integration point in the findings instead of opening its files. Write ${dispatch.unit} ` +
     `literally in shell paths because variables cannot be checked, and keep searches inside ` +
     `the current unit.`
@@ -876,7 +932,7 @@ function emitReviewerScopeBlocked(
 
 // The two shipped review-only agents. Used ONLY for the advisory
 // missing-record drop below (when one of these is active with no dispatch
-// record and touches construction/ paths, the conductor likely forgot the stage-protocol-reviewer.md §12a
+// record and touches design/ or build/ unit paths, the conductor likely forgot the stage-protocol-reviewer.md §12a
 // step-1 write); the dispatch record's reviewer field is the authoritative
 // identity during enforcement.
 const REVIEW_AGENT_RE = /^aidlc-(architecture-reviewer|product-lead)-agent$/;
@@ -1002,7 +1058,7 @@ async function checkScope(input: string, projectDir: string, outside: boolean, b
       // A claimed checkout owns exactly one Unit. Guard Policy, per-work fence
       // switches, and the reviewer-scope environment escape hatch govern the
       // reviewer's read boundary only; none authorizes writes into a sibling
-      // Unit's construction subtree.
+      // Unit's per-unit folders (design/ and build/).
       const defaultNote = scopedVerdict.defaulted
         ? " (an implicit search root the command falls back to with no path, not a path you typed)"
         : "";
@@ -1039,7 +1095,7 @@ async function checkScope(input: string, projectDir: string, outside: boolean, b
   }
   if (!existsSync(recordPath)) {
     // No review in flight. One advisory: a review-only agent touching
-    // construction/ paths with no dispatch record suggests the conductor
+    // design/ or build/ unit paths with no dispatch record suggests the conductor
     // skipped the stage-protocol-reviewer.md §12a step-1 write - surfaced via the doctor's drop counters,
     // never a block (the record is the only source of unit + exempt, so there
     // is nothing sound to enforce without it). RATE-BOUNDED: a chatty reviewer
@@ -1049,10 +1105,10 @@ async function checkScope(input: string, projectDir: string, outside: boolean, b
     try {
       const agent = parsed.agent_type ?? "";
       if (REVIEW_AGENT_RE.test(agent)) {
-        const touchesConstruction = candidateStrings(toolName, toolInput).some((c) =>
-          toPosix(c.text).includes("construction/"),
+        const touchesUnitFolder = candidateStrings(toolName, toolInput).some((c) =>
+          UNIT_RECORD_PHASES.some((phase) => toPosix(c.text).includes(`${phase}/`)),
         );
-        if (touchesConstruction && perUnitReviewOwed(projectDir, stateContent)) {
+        if (touchesUnitFolder && perUnitReviewOwed(projectDir, stateContent)) {
           const markerName = `${HOOK_NAME}.missing-record.last`;
           const marker = join(hooksHealthDir(projectDir), markerName);
           const fresh = existsSync(marker) && Date.now() - statSync(marker).mtimeMs < 10 * 60 * 1000;
@@ -1061,7 +1117,7 @@ async function checkScope(input: string, projectDir: string, outside: boolean, b
             recordHookDrop(
               projectDir,
               HOOK_NAME,
-              `${agent} touched construction/ paths with no reviewer dispatch record; enforcement skipped (write the stage-protocol-reviewer-unit.md dispatch record before invoking a per-unit reviewer)`,
+              `${agent} touched design/ or build/ unit paths with no reviewer dispatch record; enforcement skipped (write the stage-protocol-reviewer-unit.md dispatch record before invoking a per-unit reviewer)`,
             );
           }
         }

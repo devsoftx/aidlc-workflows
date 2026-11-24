@@ -6,7 +6,7 @@
 // t311 - committed reviewed-source evidence (commit provenance D1). The review
 // receipt's Unit Source Fingerprint is the sha256 of the serialized unit
 // listing; this suite pins that writeUnitSourceSnapshot dual-writes those
-// EXACT bytes into the committed record (construction/<unit>/<stage>/
+// EXACT bytes into the committed record (build/<unit>/<stage>/
 // reviewed-source-<hash12>.tsv) beside the gitignored .aidlc-engine/source-review
 // copy, that parseUnitSourceListing round-trips the committed bytes and
 // rejects every malformed shape, and that the two exported attribution
@@ -18,6 +18,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -77,7 +78,7 @@ function snapshotFixture(): {
 } {
   const { project, record } = fixture();
   writeFileSync(join(project, "extra.ts"), "export const extra = 2;\n");
-  const dir = join(record, "construction", "alpha", "code-generation");
+  const dir = join(record, phaseFor("code-generation"), "alpha", "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "source-manifest.json"), `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "app.ts" }] })}\n`);
   const claims = readUnitSourceManifest(project, "code-generation", "alpha");
@@ -105,7 +106,7 @@ function snapshotFixture(): {
 describe("t311 committed reviewed-source evidence", () => {
   test("dual-write lands byte-identical committed and local evidence whose sha256 is the receipt fingerprint", () => {
     const { record, hex, committedPath, localPath, manifestSha256 } = snapshotFixture();
-    expect(committedPath).toBe(join(record, "construction", "alpha", "code-generation", `reviewed-source-${hex.slice(0, 12)}.tsv`));
+    expect(committedPath).toBe(join(record, phaseFor("code-generation"), "alpha", "code-generation", `reviewed-source-${hex.slice(0, 12)}.tsv`));
 
     const committedBytes = readFileSync(committedPath);
     expect(createHash("sha256").update(committedBytes).digest("hex")).toBe(hex);

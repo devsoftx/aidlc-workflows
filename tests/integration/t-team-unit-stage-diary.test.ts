@@ -2,12 +2,12 @@
 //
 // Under Unit Ownership: team a Unit's per-Unit stage runs in that Unit's own
 // claimed checkout, which commits only the Unit's record tree
-// (`construction/<unit>/`; publish leaves the record's shared files out). The
+// (`<phase>/<unit>/`; publish leaves the record's shared files out). The
 // run-stage directive still named the stage-level
-// `construction/<stage>/memory.md` as the diary, so
+// `<phase>/<stage>/memory.md` as the diary, so
 // the agent was told to keep its notes in a file its checkout cannot land, and
 // the learnings step at the Unit's gate counted that same file's entries. The diary is now
-// the Unit's own `construction/<unit>/<stage>/memory.md`, the path a per-Unit
+// the Unit's own `<phase>/<unit>/<stage>/memory.md`, the path a per-Unit
 // wave entry already uses, and the learnings step counts it there. A directive
 // that names no Unit (the skeleton-stance ask before the Unit's first stage)
 // takes the claimed checkout's Unit too, and never creates the stage-level
@@ -20,6 +20,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { join } from "node:path";
 import { relativeRecordDir } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_SRC, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -57,7 +58,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     const directive = nextDirective(checkout);
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "alpha" });
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/alpha/functional-design/memory.md`);
+    expect(directive.memory_path).toBe(`${prefix}/design/alpha/functional-design/memory.md`);
   });
 
   test("a directive that names no Unit takes the claimed Unit's diary and creates no stage-level one", () => {
@@ -74,8 +75,8 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/alpha/functional-design/memory.md`);
-    expect(existsSync(join(checkout, prefix!, "construction", "functional-design", "memory.md"))).toBe(false);
+    expect(directive.memory_path).toBe(`${prefix}/design/alpha/functional-design/memory.md`);
+    expect(existsSync(join(checkout, prefix!, phaseFor("functional-design"), "functional-design", "memory.md"))).toBe(false);
   });
 
   test("on main working the Units unclaimed, a directive that names no Unit keeps main's own stage diary", () => {
@@ -89,8 +90,8 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     expect(directive).toMatchObject({ kind: "run-stage", stage: "functional-design" });
     expect(directive.unit).toBeUndefined();
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/functional-design/memory.md`);
-    expect(existsSync(join(checkout, prefix!, "construction", "functional-design", "memory.md"))).toBe(true);
+    expect(directive.memory_path).toBe(`${prefix}/design/functional-design/memory.md`);
+    expect(existsSync(join(checkout, prefix!, phaseFor("functional-design"), "functional-design", "memory.md"))).toBe(true);
   });
 
   test("on main working the Units unclaimed, the directive and the learnings step use the same Unit diary", () => {
@@ -112,8 +113,8 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     const unit = directive.unit as string;
     expect(typeof unit).toBe("string");
     const prefix = relativeRecordDir(checkout);
-    expect(directive.memory_path).toBe(`${prefix}/construction/${unit}/functional-design/memory.md`);
-    const unitDiary = join(checkout, prefix!, "construction", unit, "functional-design");
+    expect(directive.memory_path).toBe(`${prefix}/design/${unit}/functional-design/memory.md`);
+    const unitDiary = join(checkout, prefix!, phaseFor("functional-design"), unit, "functional-design");
     mkdirSync(unitDiary, { recursive: true });
     writeFileSync(join(unitDiary, "memory.md"), "## Tradeoffs\n- Took the shorter list over the grid\n");
     const surfaced = runMergeTool(
@@ -129,7 +130,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
   test("the learnings step at the Unit's gate counts the Unit's own diary", () => {
     const checkout = claimedCheckout("beta");
     const prefix = relativeRecordDir(checkout);
-    const unitDiary = join(checkout, prefix!, "construction", "beta", "functional-design");
+    const unitDiary = join(checkout, prefix!, phaseFor("functional-design"), "beta", "functional-design");
     mkdirSync(unitDiary, { recursive: true });
     writeFileSync(
       join(unitDiary, "memory.md"),
@@ -138,7 +139,7 @@ describe("t-team-unit-stage-diary a team Unit keeps its stage diary in its own r
     const surfaced = runMergeTool(LEARNINGS, ["surface", "--slug", "functional-design"], checkout);
     expect(surfaced.status, surfaced.out).toBe(0);
     const out = JSON.parse(surfaced.stdout) as { phase: string; memory_entries_total: number };
-    expect(out.phase).toBe("construction");
+    expect(out.phase).toBe(phaseFor("functional-design"));
     expect(out.memory_entries_total).toBe(1);
   });
 });

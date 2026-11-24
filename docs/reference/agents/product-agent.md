@@ -20,7 +20,7 @@
 | intent-capture | Intent Capture and Framing | Captures business intent, problem statement, success metrics, and initial constraints from stakeholder input |
 | market-research | Market Research and Competitive Analysis | Researches competitive landscape, market trends, build-vs-buy trade-offs, and differentiation opportunities |
 | scope-definition | Scope Definition and Prioritization | Defines scope boundaries (in/out), applies prioritization frameworks, creates the Intent Backlog |
-| requirements-analysis | Requirements Analysis | Structures and formalizes requirements from Ideation artifacts into traceable, testable specifications |
+| requirements-analysis | Requirements Analysis | Structures and formalizes requirements from Discover artifacts into traceable, testable specifications |
 | user-stories | User Stories | Transforms requirements into INVEST-compliant user stories with personas, acceptance criteria, and dependency mapping |
 
 ### Support Stages
@@ -41,7 +41,7 @@
 |--------|-----------|
 | User/stakeholder input | Raw business needs, domain knowledge, project descriptions |
 | Existing documentation | Prior artifacts, legacy system documentation |
-| aidlc-operations-agent | Operational feedback from production for next Ideation cycle (closes the lifecycle loop) |
+| aidlc-operations-agent | Operational feedback from production for the next Discover cycle (closes the lifecycle loop) |
 
 ### Hands Off To
 

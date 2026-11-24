@@ -57,6 +57,10 @@ function bugfixPlusTwo(): Record<string, "EXECUTE" | "SKIP"> {
   return grid;
 }
 
+function countDecisions(grid: Record<string, "EXECUTE" | "SKIP">, decision: "EXECUTE" | "SKIP"): number {
+  return Object.values(grid).filter((value) => value === decision).length;
+}
+
 function featureMinus(...slugs: string[]): Record<string, "EXECUTE" | "SKIP"> {
   const grid = { ...loadScopeGrid().feature.stages };
   for (const slug of slugs) grid[slug] = "SKIP";
@@ -126,11 +130,12 @@ describe("t277 nearestStockScopes (in-process, shipped grid)", () => {
     });
   });
 
-  test("stock adoption revalidates the 11-stage proposal as the 9-stage bugfix grid", () => {
+  test("stock adoption revalidates the bugfix+2 proposal as the bugfix stock grid", () => {
+    const stockExecute = countDecisions(loadScopeGrid().bugfix.stages, "EXECUTE");
     const proposed = validateGrid(bugfixPlusTwo());
     const adopted = validateGrid(loadScopeGrid().bugfix.stages);
-    expect(proposed.summary?.execute).toBe(11);
-    expect(adopted.summary?.execute).toBe(9);
+    expect(proposed.summary?.execute).toBe(stockExecute + 2);
+    expect(adopted.summary?.execute).toBe(stockExecute);
     expect(adopted.nearest_stock?.[0]).toEqual({
       scope: "bugfix",
       diff: 0,
@@ -150,13 +155,14 @@ describe("t277 nearestStockScopes (in-process, shipped grid)", () => {
   });
 
   test("in-flight feature minus two preserves the requested delta despite a nearby stock grid", () => {
+    const stock = loadScopeGrid().feature.stages;
     const proposed = featureMinus("market-research", "team-formation");
     const validation = validateGrid(proposed, { strict: true });
     expect(validation.valid).toBe(true);
-    expect(validation.summary?.execute).toBe(31);
-    expect(validation.summary?.skip).toBe(2);
+    expect(validation.summary?.execute).toBe(countDecisions(stock, "EXECUTE") - 2);
+    expect(validation.summary?.skip).toBe(countDecisions(stock, "SKIP") + 2);
     expect(validation.nearest_stock?.[0]).toEqual({
-      scope: "enterprise",
+      scope: "feature",
       diff: 2,
       differs: ["market-research", "team-formation"],
     });

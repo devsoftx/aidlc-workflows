@@ -17,6 +17,7 @@
 //   AIDLC_SRC    = <REPO_ROOT>/dist/claude/.claude
 //   FIXTURES_DIR = <REPO_ROOT>/tests/fixtures
 
+import { phaseFor } from "./stage-phase.ts";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   remainingCleanupTimeoutMs,
@@ -48,6 +49,13 @@ const HARNESS_DIR = dirname(fileURLToPath(import.meta.url));
 const requireHere = createRequire(import.meta.url);
 export const REPO_ROOT = join(HARNESS_DIR, "..", "..");
 export const AIDLC_SRC = join(REPO_ROOT, "dist", "claude", ".claude");
+
+// The compiled stage graph and scope grid exist only under dist/. A test that
+// imports core/ directly reads them through the engine's own override variables.
+export function pointAtCompiledData(): void {
+  process.env.AIDLC_STAGE_GRAPH ??= join(AIDLC_SRC, "tools", "data", "stage-graph.json");
+  process.env.AIDLC_SCOPE_GRID ??= join(AIDLC_SRC, "tools", "data", "scope-grid.json");
+}
 
 // The per-intent WORKSPACE layout the fixtures seed. A fixture project gets a
 // SEED-style shell (aidlc/active-space + spaces/default/) plus ONE default
@@ -411,7 +419,7 @@ export function seedBoltDag(
 // guard is off (the runner's fixture profile).
 export function seedAnsweredUnitQuestions(proj: string, stage: string, units: readonly string[]): void {
   for (const unit of units) {
-    const dir = join(seededRecordDir(proj), "construction", unit, stage);
+    const dir = join(seededRecordDir(proj), phaseFor(stage), unit, stage);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, `${stage}-questions.md`), "# Questions\n\n## Q1. Who can see a saved item?\n\n[Answer]: Its owner\n", "utf-8");
   }
@@ -493,6 +501,21 @@ export function seedStateFile(proj: string, fixturePath: string): void {
   mkdirSync(recDir, { recursive: true });
   const src = existsSync(fixturePath) ? fixturePath : join(FIXTURES_DIR, fixturePath);
   copyFileSync(src, join(recDir, "aidlc-state.md"));
+}
+
+/**
+ * Mark a seeded state file's Reverse Engineering row SKIP, the way the engine
+ * writes it for a Greenfield project. state-mid-ideation.md is Greenfield but
+ * still reads EXECUTE, so a test that moves past feasibility uses this to match
+ * a real Greenfield state. Throws if the file has neither row.
+ */
+export function markGreenfieldReverseEngineeringSkipped(stateFile: string): void {
+  const from = "- [ ] reverse-engineering — EXECUTE";
+  const body = readFileSync(stateFile, "utf-8");
+  // A fixture that already writes the row SKIP needs no change.
+  if (/^- \[.\] reverse-engineering — SKIP\b/m.test(body)) return;
+  if (!body.includes(from)) throw new Error(`no "${from}" row in ${stateFile}`);
+  writeFileSync(stateFile, body.replace(from, "- [ ] reverse-engineering — SKIP"));
 }
 
 /**
@@ -801,9 +824,9 @@ export function setupIntegrationProject(
   }
 
   if (opts.withInceptionArtifacts) {
-    const ra = join(seededRecordDir(proj), "inception", "requirements-analysis");
-    const ad = join(seededRecordDir(proj), "inception", "domain-design");
-    const ug = join(seededRecordDir(proj), "inception", "units-generation");
+    const ra = join(seededRecordDir(proj), "design", "requirements-analysis");
+    const ad = join(seededRecordDir(proj), "design", "domain-design");
+    const ug = join(seededRecordDir(proj), "design", "units-generation");
     mkdirSync(ra, { recursive: true });
     mkdirSync(ad, { recursive: true });
     mkdirSync(ug, { recursive: true });
@@ -819,7 +842,7 @@ export function setupIntegrationProject(
   if (opts.withConstructionArtifacts) {
     const dest = join(
       seededRecordDir(proj),
-      "construction",
+      "design",
       "todo-core",
       "functional-design",
     );

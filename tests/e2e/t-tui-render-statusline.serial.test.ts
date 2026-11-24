@@ -8,9 +8,9 @@
 // These four branches all paint from ONE seeded per-intent aidlc-state.md, so a
 // SINGLE launched TUI capture proves all four — one assertion-focus per unit:
 //   - statusline-phase-bar  : progressBar(done,total) draws the 10-cell ▓/░ grid.
-//                             Seeded mid-ideation = 2 done / 7 total IDEATION
-//                             stages, so floor(2*10/7)=2 filled -> "[▓▓░░░░░░░░]".
-//   - statusline-counter    : the "done/total" appended after the bar -> "2/7".
+//                             Seeded mid-ideation = 2 done / 8 total DISCOVER
+//                             stages, so floor(2*10/8)=2 filled -> "[▓▓░░░░░░░░]".
+//   - statusline-counter    : the "done/total" appended after the bar -> "2/8".
 //   - statusline-stage-name : STAGE_DISPLAY["feasibility"]="Feasibility", seeded
 //                             Current Stage=feasibility -> "> Feasibility".
 //   - statusline-align      : printLine() (aidlc-statusline.ts) joins the
@@ -170,19 +170,19 @@ function captureWorkflowStatusline(): string {
     // consume separate timeout windows. Navigation stays fixture-scoped.
     const startup = drive([
       "startup", "--session", session,
-      "--ready-pattern", "\\[AIDLC\\].*IDEATION", "--timeout-ms", String(remainingWorkMs()),
+      "--ready-pattern", "\\[AIDLC\\].*DISCOVER", "--timeout-ms", String(remainingWorkMs()),
     ]);
     if (startup.rc !== 0) throw new Error(`TUI startup failed: ${startup.stderr}`);
 
-    // --- wait for the WORKFLOW statusline (IDEATION, not "ready") -----------
+    // --- wait for the WORKFLOW statusline (DISCOVER, not "ready") -----------
     // The statusline carries the orientation prefix (the intent slug and a
     // middle-dot separator) between [AIDLC] and the phase, so match with .* rather
     // than a contiguous gap.
-    const sawMarker = waitFor(session, "\\[AIDLC\\].*IDEATION", remainingWorkMs(), 1000);
+    const sawMarker = waitFor(session, "\\[AIDLC\\].*DISCOVER", remainingWorkMs(), 1000);
     const pane = drive(["capture", "--session", session]).stdout;
     if (!sawMarker) {
       throw new Error(
-        `workflow statusline "[AIDLC] IDEATION" never appeared in the TUI.\n` +
+        `workflow statusline "[AIDLC] DISCOVER" never appeared in the TUI.\n` +
           `---- last pane ----\n${pane}\n-------------------`,
       );
     }
@@ -203,26 +203,26 @@ describe("t-tui-render statusline workflow branches (seeded mid-ideation, no tok
     return PANE;
   }
 
-  // statusline-phase-bar — the 10-cell ▓/░ progress bar. progressBar(2,7) fills
-  // floor(2*10/7)=2 cells, leaving 8 empty: "[▓▓░░░░░░░░]". Assert the EXACT grid
+  // statusline-phase-bar — the 10-cell ▓/░ progress bar. progressBar(2,8) fills
+  // floor(2*10/8)=2 cells, leaving 8 empty: "[▓▓░░░░░░░░]". Assert the EXACT grid
   // the branch should draw, not a looser "contains ▓".
   test.skipIf(ABSENT_REASON !== null)(
-    `statusline-phase-bar paints [▓▓░░░░░░░░] for 2/7 IDEATION${ABSENT_REASON ? ` — SKIP: ${ABSENT_REASON}` : ""}`,
+    `statusline-phase-bar paints [▓▓░░░░░░░░] for 2/8 DISCOVER${ABSENT_REASON ? ` — SKIP: ${ABSENT_REASON}` : ""}`,
     () => {
       expect(pane()).toContain(
-        "[AIDLC] fixture · IDEATION [▓▓░░░░░░░░] 2/7 > Feasibility -- Architect Agent | BR:opus-4-8[1m]",
+        "[AIDLC] fixture · DISCOVER [▓▓░░░░░░░░] 2/8 > Feasibility -- Architect Agent | BR:opus-4-8[1m]",
       );
     },
     TEST_TIMEOUT_MS,
   );
 
   // statusline-counter — the "done/total" appended after the bar. Seeded
-  // mid-ideation = 2 done / 7 total IDEATION stages -> "2/7". Anchored to the bar
-  // so a stray "2/7" elsewhere can't satisfy it.
+  // mid-ideation = 2 done / 8 total DISCOVER stages -> "2/8". Anchored to the bar
+  // so a stray "2/8" elsewhere can't satisfy it.
   test.skipIf(ABSENT_REASON !== null)(
-    `statusline-counter paints "2/7" after the bar${ABSENT_REASON ? ` — SKIP: ${ABSENT_REASON}` : ""}`,
+    `statusline-counter paints "2/8" after the bar${ABSENT_REASON ? ` — SKIP: ${ABSENT_REASON}` : ""}`,
     () => {
-      expect(pane()).toContain("░░] 2/7");
+      expect(pane()).toContain("░░] 2/8");
     },
     TEST_TIMEOUT_MS,
   );

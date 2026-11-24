@@ -27,6 +27,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -149,7 +150,7 @@ describe("the step's first bytes are the person's words, the notes to the agent 
   test("a gate's print opens with the line for the person, then the agent's message", () => {
     const proj = project();
     writeFileSync(seededStateFile(proj), readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8"), "utf-8");
-    const dir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+    const dir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "requirements.md"), "# Requirements\n\n## FR-1\nList notes.\n", "utf-8");
     const result = spawnSync(

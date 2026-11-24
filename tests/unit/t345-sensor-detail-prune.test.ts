@@ -67,6 +67,7 @@ import {
 	seededRecordDir,
 	seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const tempRoots: string[] = [];
 
@@ -269,14 +270,14 @@ function setupProject(): {
 			"",
 			"- **Workflow**: bugfix",
 			"- **Scope**: bugfix",
-			"- **Phase**: inception",
+			`- **Phase**: ${phaseFor(STAGE)}`,
 			`- **Current Stage**: ${STAGE}`,
 			"",
 		].join("\n"),
 		"utf-8",
 	);
 
-	const outputDir = join(record, "inception", STAGE);
+	const outputDir = join(record, phaseFor(STAGE), STAGE);
 	mkdirSync(outputDir, { recursive: true });
 	const templates = memoryTemplatesDir(proj);
 	mkdirSync(templates, { recursive: true });

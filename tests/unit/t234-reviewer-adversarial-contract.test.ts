@@ -15,6 +15,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const CORE_PROTOCOL = join(
   REPO_ROOT,
@@ -65,7 +66,7 @@ const INTENT_CAPTURE = join(
   "core",
   "aidlc-common",
   "stages",
-  "ideation",
+  phaseFor("intent-capture"),
   "intent-capture.md",
 );
 

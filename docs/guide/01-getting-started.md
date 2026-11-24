@@ -460,11 +460,11 @@ this kind of work. Here it picked `mvp`; your words may get another:
 
 ```text
  Plan
- I'd run the "mvp" plan for: "Build a REST API for inventory management" - 19 stages, 19 approval
+ I'd run the "mvp" plan for: "Build a REST API for inventory management" - 21 stages, 21 approval
  gates, 5 stages repeat per unit of work in Construction. Do you want me to go ahead with it, use
  a different plan, or tailor one to this task?
  > 1. Go ahead with the "mvp" plan
-      19 stages: skips operations and ships the core API.
+      21 stages: skips operations and ships the core API.
    2. Use a different plan
       Pick another ready-made plan (e.g. classic, feature, express, poc).
    3. Tailor a plan to this task
@@ -479,13 +479,13 @@ length, and you pick one or type its name:
 ```text
  Plan
  Which plan would you like for the inventory REST API?
- > 1. classic (14 stages)
-      V1-style ceremony through Inception and Construction - the implicit default.
-   2. feature (29 stages)
+ > 1. classic (17 stages)
+      V1-style ceremony through Design and the unit loop - the implicit default.
+   2. feature (31 stages)
       Full lifecycle for new features, practical depth.
-   3. express (6 stages)
+   3. express (8 stages)
       Lightest run: requirements to deploy, no design pass, no reviewers.
-   4. poc (4 stages)
+   4. poc (6 stages)
       Prove feasibility fast.
    5. Type something.
    6. Chat about this
@@ -506,7 +506,7 @@ stage's questions:
 ```text
  Answer mode
  I've created 8 questions at
- aidlc/spaces/default/intents/261013-inventory-rest-api/ideation/intent-capture/intent-capture-questions.md.
+ aidlc/spaces/default/intents/261013-inventory-rest-api/discover/intent-capture/intent-capture-questions.md.
  How would you like to answer them?
  > 1. Guide me
       Walk through each question interactively here
@@ -574,7 +574,7 @@ path and two of the three findings are left out):
 ```text
 Intent Capture & Framing is ready for your review. It produced intent-statement.md,
 stakeholder-map.md and intent-capture-questions.md (8 questions, all answered), in
-aidlc/spaces/default/intents/261013-inventory-rest-api/ideation/intent-capture/.
+aidlc/spaces/default/intents/261013-inventory-rest-api/discover/intent-capture/.
 
 Stage: Intent Capture & Framing
 Review outcome: Concerns remain for your decision.
@@ -590,13 +590,13 @@ Review outcome: Concerns remain for your decision.
   adoption-breadth dimension, ...
 > R-03 Required action: Human should confirm at the gate that a single integration-adoption
   metric is sufficient, or ask a follow-up to add a data-accuracy or reliability metric before
-  inception begins.
+  design begins.
 
 Decision options:
 - Approve - continue.
 - Request Changes - return to the listed artifacts so the required actions can be addressed.
 
-Review: aidlc/spaces/default/intents/261013-inventory-rest-api/ideation/intent-capture/
+Review: aidlc/spaces/default/intents/261013-inventory-rest-api/discover/intent-capture/
 
 The two wording points (R-01, R-02) are things I added that you didn't confirm, and they're easy
 to remove. R-03 is your call: one success measure is enough, or you may want to add one for stock
@@ -620,7 +620,7 @@ the stage back to address them (say what to change, or that you want the
 follow-up question). This run approved:
 
 ```text
-Progress: 1 of 19 stages done. Next: Feasibility & Constraints.
+Progress: 1 of 21 stages done. Next: Feasibility & Constraints.
 Now working on Feasibility & Constraints, wearing the architect hat.
 ```
 
@@ -631,9 +631,9 @@ aidlc/spaces/default/intents/261013-inventory-rest-api/
   aidlc-state.md                 where the work stands
   audit/                         every question, answer and approval, as it happened
   project-description.json       your request, word for word
-  ideation/intent-capture/       intent-statement.md, stakeholder-map.md,
+  discover/intent-capture/       intent-statement.md, stakeholder-map.md,
                                  intent-capture-questions.md, reviews/review-01.md
-  ideation/feasibility/          the next stage, under way
+  discover/feasibility/          the next stage, under way
 ```
 
 From here each stage follows the same rhythm: questions, documents, a review,

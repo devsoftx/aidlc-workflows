@@ -124,7 +124,7 @@ function fixture(grouped = false, approve = true): string {
 - **Project**: Lowered guard swarm continuation
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major
@@ -141,16 +141,18 @@ function fixture(grouped = false, approve = true): string {
 - **Stages to Skip**: none
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
+### BUILD PHASE
 - [-] code-generation — EXECUTE
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
 ## Current Status
 - **Current Stage**: code-generation
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Status**: Running
 `);
   writeFileSync(join(pd, ".gitignore"), [

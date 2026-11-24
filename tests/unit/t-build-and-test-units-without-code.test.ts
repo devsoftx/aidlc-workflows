@@ -7,7 +7,7 @@
 // Test, or completes the work, without hearing it (#3531). Never a gate: the
 // approval goes through as before.
 
-import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,6 +22,22 @@ import { unitsWithoutInputsNotice } from "../../dist/claude/.claude/tools/aidlc-
 
 // The fixture's documents are not written for the stage checks.
 process.env.AIDLC_DISABLE_SENSORS = "1";
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 resetAidlcEnv();
 
@@ -56,7 +72,7 @@ function atBuildAndTest(built: string[], scope = "feature", planned: string[] = 
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: ${scope}
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -72,11 +88,16 @@ function atBuildAndTest(built: string[], scope = "feature", planned: string[] = 
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${STAGES.map((stage) => `- [x] ${stage} \u2014 EXECUTE`).join("\n")}
+### DESIGN PHASE
+${STAGES.filter((stage) => findStageBySlug(stage)!.phase === "design").map((stage) => `- [x] ${stage} \u2014 EXECUTE`).join("\n")}
+
+### BUILD PHASE
+${STAGES.filter((stage) => findStageBySlug(stage)!.phase === "build").map((stage) => `- [x] ${stage} \u2014 EXECUTE`).join("\n")}
+
+### TEST PHASE
 - [-] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: TEST
 - **Current Stage**: build-and-test
 - **Status**: Running
 `);
@@ -88,17 +109,17 @@ ${STAGES.map((stage) => `- [x] ${stage} \u2014 EXECUTE`).join("\n")}
   writeFileSync(join(health, "pre-tool-use.last"), new Date().toISOString());
   const codeGeneration = findStageBySlug("code-generation")!;
   for (const unit of built) {
-    const dir = join(seededRecordDir(p), "construction", unit, "code-generation");
+    const dir = join(seededRecordDir(p), codeGeneration.phase, unit, "code-generation");
     mkdirSync(dir, { recursive: true });
     for (const name of codeGeneration.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${unit} ${name}\n`);
   }
   for (const unit of planned) {
-    const dir = join(seededRecordDir(p), "construction", unit, "code-generation");
+    const dir = join(seededRecordDir(p), codeGeneration.phase, unit, "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, artifactFilename("code-generation-plan")), `# ${unit} plan\n`);
   }
   const buildAndTest = findStageBySlug("build-and-test")!;
-  const dir = join(seededRecordDir(p), "construction", "build-and-test");
+  const dir = join(seededRecordDir(p), buildAndTest.phase, "build-and-test");
   mkdirSync(dir, { recursive: true });
   for (const name of buildAndTest.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n`);
   return p;
@@ -178,7 +199,9 @@ describe("t-build-and-test-units-without-code: Build and Test names the Units wi
     says(p, "approve");
     const done = report(p, ["--result", "approved", "--stage", "build-and-test", "--user-input", "Approve"]);
     expect(done.kind, JSON.stringify(done)).toBe("done");
-    expect(done.narration).toBe(LINE);
+    // Classic runs on past Build and Test into Secure, so the approval also
+    // says where the work goes next (the progress line after the approval).
+    expect(lines(done)).toEqual([LINE, "Progress: 6 of 9 stages done. Next: Code Review."]);
   });
 
   test("one Unit missing, and none built, are said in the same plain words", () => {

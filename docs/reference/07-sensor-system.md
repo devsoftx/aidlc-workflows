@@ -174,10 +174,10 @@ node. Authoring direction is locality-of-reference — open a stage file
 and you see exactly which checks fire when the stage runs.
 
 ```yaml
-# dist/claude/.claude/aidlc-common/stages/construction/ci-pipeline.md
+# dist/claude/.claude/aidlc-common/stages/deploy/ci-pipeline.md
 ---
 slug: ci-pipeline
-phase: construction
+phase: deploy
 # ...
 requires_stage: [...]
 sensors:
@@ -214,18 +214,19 @@ compile. On a native install the six shipped sensors run their bundled worker
 by id, so editing their `command` changes nothing. Recompile after any sensor
 edit.
 
-### Per-stage sensor matrix (33 framework stages)
+### Per-stage sensor matrix (36 framework stages)
 
 | Stages | `sensors:` |
 |---|---|
 | 3 initialization (workspace-scaffold, workspace-detection, state-init) | `[]` (deterministic setup, no agent-authored markdown) |
 | `intent-capture` | `[claim-sources, required-sections, upstream-coverage]` (`claim-sources` checks visible inline provenance, authoritative source-register values, and exact human-confirmed assumptions across the stage's deliverables) |
-| 6 other ideation, 6 other inception, 7 operation markdown stages | `[required-sections, upstream-coverage]` |
+| 7 other discover, 5 other design, `performance-validation`, 3 deploy and 3 operate markdown stages | `[required-sections, upstream-coverage]` |
 | `user-stories`, `domain-design`, `units-generation` | `[required-sections, upstream-coverage, traceability]` |
 | `build-and-test` | `[required-sections, upstream-coverage, type-check]` (linter intentionally omitted — build runs canonical lint) |
 | `ci-pipeline` | `[required-sections, upstream-coverage, linter, type-check]` |
-| 4 per-Unit construction-design stages (`functional-design`, `infrastructure-design`, `nfr-design`, `nfr-requirements`) | `[required-sections, upstream-coverage, linter, type-check, traceability]` |
+| 4 per-Unit design stages (`functional-design`, `infrastructure-design`, `nfr-design`, `nfr-requirements`) | `[required-sections, upstream-coverage, linter, type-check, traceability]` |
 | `code-generation` | `[required-sections, traceability]` (`linter` and `type-check` not imported: they ran on every file write and nothing read their results) |
+| 3 secure review stages (`code-review`, `security-review`, `conformance-review`) | `[required-sections]` |
 
 `traceability` runs at the gate (`fire_on: gate`), on each stage's finished
 tables. Requirements Analysis imports no check for its own
@@ -473,8 +474,8 @@ is dispatched with at least `--stage <slug> --output-path <file>` appended
 against an intent statement with one H2 heading:
 
 ```text
-$ aidlc engine sensor fire required-sections --stage intent-capture --output-path aidlc/spaces/default/intents/261013-tagged-notes/ideation/intent-capture/intent-statement.md
-{"fire_id":"f00255f3","sensor_id":"required-sections","stage":"intent-capture","output_path":"aidlc/spaces/default/intents/261013-tagged-notes/ideation/intent-capture/intent-statement.md","result":"failed","detail_path":"aidlc/spaces/default/intents/261013-tagged-notes/.aidlc-engine/sensors/intent-capture/required-sections-f00255f3.md"}
+$ aidlc engine sensor fire required-sections --stage intent-capture --output-path aidlc/spaces/default/intents/261013-tagged-notes/discover/intent-capture/intent-statement.md
+{"fire_id":"f00255f3","sensor_id":"required-sections","stage":"intent-capture","output_path":"aidlc/spaces/default/intents/261013-tagged-notes/discover/intent-capture/intent-statement.md","result":"failed","detail_path":"aidlc/spaces/default/intents/261013-tagged-notes/.aidlc-engine/sensors/intent-capture/required-sections-f00255f3.md"}
 ```
 
 The detail file's findings (its JSON block shown here without the fence):

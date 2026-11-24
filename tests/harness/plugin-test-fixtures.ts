@@ -22,7 +22,7 @@ const COLLIDING_STAGE = `---
 slug: build-and-test
 name: Colliding Build and Test
 plugin: test-pro
-phase: construction
+phase: test
 execution: ALWAYS
 condition: always
 lead_agent: aidlc-quality-agent
@@ -49,7 +49,7 @@ export function writePluginTestFixtures(root: string, toolsDir: string): PluginT
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(REPO_ROOT, "plugins", "test-pro"), target, { recursive: true });
   }
-  writeFileSync(join(colliding, "stages", "construction", "build-and-test.md"), COLLIDING_STAGE, "utf-8");
+  writeFileSync(join(colliding, "stages", "test", "build-and-test.md"), COLLIDING_STAGE, "utf-8");
 
   const create = (name: string): string => {
     const pluginRoot = join(root, "layered", name);
@@ -66,7 +66,7 @@ export function writePluginTestFixtures(root: string, toolsDir: string): PluginT
   const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
   manifest.dependencies = ["core", "zeta@^0.1.0"];
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
-  const stagePath = join(alpha, "stages", "construction", "alpha-example-stage.md");
+  const stagePath = join(alpha, "stages", "build", "alpha-example-stage.md");
   writeFileSync(
     stagePath,
     readFileSync(stagePath, "utf-8")

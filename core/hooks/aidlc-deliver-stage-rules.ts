@@ -112,7 +112,7 @@ function promptStage(prompt: string, fallback: string | null): GraphStage | null
   const graph = loadGraph();
   const bySlug = new Map(graph.map((node) => [node.slug, node]));
   const stagePath = prompt.match(
-    /(?:^|[/\\])stages[/\\](?:initialization|ideation|inception|construction|operation)[/\\]([a-z0-9][a-z0-9-]*)\.md\b/i,
+    /(?:^|[/\\])stages[/\\][a-z0-9][a-z0-9-]*[/\\]([a-z0-9][a-z0-9-]*)\.md\b/i,
   );
   if (stagePath) {
     const explicit = bySlug.get(stagePath[1]);

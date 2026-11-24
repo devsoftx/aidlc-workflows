@@ -32,7 +32,7 @@
 //     AIDLC_GRAPH_RESOLVE=1 `resolve <scope> --stdout` cutover parity (11 scopes byte-exact
 //       vs mr9-parity fixtures) + the gate (no flag -> exit 1, stderr), env-seam read,
 //     nextInScopeStage walk parity (11 scopes via `lookup next-stage`),
-//     firstInScopeStageOfPhase parity (11 scopes x 5 phases via `lookup first-in-phase`),
+//     firstInScopeStageOfPhase parity (11 scopes x 8 phases via `lookup first-in-phase`),
 //     AIDLC_STAGE_GRAPH env-override-honoured-by-rewired-stagesInScope,
 //     compile --check drift (clean->0 / mutated->1 / restore->0),
 //     AIDLC_RULES_DIR populate-from-disk + --check drift, AIDLC_SENSORS_DIR populate +
@@ -95,6 +95,22 @@ const EXPORT_FIXTURE = join(import.meta.dir, "..", "fixtures", "designer-export"
 
 const BUN = process.execPath; // the bun binary running this test, for CLI-boundary checks
 
+// Variables of the chat this test runs in. A child that must behave as on the
+// person's own machine gets them removed; these are the names fuzzEnvironment
+// in tests/harness/gate-fuzz.ts removes.
+const HOST_SESSION_ENV = [
+  "CLAUDECODE",
+  "CLAUDE_CODE_SESSION_ID",
+  "CLAUDE_PID",
+  "CLAUDE_CODE_CHILD_SESSION",
+  "CLAUDE_CODE_ENTRYPOINT",
+  "CODEX_THREAD_ID",
+  "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE",
+  "AIDLC_SESSION_OVERRIDE_SOURCE",
+  "AIDLC_UNATTENDED",
+] as const;
+
 const SCOPES = [
   "enterprise",
   "feature",
@@ -108,7 +124,16 @@ const SCOPES = [
   "workshop",
   "express",
 ] as const;
-const PHASES = ["initialization", "ideation", "inception", "construction", "operation"] as const;
+const PHASES = [
+  "initialization",
+  "discover",
+  "design",
+  "build",
+  "test",
+  "secure",
+  "deploy",
+  "operate",
+] as const;
 
 // --- env-seam + cache harness (mirrors the .sh per-case env discipline) -------
 // compileStageGraph()/loadGraph()/loadSensors() read AIDLC_* env at call time.
@@ -216,9 +241,9 @@ describe("t66 producersOf / consumersOf (in-process)", () => {
 
 describe("t66 topoSort (in-process)", () => {
   // .sh:79-84
-  test("topoSort(loadGraph()) returns 33 stages starting with workspace-scaffold", () => {
+  test("topoSort(loadGraph()) returns 36 stages starting with workspace-scaffold", () => {
     const order = topoSort(loadGraph());
-    expect(`${order.length}:${order[0]}`).toBe("33:workspace-scaffold");
+    expect(`${order.length}:${order[0]}`).toBe("36:workspace-scaffold");
   });
   test("topoSort throws on cycle input", () => {
     const stages = [
@@ -234,7 +259,7 @@ describe("t66 topoSort (in-process)", () => {
 // =============================================================================
 
 describe("t66 findCycles (in-process)", () => {
-  test("findCycles(loadGraph()) returns [] for today's 32-stage graph", () => {
+  test("findCycles(loadGraph()) returns [] for the compiled stage graph", () => {
     expect(findCycles(loadGraph()).length).toBe(0);
   });
   // A->B->A
@@ -274,7 +299,7 @@ describe("t66 findCycles (in-process)", () => {
 
 describe("t66 subgraphForScope (in-process)", () => {
   // subset of full graph
-  test("subgraphForScope returns subset of full graph (bugfix < 32)", () => {
+  test("subgraphForScope returns subset of full graph (bugfix is smaller than the full graph)", () => {
     expect(subgraphForScope("bugfix").length).toBeLessThan(loadGraph().length);
   });
   // numeric order
@@ -325,14 +350,12 @@ describe("t66 graph traversal — full graph (in-process)", () => {
 
   // no cross-phase forward edges
   test("no cross-phase forward edges", () => {
-    const PHASE_ORDER: Record<string, number> = {
-      initialization: 0,
-      ideation: 1,
-      inception: 2,
-      construction: 3,
-      operation: 4,
-    };
+    // PHASES lists the phases in lifecycle order, so its index is the rank.
+    const PHASE_ORDER: Record<string, number> = Object.fromEntries(
+      PHASES.map((p, i): [string, number] => [p, i]),
+    );
     const graph = loadGraph();
+    expect(graph.filter((s) => PHASE_ORDER[s.phase] === undefined).map((s) => s.slug)).toEqual([]);
     const phaseBySlug = new Map(graph.map((s) => [s.slug, s.phase]));
     const bad: string[] = [];
     for (const s of graph) {
@@ -362,8 +385,8 @@ describe("t66 graph traversal — full graph (in-process)", () => {
     expect(expected.filter((e) => !ancestors.has(e))).toEqual([]);
   });
 
-  // reverse-engineering is independent of ideation (brownfield fan-out root)
-  test("reverse-engineering is independent of ideation (fan-out root for brownfield path)", () => {
+  // reverse-engineering reaches no discover-phase stage (brownfield fan-out root)
+  test("reverse-engineering reaches no discover-phase stage (fan-out root for brownfield path)", () => {
     const graph = loadGraph();
     const bySlug = new Map(graph.map((s) => [s.slug, s]));
     function reachable(from: string, to: string): boolean {
@@ -380,8 +403,9 @@ describe("t66 graph traversal — full graph (in-process)", () => {
       }
       return false;
     }
-    const ideationSlugs = graph.filter((s) => s.phase === "ideation").map((s) => s.slug);
-    const linked = ideationSlugs.filter((i) => reachable("reverse-engineering", i));
+    const discoverSlugs = graph.filter((s) => s.phase === "discover").map((s) => s.slug);
+    expect(discoverSlugs.length).toBeGreaterThan(0);
+    const linked = discoverSlugs.filter((i) => reachable("reverse-engineering", i));
     expect(linked).toEqual([]);
   });
 
@@ -498,12 +522,13 @@ describe("t66 AIDLC_GRAPH_RESOLVE=1 resolve cutover parity (spawnSync env-gated 
     const project = mkdtempSync(join(tmpdir(), "t66-plan-"));
     scratch.push(project);
     const output = join(project, "aidlc", "spaces", "default", "intents", ".aidlc-engine", "plan.json");
-    const env = {
+    const env: NodeJS.ProcessEnv = {
       ...process.env,
       AIDLC_GRAPH_RESOLVE: "1",
       AIDLC_PROJECT_DIR: project,
       AIDLC_PLAN_PATH: undefined,
     };
+    for (const name of HOST_SESSION_ENV) delete env[name];
     const args = [GRAPH_TS, "resolve", "feature"];
     const probe = spawnSync(BUN, args, {
       env: { ...env, AIDLC_STOP_HOOK_PROBE: "1" },
@@ -597,12 +622,12 @@ describe("t66 nextInScopeStage walk parity (spawnSync CLI-boundary: 11 scopes)",
 });
 
 // =============================================================================
-// firstInScopeStageOfPhase parity — 11 scopes x 5 phases
+// firstInScopeStageOfPhase parity — 11 scopes x 8 phases
 // MUST STAY SPAWN: drives the CLI `state lookup first-in-phase <phase> <scope>` per cell.
 // =============================================================================
 
 describe("t66 firstInScopeStageOfPhase parity (spawnSync CLI-boundary)", () => {
-  test("firstInScopeStageOfPhase parity byte-exact for 11 scopes x 5 phases", () => {
+  test("firstInScopeStageOfPhase parity byte-exact for 11 scopes x 8 phases", () => {
     const fails: string[] = [];
     for (const scope of SCOPES) {
       const obj: Record<string, string> = {};
@@ -1068,7 +1093,7 @@ describe("t66 designer export (spawnSync CLI-boundary)", () => {
   });
 
   // .sh:892-900 — Group B: element counts match live sources (4 assertions)
-  test("export element counts: stages=33, scopes=11, artifacts=122, agents=14", () => {
+  test("export element counts: stages=36, scopes=11, artifacts=127, agents=14", () => {
     const res = spawnSync(BUN, [GRAPH_TS, "export"], { encoding: "utf8" });
     const out = JSON.parse(res.stdout) as {
       stages: unknown[];
@@ -1076,9 +1101,9 @@ describe("t66 designer export (spawnSync CLI-boundary)", () => {
       artifacts: unknown[];
       agents: unknown[];
     };
-    expect(out.stages.length).toBe(33);
+    expect(out.stages.length).toBe(36);
     expect(Object.keys(out.scopes).length).toBe(11);
-    expect(out.artifacts.length).toBe(122);
+    expect(out.artifacts.length).toBe(127);
     expect(out.agents.length).toBe(14);
   });
 

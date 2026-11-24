@@ -7,6 +7,8 @@
   "functional-design",
   "code-generation",
   "build-and-test",
+  "code-review",
+  "security-review",
   "deployment-pipeline",
   "deployment-execution"
 ]

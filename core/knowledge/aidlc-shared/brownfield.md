@@ -6,11 +6,11 @@ For any stage that modifies existing code or infrastructure, these safeguards ap
 
 | Safeguard | What It Does | When Applied |
 |-----------|-------------|--------------|
-| **Blast Radius Analysis** | Identifies affected files/components and their downstream dependents | Before code generation (stage `code-generation`, 3.5) |
-| **Test Baseline** | Runs existing tests BEFORE changes to establish baseline | Before code generation (stage `code-generation`, 3.5) |
-| **Test Validation** | Runs existing tests AFTER changes to confirm nothing broke | After code generation (stage `build-and-test`, 3.6) |
-| **Impact Analysis** | Documents affected APIs, components, and dependencies | During reverse engineering (stage `reverse-engineering`, 2.1) and code generation (3.5) |
-| **Rollback Plan** | Documents how to undo changes if needed | Before deployment (stage `deployment-execution`, 4.3) |
+| **Blast Radius Analysis** | Identifies affected files/components and their downstream dependents | Before code generation (stage `code-generation`, 3.1) |
+| **Test Baseline** | Runs existing tests BEFORE changes to establish baseline | Before code generation (stage `code-generation`, 3.1) |
+| **Test Validation** | Runs existing tests AFTER changes to confirm nothing broke | After code generation (stage `build-and-test`, 4.1) |
+| **Impact Analysis** | Documents affected APIs, components, and dependencies | During reverse engineering (stage `reverse-engineering`, 1.4) and code generation (3.1) |
+| **Rollback Plan** | Documents how to undo changes if needed | Before deployment (stage `deployment-execution`, 6.4) |
 
 ## Blast Radius Analysis Template
 

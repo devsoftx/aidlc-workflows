@@ -26,6 +26,7 @@ import {
 import { guardOperationMatchesCommand } from "../../dist/claude/.claude/tools/aidlc-guard-operation.ts";
 import { SWITCHABLE_GUARD_FENCES } from "../../dist/claude/.claude/tools/aidlc-guard-fences.ts";
 import { listMessages } from "../../dist/claude/.claude/tools/aidlc-message-store.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -477,7 +478,7 @@ describe("every step that names the setter for the person's yes names their mess
   });
 
   test("code generation's turn-it-back-on row names their message", () => {
-    const stage = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", "construction", "code-generation.md"), "utf-8");
+    const stage = readFileSync(join(REPO_ROOT, "core", "aidlc-common", "stages", phaseFor("code-generation"), "code-generation.md"), "utf-8");
     expect(stage).toContain(`config set plan-approval on --message ${MESSAGE_SLOT}\``);
   });
 

@@ -1,4 +1,4 @@
-// covers: stage:construction/functional-design, stage:construction/code-generation, stage:construction/build-and-test
+// covers: stage:design/functional-design, stage:build/code-generation, stage:test/build-and-test
 //
 // A Unit's Functional Design or Code Generation table hands a criterion to
 // another Unit with an `N/A` row whose target is that Unit on its own, by
@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { AIDLC_SRC, cleanupTestProject, createTestProject, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -51,7 +52,7 @@ function write(proj: string, relative: string, content: string): string {
 }
 
 function table(proj: string, unit: string, stage: string, rows: Row[]): string {
-  return write(proj, `construction/${unit}/${stage}/traceability.json`, `${JSON.stringify({
+  return write(proj, `${phaseFor(stage)}/${unit}/${stage}/traceability.json`, `${JSON.stringify({
     stage,
     unit,
     upstream_ids: rows.map((row) => row.id),
@@ -79,11 +80,11 @@ function project(plan: Plan): string {
   writeFileSync(join(proj, "src", "profile.ts"), "export const profile = true;\n");
   const withStories = plan.stories !== false;
   // Prose with no requirement IDs: the rollup then reports criteria only.
-  write(proj, "inception/requirements-analysis/requirements.md", withStories
+  write(proj, "design/requirements-analysis/requirements.md", withStories
     ? "# Requirements\n\nPost entries and edit a profile.\n"
     : "# Requirements\n\n- FR1 Post an entry\n- FR2 Edit a profile\n");
   if (withStories) {
-    write(proj, "inception/user-stories/stories.md", [
+    write(proj, "design/user-stories/stories.md", [
       "# Stories",
       "",
       "## US1.1 Post an entry",
@@ -94,9 +95,9 @@ function project(plan: Plan): string {
       "- AC1.2.1 the new name is shown",
     ].join("\n"));
     // User Stories' own table: no requirement IDs to trace, so the rollup reports criteria only.
-    write(proj, "inception/user-stories/traceability.json", `${JSON.stringify({ stage: "user-stories", upstream_ids: [], coverage: [] })}\n`);
+    write(proj, "design/user-stories/traceability.json", `${JSON.stringify({ stage: "user-stories", upstream_ids: [], coverage: [] })}\n`);
   }
-  write(proj, "inception/units-generation/unit-of-work.md", [
+  write(proj, "design/units-generation/unit-of-work.md", [
     "# Units",
     "",
     "| Unit ID | Directory | Purpose |",
@@ -104,7 +105,7 @@ function project(plan: Plan): string {
     `| U1 | ${own} | Ledger |`,
     `| U2 | ${other} | Profiles |`,
   ].join("\n"));
-  write(proj, "inception/units-generation/unit-of-work-dependency.md", [
+  write(proj, "design/units-generation/unit-of-work-dependency.md", [
     "# Dependencies",
     "",
     "```yaml",
@@ -119,7 +120,7 @@ function project(plan: Plan): string {
   ].join("\n"));
   const first = withStories ? "US1.1" : "FR1";
   const second = withStories ? "US1.2" : "FR2";
-  write(proj, "inception/units-generation/unit-of-work-story-map.md", [
+  write(proj, "design/units-generation/unit-of-work-story-map.md", [
     "# Story Map",
     "",
     "| Item | Unit ID | Directory |",
@@ -127,7 +128,7 @@ function project(plan: Plan): string {
     `| ${first} | ${plan.row} |`,
     `| ${second} | U2 | ${other} |`,
   ].join("\n"));
-  write(proj, `construction/${own}/functional-design/rules.md`, "# Rules\n\n- BR1.1 an entry is posted once\n");
+  write(proj, `design/${own}/functional-design/rules.md`, "# Rules\n\n- BR1.1 an entry is posted once\n");
   return proj;
 }
 

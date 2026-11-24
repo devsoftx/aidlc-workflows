@@ -23,6 +23,7 @@ import {
   serializeReviewFindingDispositions,
 } from "../../dist/claude/.claude/tools/aidlc-review-brief.ts";
 import { seededAuditDir, seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   auditBlock,
@@ -74,7 +75,7 @@ function reviewLeftNotReady(candidate: Candidate, label: string): void {
 // in the project.
 function approvalRecords(candidate: Candidate, status: "Accepted risk" | "Fix requested"): void {
   const reviewed = join(
-    seededRecordDir(candidate.checkout), "construction", "alpha", STAGE, artifactFilename(nfrDesign.review_artifact!),
+    seededRecordDir(candidate.checkout), phaseFor(STAGE), "alpha", STAGE, artifactFilename(nfrDesign.review_artifact!),
   );
   const dispositions = serializeReviewFindingDispositions([{
     artifact: relative(candidate.checkout, reviewed).replaceAll("\\", "/"),
@@ -188,13 +189,13 @@ describe("t326 pin and a stage approved over an open review concern", () => {
     const candidate = prepareCandidate(fixture.remote, "alpha", "changed-team");
     reviewLeftNotReady(candidate, "changed-team");
     const name = artifactFilename(nfrDesign.produces![0]);
-    const document = join(seededRecordDir(candidate.checkout), "construction", "alpha", STAGE, name);
+    const document = join(seededRecordDir(candidate.checkout), phaseFor(STAGE), "alpha", STAGE, name);
     writeFileSync(document, `${readFileSync(document, "utf-8")}\nchanged after approval\n`);
     appendRows(
       candidate,
       auditBlock(
         "ARTIFACT_UPDATED", "alpha", candidate.generation, STAGE,
-        `**File**: construction/alpha/${STAGE}/${name}\n`,
+        `**File**: ${phaseFor(STAGE)}/alpha/${STAGE}/${name}\n`,
       ),
     );
     publishAgain(candidate, "NFR Design changed after its approval");

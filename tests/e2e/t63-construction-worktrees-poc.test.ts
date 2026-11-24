@@ -9,7 +9,7 @@
 // Mechanism: mixed.
 //   - The scope-grid lookups (codegen mode, practices SKIP) are STRUCTURAL data
 //     checks → none (read the compiled scope-grid.json in process).
-//   - The dispatch-event emit, the practices-event emit, and the v8 state-write
+//   - The dispatch-event emit, the practices-event emit, and the state write
 //     are process / audit-shard boundary seams -> cli (spawnSync the real .ts tool
 //     via the bun runtime, then assert on the bytes the tool wrote to disk).
 //     Each of these is a NON-GOLDEN audit-emit anchor; the emit must ACTUALLY
@@ -27,7 +27,7 @@
 //       - --type empty -> emitAudit(pd, "PRACTICES_SECTION_EMPTY", fields)
 //   dist/claude/.claude/tools/aidlc-utility.ts handleIntentCreateStateBuild
 //       - the state template emits "- **Worktree Path**:" + "- **Bolt Refs**:",
-//         State Version 8
+//         at the current State Version
 
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS, NATIVE_FIXTURE_SETUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { afterAll, beforeAll, describe, expect, test, setDefaultTimeout } from "bun:test";
@@ -40,7 +40,7 @@ import { AIDLC_SRC, setupIntegrationProject } from "../harness/fixtures.ts";
 // under <record>/audit/. Read state through the resolved record dir and audit
 // through the shipped merge helper (default-resolves the active intent, falls
 // back to the space-level shard when no intent resolves).
-import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { CURRENT_STATE_VERSION, readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -58,7 +58,7 @@ const scopeGrid = JSON.parse(readFileSync(SCOPE_GRID, "utf-8")) as Record<
 >;
 
 // One initialized poc project shared across the CLI cases. setupIntegrationProject
-// copies the shipped .claude/ + a greenfield stub; intent-create seeds the v8
+// copies the shipped .claude/ + a greenfield stub; intent-create seeds the
 // state + audit shards.
 let PROJ: string;
 
@@ -177,10 +177,10 @@ describe("t63 construction-worktrees poc (migrated from t63-construction-worktre
     // fields.
     const state = readFileSync(statePath(), "utf-8");
     // Pin the exact template field lines (aidlc-utility.ts
-    // handleIntentCreateStateBuild) plus the State Version 8 marker that makes these
-    // the v8 template's fields.
+    // handleIntentCreateStateBuild) plus the current State Version marker that makes these
+    // the current template's fields.
     expect(state).toContain("- **Worktree Path**:");
     expect(state).toContain("- **Bolt Refs**:");
-    expect(state).toContain("- **State Version**: 8");
+    expect(state).toContain(`- **State Version**: ${CURRENT_STATE_VERSION}`);
   });
 });

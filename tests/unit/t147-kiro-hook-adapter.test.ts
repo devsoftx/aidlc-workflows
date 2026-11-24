@@ -25,6 +25,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { EXTENDED_SUBPROCESS_TIMEOUT_MS } from "../../core/tools/aidlc-runtime-budget.ts";
 import { describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -306,7 +307,7 @@ function seedUnapprovedCodeGeneration(dir: string, unit: string): void {
     unit,
     state_sha256: stateDigest(state),
   });
-  mkdirSync(join(seededRecordDir(dir), "construction", unit, "code-generation"), {
+  mkdirSync(join(seededRecordDir(dir), phaseFor("code-generation"), unit, "code-generation"), {
     recursive: true,
   });
 }
@@ -751,7 +752,7 @@ describe("t147 Kiro hook adapter (live-captured payload fixtures)", () => {
     const dir = scratchProject(true);
     try {
       seedUnapprovedCodeGeneration(dir, "todo-core");
-      const rec = relative(dir, join(seededRecordDir(dir), "construction", "todo-core", "code-generation")).replaceAll("/", "\\");
+      const rec = relative(dir, join(seededRecordDir(dir), phaseFor("code-generation"), "todo-core", "code-generation")).replaceAll("/", "\\");
       const command = `New-Item -ItemType File -Force -Path '${rec}\\code-generation-plan.md' | Out-Null`;
       const call = (target: string, toolName: string) =>
         runAdapter(dir, target, {
@@ -1539,7 +1540,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
         { recursive: true },
       );
       const basePrompt =
-        "Run .kiro/aidlc-common/stages/inception/user-stories.md.";
+        "Run .kiro/aidlc-common/stages/design/user-stories.md.";
       const payload = (promptTemplate: string) => ({
         cwd: dir,
         tool_name: "subagent",
@@ -1658,7 +1659,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           stages: [{
             role: "aidlc-product-agent",
             prompt_template:
-              "Run .kiro/aidlc-common/stages/inception/user-stories.md.",
+              "Run .kiro/aidlc-common/stages/design/user-stories.md.",
           }, {
             role: "aidlc-quality-agent",
             prompt_template: "Review the user stories.",
@@ -1705,7 +1706,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           stages: [{
             role: "aidlc-product-agent",
             prompt_template:
-              "Run .kiro/aidlc-common/stages/inception/user-stories.md.",
+              "Run .kiro/aidlc-common/stages/design/user-stories.md.",
           }],
         },
       });
@@ -1865,7 +1866,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
       const workerFile = join(dir, ".kiro", "agents", "aidlc-product-agent.json");
       const phases = join(dir, "aidlc", "spaces", "default", "memory", "phases");
       mkdirSync(phases, { recursive: true });
-      writeFileSync(join(phases, "inception.md"), "# Inception\n\nKeep the phase mandates.\n");
+      writeFileSync(join(phases, "design.md"), "# Design\n\nKeep the phase mandates.\n");
       const payload = {
         cwd: dir,
         tool_name: "subagent_aidlc-product-agent",
@@ -2000,7 +2001,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
       const conductor = JSON.parse(readFileSync(conductorFile, "utf-8"));
       conductor.toolsSettings.subagent.trustedAgents.push(agent);
       writeFileSync(conductorFile, JSON.stringify(conductor));
-      const prompt = "Run .kiro/aidlc-common/stages/inception/user-stories.md.";
+      const prompt = "Run .kiro/aidlc-common/stages/design/user-stories.md.";
       const shared = runDispatchCore(dir, {
         cwd: dir, tool_name: "Task", tool_input: { subagent_type: agent, prompt },
       });
@@ -2195,8 +2196,8 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
             cwd: dir,
             tool_name,
             tool_input: tool_name === "read_files"
-              ? { paths: [null, "construction/sibling-unit/design.md"] }
-              : { path: "construction/sibling-unit/design.md" },
+              ? { paths: [null, `${phaseFor("functional-design")}/sibling-unit/design.md`] }
+              : { path: `${phaseFor("functional-design")}/sibling-unit/design.md` },
           },
           ["aidlc-architecture-reviewer-agent"],
         );
@@ -2222,7 +2223,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
             hook_event_name: "preToolUse",
             cwd: dir,
             tool_name,
-            tool_input: mutationInput(tool_name, "construction/sibling-unit/design.md"),
+            tool_input: mutationInput(tool_name, `${phaseFor("functional-design")}/sibling-unit/design.md`),
           },
           ["aidlc-architecture-reviewer-agent"],
         );
@@ -2241,7 +2242,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           hook_event_name: "preToolUse",
           cwd: dir,
           tool_name,
-          tool_input: mutationInput(tool_name, "construction/todo-core/design.md"),
+          tool_input: mutationInput(tool_name, `${phaseFor("functional-design")}/todo-core/design.md`),
         });
         expect(r.code, tool_name).toBe(0);
         expect(existsSync(freezeHeartbeat), tool_name).toBe(true);
@@ -2254,7 +2255,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           ...(FIXTURES.preToolUse_fs_read as Record<string, unknown>),
           cwd: dir,
           tool_input: {
-            operations: [null, { path: "construction/sibling-unit/design.md" }],
+            operations: [null, { path: `${phaseFor("functional-design")}/sibling-unit/design.md` }],
           },
         },
         ["aidlc-architecture-reviewer-agent"],
@@ -2319,6 +2320,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
   test("7: write-like adapter inputs reach audit and sensors while delete stays out", () => {
     const dir = scratchProject(true);
     try {
+      const requirementsDir = join(seededRecordDir(dir), phaseFor("requirements-analysis"), "requirements-analysis");
       const healthDir = join(seededRecordDir(dir), ".aidlc-engine/hooks-health");
       const auditHeartbeat = join(healthDir, "write-audit-log.last");
       const sensorHeartbeat = join(healthDir, "run-sensors.last");
@@ -2330,7 +2332,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
           cwd: dir,
           tool_name,
           tool_input: {
-            path: join(seededRecordDir(dir), "inception", "requirements.md"),
+            path: join(requirementsDir, "requirements.md"),
           },
         });
         expect(r.code, tool_name).toBe(0);
@@ -2348,7 +2350,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
               tool_input: Record<string, unknown>;
             }).tool_input,
             command,
-            path: join(seededRecordDir(dir), "inception", "requirements.md"),
+            path: join(requirementsDir, "requirements.md"),
           },
         });
         expect(edited.code, command).toBe(0);
@@ -2356,10 +2358,10 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
       }
 
       const batchPaths = [
-        join(seededRecordDir(dir), "inception", "requirements.md"),
-        join(seededRecordDir(dir), "inception", "constraints.md"),
+        join(requirementsDir, "requirements.md"),
+        join(requirementsDir, "constraints.md"),
       ];
-      mkdirSync(join(seededRecordDir(dir), "inception"), { recursive: true });
+      mkdirSync(requirementsDir, { recursive: true });
       for (const path of batchPaths) writeFileSync(path, "draft\n", "utf-8");
       const beforeBatch = readAudit(dir);
       const batch = runAdapter(dir, "audit-and-sensors", {
@@ -2388,7 +2390,7 @@ if (args[0] === "engine" && args[1] === "orchestrate") {
         const deleted = runAdapter(dir, "audit-and-sensors", {
           cwd: dir,
           tool_name,
-          tool_input: { ...CAPTURED_DELETE_INPUT, targetFile: "construction/todo-core/design.md" },
+          tool_input: { ...CAPTURED_DELETE_INPUT, targetFile: `${phaseFor("functional-design")}/todo-core/design.md` },
         });
         expect(deleted.code, tool_name).toBe(0);
         expect(existsSync(auditHeartbeat), tool_name).toBe(false);

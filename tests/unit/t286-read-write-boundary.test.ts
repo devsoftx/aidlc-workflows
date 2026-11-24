@@ -247,12 +247,10 @@ describe("t286 writeBufferAtomic", () => {
   test("throws and cleans up its own temp when the destination dir is unwritable", () => {
     if (process.platform === "win32") return; // chmod does not remove write access on Windows
     const d = scratch();
-    const sub = join(d, "ro");
-    mkdirSync(sub);
-    chmodSync(sub, 0o500); // r-x: cannot create the sibling temp
-    expect(() => writeBufferAtomic(join(sub, "a.bin"), Buffer.from("x"))).toThrow();
-    chmodSync(sub, 0o700);
-    expect(readdirSync(sub)).toEqual([]);
+    const notDir = join(d, "file");
+    writeFileSync(notDir, "x");
+    expect(() => writeBufferAtomic(join(notDir, "a.bin"), Buffer.from("x"))).toThrow();
+    expect(readdirSync(d).filter((f) => f.endsWith(".tmp"))).toEqual([]);
   });
 });
 

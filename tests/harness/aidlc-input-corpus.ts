@@ -3,6 +3,7 @@
 // and the message record the hook writes. The unit check (tests/unit/t-aidlc-input-corpus.test.ts) runs the
 // engine's first step for every item; the live check (tests/e2e/t-live-aidlc-input-corpus.serial.test.ts) drives a
 // sample through real agents.
+import { phaseFor } from "./stage-phase.ts";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -17,7 +18,7 @@ import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/
 
 /**
  * Where the person is when they type the line:
- * fresh: no workflow yet. work-open: a bugfix mid-Inception. plan-question-open: a code plan awaiting approval.
+ * fresh: no workflow yet. work-open: a bugfix mid-Design. plan-question-open: a code plan awaiting approval.
  * gate-open: a stage gate awaiting approval (review READY, summary confirmed, so an approval goes through).
  * two-similar-records: auth and auth-fix, the second active. plan-offer-open: a fresh workspace where they typed
  * "build a notes app" and the plan offer is on screen. routing-question-open: open work where they typed "fix the
@@ -165,7 +166,7 @@ export async function exec(cmd: string[], opts: { cwd: string; env: NodeJS.Proce
   }
 }
 
-export interface RunOptions { session?: string; env?: Record<string, string> }
+export interface RunOptions { session?: string; env?: Record<string, string | undefined> }
 // Production guards, as a person's run has them; the chat the engine acts for is pinned the way a hook pins it.
 export function env(proj: string, opts: RunOptions = {}): NodeJS.ProcessEnv {
   return {
@@ -201,7 +202,7 @@ export async function next(proj: string, args: string[], opts: RunOptions = {}):
 
 const midInception = () => readFileSync(join(FIXTURES_DIR, "state-mid-inception.md"), "utf-8");
 const STAGE = "requirements-analysis";
-const stageDir = (proj: string) => join(seededRecordDir(proj), "inception", STAGE);
+const stageDir = (proj: string) => join(seededRecordDir(proj), phaseFor(STAGE), STAGE);
 
 function writeStageFiles(proj: string, summaryConfirmed: boolean): void {
   const dir = stageDir(proj);
@@ -278,15 +279,15 @@ export async function buildState(proj: string, state: State): Promise<void> {
         .replace("- [-] requirements-analysis ", "- [x] requirements-analysis ")
         .replace("- [ ] code-generation ", "- [-] code-generation ")
         .replace(/^- \*\*Current Stage\*\*:.*$/m, "- **Current Stage**: code-generation")
-        .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, "- **Lifecycle Phase**: CONSTRUCTION")
-        .replace("- **Inception**: Active", "- **Inception**: Verified")
-        .replace("- **Construction**: Pending", "- **Construction**: Active"), "utf-8");
+        .replace(/^- \*\*Lifecycle Phase\*\*:.*$/m, `- **Lifecycle Phase**: ${phaseFor("code-generation").toUpperCase()}`)
+        .replace("- **Design**: Active", "- **Design**: Verified")
+        .replace("- **Build**: Pending", "- **Build**: Active"), "utf-8");
       mkdirSync(join(proj, "src"), { recursive: true });
       writeFileSync(join(proj, "src", "todo.ts"), "export const todo = (title: string) => title;\n", "utf-8");
-      const requirements = join(seededRecordDir(proj), "inception", "requirements-analysis");
+      const requirements = join(seededRecordDir(proj), "design", "requirements-analysis");
       mkdirSync(requirements, { recursive: true });
       writeFileSync(join(requirements, "requirements.md"), "# Requirements\n\n- FR-1: a blank title is refused.\n", "utf-8");
-      const dir = join(seededRecordDir(proj), "construction", "code-generation");
+      const dir = join(seededRecordDir(proj), "build", "code-generation");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "code-generation-plan.md"),
         "# Code Generation Plan\n\n## Summary\n\n- Builds: the blank-title fix\n- Touches: src/todo.ts\n" +

@@ -82,6 +82,7 @@ import {
   readAllAuditShards,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { toPortablePath } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // With no intent cursor seeded, compile resolves the BARE space record root
 // (docsRoot -> spaceRecordRoot) at aidlc/spaces/default/intents/. State,
@@ -166,7 +167,7 @@ function makeProject(): string {
 }
 
 function memDir(proj: string): string {
-  return join(recordRoot(proj), "ideation", "intent-capture");
+  return join(recordRoot(proj), phaseFor("intent-capture"), "intent-capture");
 }
 
 function memFile(proj: string): string {

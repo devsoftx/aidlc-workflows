@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { appendAuditEntry } from "../../core/tools/aidlc-audit.ts";
 import { readAllAuditShards, stateDigest, writeActiveDirectiveMarker } from "../../core/tools/aidlc-lib.ts";
 import { createTestProject, seedAidlcMemory, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_COMPILE_TIMEOUT_MS, NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 
 const ROOT = join(import.meta.dir, "..", "..");
@@ -25,10 +26,10 @@ test("native Codex summary receipt precedes the plan without authorizing generat
     symlinkSync(runtime, join(scratch, "runtime"), "junction");
     cpSync(join(runtime, "codex", ".codex"), join(proj, ".codex"), { recursive: true });
     seedAidlcMemory(proj);
-    const state = "# AI-DLC State Tracking\n\n## Project Information\n- **Scope**: classic\n- **Guard Policy**: strict\n\n## Current Status\n- **Lifecycle Phase**: CONSTRUCTION\n- **Current Stage**: code-generation\n";
+    const state = "# AI-DLC State Tracking\n\n## Project Information\n- **Scope**: classic\n- **Guard Policy**: strict\n\n## Current Status\n- **Lifecycle Phase**: BUILD\n- **Current Stage**: code-generation\n";
     writeFileSync(seededStateFile(proj), state);
     writeActiveDirectiveMarker(proj, { kind: "run-stage", stage: "code-generation", unit: "todo-core", state_sha256: stateDigest(state) });
-    const dir = join(seededRecordDir(proj), "construction", "todo-core", "code-generation");
+    const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "todo-core", "code-generation");
     mkdirSync(dir, { recursive: true });
     const questions = join(dir, "code-generation-questions.md");
     writeFileSync(questions, "# Planning questions\n\n## Q1\n\nKeep the current API.\n\n## Consolidated Summary Confirmation\n\n- Looks correct\n- Request changes\n\n[Answer]:\n");

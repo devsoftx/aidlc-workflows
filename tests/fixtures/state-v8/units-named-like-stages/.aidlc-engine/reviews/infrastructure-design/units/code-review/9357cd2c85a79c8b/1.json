@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "infrastructure-design",
+  "unit": "code-review",
+  "workflow": null,
+  "attempt": "9357cd2c85a79c8b",
+  "iteration": 1,
+  "reviewer": "aidlc-architecture-reviewer-agent",
+  "verdict": "READY",
+  "request_id": "review:98507861e17d582c88ab22e9c90b888e",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:6d656985a8ac49402bcb76d5aee8af4353e27b9cf8e0509226bde37dbbd0d339",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T04:05:54Z"
+}

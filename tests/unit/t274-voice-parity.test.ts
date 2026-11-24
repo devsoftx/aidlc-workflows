@@ -266,7 +266,7 @@ describe("t272 §3 retired framework-voice phrases stay out of user-visible pros
 describe("t272 §4 Construction keeps its own voice rules", () => {
   test("the protocol's voice contract covers the per-unit loop's bookkeeping", () => {
     const flat = read(PROTOCOL_REL).replace(/\s+/g, " ");
-    expect(flat).toContain("In Construction, the loop's bookkeeping is internal.");
+    expect(flat).toContain("In the unit loop, the loop's bookkeeping is internal.");
     // The substance, not just the heading: the rule's whole force is that a
     // PLAIN retelling is not an improvement (that is the move the live run
     // showed the model making), and that a re-entry's own narration value is
@@ -313,7 +313,7 @@ describe("t272 §4 Construction keeps its own voice rules", () => {
 
   test("delivery-planning and practices-discovery require a first-mention gloss", () => {
     const delivery = read(
-      "core/aidlc-common/stages/inception/delivery-planning.md",
+      "core/aidlc-common/stages/design/delivery-planning.md",
     ).replace(/\s+/g, " ");
     // The Bolt definition existed already but sat in a block addressed to the
     // model, so it never rendered. What is pinned is the INSTRUCTION that its
@@ -324,7 +324,7 @@ describe("t272 §4 Construction keeps its own voice rules", () => {
     expect(delivery).toContain("each file stands alone");
 
     const practices = read(
-      "core/aidlc-common/stages/inception/practices-discovery.md",
+      "core/aidlc-common/stages/design/practices-discovery.md",
     ).replace(/\s+/g, " ");
     expect(practices).toContain("Gloss a term of art the first time it appears");
     // The walking-skeleton question text itself, glossed in the question line
@@ -338,7 +338,7 @@ describe("t272 §4 Construction keeps its own voice rules", () => {
     // so it is machine-facing by contract and stays. What must not carry it is
     // the QUESTION built from that section.
     const practices = read(
-      "core/aidlc-common/stages/inception/practices-discovery.md",
+      "core/aidlc-common/stages/design/practices-discovery.md",
     ).toLowerCase();
     expect(practices).not.toContain("ceremony");
     // The classifier's side of the contract is still intact, so the carve-out
@@ -394,7 +394,7 @@ describe("t274 §5 record-keeping steps are never narrated", () => {
       phrases: ["is bookkeeping after recorded Unit approvals", "owns its receipt", "consumes the human turn"],
     },
     {
-      rel: "core/aidlc-common/stages/inception/reverse-engineering.md",
+      rel: "core/aidlc-common/stages/discover/reverse-engineering.md",
       phrases: ["mint link 1", "mint the final-link receipt", "binds the receipt to its path, write time, and SHA-256"],
     },
     {
@@ -410,7 +410,7 @@ describe("t274 §5 record-keeping steps are never narrated", () => {
   }
 
   test("reverse engineering keeps its record steps silent", () => {
-    const body = flat("core/aidlc-common/stages/inception/reverse-engineering.md");
+    const body = flat("core/aidlc-common/stages/discover/reverse-engineering.md");
     expect(body).toContain("the person hears only what the scan found in their code");
   });
 

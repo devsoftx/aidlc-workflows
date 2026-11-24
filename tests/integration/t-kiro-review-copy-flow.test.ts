@@ -12,6 +12,7 @@
 // Kiro itself is not driven here: that a delegated agent's fs_read deny with an
 // exclude is enforced was measured on Kiro CLI 2.31.0 and Kiro IDE 1.3.0.
 
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -88,7 +89,7 @@ class KiroUnitReview {
       "- **Project**: Kiro reviewer copy",
       "- **Project Type**: Greenfield",
       "- **Scope**: feature",
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       "- **Skeleton Stance**: on", "",
       "## Runtime State",
       "- **Revision Count**: 0",
@@ -99,17 +100,18 @@ class KiroUnitReview {
       "- **Depth**: Standard",
       "- **Test Strategy**: Standard", "",
       "## Stage Progress", "",
-      "### CONSTRUCTION PHASE",
-      `- [-] ${STAGE} — EXECUTE`,
+      `### ${phaseFor(STAGE).toUpperCase()} PHASE`,
+      `- [-] ${STAGE} — EXECUTE`, "",
+      `### ${phaseFor("code-generation").toUpperCase()} PHASE`,
       "- [ ] code-generation — EXECUTE", "",
       "## Current Status",
-      "- **Lifecycle Phase**: CONSTRUCTION",
+      `- **Lifecycle Phase**: ${phaseFor(STAGE).toUpperCase()}`,
       `- **Current Stage**: ${STAGE}`,
       "- **Status**: Running",
       "- **Last Updated**: 2026-10-15T00:00:00Z", "",
     ].join("\n"));
     seedBoltDag(this.dir, [UNIT, "beta"]);
-    const stageDir = join(seededRecordDir(this.dir), "construction", UNIT, STAGE);
+    const stageDir = join(seededRecordDir(this.dir), phaseFor(STAGE), UNIT, STAGE);
     mkdirSync(stageDir, { recursive: true });
     writeFileSync(join(stageDir, `${STAGE}-questions.md`), "# Questions\n\n[Answer]: Looks correct\n");
     for (const [name, body] of [
@@ -173,12 +175,15 @@ describe("the reviewer read-scope copy on Kiro", () => {
 
     const copy = readFileSync(join(p.dir, ".kiro", "agents", `${copyName}.md`), "utf-8");
     expect(copy).toContain(`\nname: ${copyName}\n`);
-    expect(copy).toContain('        - "aidlc/spaces/*/intents/*/construction/**"');
-    // Only this intent's folder of the Unit is opened again.
+    expect(copy).toContain('        - "aidlc/spaces/*/intents/*/design/**"');
+    expect(copy).toContain('        - "aidlc/spaces/*/intents/*/build/**"');
+    // Only this intent's folder of the Unit is opened again, in each unit phase.
     const record = relative(p.dir, seededRecordDir(p.dir)).split(sep).join("/");
-    expect(copy).toContain(`        - "${record}/construction/${UNIT}/**"`);
-    expect(copy).not.toContain(`"aidlc/spaces/*/intents/*/construction/${UNIT}`);
-    expect(copy).not.toContain("construction/beta");
+    expect(copy).toContain(`        - "${record}/design/${UNIT}/**"`);
+    expect(copy).toContain(`        - "${record}/build/${UNIT}/**"`);
+    expect(copy).not.toContain(`"aidlc/spaces/*/intents/*/design/${UNIT}`);
+    expect(copy).not.toContain("design/beta");
+    expect(copy).not.toContain("build/beta");
     expect(readFileSync(join(p.dir, ".kiro", "agents", `${REVIEWER}.md`), "utf-8"))
       .toBe(readFileSync(join(KIRO_IDE_TREE, "agents", `${REVIEWER}.md`), "utf-8"));
     expect(p.agents()).toEqual([...shippedAgents, `${copyName}.md`].sort());
@@ -268,7 +273,7 @@ class KiroUnitCheckpoint extends KiroUnitReview {
       "- **Project Type**: Greenfield",
       "- **Project Type Source**: you",
       "- **Scope**: classic",
-      "- **State Version**: 8",
+      "- **State Version**: 10",
       "## Runtime State",
       "- **Revision Count**: 0",
       "- **Skeleton Stance**: off",
@@ -285,12 +290,14 @@ class KiroUnitCheckpoint extends KiroUnitReview {
       "- **Depth**: Standard",
       "- **Test Strategy**: Standard",
       "## Stage Progress",
-      "### CONSTRUCTION PHASE",
+      `### ${phaseFor(skipped[0]).toUpperCase()} PHASE`,
       ...skipped.map((stage) => `- [S] ${stage} ${DASH} SKIP`),
+      `### ${phaseFor(CG).toUpperCase()} PHASE`,
       `- [-] ${CG} ${DASH} EXECUTE`,
+      `### ${phaseFor("build-and-test").toUpperCase()} PHASE`,
       `- [ ] build-and-test ${DASH} EXECUTE`,
       "## Current Status",
-      "- **Lifecycle Phase**: CONSTRUCTION",
+      `- **Lifecycle Phase**: ${phaseFor(CG).toUpperCase()}`,
       `- **Current Stage**: ${CG}`,
       "- **Status**: Running", "",
     ].join("\n"));
@@ -324,7 +331,7 @@ class KiroUnitCheckpoint extends KiroUnitReview {
 
   build(unit: string): void {
     const stage = findStageBySlug(CG)!;
-    const output = join(seededRecordDir(this.dir), "construction", unit, CG);
+    const output = join(seededRecordDir(this.dir), phaseFor(CG), unit, CG);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
     writeFileSync(join(output, "source-manifest.json"), JSON.stringify({ stage: CG, unit, version: 1, writes: [{ path: `src/${unit}.ts` }] }));

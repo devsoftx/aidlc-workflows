@@ -96,6 +96,7 @@ import {
   seededStateFile,
   seedStateFile,
   resetAidlcEnv,
+  markGreenfieldReverseEngineeringSkipped,
 } from "../harness/fixtures.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { readAllAuditShards } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
@@ -979,6 +980,7 @@ describe("t118 differential corpus — engine vs aidlc-jump resolve (migrated fr
   // ============================================================
   test("WALK B (gated): next gate:true -> approve emits one STAGE_STARTED -> next scope-definition", () => {
     const p = projWithState("state-mid-ideation.md");
+    markGreenfieldReverseEngineeringSkipped(seededStateFile(p));
     const n1 = nextDirective(p);
     expect(n1.stage).toBe("feasibility");
     expect(n1.gate).toBe(true);

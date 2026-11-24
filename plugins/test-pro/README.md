@@ -10,11 +10,11 @@
 test-pro enriches an AI-DLC run so a generated application gets **full, traceable
 test coverage** rather than the baseline unit/integration tests core ships. It:
 
-- **enriches existing construction stages** to add branch coverage, edge/boundary
+- **enriches existing core stages** to add branch coverage, edge/boundary
   tests, API positive+negative tests, a named regression suite, and a
   requirement→test traceability matrix — with machine-readable results;
-- **adds two new stages** — a cross-unit integration stage (construction) and a
-  full-suite execution stage (operation) that runs the regression + edge + API
+- **adds two new stages** — a cross-unit integration stage (test) and a
+  full-suite execution stage (operate) that runs the regression + edge + API
   suite against the deployed system;
 - **ships two advisory sensors** that read the machine-readable results and report
   coverage-threshold and requirement-coverage gaps; and
@@ -61,13 +61,14 @@ AIDLC_PLUGIN_ROOT=<project>/.kiro/aidlc-plugins/aidlc-test-pro AIDLC_PROJECT_DIR
 
 Then confirm and run:
 ```
-/aidlc --doctor                 # expect 34 stages + Plugin check (test-pro): rows, 0 failures
+/aidlc --doctor                 # expect 38 stages (36 core + 2 test-pro) + Plugin check (test-pro): rows, 0 failures
 /aidlc --scope enterprise       # the test-pro stages route under enterprise/feature
 ```
 
-> **Scope gating.** The two new stages activate under `enterprise`/`feature`
-> (integration) and `enterprise` (full-suite) only — a `poc`/`bugfix` run won't
-> reach them. `--doctor` confirms they're in the graph; a scoped run routes them.
+> **Scope gating.** The two new stages activate only under their declared `scopes:`:
+> integration under `enterprise`, `feature`, `mvp`, `classic` and `workshop`, and
+> full-suite under `enterprise` — so a `poc`/`bugfix` run won't reach them.
+> `--doctor` confirms they're in the graph; a scoped run routes them.
 
 ## 3. Existing stages it modifies (the contribution seam)
 
@@ -76,18 +77,18 @@ its `contributions/<phase>/<slug>.md` files are merged at compose time.
 
 | Core stage | What test-pro adds |
 |---|---|
-| **`nfr-requirements`** (construction) | Produces `test-pro-testability-requirements`; required sections **Testability Requirements**, **Coverage Targets**. Captures per-requirement test-type matrix + coverage targets. |
-| **`nfr-design`** (construction) | Produces `test-pro-test-harness-design` (consumes testability reqs); required section **Test Harness Design**. Designs the runner, coverage instrumentation, fixtures, determinism. |
-| **`build-and-test`** (construction) | The big one — produces 5 `.md` artifacts (branch-coverage / edge-case / API-contract instructions, `test-pro-regression-suite`, `test-pro-requirement-traceability-matrix`); binds the 2 sensors; required sections **Branch Coverage**, **Edge Cases**, **API Positive and Negative**, **Requirement Traceability**; splices 6 prose steps (9a–9c branch/edge/API, 10a–10b regression+traceability & the two machine-readable JSON side-inputs, plus a Sensors note). The `test-pro-test-results.json` / `test-pro-coverage-summary.json` files are sensor side-inputs (not `produces:` deliverables). Requires `nfr-design`, the stage whose test-pro contribution produces the harness design this one consumes. |
-| **`performance-validation`** (operation) | Produces `test-pro-load-regression-matrix`; required section **Load Regression**. Cross-references the regression suite against load results. |
+| **`nfr-requirements`** (design) | Produces `test-pro-testability-requirements`; required sections **Testability Requirements**, **Coverage Targets**. Captures per-requirement test-type matrix + coverage targets. |
+| **`nfr-design`** (design) | Produces `test-pro-test-harness-design` (consumes testability reqs); required section **Test Harness Design**. Designs the runner, coverage instrumentation, fixtures, determinism. |
+| **`build-and-test`** (test) | The big one — produces 5 `.md` artifacts (branch-coverage / edge-case / API-contract instructions, `test-pro-regression-suite`, `test-pro-requirement-traceability-matrix`); binds the 2 sensors; required sections **Branch Coverage**, **Edge Cases**, **API Positive and Negative**, **Requirement Traceability**; splices 6 prose steps (9a–9c branch/edge/API, 10a–10b regression+traceability & the two machine-readable JSON side-inputs, plus a Sensors note). The `test-pro-test-results.json` / `test-pro-coverage-summary.json` files are sensor side-inputs (not `produces:` deliverables). Requires `nfr-design`, the stage whose test-pro contribution produces the harness design this one consumes. |
+| **`performance-validation`** (test) | Produces `test-pro-load-regression-matrix`; required section **Load Regression**. Cross-references the regression suite against load results. |
 | **`aidlc-quality-agent`** (persona) | A mandatory read-out instruction right after the delegated-knowledge preflight, and one Collaboration bullet naming `test-pro-metrics-agent` as the coverage read-out partner — `contributions/agents/`, prose fragments only. |
 
 ## 4. New stages it creates
 
 | Stage | Phase | # | Activation | Produces |
 |---|---|---|---|---|
-| **`test-pro-integration`** (Cross-Unit Integration Testing) | construction | 3.85 | scopes: enterprise, feature, mvp, classic, workshop; CONDITIONAL (runs once after build-and-test when the build spans >1 unit) | `test-pro-integration-test-plan`, `test-pro-integration-test-results`, `test-pro-cross-unit-contract-matrix` |
-| **`test-pro-full-suite`** (Full Test Suite Execution) | operation | 4.45 | scopes: enterprise; declares `when: {producer-in-plan: test-pro-regression-suite}` (not evaluated yet — see Activation below; gates on scope today) | `test-pro-full-suite-results`, `test-pro-edge-api-report` |
+| **`test-pro-integration`** (Cross-Unit Integration Testing) | test | 4.85 | scopes: enterprise, feature, mvp, classic, workshop; CONDITIONAL (runs once after build-and-test when the build spans >1 unit) | `test-pro-integration-test-plan`, `test-pro-integration-test-results`, `test-pro-cross-unit-contract-matrix` |
+| **`test-pro-full-suite`** (Full Test Suite Execution) | operate | 7.45 | scopes: enterprise; declares `when: {producer-in-plan: test-pro-regression-suite}` (not evaluated yet — see Activation below; gates on scope today) | `test-pro-full-suite-results`, `test-pro-edge-api-report` |
 
 Both are led by `aidlc-quality-agent`, `mode: inline`. Each declares a composer
 prior in an `ars:` block in its frontmatter — `targets: [ve, r]` and `cost: 4` on
@@ -183,7 +184,7 @@ namespaced, and every contribution targets a real core stage:
 bun test plugins/test-pro/tests/plugin.test.ts
 ```
 (The framework separately guards the compose *mechanism* in
-`tests/integration/t188-plugin-compose.test.ts`.)
+`tests/integration/t188-plugin-compose.serial.test.ts`.)
 
 ## See also
 - [Plugin Mechanism](../../docs/reference/18-plugin-mechanism.md) — the normative design

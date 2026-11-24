@@ -57,7 +57,7 @@ const CUSTOM_SLUG = "my-custom-stage";
 const CUSTOM_STAGE_MD = [
   "---",
   `slug: ${CUSTOM_SLUG}`,
-  "phase: construction",
+  "phase: design",
   "execution: ALWAYS",
   "lead_agent: aidlc-developer-agent",
   "mode: inline",
@@ -80,7 +80,7 @@ function newSandbox(): string {
 }
 
 function sandboxStagesDir(proj: string): string {
-  return join(proj, ".claude", "aidlc-common", "stages", "construction");
+  return join(proj, ".claude", "aidlc-common", "stages", "design");
 }
 
 interface SpawnResult {
@@ -147,12 +147,12 @@ describe("t184 stage-graph drift detection (issue #364)", () => {
       const prevS = process.env.AIDLC_STAGES_DIR;
       try {
         rmSync(tmp, { recursive: true, force: true });
-        // Cheap copy: only the construction phase dir (the helper globs all
+        // Cheap copy: only the design phase dir (the helper globs all
         // PHASES; an absent phase dir is skipped, so a single phase is enough to
         // prove the diff without copying the whole tree).
-        mkdirSync(join(tmp, "construction"), { recursive: true });
+        mkdirSync(join(tmp, "design"), { recursive: true });
         writeFileSync(
-          join(tmp, "construction", `${CUSTOM_SLUG}.md`),
+          join(tmp, "design", `${CUSTOM_SLUG}.md`),
           CUSTOM_STAGE_MD,
           "utf-8",
         );
@@ -197,18 +197,18 @@ describe("t184 stage-graph drift detection (issue #364)", () => {
     });
 
     test("compile fails loudly when a stage .md sits in a non-canonical phase directory", () => {
-      // A stage .md dropped into a phase dir whose name is not one of the five
+      // A stage .md dropped into a phase dir whose name is not one of the
       // canonical PHASES cannot be placed on the numeric spine. compile must
       // throw (fail loud), naming the offending phase directory, rather than
       // invent a prefix. The throw keys on the DIRECTORY name, not the
       // frontmatter `phase:` field — so this stage carries fully valid, schema-
-      // passing frontmatter (a canonical `phase: construction`) and the only
+      // passing frontmatter (a canonical `phase: design`) and the only
       // anomaly is the bogus directory it lives in. Driven through the
       // AIDLC_STAGES_DIR seam at a temp tree.
       const validStageMd = [
         "---",
         "slug: bogus-phase-stage",
-        "phase: construction",
+        "phase: design",
         "execution: ALWAYS",
         "condition: Always.",
         "lead_agent: aidlc-developer-agent",

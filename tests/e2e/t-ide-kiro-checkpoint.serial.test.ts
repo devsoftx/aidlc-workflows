@@ -71,6 +71,7 @@ import {
   resolveTestingPosture,
 } from "../../core/tools/aidlc-testing-posture.ts";
 import { seededAuditShard, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { cleanupTuiProject, KIRO_IDE_SRC, setupTuiProject } from "../harness/tui-fixtures.ts";
 import {
   autoApprove,
@@ -259,8 +260,7 @@ function seedApprovedPlanFixture(sandbox: string): void {
 }
 
 function seedGateFor(sandbox: string, slug: string, openGate = true): void {
-  const phase = slug === COMMITTED_SLUG ? "inception" : "construction";
-  const stageDir = join(seededRecordDir(sandbox), phase, slug);
+  const stageDir = join(seededRecordDir(sandbox), phaseFor(slug), slug);
   mkdirSync(stageDir, { recursive: true });
   if (slug === COMMITTED_SLUG) {
     writeFileSync(

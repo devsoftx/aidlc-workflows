@@ -18,59 +18,59 @@ Each scope's stage count below is the stages it runs after Initialization's thre
 
 **Use when:** Building a regulated enterprise feature that requires full audit trail, compliance review, and production-grade operations.
 
-- **Stages:** All 30
+- **Stages:** All 33
 - **Default depth:** Comprehensive
-- **Includes:** Full compliance, security, and operations stages
+- **Includes:** Full compliance, security, and operate stages
 
 ### feature
 
-**Use when:** Building a new feature of any size with the full 33-stage lifecycle. Select it explicitly with `--scope feature` or `/aidlc-feature`.
+**Use when:** Building a new feature of any size with the full lifecycle: every stage except Conformance Review (32 of the 33 stages after setup). Select it explicitly with `--scope feature` or `/aidlc-feature`.
 
-- **Stages:** All 30
+- **Stages:** 32 of 33 (every stage except Conformance Review)
 - **Default depth:** Standard
-- **Includes:** All stages, standard artifact detail
+- **Includes:** Every stage but Conformance Review, standard artifact detail
 
 ### mvp
 
-**Use when:** Building a greenfield minimum viable product. Skips late-stage operations but retains full design and construction.
+**Use when:** Building a greenfield minimum viable product. Skips late-stage operations but retains full design and build.
 
-- **Stages:** 20 of 30
+- **Stages:** 22 of 33
 - **Default depth:** Standard
-- **Skips:** All 7 Operation stages (deployment pipeline, environment provisioning, deployment execution, observability, incident response, performance validation, feedback) plus Market Research, Team Formation, and Approval Handoff from Ideation (10 skipped, 20 executed)
+- **Skips:** Market Research, Team Formation, and Approval & Handoff from discover; Performance Validation and Conformance Review; Deployment Pipeline, Environment Provisioning, and Deployment Execution; and all 3 Operate stages (observability setup, incident response, feedback and optimization) (11 skipped, 22 executed)
 
 ### poc
 
-**Use when:** Proving feasibility quickly. Skips most Ideation and Inception stages, focuses on getting to code fast.
+**Use when:** Proving feasibility quickly. Skips most Discover and Design stages, focuses on getting to code fast.
 
-- **Stages:** 5 of 30
+- **Stages:** 7 of 33
 - **Default depth:** Minimal
-- **Skips:** Market Research, Feasibility, Team Formation, Mockups, User Stories, all Operation stages
+- **Skips:** Market Research, Feasibility, Scope Definition, Team Formation, Rough Mockups, Approval & Handoff, every design stage except Requirements Analysis, Performance Validation, Conformance Review, and all deploy and Operate stages
 - **Plan approval:** Off. Once a code plan is written you see one line naming it, code generation starts, and the line says you can ask to go over the plan at any time; you can also ask to see a plan before it is built, or to be asked about every plan
 
 ### bugfix
 
 **Use when:** Fixing a specific bug. Streamlined path through code generation and testing.
 
-- **Stages:** 6 of 30
+- **Stages:** 8 of 33
 - **Default depth:** Minimal
 - **Includes:** Deployment Pipeline and Deployment Execution so the verified fix ships
-- **Skips:** Market Research, Feasibility, Team Formation, Mockups, design and architecture stages, environment provisioning, and broader operational readiness
+- **Skips:** Intent Capture & Framing, Market Research, Feasibility & Constraints, Scope Definition, Team Formation, Rough Mockups, Approval & Handoff, every design and architecture stage except Requirements Analysis, Performance Validation, Conformance Review, CI Pipeline, Environment Provisioning, and the Operate stages
 - **Ceremony:** No stage diary and no "Keep that for next time?" question after a correction, and no summary to confirm before an artifact is written. Sensors, every stage approval, and plan approval stay on, and each stage runs with its lead agent only; type `/aidlc --learnings on`, `/aidlc --summary-confirmation on`, or `/aidlc --collaborators on` to bring one back for this piece of work
 
 ### refactor
 
 **Use when:** Cleaning up or restructuring existing code without changing functionality.
 
-- **Stages:** 7 of 30
+- **Stages:** 9 of 33
 - **Default depth:** Minimal
 - **Includes:** Functional Design plus Deployment Pipeline and Deployment Execution
-- **Skips:** Similar to bugfix — focused on code analysis, design, implementation, and deployment through the existing path
+- **Skips:** The same stages as bugfix, except that it keeps Functional Design — focused on code analysis, design, implementation, and deployment through the existing path
 
 ### infra
 
 **Use when:** Making infrastructure changes (new environments, CDK/CloudFormation updates, cost optimization).
 
-- **Stages:** 12 of 30
+- **Stages:** 15 of 33
 - **Default depth:** Standard
 - **Skips:** User-facing stages (stories, mockups, user flows) — focuses on architecture, infrastructure, and deployment
 - **Writes the IaC in:** Code Generation, under Plan Approval, from the Infrastructure Design; Build and Test then runs the IaC checks, and Environment Provisioning applies it
@@ -79,18 +79,18 @@ Each scope's stage count below is the stages it runs after Initialization's thre
 
 **Use when:** Responding to a CVE or security vulnerability. Fast path through security-relevant stages.
 
-- **Stages:** 7 of 30
+- **Stages:** 10 of 33
 - **Default depth:** Minimal
-- **Skips:** Market Research, Team Formation, Mockups, non-security design stages
+- **Skips:** the discover stages except Reverse Engineering, the design stages except Requirements Analysis and NFR Requirements (the security-relevant ones), Performance Validation, CI Pipeline, Environment Provisioning, and the Operate stages
 
 ### classic
 
-**Use when:** You want v1-style ceremony: Inception and Construction, with a human approval at each stage (in Construction, per Unit when the work has Units). Conditional stages adapt to the project at runtime; Operation remains a placeholder. Stage-declared execution modes are unchanged; collaborators are off, so each stage runs with its lead agent only (`/aidlc --collaborators on` brings the support agents in).
+**Use when:** You want v1-style ceremony: Reverse Engineering, Design, Build, Test and Secure, with a human approval at each stage (per Unit in the Unit walk when the work has Units). Conditional stages adapt to the project at runtime; the Deploy and Operate stages are not in this scope. Stage-declared execution modes are unchanged; collaborators are off, so each stage runs with its lead agent only (`/aidlc --collaborators on` brings the support agents in).
 
-- **Stages:** 15 of 30
+- **Stages:** 18 of 33
 - **Default depth:** Standard
 - **Default test strategy:** Standard
-- **Skips:** All Ideation stages (1.1-1.7), CI Pipeline (3.7), and all Operation stages (4.1-4.7)
+- **Skips:** The discover stages except Reverse Engineering (1.1-1.3 and 1.5-1.8), Performance Validation (4.2), the deploy stages (CI Pipeline, Deployment Pipeline, Environment Provisioning, Deployment Execution; 6.1-6.4), and all Operate stages (7.1-7.3)
 - **Keywords:** None; selected explicitly or used as the implicit default
 - **Ceremony:** Walking skeleton and summary confirmation off. Sensors run and the learnings ritual runs. Reviews are advisory (one pass per stage, findings at the approval gate); explicit autonomy keeps the single pre-merge review.
 
@@ -119,7 +119,7 @@ confirmation goes off only when you ask for it.
 
 #### Upgrading an in-flight classic intent
 
-The saved stage plan is preserved: an older classic intent whose Operation
+The saved stage plan is preserved: an older classic intent whose Operate
 stages are recorded as `EXECUTE` still runs them, and routing, next-stage lookup,
 and status follow that recorded plan. New classic intents use the smaller grid.
 Ceremony defaults change immediately when the old intent has no saved ceremony
@@ -134,32 +134,32 @@ one advisory pass unless overridden. A per-work `--review` level replaces the
 scope cap but cannot exceed a stage's own review class: `--review adversarial`
 restores adversarial review on the stages that declare it, stages declared
 advisory stay advisory, and `--review none` still lowers it. To run the previous classic graph, with CI
-Pipeline and the Operation stages, change the intent to workshop with
+Pipeline and the Operate stages, change the intent to workshop with
 `aidlc engine scope change --scope workshop`; workshop retains the full
-Inception-through-Operation plan and uses a Minimal test strategy by default.
+lifecycle plan and uses a Minimal test strategy by default.
 Preserve a production Standard test strategy if needed by adding
 `--test-strategy standard` to that scope change.
 
 ### workshop
 
 **Use when:** Running a facilitated workshop or training lab with the established
-full Inception-through-Operation lifecycle and a lighter teaching test floor.
+full lifecycle and a lighter teaching test floor.
 
-- **Stages:** 23 of 30
+- **Stages:** 25 of 33
 - **Default depth:** Standard
 - **Default test strategy:** Minimal
-- **Skips:** All Ideation stages (1.1-1.7)
+- **Skips:** The discover stages except Reverse Engineering (1.1-1.3 and 1.5-1.8), and Conformance Review (5.3)
 - **Keywords:** `workshop`, `lab`, and `training`
 
 ### express
 
 **Use when:** You want the lightest path from requirements through code and test to a conditional deploy tail, with no design pass or reviewer dispatch.
 
-- **Stages:** 7 of 30
+- **Stages:** 9 of 33
 - **Default depth:** Minimal
 - **Review cap:** None
-- **Includes:** Initialization, conditional Reverse Engineering, Requirements Analysis, Code Generation, Build and Test, and the conditional Deployment Pipeline, Deployment Execution, and Observability Setup stages
-- **Skips:** Ideation, design, Units Generation, Delivery Planning, CI Pipeline, environment provisioning, and the late operations stages
+- **Includes:** Initialization, conditional Reverse Engineering, Requirements Analysis, Code Generation, Build and Test, Code Review and Security Review (no reviewer pass under `review_cap: none`), and the conditional Deployment Pipeline, Deployment Execution, and Observability Setup stages
+- **Skips:** The discover stages except Reverse Engineering, every design stage except Requirements Analysis (Units Generation and Delivery Planning among them), Performance Validation, Conformance Review, CI Pipeline, Environment Provisioning, Incident Response, and Feedback & Optimization
 - **Plan approval:** Off, like poc: each code plan is built as written after one line naming it, which says you can ask to go over it at any time
 
 ---
@@ -170,20 +170,22 @@ Authoritative data lives in the `.claude/scopes/aidlc-<name>.md` files (scope id
 
 | Scope | EXECUTE / Total | Depth | Test Strategy | Use Case |
 |-------|-----------------|-------|---------------|----------|
-| `enterprise` | 33 / 33 | Comprehensive | Comprehensive | Regulated enterprise feature, full audit trail |
-| `feature` | 33 / 33 | Standard | Standard | Full lifecycle for new features |
-| `mvp` | 23 / 33 | Standard | Standard | Greenfield, skip late operations |
-| `poc` | 8 / 33 | Minimal | Minimal | Prove feasibility fast |
-| `bugfix` | 9 / 33 | Minimal | Minimal | Fix and deploy a specific bug |
-| `refactor` | 10 / 33 | Minimal | Minimal | Clean up and deploy existing code |
-| `infra` | 15 / 33 | Standard | Standard | Infrastructure change |
-| `security-patch` | 10 / 33 | Minimal | Minimal | CVE response |
-| `classic` | 18 / 33 | Standard | Standard | V1-style Inception + Construction — the implicit default |
-| `workshop` | 26 / 33 | Standard | Minimal | Facilitated lifecycle with teaching-oriented tests |
-| `express` | 10 / 33 | Minimal | Minimal | Requirements to conditional deploy, no design or reviewers |
+| `enterprise` | 36 / 36 | Comprehensive | Comprehensive | Regulated enterprise feature, full audit trail |
+| `feature` | 35 / 36 | Standard | Standard | Full lifecycle for new features |
+| `mvp` | 25 / 36 | Standard | Standard | Greenfield, skip late operations |
+| `poc` | 10 / 36 | Minimal | Minimal | Prove feasibility fast |
+| `bugfix` | 11 / 36 | Minimal | Minimal | Fix and deploy a specific bug |
+| `refactor` | 12 / 36 | Minimal | Minimal | Clean up and deploy existing code |
+| `infra` | 18 / 36 | Standard | Standard | Infrastructure change |
+| `security-patch` | 13 / 36 | Minimal | Minimal | CVE response |
+| `classic` | 21 / 36 | Standard | Standard | V1-style design and build — the implicit default |
+| `workshop` | 28 / 36 | Standard | Minimal | Facilitated lifecycle with teaching-oriented tests |
+| `express` | 12 / 36 | Minimal | Minimal | Requirements to conditional deploy, no design or reviewers |
 | (proposed) | Varies | Varies | Varies | The agent proposes one from your freeform intent; you confirm it |
 
-Scopes differ by an order of magnitude in ceremony: `poc` runs a narrow single-pass path, while `feature` runs 30 stages after Initialization with 30 approval gates (29 of each on a new project, where Reverse Engineering is skipped) and five stages that repeat for each Unit of Work in Construction (four design stages and Code Generation). The scope confirmation line names the effective numbers - stage count, approval-gate count, and any per-unit fan-out - computed from the compiled grid and workspace scan, never estimated. Greenfield work excludes reverse engineering, and scopes that skip `units-generation` omit the per-unit clause because no Unit DAG exists. You know what you are consenting to before the workflow starts.
+The EXECUTE / Total column and the matrix's Total stages row count every stage the compiled grid lists, including the three Initialization setup stages (36 in all), as `aidlc engine gen scope-table` does; the scope sections and `/aidlc --help` count the 33 stages after setup.
+
+Scopes differ by an order of magnitude in ceremony: `poc` runs a narrow single-pass path, while `feature` runs 32 stages after Initialization with 32 approval gates (31 on a new project, where Reverse Engineering is skipped) and five stages that repeat for each Unit of Work (four design stages and Code Generation). The scope confirmation line names the effective numbers - stage count, approval-gate count, and any per-unit fan-out - computed from the compiled grid and workspace scan, never estimated. Greenfield work excludes reverse engineering, and scopes that skip `units-generation` omit the per-unit clause because no Unit DAG exists. You know what you are consenting to before the workflow starts.
 
 > **Per-project default scope:** teams can pre-set the default scope for a project by setting `AWS_AIDLC_DEFAULT_SCOPE` in `.claude/settings.json`. See [Customization § Per-Project Default Scope](13-customization.md#per-project-default-scope).
 
@@ -200,34 +202,37 @@ The routing table above gives the counts; this matrix shows exactly **which** st
 | 1.1 | Intent Capture & Framing | ✓ | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |
 | 1.2 | Market Research | ✓ | ✓ |  |  |  |  |  |  |  |  |  |
 | 1.3 | Feasibility & Constraints | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |
-| 1.4 | Scope Definition | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |
-| 1.5 | Team Formation | ✓ | ✓ |  |  |  |  |  |  |  |  |  |
-| 1.6 | Rough Mockups | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |
-| 1.7 | Approval & Handoff | ✓ | ✓ |  |  |  |  |  |  |  |  |  |
-| 2.1 | Reverse Engineering | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ |
-| 2.2 | Practices Discovery | ✓ | ✓ | ✓ |  |  |  | ✓ |  | ✓ | ✓ |  |
-| 2.3 | Requirements Analysis | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| 2.4 | User Stories | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
-| 2.5 | Refined Mockups | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
-| 2.6 | Domain Design | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
-| 2.7 | Units Generation | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
-| 2.8 | Contract Design | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
-| 2.9 | Delivery Planning | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
-| 3.1 | Functional Design | ✓ | ✓ | ✓ |  |  | ✓ |  |  | ✓ | ✓ |  |
-| 3.2 | NFR Requirements | ✓ | ✓ | ✓ |  |  |  | ✓ | ✓ | ✓ | ✓ |  |
-| 3.3 | NFR Design | ✓ | ✓ | ✓ |  |  |  | ✓ |  | ✓ | ✓ |  |
-| 3.4 | Infrastructure Design | ✓ | ✓ | ✓ |  |  |  | ✓ |  | ✓ | ✓ |  |
-| 3.5 | Code Generation | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| 3.6 | Build and Test | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| 3.7 | CI Pipeline | ✓ | ✓ | ✓ |  |  |  | ✓ |  |  | ✓ |  |
-| 4.1 | Deployment Pipeline | ✓ | ✓ |  |  | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ |
-| 4.2 | Environment Provisioning | ✓ | ✓ |  |  |  |  | ✓ |  |  | ✓ |  |
-| 4.3 | Deployment Execution | ✓ | ✓ |  |  | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ |
-| 4.4 | Observability Setup | ✓ | ✓ |  |  |  |  | ✓ |  |  | ✓ | ✓ |
-| 4.5 | Incident Response | ✓ | ✓ |  |  |  |  |  |  |  | ✓ |  |
-| 4.6 | Performance Validation | ✓ | ✓ |  |  |  |  |  |  |  | ✓ |  |
-| 4.7 | Feedback & Optimization | ✓ | ✓ |  |  |  |  |  |  |  | ✓ |  |
-| | **Total stages** | **33** | **33** | **23** | **8** | **9** | **10** | **15** | **10** | **18** | **26** | **10** |
+| 1.4 | Reverse Engineering | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ |
+| 1.5 | Scope Definition | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |
+| 1.6 | Team Formation | ✓ | ✓ |  |  |  |  |  |  |  |  |  |
+| 1.7 | Rough Mockups | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |
+| 1.8 | Approval & Handoff | ✓ | ✓ |  |  |  |  |  |  |  |  |  |
+| 2.1 | Practices Discovery | ✓ | ✓ | ✓ |  |  |  | ✓ |  | ✓ | ✓ |  |
+| 2.2 | Requirements Analysis | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 2.3 | User Stories | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| 2.4 | Refined Mockups | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| 2.5 | Domain Design | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| 2.6 | Units Generation | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| 2.7 | Contract Design | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| 2.8 | Delivery Planning | ✓ | ✓ | ✓ |  |  |  |  |  | ✓ | ✓ |  |
+| 2.9 | Functional Design | ✓ | ✓ | ✓ |  |  | ✓ |  |  | ✓ | ✓ |  |
+| 2.10 | NFR Requirements | ✓ | ✓ | ✓ |  |  |  | ✓ | ✓ | ✓ | ✓ |  |
+| 2.11 | NFR Design | ✓ | ✓ | ✓ |  |  |  | ✓ |  | ✓ | ✓ |  |
+| 2.12 | Infrastructure Design | ✓ | ✓ | ✓ |  |  |  | ✓ |  | ✓ | ✓ |  |
+| 3.1 | Code Generation | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 4.1 | Build and Test | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 4.2 | Performance Validation | ✓ | ✓ |  |  |  |  |  |  |  | ✓ |  |
+| 5.1 | Code Review | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 5.2 | Security Review | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 5.3 | Conformance Review | ✓ |  |  |  |  |  | ✓ | ✓ | ✓ |  |  |
+| 6.1 | CI Pipeline | ✓ | ✓ | ✓ |  |  |  | ✓ |  |  | ✓ |  |
+| 6.2 | Deployment Pipeline | ✓ | ✓ |  |  | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ |
+| 6.3 | Environment Provisioning | ✓ | ✓ |  |  |  |  | ✓ |  |  | ✓ |  |
+| 6.4 | Deployment Execution | ✓ | ✓ |  |  | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ |
+| 7.1 | Observability Setup | ✓ | ✓ |  |  |  |  | ✓ |  |  | ✓ | ✓ |
+| 7.2 | Incident Response | ✓ | ✓ |  |  |  |  |  |  |  | ✓ |  |
+| 7.3 | Feedback & Optimization | ✓ | ✓ |  |  |  |  |  |  |  | ✓ |  |
+| | **Total stages** | **36** | **35** | **25** | **10** | **11** | **12** | **18** | **13** | **21** | **28** | **12** |
 <!-- END scope-stage-matrix -->
 
 A ✓ marks static scope membership — it means the stage is included in the scope's plan, not that it will unconditionally execute. CONDITIONAL stages may be skipped at runtime when their condition does not hold (for example, Reverse Engineering only runs for brownfield projects), and pending stages can be reshaped through an approved composer proposal (see [the composer](#the-adaptive-composer)). Composed (custom) scopes are not listed here — their grids live in `scope-grid.json` alongside the stock ones.
@@ -251,14 +256,14 @@ your words; no tool matches them. The agent proposes the plan that fits what
 you described, and you get one question with it, straight from the compiled
 grid. For `/aidlc Fix the timeout on the export endpoint` in a new project it
 read like this; on an existing codebase bugfix also runs Reverse Engineering, so
-the line says 6 stages and 6 approval gates:
+the line says 8 stages and 8 approval gates:
 
 ```text
  Plan
- I'd run the "bugfix" plan for: "Fix the timeout on the export endpoint" - 5 stages, 5 approval
+ I'd run the "bugfix" plan for: "Fix the timeout on the export endpoint" - 7 stages, 7 approval
  gates. Do you want me to go ahead with it, use a different plan, or tailor one to this task?
  > 1. Go ahead with the "bugfix" plan
-      5 stages focused on fixing this specific bug.
+      7 stages focused on fixing this specific bug.
    2. Use a different plan
       Pick another ready-made plan.
    3. Tailor a plan to this task
@@ -307,7 +312,7 @@ The composer agent reads your task, then estimates five implementation-entropy c
 
 **Keyword hygiene:** saved scopes ship with `keywords: []`, so a saved plan carries no hints into the agent's plan proposal step. Giving it hints for future prompts is an explicit choice when you save it (`scope save --keywords <word,...>`, single words; a hint another plan already has is saved too, and the save says in one line that the plan proposal lists it under both), never a side effect.
 
-**In-flight recompose:** mid-workflow, `/aidlc compose` proposes re-shaping the PENDING stages of the running workflow - skip what you no longer need, add back a pending stage you realize you need. The composer re-estimates the entropy components from what completed stages actually resolved, so each proposed flip names the evidence that moved the score ("feasibility settled the integration questions - risk re-scores MED"). Flips apply only to pending, ahead-of-cursor stages (completed and in-progress stages are frozen), are strict-validated so no remaining stage is starved of a required input, and land through the deterministic `recompose` verb under the audit lock with a `RECOMPOSED` audit event. When one approval covers stage changes and settings, the same `recompose` applies both in one write, so the plan is never left half-changed; summary confirmation off goes through its own setting, which the agent applies right after when you approved it. The first EXECUTE stage of Construction cannot be flipped by recompose. This protects the stage-routing anchor; it does not make a first design-stage review proof of a working integrated skeleton. Finished work takes no more stages on its own plan: asking for more names the plans that run them after its last stage, and switching to the one you pick (`/aidlc --scope <plan>`) reopens the work there, keeping what is done.
+**In-flight recompose:** mid-workflow, `/aidlc compose` proposes re-shaping the PENDING stages of the running workflow - skip what you no longer need, add back a pending stage you realize you need. The composer re-estimates the entropy components from what completed stages actually resolved, so each proposed flip names the evidence that moved the score ("feasibility settled the integration questions - risk re-scores MED"). Flips apply only to pending, ahead-of-cursor stages (completed and in-progress stages are frozen), are strict-validated so no remaining stage is starved of a required input, and land through the deterministic `recompose` verb under the audit lock with a `RECOMPOSED` audit event. When one approval covers stage changes and settings, the same `recompose` applies both in one write, so the plan is never left half-changed; summary confirmation off goes through its own setting, which the agent applies right after when you approved it. The first EXECUTE stage of the Unit walk (the walking-skeleton gate anchor) cannot be flipped by recompose. This protects the stage-routing anchor; it does not make a first design-stage review proof of a working integrated skeleton. Finished work takes no more stages on its own plan: asking for more names the plans that run them after its last stage, and switching to the one you pick (`/aidlc --scope <plan>`) reopens the work there, keeping what is done.
 
 You do not need the literal verb: plain chat like "what else can we cut? we already know this market" is recognized mid-workflow as a reshape request and routed through the same gate and the same `recompose` verb. When you name the stages yourself ("can we skip market research?", "drop market-research and team-formation"), the plan changes at once, with no gate, and the reply names the undo; `recompose` still refuses a change the plan cannot take and says why. When you name a plan instead ("switch this to the express plan"), the work switches to it in place, as `/aidlc --scope express` does, with no gate: what is done stays done, and the reply says what changed. Text inside a document you paste never counts as naming a stage. On the non-Claude harnesses the literal `/aidlc compose "<request>"` verb remains the documented reliable path.
 
@@ -536,14 +541,14 @@ You can change the test strategy at three points:
 | New AWS environment or CDK changes | `infra` |
 | CVE or security vulnerability response | `security-patch` |
 | Regulated feature requiring compliance | `enterprise` |
-| V1-style Inception + Construction with minimal ceremony | `classic` |
+| V1-style design and build with minimal ceremony | `classic` |
 | Lightweight requirements-to-deploy run | `express` |
 | AI-DLC workshop or training lab | `workshop` |
 
 When in doubt, pick the plan by the size of the change. For a small,
 well-understood change, start with `express` (or `bugfix` for a known bug) and
 add the one stage you want, rather than starting with `feature`, which runs
-every stage:
+32 of the 33 stages:
 
 ```
 /aidlc express --add functional-design <the change>
@@ -557,8 +562,8 @@ Add `domain-design` instead when the change first needs its components named.
 On work already under way, `/aidlc --add <stage>` adds a stage that has not
 run yet (see `--skip` / `--add` in [CLI Commands](12-cli-commands.md)).
 Choose `feature` for a production feature that needs the full lifecycle, and
-`classic` for the v1-style Inception and Construction experience without
-Ideation or Operation.
+`classic` for the v1-style design and build experience, without the Discover
+stages beyond Reverse Engineering or the Deploy and Operate stages.
 
 ---
 

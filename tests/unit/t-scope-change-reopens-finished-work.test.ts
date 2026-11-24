@@ -31,6 +31,7 @@ import {
   runOrchestrateNext,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -139,7 +140,7 @@ function finishedBugfix(): string {
   expect(run(UTILITY, proj, ["intent-create", "--scope", "bugfix"]).rc).toBe(0);
   expect(run(STATE, proj, ["checkbox", ...BUGFIX.map((s) => `${s}=completed`)]).rc).toBe(0);
   expect(run(STATE, proj, [
-    "set", `Current Stage=${LAST}`, "Status=Running", "Lifecycle Phase=OPERATION",
+    "set", `Current Stage=${LAST}`, "Status=Running", "Lifecycle Phase=OPERATE",
     "Next Stage=none", "In Progress=none", `Last Completed Stage=${LAST}`,
   ]).rc).toBe(0);
   expect(run(STATE, proj, ["complete-workflow", LAST]).rc).toBe(0);
@@ -180,10 +181,10 @@ describe("t-scope-change-reopens-finished-work: a scope switch on finished work 
     expect(box(text, ADDED)).toBe("-");
     expect(field(text, "In Progress")).toBe(ADDED);
     expect(field(text, "Active Agent")).toBe("aidlc-operations-agent");
-    expect(field(text, "Lifecycle Phase")).toBe("OPERATION");
+    expect(field(text, "Lifecycle Phase")).toBe("OPERATE");
     expect(field(text, "Next Stage")).toBe("none");
     expect(field(text, "Next Action")).toBe("Execute Observability Setup");
-    expect(field(text, "Operation")).toBe("Active");
+    expect(field(text, "Operate")).toBe("Active");
     // What the person approved stands.
     expect(box(text, LAST)).toBe("x");
     expect(field(text, "Last Completed Stage")).toBe(LAST);
@@ -409,7 +410,7 @@ function featureAtFeasibility(box: "in-progress" | "awaiting-approval"): string 
   const done = ["workspace-scaffold", "workspace-detection", "state-init", "intent-capture", "market-research"];
   expect(run(STATE, proj, ["checkbox", ...done.map((s) => `${s}=completed`), `feasibility=${box}`]).rc).toBe(0);
   expect(run(STATE, proj, [
-    "set", "Current Stage=feasibility", "Status=Running", "Lifecycle Phase=IDEATION",
+    "set", "Current Stage=feasibility", "Status=Running", `Lifecycle Phase=${phaseFor("feasibility").toUpperCase()}`,
     "Next Stage=scope-definition", "In Progress=feasibility", "Last Completed Stage=market-research",
   ]).rc).toBe(0);
   return proj;
@@ -459,7 +460,7 @@ describe("t-scope-change-reopens-finished-work: a scope switch over running work
     const setup = ["workspace-scaffold", "workspace-detection", "state-init"];
     expect(run(STATE, proj, ["checkbox", ...setup.map((s) => `${s}=completed`), "reverse-engineering=awaiting-approval"]).rc).toBe(0);
     expect(run(STATE, proj, [
-      "set", "Current Stage=reverse-engineering", "Status=Running", "Lifecycle Phase=INCEPTION",
+      "set", "Current Stage=reverse-engineering", "Status=Running", `Lifecycle Phase=${phaseFor("reverse-engineering").toUpperCase()}`,
       "Next Stage=requirements-analysis", "In Progress=reverse-engineering", "Last Completed Stage=state-init",
     ]).rc).toBe(0);
     const typed = ["--project-type", "greenfield", "--scope", "enterprise"];

@@ -31,6 +31,7 @@ import {
   setupIntegrationProject,
 } from "../harness/fixtures.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -110,24 +111,24 @@ describe("a stage the person asks to skip while it is in progress is skipped", (
   }
 
   test("the last stage on the plan is skipped and the work ends", () => {
-    const proj = startedAt("poc", "build-and-test");
-    const message = personSkips(proj, "build-and-test");
-    expect(message).toContain('"Skipped Build and Test. It can still be run on its own with');
+    const proj = startedAt("poc", "security-review");
+    const message = personSkips(proj, "security-review");
+    expect(message).toContain('"Skipped Security Review. It can still be run on its own with');
     expect(message).not.toContain("last stage on the plan");
     const after = readFileSync(stateFile(proj), "utf-8");
-    expect(after).toContain("- [S] build-and-test \u2014 EXECUTE");
+    expect(after).toContain("- [S] security-review \u2014 EXECUTE");
     expect(after).toContain("- **Status**: Completed");
     // The way back is a command the person can type as shown: it names the
     // stage they skipped, and it runs that stage on its own.
     const typed = /run on its own with `\/aidlc (--stage \S+ --single)`/.exec(message);
-    expect(typed?.[1], message).toBe("--stage build-and-test --single");
+    expect(typed?.[1], message).toBe("--stage security-review --single");
     const single = runOrchestrateNext(join(proj, ".claude", "tools", "aidlc-orchestrate.ts"), proj, String(typed?.[1]).split(" "), {
       cwd: proj,
       env: { ...env, CLAUDE_PROJECT_DIR: proj },
     });
     const ran = single.directive as { kind?: string; stage?: string; single?: boolean } | null;
     expect(ran?.kind, single.out).toBe("run-stage");
-    expect(ran?.stage).toBe("build-and-test");
+    expect(ran?.stage).toBe("security-review");
     expect(ran?.single).toBe(true);
   });
 
@@ -206,7 +207,7 @@ describe("a stage the person asks to skip at its own approval question is skippe
     expect(after).toContain("- **Current Stage**: user-stories");
     expect(after).toContain("- **Status**: Running");
     // User Stories' own question, still unanswered, is not handed the skip.
-    const questions = join(dirname(stateFile(proj)), "inception", "user-stories", "user-stories-questions.md");
+    const questions = join(dirname(stateFile(proj)), phaseFor("user-stories"), "user-stories", "user-stories-questions.md");
     mkdirSync(dirname(questions), { recursive: true });
     writeFileSync(questions, "# User Stories Questions\n\n## Question 1\nWho uses it?\n\n[Answer]:\n");
     const step = nextStep(proj);
@@ -232,7 +233,7 @@ describe("a stage the person asks to skip at its own approval question is skippe
       expect(skipped.out).toContain('"kind":"done"');
       expect(readFileSync(stateFile(proj), "utf-8")).toContain("- [S] requirements-analysis \u2014 EXECUTE");
       expect(existsSync(kept)).toBe(false);
-      const questions = join(dirname(stateFile(proj)), "inception", "user-stories", "user-stories-questions.md");
+      const questions = join(dirname(stateFile(proj)), phaseFor("user-stories"), "user-stories", "user-stories-questions.md");
       mkdirSync(dirname(questions), { recursive: true });
       writeFileSync(questions, "# User Stories Questions\n\n## Question 1\nWho uses it?\n\n[Answer]:\n");
       const step = nextStep(proj);
@@ -242,26 +243,26 @@ describe("a stage the person asks to skip at its own approval question is skippe
   }
 
   test("the last stage on the plan: skipped at its question, and the work ends", () => {
-    const proj = atItsQuestion("poc", "build-and-test");
-    const message = personSkips(proj, "build-and-test");
+    const proj = atItsQuestion("poc", "security-review");
+    const message = personSkips(proj, "security-review");
     expect(message).not.toContain("last stage on the plan");
     const after = readFileSync(stateFile(proj), "utf-8");
-    expect(after).toContain("- [S] build-and-test \u2014 EXECUTE");
+    expect(after).toContain("- [S] security-review \u2014 EXECUTE");
     expect(after).toContain("- **Status**: Completed");
   });
 
   // A new chat opened at the question gets the person's plain words, not a
   // typed skip: the step for words at an open question names the skip too.
   test("in a new chat, the person's plain words at the question reach the same skip", () => {
-    const proj = atItsQuestion("poc", "build-and-test");
+    const proj = atItsQuestion("poc", "security-review");
     const words = runOrchestrateNext(join(proj, ".claude", "tools", "aidlc-orchestrate.ts"), proj,
-      ["skip build and test, I'll run the tests myself later"], { cwd: proj, env: { ...env, CLAUDE_PROJECT_DIR: proj } });
+      ["skip security review, I'll run the security scan myself later"], { cwd: proj, env: { ...env, CLAUDE_PROJECT_DIR: proj } });
     const step = words.directive as { kind?: string; message?: string } | null;
     expect(step?.kind, words.out).toBe("print");
     expect(step?.message).toContain(
-      "If it asks to skip this stage, run `bun .claude/tools/aidlc-orchestrate.ts next --skip build-and-test` and follow what it returns.",
+      "If it asks to skip this stage, run `bun .claude/tools/aidlc-orchestrate.ts next --skip security-review` and follow what it returns.",
     );
-    personSkips(proj, "build-and-test");
+    personSkips(proj, "security-review");
     expect(readFileSync(stateFile(proj), "utf-8")).toContain("- **Status**: Completed");
   });
 
@@ -280,20 +281,20 @@ describe("a stage the person asks to skip at its own approval question is skippe
     };
     writeFileSync(seededStateFile(proj), [
       "# AI-DLC State Tracking", "", "## Project Information", "- **Project**: walk", "- **Project Type**: Greenfield",
-      "- **Scope**: feature", "- **State Version**: 8", "- **Unit Ownership**: solo", "- **Skeleton Stance**: on", "",
+      "- **Scope**: feature", "- **State Version**: 10", "- **Unit Ownership**: solo", "- **Skeleton Stance**: on", "",
       "## Runtime State", "- **Revision Count**: 0", "- **Construction Iteration**: unit-major", "",
       "## Scope Configuration", "- **Stages to Execute**: all", "- **Stages to Skip**: none", "- **Depth**: Standard",
       "- **Test Strategy**: Standard", "- **Summary Confirmation**: off (set by you)", "", "## Stage Progress", "",
-      "### CONSTRUCTION PHASE",
+      `### ${phaseFor("functional-design").toUpperCase()} PHASE`,
       "- [?] functional-design \u2014 EXECUTE",
       ...Object.keys(block).slice(1).map((slug) => `- [ ] ${slug} \u2014 EXECUTE`),
-      "- [ ] build-and-test \u2014 EXECUTE", "", "## Current Status", "- **Lifecycle Phase**: CONSTRUCTION",
+      "- [ ] build-and-test \u2014 EXECUTE", "", "## Current Status", `- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}`,
       "- **Current Stage**: functional-design", "- **Status**: Running", "",
     ].join("\n"));
     seedBoltDag(proj, ["alpha", "beta"]);
     for (const unit of ["alpha", "beta"]) {
       for (const [slug, names] of Object.entries(block)) {
-        const dir = join(seededRecordDir(proj), "construction", unit, slug);
+        const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
         mkdirSync(dir, { recursive: true });
         for (const name of names) writeFileSync(join(dir, artifactFilename(name)), `# ${name} for ${unit}\n`);
       }
@@ -302,7 +303,7 @@ describe("a stage the person asks to skip at its own approval question is skippe
     const after = readFileSync(seededStateFile(proj), "utf-8");
     expect(after).toContain("- [S] functional-design \u2014 EXECUTE");
     expect(after).toContain("- **Current Stage**: nfr-requirements");
-    expect(existsSync(join(seededRecordDir(proj), "construction", "alpha", "functional-design", artifactFilename("functional-spec")))).toBe(true);
+    expect(existsSync(join(seededRecordDir(proj), phaseFor("functional-design"), "alpha", "functional-design", artifactFilename("functional-spec")))).toBe(true);
     // The next stage's own question, the same one each time it is asked for.
     for (let turn = 0; turn < 2; turn++) {
       const step = nextStep(proj);

@@ -85,12 +85,14 @@ import {
 	isoTimestamp,
 	isPlainObject,
 	KNOWN_CODEKB_STAGES,
+	loadStageGraphAll,
 	printUsageAndExit,
 	readRegularFileNoFollowOrThrow,
 	readStateFile,
 	recordDir,
 	resolveProjectDir,
 	sensorsDir,
+	UNIT_RECORD_PHASES,
 	usesStageLevelPerUnitArtifacts,
 	validateUnitName,
 	withAuditLock,
@@ -461,10 +463,11 @@ function handleDescribe(args: string[]): void {
 // producesDirsForStage / aidlc-orchestrate.ts's resolveArtifactPath seams:
 //   - codekb producers (reverse-engineering): glob every repo dir under the
 //     space-level codekb root.
-//   - per-unit Construction producers (for_each: unit-of-work): use the
-//     stage-level directory when the work has no Units (the plan skips Units
+//   - per-unit producers (for_each: unit-of-work): use the stage-level
+//     directory when the work has no Units (the plan skips Units
 //     Generation, or the work passed it without running it);
-//     otherwise glob every <record>/construction/<unit>/<slug>/.
+//     otherwise glob every <record>/<phase>/<unit>/<slug>/ under the
+//     unit-record phases.
 //   - everything else: <record>/<phase>/<slug>/<name>.md.
 //
 // Fail-open: when no intent record resolves (recordDir null — a bare test
@@ -507,11 +510,20 @@ function artifactDirsForProducer(
 		} catch {
 			// Bare fixtures retain the existing directory-discovery fallback.
 		}
-		const ctorRoot = join(rec, "construction");
-		if (!existsSync(ctorRoot)) return [];
+		const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+		const unitNames = new Set<string>();
+		for (const unitPhase of UNIT_RECORD_PHASES) {
+			let entries: string[];
+			try {
+				entries = readdirSync(join(rec, unitPhase));
+			} catch {
+				continue;
+			}
+			for (const name of entries) if (!stageSlugs.has(name)) unitNames.add(name);
+		}
 		const dirs: string[] = [];
-		for (const unit of readdirSync(ctorRoot)) {
-			const d = join(ctorRoot, unit, producer.slug);
+		for (const unit of unitNames) {
+			const d = join(rec, producer.phase, unit, producer.slug);
 			if (existsSync(d)) dirs.push(d);
 		}
 		return dirs;

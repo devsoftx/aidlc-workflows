@@ -30,7 +30,7 @@ their own record directories. The identifier is a short kebab-case string — no
 file extension, no folder prefix, no slash.
 
 Concrete example, from the Scope Definition stage's frontmatter
-(`core/aidlc-common/stages/ideation/scope-definition.md`):
+(`core/aidlc-common/stages/discover/scope-definition.md`):
 
 ```yaml
 slug: scope-definition
@@ -56,7 +56,7 @@ the other two).
 
 Things that are **not** artifacts in this registry:
 
-- **File paths.** `<record>/ideation/scope-definition/scope-document.md`
+- **File paths.** `<record>/discover/scope-definition/scope-document.md`
   (where `<record>/` is the intent's record dir, `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/`)
   is a filesystem location; the canonical name is `scope-document`. See
   "Filesystem mapping" below.
@@ -90,7 +90,7 @@ Things that are **not** artifacts in this registry:
    entry and `requires_stage[]` slug must resolve against the derived registry.
    Orphan consumers are reported as broken references.
 
-All 33 stage files declare `produces:`, so the derivation returns the full
+All 36 stage files declare `produces:`, so the derivation returns the full
 registry. The tool is well-defined on empty data too — a stage with no
 `produces:` simply contributes nothing — but in the shipped framework every
 stage is populated.
@@ -107,7 +107,7 @@ enforced by `SLUG_RE` in
   `SCOPE_DOCUMENT`.
 - **No file extension.** `scope-document`, not `scope-document.md`.
 - **No folder prefix, no slash.** `scope-document`, not
-  `ideation/scope-definition/scope-document`.
+  `discover/scope-definition/scope-document`.
 - **Start with a letter.** `s1` is legal; `1-thing` is not.
 - **Inner hyphens, digits, lowercase letters only.** No underscores, no
   spaces, no Unicode letters.
@@ -138,8 +138,8 @@ artifact follows this pattern: nine stages each write their own
 resolves `traceability` through `producersOf()` (the traceability check reads
 Requirements Analysis' record by its path).
 
-Today's one example: both `build-and-test` (Construction) and
-`performance-validation` (Operation) write a file called `test-results.md`.
+Today's one example: `build-and-test` and `performance-validation`, both in
+the Test phase, write a file called `test-results.md`.
 The canonical names are split so the two never collide on the wire:
 
 - `build-test-results` — emitted by `build-and-test`. Pairs with
@@ -174,20 +174,20 @@ name) + (producing stage) + (per-unit flag)`. Markdown is the default extension;
 the canonical `traceability` artifact is the structured-data exception and
 resolves to `traceability.json`. Two placement shapes apply:
 
-- **Non-per-unit stages (25 of 30):**
+- **Non-per-unit stages (28 of 33):**
   `<record>/<phase>/<stage>/<artifact-filename>`
-  Example: `feasibility-assessment` (produced by the Ideation
+  Example: `feasibility-assessment` (produced by the Discover
   `feasibility` stage) lives at
-  `<record>/ideation/feasibility/feasibility-assessment.md`.
+  `<record>/discover/feasibility/feasibility-assessment.md`.
 
-- **Per-unit Construction stages (5 of 30):** `nfr-requirements`,
-  `nfr-design`, `functional-design`, `infrastructure-design`, and
-  `code-generation`. These emit one copy of each artifact per Unit of
+- **Per-unit Construction stages (5 of 33):** `nfr-requirements`,
+  `nfr-design`, `functional-design`, `infrastructure-design` (Design), and
+  `code-generation` (Build). These emit one copy of each artifact per Unit of
   Work during Construction:
-  `<record>/construction/{unit-name}/<stage>/<artifact-filename>`
+  `<record>/<phase>/{unit-name}/<stage>/<artifact-filename>`
   Example: `functional-spec` (produced by `functional-design`) lives
   at
-  `<record>/construction/{unit-name}/functional-design/functional-spec.md`.
+  `<record>/design/{unit-name}/functional-design/functional-spec.md`.
 
 Per-unit status is declared by the stage's `for_each: unit-of-work`
 frontmatter field — the five Construction stages that run once per Unit carry

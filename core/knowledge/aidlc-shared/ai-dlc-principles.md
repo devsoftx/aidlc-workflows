@@ -16,15 +16,18 @@ Each agent carries context across stages because they are present throughout. Th
 6. **Questions before assumptions** — Incomplete answers lead to poor designs.
 7. **Contradiction detection** — Cross-check all answers for scope mismatches, risk mismatches, and technology conflicts.
 
-## Five-Phase Structure
+## Initialization and Seven Delivery Phases
 
 | Phase | Purpose | Key Outcome |
 |-------|---------|-------------|
 | **INITIALIZATION** | Bootstrap — state files, directory scaffold, workspace scan, routing | Configured workspace ready for workflow |
-| **IDEATION** | Validate the initiative — intent, market, feasibility, scope, team | Approved initiative brief |
-| **INCEPTION** | Elaborate — requirements, stories, design, architecture, units, delivery plan | Detailed execution plan |
-| **CONSTRUCTION** | Build — functional design, NFRs, infrastructure, code, tests, CI | Working tested code |
-| **OPERATION** | Deploy & operate — pipelines, environments, observability, incidents, feedback | Production system with monitoring |
+| **DISCOVER** | Validate the initiative — intent, market, feasibility, scope, team | Approved initiative brief |
+| **DESIGN** | Elaborate — requirements, stories, design, architecture, functional design, NFRs, infrastructure, units, delivery plan | Detailed execution plan |
+| **BUILD** | Build — code, unit by unit | Working code |
+| **TEST** | Test — build and test, performance validation | Tested code |
+| **SECURE** | Secure — code review, security review, conformance review | Reviewed code |
+| **DEPLOY** | Deploy — CI pipeline, environments, deployment pipeline and execution | Running system |
+| **OPERATE** | Operate — observability, incidents, feedback | Production system with monitoring |
 
 ## Scope System
 

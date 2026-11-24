@@ -1,21 +1,21 @@
 // covers: subcommand:aidlc-jump:execute
 //
 // t26.test.ts - drives the real `/aidlc --stage intent-capture` through the
-// Claude Agent SDK from a CONSTRUCTION-phase state and asserts ONLY on
+// Claude Agent SDK from a DESIGN-phase state and asserts ONLY on
 // deterministic surfaces (the engine calls the agent made, the state file as
 // the jump left it, parsed audit events, and raw audit-file bytes) - NEVER on
 // assistantText.
 //
 // SIBLING NOTE. t25.test.ts is the SAME backward-to-intent-capture journey via
-// `--phase ideation`; this is the `--stage intent-capture` twin. Both run
+// `--phase discover`; this is the `--stage intent-capture` twin. Both run
 // `aidlc-jump.ts execute --direction backward` inside the person's `next`. The phase-vs-stage
 // dispatch differs in resolution only (--stage resolves the literal slug
 // directly; --phase routes through firstInScopeStageOfPhase, jump.ts);
 // the EXECUTE emission and every deterministic surface below are identical.
 //
 // THE JOURNEY (verified against the SHIPPED tool). The seeded fixture
-// (state-construction.md) sits at Lifecycle Phase=CONSTRUCTION, Current
-// Stage=functional-design, Scope=feature, Completed=20. `--stage intent-capture`
+// (state-construction.md) sits at Lifecycle Phase=DESIGN, Current
+// Stage=functional-design, Scope=feature, Completed=19. `--stage intent-capture`
 // resolves directly to intent-capture, whose display order is BEFORE
 // functional-design, so direction = backward
 // (aidlc-jump.ts). The person's `next --stage intent-capture` runs
@@ -23,13 +23,13 @@
 // Capture's step in the same call, so the agent never runs the jump. It atomically:
 //   - resets target + downstream EXECUTE stages [x]/[-]/[S] -> [ ] (jump.ts),
 //   - sets target intent-capture -> [-] in-progress (jump.ts),
-//   - rewrites Lifecycle Phase=IDEATION, Current Stage=intent-capture,
+//   - rewrites Lifecycle Phase=DISCOVER, Current Stage=intent-capture,
 //     In Progress=intent-capture, Status=Running, recomputed Completed
 //     (jump.ts; a jump never terminates, so
 //     Status stays Running and the workflow does NOT terminate —
 //     workflow_stopped:false),
-//   - crosses the construction->ideation phase boundary backward, so emits
-//     PHASE_STARTED only: Construction was left, not completed (jump.ts),
+//   - crosses the design->discover phase boundary backward, so emits
+//     PHASE_STARTED only: Design was left, not completed (jump.ts),
 //   - appends STAGE_JUMPED with Direction=BACKWARD / Source=functional-design /
 //     Target=intent-capture / Scope=feature (jump.ts),
 //   - appends STAGE_STARTED for the target (Stage=intent-capture,
@@ -38,17 +38,15 @@
 // (#2264); we do NOT assert on ERROR_LOGGED.
 //
 // THE KNOWN-ANSWER COUNT. countCheckboxes("completed") after a backward reset to
-// intent-capture leaves exactly 4 [x] (jump.ts). Verified by both the
-// shipped tool's Completed field and the reset arithmetic: the 3
+// intent-capture leaves exactly 3 [x] (jump.ts). Verified by both the
+// shipped tool's Completed field and the reset arithmetic: only the 3
 // init stages (workspace-scaffold/workspace-detection/state-init, UPSTREAM of
-// intent-capture) survive, AND the fixture's per-unit-duplicate `widget-cart`
-// nfr-requirements [x] survives - the reset is slug-indexed, so the duplicate
-// per-unit checkbox at a different state-file position is not reached. So
-// Completed = 4. We pin the exact value 4 on the state the jump left.
+// intent-capture) survive; every [x] downstream of intent-capture is reset. So
+// Completed = 3. We pin the exact value 3 on the state the jump left.
 //
 // ASSERTION MAP (.sh test -> deterministic SDK surface):
 //   1 assert_lt COMPLETED 20 (grep 'Completed'|head -1)
-//       -> the state's Completed field reads the exact known-answer 4
+//       -> the state's Completed field reads the exact known-answer 3
 //          (satisfies <20), read when the drive stops on the step the jump
 //          lands on, before any stage work.
 //   2 assert_grep AUDIT 'intent-capture'
@@ -57,7 +55,7 @@
 //          (audit-sample.md baseline does NOT contain intent-capture, no
 //          vacuous pass.)
 //   3 assert_lt X_COUNT 15 / 4 assert_eq X_COUNT COMPLETED
-//       -> the `- [x]` count in that state equals its Completed field (4):
+//       -> the `- [x]` count in that state equals its Completed field (3):
 //          the jump tool keeps these in lockstep (jump.ts).
 //   5 assert_grep AUDIT 'STAGE_JUMPED'
 //       -> assertAuditEvent(r,"STAGE_JUMPED") (parsed **Event**: line; jump.ts).
@@ -118,7 +116,7 @@ const AUDIT_TIMESTAMP_PREFIX = "**Timestamp**:"; // aidlc-audit.ts renderAuditBl
 
 describe("t26 /aidlc --stage intent-capture backward jump (sdk)", () => {
   // -------------------------------------------------------------------------
-  // From CONSTRUCTION, `--stage intent-capture` is a backward jump. This sdk
+  // From Design, `--stage intent-capture` is a backward jump. This sdk
   // test asserts ONLY the deterministic jump: the one engine call, the state the
   // jump wrote (read when the drive stops on the step it returned, before the
   // agent does any stage work) and the appended audit events + field bytes. The
@@ -134,13 +132,13 @@ describe("t26 /aidlc --stage intent-capture backward jump (sdk)", () => {
         withAudit: true,
       });
       try {
-        // Precondition: the seed truly starts at CONSTRUCTION / Completed=20, so
+        // Precondition: the seed truly starts at DESIGN / Completed=19, so
         // the jump genuinely crosses backward (no vacuous pass on a pre-seeded
-        // ideation state). Read straight off the seeded file. seedStateFile writes
+        // discover state). Read straight off the seeded file. seedStateFile writes
         // under the active intent's record, so stateFilePathFor resolves that record.
         const seedState = readFileSync(stateFilePathFor(proj), "utf8");
-        expect(readStateField(seedState, "Lifecycle Phase")).toBe("CONSTRUCTION");
-        expect(readStateField(seedState, "Completed")).toBe("20");
+        expect(readStateField(seedState, "Lifecycle Phase")).toBe("DESIGN");
+        expect(readStateField(seedState, "Completed")).toBe("19");
         expect(readStateField(seedState, "Current Stage")).toBe(
           "functional-design",
         );
@@ -162,12 +160,12 @@ describe("t26 /aidlc --stage intent-capture backward jump (sdk)", () => {
         assertJumpInOneCall(r, TARGET_STAGE);
         expect(r.stateFile).toBeDefined();
 
-        // The state as that call left it: the known-answer reset count 4, equal to
+        // The state as that call left it: the known-answer reset count 3, equal to
         // the `- [x]` rows, and Status, Current Stage and In Progress written
         // together (a backward jump never stops the workflow).
         const jumpedState = readFileSync(stateFilePathFor(proj), "utf8");
-        expect(readStateField(jumpedState, "Completed")).toBe("4");
-        expect(jumpedState.split("\n").filter((line) => line.startsWith("- [x] "))).toHaveLength(4);
+        expect(readStateField(jumpedState, "Completed")).toBe("3");
+        expect(jumpedState.split("\n").filter((line) => line.startsWith("- [x] "))).toHaveLength(3);
         expect(readStateField(jumpedState, "Status")).toBe("Running");
         expect(readStateField(jumpedState, "Current Stage")).toBe(TARGET_STAGE);
         expect(readStateField(jumpedState, "In Progress")).toBe(TARGET_STAGE);

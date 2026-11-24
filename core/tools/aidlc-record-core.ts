@@ -1921,11 +1921,12 @@ export function auditShardName(projectDir: string): string {
 }
 
 // The work's plan was made in another checkout: every stage or gate row of the
-// work's own (one that names no Unit, as Inception's do) is in another clone's
-// shard, or this clone has written none. A team's clone stays one after it
-// builds a Unit, whose rows name the Unit; the lead's own checkout, and a copy
-// of it, keep the plan's rows in their own shard. Team routing shows such a
-// clone the board or the Units it can take, never the walk the lead keeps.
+// work's own (one that names no Unit, as a stage that runs once for the work
+// writes) is in another clone's shard, or this clone has written none. A
+// team's clone stays one after it builds a Unit, whose rows name the Unit; the
+// lead's own checkout, and a copy of it, keep the plan's rows in their own
+// shard. Team routing shows such a clone the board or the Units it can take,
+// never the walk the lead keeps.
 export function planMadeElsewhere(projectDir: string, rows: readonly AuditShardEvent[] = readAuditShardEvents(projectDir)): boolean {
   const ownShard = knownAuditShardName(projectDir);
   const plan = rows.filter((row) =>
@@ -2275,6 +2276,19 @@ export interface AuditShardEvent {
   shard: string;
   shardIndex: number;
   timestamp: string;
+}
+
+/**
+ * The bring-up an older record waits for (pendingBringUp, aidlc-state-upgrade),
+ * as a reader that writes nothing sees it before AI-DLC's next step has made
+ * it: what the step's STATE_UPGRADED row will name, read as a row stamped now,
+ * and the record folders it will move (record-relative, `/`-separated), whose
+ * files sit at `from` until then.
+ */
+export interface BringUpAhead {
+  added: readonly string[];
+  movedBehind: readonly string[];
+  moves: readonly { from: string; to: string }[];
 }
 
 // Preserve shard identity while parsing audit rows. A concatenated audit buffer

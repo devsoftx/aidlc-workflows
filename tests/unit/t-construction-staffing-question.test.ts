@@ -1,6 +1,6 @@
 // covers: subcommand:aidlc-orchestrate:next, subcommand:aidlc-state:set-unit-ownership, audit:UNIT_OWNERSHIP_SET, audit:CONSTRUCTION_POLICY_SET, function:teamsAcrossReposLine
 //
-// Who builds the Units is asked once, by the engine, as Inception ends (#1395).
+// Who builds the Units is asked once, by the engine, as the plan is set (#1395).
 // A plan of two or more Units reached Construction with nobody asked: the
 // question was one paragraph of Delivery Planning prose keyed to a step that
 // no longer runs, and a workflow without Delivery Planning never carried it.
@@ -12,7 +12,7 @@
 // refused. One Unit, or no Unit plan, is never asked.
 
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -31,13 +31,29 @@ import {
 } from "../harness/fixtures.ts";
 import { testGuardEnvironment } from "../harness/runner-profile.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 resetAidlcEnv();
 
 const BUN = process.execPath;
 const ORCH = join(AIDLC_SRC, "tools", "aidlc-orchestrate.ts");
 const STATE = join(AIDLC_SRC, "tools", "aidlc-state.ts");
-const STAGE_FILE = join(import.meta.dir, "..", "..", "core", "aidlc-common", "stages", "inception", "delivery-planning.md");
+const STAGE_FILE = join(import.meta.dir, "..", "..", "core", "aidlc-common", "stages", "design", "delivery-planning.md");
 
 const ENV: NodeJS.ProcessEnv = {
   ...process.env,
@@ -53,7 +69,7 @@ const chat = (session: string): NodeJS.ProcessEnv => ({
 });
 const CHAT = chat("01995000-7a11-7000-8000-000000001395");
 
-const QUESTION = "Inception is done, and the plan has 2 Units. Who builds them?";
+const QUESTION = "The plan is set, and it has 2 Units. Who builds them?";
 const DEFAULT_LINE = "This session builds the 2 Units one after another. To have several teams each own a Unit " +
   "instead, say so before the first Unit is built.";
 const APPROVALS_LINE = "Each team will approve its Unit after every stage. Do you want them to approve once at the " +
@@ -120,7 +136,7 @@ function stateFile(shape: Shape): string {
 - **Project**: staffing question test
 - **Project Type**: Greenfield
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 ${runtime}
@@ -131,22 +147,24 @@ ${runtime}
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 - [x] requirements-analysis ${D} EXECUTE
 - [x] units-generation ${D} EXECUTE
 - [S] contract-design ${D} SKIP
 - [S] delivery-planning ${D} SKIP
-
-### CONSTRUCTION PHASE
 - [ ] functional-design ${D} SKIP
 - [ ] nfr-requirements ${D} SKIP
 - [ ] nfr-design ${D} SKIP
 - [ ] infrastructure-design ${D} SKIP
+
+### BUILD PHASE
 - [ ] code-generation ${D} EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test ${D} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: units-generation
 - **Status**: Running
 `;
@@ -157,7 +175,7 @@ ${runtime}
 - **Project**: staffing question test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 ${runtime}
@@ -168,20 +186,22 @@ ${runtime}
 
 ## Stage Progress
 
-### INCEPTION PHASE
+### DESIGN PHASE
 - [x] units-generation ${D} EXECUTE
 - [x] delivery-planning ${D} EXECUTE
-
-### CONSTRUCTION PHASE
 - [-] functional-design ${D} EXECUTE
 - [ ] nfr-requirements ${D} EXECUTE
 - [ ] nfr-design ${D} EXECUTE
 - [ ] infrastructure-design ${D} EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation ${D} EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test ${D} EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `;
@@ -246,7 +266,7 @@ function personSays(proj: string, prompt: string, session: string): void {
   expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
 }
 
-describe("who builds the Units is asked once as Inception ends", () => {
+describe("who builds the Units is asked once as the plan is set", () => {
   test("the first step into Construction with two Units and nobody asked is the question", () => {
     const proj = project();
     const ask = next(proj);
@@ -289,7 +309,7 @@ describe("who builds the Units is asked once as Inception ends", () => {
 
   test("Construction already under way is never asked (work in flight on an upgrade)", () => {
     const proj = project();
-    const dir = join(seededRecordDir(proj), "construction", "alpha", "functional-design");
+    const dir = join(seededRecordDir(proj), "design", "alpha", "functional-design");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "entities.md"), "# entities for alpha\n");
     expect(next(proj).kind).toBe("run-stage");
@@ -387,7 +407,7 @@ describe("who builds the Units is asked once as Inception ends", () => {
     expect(settle.change_notices ?? []).not.toContain(APPROVALS_LINE);
     // With learnings on, that step's diary is already written: nothing of a
     // Unit is built yet, so the line still waits for the next step.
-    const diary = join(seededRecordDir(proj), "construction", "functional-design");
+    const diary = join(seededRecordDir(proj), "design", "functional-design");
     mkdirSync(diary, { recursive: true });
     writeFileSync(join(diary, "memory.md"), "# Functional Design diary\n");
     const report = spawnSync(BUN, [ORCH, "report", "--skeleton-stance", "off", "--project-dir", proj], {

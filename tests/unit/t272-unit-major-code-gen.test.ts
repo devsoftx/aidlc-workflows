@@ -75,6 +75,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -185,7 +186,7 @@ function constructionState(opts: {
 - **Project**: unit-major code-gen test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -217,7 +218,7 @@ ${checkboxes}
 // plan step; with both files written the engine would write the plan's Testing
 // Contract and ask the person to approve it.
 function coverUnit(proj: string, unit: string, slug: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of PRODUCES[slug]) {
     writeFileSync(join(dir, artifactFilename(name)), name === "unit-test-instructions" ? "" : `# ${name} for ${unit}\n`);
@@ -304,7 +305,7 @@ function runStatusSync(proj: string, stage: string): void {
 // and the start and completion receipts the build records in this attempt
 // (seeded at the stage's run floor, as case 1 seeds swarm convergence).
 function buildUnit(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), unit, "code-generation");
   writeFileSync(
     join(dir, "code-generation-plan.md"),
     "# Code Generation Plan\n\n## Steps\n\n- [x] Step 1: build `src/" + unit + ".ts`\n\n" +
@@ -324,13 +325,13 @@ function logReviewReady(proj: string, stage: string, unit: string): void {
   if (!reviewArtifact) throw new Error(`no review artifact fixture for ${stage}`);
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(reviewArtifact),
   );
   if (stage === "code-generation") {
-    const dir = join(seededRecordDir(proj), "construction", unit, stage);
+    const dir = join(seededRecordDir(proj), phaseFor(stage), unit, stage);
     writeFileSync(
       join(dir, "source-manifest.json"),
       `${JSON.stringify({ stage, unit, version: 1, writes: [] }, null, 2)}\n`,
@@ -519,7 +520,7 @@ describe("t272 code-generation joins the unit-major walk", () => {
     seedBoltDag(proj, ["alpha", "beta"]);
     coverFullGrid(proj, ["alpha", "beta"]);
     const dir = join(
-      seededRecordDir(proj), "construction", "alpha", "code-generation",
+      seededRecordDir(proj), phaseFor("code-generation"), "alpha", "code-generation",
     );
     rmSync(join(dir, "code-summary.md"));
     const d = runNext(proj);
@@ -528,7 +529,7 @@ describe("t272 code-generation joins the unit-major walk", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/code-generation/code-summary.md`,
+      `${RP}/build/alpha/code-generation/code-summary.md`,
     );
     const state = readFileSync(seededStateFile(proj), "utf-8");
     expect(state).toContain("- **Current Stage**: functional-design");

@@ -51,6 +51,7 @@ import {
   runMergeTool,
 } from "../harness/team-unit-merge.ts";
 import { currentStage, dagBody, makeReplanSeed, reopenUnitsGeneration } from "../harness/team-unit-replan.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 process.env.AIDLC_DISABLE_SENSORS = "1";
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
@@ -67,7 +68,7 @@ const REVIEWER = "aidlc-architecture-reviewer-agent";
 const STOP_WORDS = "Approve, and stop there for today";
 // The solo park's words, which the lead's checkout says too.
 const PAUSED_AT_BT = "Paused at Build and Test with everything saved. Pick it back up any time here, or with /aidlc --resume in a new chat.";
-const APPROVED_AND_PAUSED = "Approved, and paused at CI Pipeline with everything saved. Pick it back up any time here, or with /aidlc --resume in a new chat.";
+const APPROVED_AND_PAUSED = "Approved, and paused at Performance Validation with everything saved. Pick it back up any time here, or with /aidlc --resume in a new chat.";
 
 type Directive = Record<string, unknown> & { kind: string };
 
@@ -106,7 +107,7 @@ function leadAtBuildAndTest(): string {
   gateAndLand(lead, "alpha");
   git(lead, ["push", "origin", "main"]);
   expect(nextDirective(lead)).toMatchObject({ kind: "run-stage", stage: BT });
-  const dir = join(seededRecordDir(lead), "construction", BT);
+  const dir = join(seededRecordDir(lead), phaseFor(BT), BT);
   mkdirSync(dir, { recursive: true });
   for (const name of findStageBySlug(BT)!.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n`);
   return lead;
@@ -214,7 +215,7 @@ function alphaAtItsGate(team: string): void {
   expect(nextDirective(team)).toMatchObject({ stage: FD, unit: "alpha" });
   expect(runMergeTool(STATE, ["unit", "start", "--stage", FD, "--unit", "alpha"], team).status).toBe(0);
   const stage = loadStageGraphAll().find((entry) => entry.slug === FD)!;
-  const dir = join(seededRecordDir(team), "construction", "alpha", FD);
+  const dir = join(seededRecordDir(team), phaseFor(FD), "alpha", FD);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\nalpha\n`);
   for (const args of [
@@ -287,7 +288,7 @@ function soloAtBuildAndTest(): string {
 - **Project**: solo stop
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -306,7 +307,7 @@ ${before.map((stage) => `- [x] ${stage} \u2014 EXECUTE`).join("\n")}
 - **Status**: Running
 `);
   seedBoltDag(p, ["alpha"]);
-  const dir = join(seededRecordDir(p), "construction", BT);
+  const dir = join(seededRecordDir(p), phaseFor(BT), BT);
   mkdirSync(dir, { recursive: true });
   for (const name of findStageBySlug(BT)!.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n`);
   return p;

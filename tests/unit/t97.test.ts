@@ -74,6 +74,7 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { memoryDirFor } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import { writeLearningsSelections } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -194,14 +195,14 @@ function stateFile(pd: string): string {
   return join(recordRoot(pd), "aidlc-state.md");
 }
 function memoryFile(pd: string): string {
-  return join(recordRoot(pd), "inception", "user-stories", "memory.md");
+  return join(recordRoot(pd), phaseFor("user-stories"), "user-stories", "memory.md");
 }
 
 function mkproj(name: string): string {
   const pd = join(tmpRoot, name);
-  mkdirSync(join(recordRoot(pd), "inception", "user-stories"), { recursive: true });
+  mkdirSync(join(recordRoot(pd), phaseFor("user-stories"), "user-stories"), { recursive: true });
   mkdirSync(join(pd, ".claude", "rules"), { recursive: true });
-  mkdirSync(join(pd, ".claude", "skills", "aidlc", "stages", "inception"), {
+  mkdirSync(join(pd, ".claude", "skills", "aidlc", "stages", phaseFor("user-stories")), {
     recursive: true,
   });
   writeFileSync(
@@ -212,15 +213,15 @@ function mkproj(name: string): string {
   writeFileSync(
     join(recordRoot(pd), "runtime-graph.json"),
     `{ "workflow_id": "w1", "scope": "feature", "started_at": "2026-05-28T13:00:00Z",
-  "stages": [ { "stage_slug": "user-stories", "memory_path": "aidlc/spaces/default/intents/inception/user-stories/memory.md" } ] }
+  "stages": [ { "stage_slug": "user-stories", "memory_path": "aidlc/spaces/default/intents/design/user-stories/memory.md" } ] }
 `,
     "utf-8",
   );
   writeFileSync(
-    join(pd, ".claude", "skills", "aidlc", "stages", "inception", "user-stories.md"),
+    join(pd, ".claude", "skills", "aidlc", "stages", phaseFor("user-stories"), "user-stories.md"),
     `---
 slug: user-stories
-phase: inception
+phase: design
 execution: ALWAYS
 lead_agent: aidlc-product-agent
 support_agents: []
@@ -518,7 +519,7 @@ describe("t97 persist (cli, idempotency-sensitive)", () => {
       pd,
       `{ "stage_slug": "user-stories", "space": "default", "intent": null, "selections": [
   { "candidate_id": "c5", "type": "sensor", "origin_stage": "user-stories",
-    "manifest_fields": { "id": "acceptance-format", "kind": "deterministic", "command": "bun .claude/tools/aidlc-sensor.ts fire acceptance-format", "default_severity": "advisory", "description": "Checks AC format", "matches": "**/aidlc-docs/inception/user-stories/**", "timeout_seconds": 30 } } ] }
+    "manifest_fields": { "id": "acceptance-format", "kind": "deterministic", "command": "bun .claude/tools/aidlc-sensor.ts fire acceptance-format", "default_severity": "advisory", "description": "Checks AC format", "matches": "**/aidlc-docs/design/user-stories/**", "timeout_seconds": 30 } } ] }
 `,
     );
     runCli(
@@ -529,7 +530,7 @@ describe("t97 persist (cli, idempotency-sensitive)", () => {
       readFile(join(pd, ".claude", "sensors", "aidlc-acceptance-format.md")),
     ).toContain("matches:");
     const stageMd = readFile(
-      join(pd, ".claude", "skills", "aidlc", "stages", "inception", "user-stories.md"),
+      join(pd, ".claude", "skills", "aidlc", "stages", phaseFor("user-stories"), "user-stories.md"),
     );
     expect(/acceptance-format$/m.test(stageMd)).toBe(true);
   });
@@ -722,7 +723,7 @@ describe("t97 persist sensor bind keeps the stage header whole (cli)", () => {
     return [
       "---",
       "slug: user-stories",
-      "phase: inception",
+      "phase: design",
       "execution: ALWAYS",
       "lead_agent: aidlc-product-agent",
       "support_agents: []",
@@ -745,7 +746,7 @@ describe("t97 persist sensor bind keeps the stage header whole (cli)", () => {
   function bindOn(name: string, before: string): { rc: number; after: string } {
     const pd = mkproj(name);
     const stagesRoot = join(pd, ".claude", "skills", "aidlc", "stages");
-    const stageFile = join(stagesRoot, "inception", "user-stories.md");
+    const stageFile = join(stagesRoot, phaseFor("user-stories"), "user-stories.md");
     writeFileSync(stageFile, before, "utf-8");
     const sel = writeLearningsSelections(pd, {
       stage_slug: "user-stories",

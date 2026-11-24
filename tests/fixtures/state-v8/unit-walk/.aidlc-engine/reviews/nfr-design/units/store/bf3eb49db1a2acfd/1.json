@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "nfr-design",
+  "unit": "store",
+  "workflow": null,
+  "attempt": "bf3eb49db1a2acfd",
+  "iteration": 1,
+  "reviewer": "aidlc-architecture-reviewer-agent",
+  "verdict": "READY",
+  "request_id": "review:a5407ac5f5c11f373cf13fa8b5ada68a",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:b289159a70aff8c4a6aff74ba1e5a8eaaa2afa79ad7a0d81709c17dc96a4914e",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T03:08:24Z"
+}

@@ -61,7 +61,7 @@ function fixture(units: readonly string[] = ["alpha", "beta"], policy = "off (fr
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -78,11 +78,14 @@ function fixture(units: readonly string[] = ["alpha", "beta"], policy = "off (fr
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
-${STAGES.map((slug) => `- [${slug === "functional-design" ? "-" : " "}] ${slug} \u2014 EXECUTE`).join("\n")}
+### DESIGN PHASE
+${STAGES.slice(0, 4).map((slug) => `- [${slug === "functional-design" ? "-" : " "}] ${slug} \u2014 EXECUTE`).join("\n")}
+### BUILD PHASE
+- [ ] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -121,7 +124,7 @@ function next(p: string, args: string[] = []): Directive {
 function cover(p: string, unit: string, slugs = STAGES, receipts = true): void {
   for (const slug of slugs) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), stage.phase, unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
     if (slug === "code-generation") writePlan(p, unit);

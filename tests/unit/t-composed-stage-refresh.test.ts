@@ -25,6 +25,22 @@ import { holdsRecordedWrite } from "../../core/tools/aidlc-distribution.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { typedHarnessName } from "../../core/tools/aidlc-runtime-paths.ts";
 
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -50,7 +66,7 @@ const TABLES: Record<Harness, string> = {
   "kiro-ide": ".kiro/skills/aidlc/tables.md",
   opencode: ".aidlc/skills/aidlc/tables.md",
 };
-const STAGE = "aidlc-common/stages/construction/build-and-test.md";
+const STAGE = "aidlc-common/stages/test/build-and-test.md";
 const PERSONA = "agents/aidlc-quality-agent.md";
 const STAGE_LINE = ["Document the coverage run command.", "Document the coverage run command and its output."] as const;
 const PERSONA_LINE = [
@@ -167,7 +183,7 @@ function update(plugin: string): void {
     const version = (JSON.parse(readFileSync(manifest, "utf-8")) as { version: string }).version;
     edit(manifest, `"version": "${version}"`, `"version": "${version.replace(/\d+$/, (patch) => String(Number(patch) + 1))}"`);
   }
-  edit(join(plugin, "contributions", "construction", "build-and-test.md"), ...STAGE_LINE);
+  edit(join(plugin, "contributions", "test", "build-and-test.md"), ...STAGE_LINE);
   edit(join(plugin, "contributions", "agents", "aidlc-quality-agent.md"), ...PERSONA_LINE);
 }
 
@@ -347,7 +363,7 @@ describe("a refresh after a later compose carries the plugin's additions over", 
 
   test("kiro: a plugin's adds.scopes is carried: config after its compose has no conflict and keeps the scope", () => {
     const project = composed("kiro", (plugin) =>
-      edit(join(plugin, "contributions", "construction", "build-and-test.md"), "adds:\n", "adds:\n  scopes:\n    - test-pro-validation\n")
+      edit(join(plugin, "contributions", "test", "build-and-test.md"), "adds:\n", "adds:\n  scopes:\n    - test-pro-validation\n")
     );
     const stagePath = join(project.dir, ".kiro", STAGE);
     expect(readFileSync(stagePath, "utf-8")).toContain("  - test-pro-validation\n");

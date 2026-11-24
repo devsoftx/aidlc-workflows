@@ -32,6 +32,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -93,7 +94,7 @@ const CONSTRUCTION_STATE = `# AI-DLC State Tracking
 - **Project**: unit lifecycle receipts test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major
@@ -109,15 +110,17 @@ const CONSTRUCTION_STATE = `# AI-DLC State Tracking
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### ${phaseFor("functional-design").toUpperCase()} PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
+
+### ${phaseFor("code-generation").toUpperCase()} PHASE
 - [ ] code-generation — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor("functional-design").toUpperCase()}
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-07-30T00:00:00Z
@@ -164,7 +167,7 @@ function unitVerb(
 }
 
 function writeUnitArtifacts(proj: string, unit: string): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, SLUG);
+  const dir = join(seededRecordDir(proj), phaseFor(SLUG), unit, SLUG);
   mkdirSync(dir, { recursive: true });
   for (const name of PRODUCES) {
     writeFileSync(join(dir, artifactFilename(name)), `# ${name}\nstub\n`, "utf-8");
@@ -230,7 +233,7 @@ describe("t260 receipts are the transition, artifacts the evidence", () => {
 
   test("artifact-shaped directories neither complete nor settle a unit", () => {
     constructionProject();
-    const dir = join(seededRecordDir(proj), "construction", "unit-a", SLUG);
+    const dir = join(seededRecordDir(proj), phaseFor(SLUG), "unit-a", SLUG);
     mkdirSync(dir, { recursive: true });
     for (const name of PRODUCES) {
       mkdirSync(join(dir, artifactFilename(name)));
@@ -327,7 +330,7 @@ describe("t260 receipts are the transition, artifacts the evidence", () => {
     constructionProject();
     const dependencyDir = join(
       seededRecordDir(proj),
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
     );
     mkdirSync(dependencyDir, { recursive: true });
@@ -554,7 +557,7 @@ describe("t260 single active unit", () => {
     rmSync(
       join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor(SLUG),
         "unit-a",
         SLUG,
         `${PRODUCES[0]}.md`,
@@ -1528,8 +1531,8 @@ describe("t260 the receipt waits for the Unit's review", () => {
     writeFileSync(
       path,
       readFileSync(path, "utf-8").replace(
-        "- **State Version**: 8",
-        "- **State Version**: 8\n- **Guard Policy**: off (set by you)",
+        "- **State Version**: 10",
+        "- **State Version**: 10\n- **Guard Policy**: off (set by you)",
       ),
       "utf-8",
     );
@@ -1542,7 +1545,7 @@ describe("t260 the receipt waits for the Unit's review", () => {
     // The reviewed output changes after the verdict: a freshness question for
     // the gate under strict, nothing at all under off, and never the receipt's.
     writeFileSync(
-      join(seededRecordDir(proj), "construction", "unit-a", SLUG, artifactFilename("functional-spec")),
+      join(seededRecordDir(proj), phaseFor(SLUG), "unit-a", SLUG, artifactFilename("functional-spec")),
       "# functional-spec\nchanged after the review\n",
       "utf-8",
     );
@@ -1555,7 +1558,7 @@ describe("t260 the receipt waits for the Unit's review", () => {
     constructionProject();
     startedAndRequested();
     writeFileSync(
-      join(seededRecordDir(proj), "construction", "unit-a", SLUG, artifactFilename("functional-spec")),
+      join(seededRecordDir(proj), phaseFor(SLUG), "unit-a", SLUG, artifactFilename("functional-spec")),
       "# functional-spec\nchanged after the request\n",
       "utf-8",
     );

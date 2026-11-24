@@ -44,7 +44,7 @@
 // stays a spawn):
 //   - "unknown phase -> exit 1 + error JSON on stderr" pins the
 //     handleOutputs `!phases` branch (aidlc-validate.ts).
-//   - "all -> aggregate pass + phases[] of 5" pins the phaseArg==="all"
+//   - "all -> aggregate pass + phases[] of 8" pins the phaseArg==="all"
 //     branch (aidlc-validate.ts), the other half of handleOutputs
 //     the per-phase loop never reaches.
 
@@ -66,10 +66,13 @@ const VALIDATE = join(
 // PHASES, in the order aidlc-lib.ts PHASES declares them.
 const PHASES = [
   "initialization",
-  "ideation",
-  "inception",
-  "construction",
-  "operation",
+  "discover",
+  "design",
+  "build",
+  "test",
+  "secure",
+  "deploy",
+  "operate",
 ] as const;
 
 interface CliResult {
@@ -136,10 +139,10 @@ describe("t45 aidlc-validate outputs — CLI contract (migrated from t45-stage-o
   });
 
   // The phaseArg === "all" aggregate branch of handleOutputs - the per-phase
-  // loop above never exercises the `{ phases, pass }` shape. All five phases
-  // pass, so the aggregate is true and the phases[] holds exactly five
+  // loop above never exercises the `{ phases, pass }` shape. All eight phases
+  // pass, so the aggregate is true and the phases[] holds exactly eight
   // PhaseResult rows in PHASES order.
-  test("all -> aggregate pass===true + phases[] of 5 in order", () => {
+  test("all -> aggregate pass===true + phases[] of 8 in order", () => {
     const r = runOutputs("all");
     expect(r.status).toBe(0);
     const d = JSON.parse(r.stdout) as { phases: PhaseResult[]; pass: boolean };

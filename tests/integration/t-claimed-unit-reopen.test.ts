@@ -9,6 +9,7 @@
 // project's own checkout claiming a Unit (#3282) and a team's own clone.
 
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -62,7 +63,7 @@ function stateBody(): string {
 - **Project**: claimed reopen
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -76,7 +77,7 @@ function stateBody(): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
 - [ ] nfr-requirements \u2014 EXECUTE
 - [ ] nfr-design \u2014 EXECUTE
@@ -92,7 +93,7 @@ function stateBody(): string {
 | beta | - | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -104,7 +105,7 @@ function makeSeed(): { seed: string; remote: string } {
   tempDirs.push(seed);
   seedAidlcMemory(seed);
   writeFileSync(seededStateFile(seed), stateBody());
-  const depDir = join(seededRecordDir(seed), "inception", "units-generation");
+  const depDir = join(seededRecordDir(seed), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(
     join(depDir, "unit-of-work-dependency.md"),
@@ -191,7 +192,7 @@ const FD = "functional-design";
 const REVIEWER = "aidlc-architecture-reviewer-agent";
 
 function stageDir(checkout: string, unit: string, slug: string): string {
-  return join(seededRecordDir(checkout), "construction", unit, slug);
+  return join(seededRecordDir(checkout), phaseFor(slug), unit, slug);
 }
 
 // A per-Unit stage's work for the Unit, as the stage's own steps record it, up
@@ -402,7 +403,7 @@ describe("a claimed checkout reopens its own Unit's stages", () => {
     test(`${label}: a move outside the Unit names a place the person can go`, () => {
       const { checkout } = claimedPastFunctionalDesign(shape);
       const before = recordSnapshot(checkout);
-      for (const move of [["--stage", "build-and-test"], ["--phase", "inception"]]) {
+      for (const move of [["--stage", "build-and-test"], ["--phase", "discover"]]) {
         const refused = next(checkout, move);
         expect(refused.kind, JSON.stringify(refused)).toBe("error");
         expect(refused.message).toContain('carry on with Unit "alpha"');

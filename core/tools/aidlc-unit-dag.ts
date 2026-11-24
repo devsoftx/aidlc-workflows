@@ -1,5 +1,5 @@
 // The Unit DAG's grammar, one parser: the fenced yaml `units:` block of
-// inception/units-generation/unit-of-work-dependency.md (Units Generation writes
+// design/units-generation/unit-of-work-dependency.md (Units Generation writes
 // it), read into its Units, their kinds and dependencies, and the topological
 // batches Construction walks; and the Unit name rule the block, the compiled
 // graph and the lifecycle commands share. aidlc-lib.ts and
@@ -14,8 +14,8 @@
 export const UNIT_NAME_REGEX = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const UNIT_NAME_MAX_LENGTH = 64;
 
-// Unit names become path components under construction/<unit>/ and are also
-// mirrored into single-line state fields. Keep one canonical validator for the
+// Unit names become path components under design/<unit>/ and build/<unit>/, and
+// are also mirrored into single-line state fields. Keep one canonical validator for the
 // authored DAG, cached runtime graph, and lifecycle CLI. Lowercase kebab-case is
 // the authoring convention; leading digits, uppercase letters, underscores,
 // and dots remain accepted for safe legacy DAG names.
@@ -36,7 +36,7 @@ export function validateUnitName(name: string): string | null {
 // The unit-kind enum: what a Unit of Work IS, so the engine can prune the
 // per-unit construction design matrix to the artifacts that actually apply.
 // A spec unit owes no scalability doc, a packaging unit no business-logic
-// model. Authored once at the 2.7 gate on the units-generation edge block and
+// model. Authored once at the 2.6 gate on the units-generation edge block and
 // confirmed by the human; consumed by the stage-schema validator (which shares
 // this constant) and the engine's produces filter. Missing kind = full matrix
 // (conservative default, zero behaviour change for untagged units).
@@ -252,7 +252,7 @@ function computeBatches(edges: UnitDependencyEdge[]): string[][] | null {
 // Parse the required fenced ```yaml edge block out of a
 // unit-of-work-dependency.md body and compute the topological batch DAG.
 //
-// The block shape, authored once at the 2.7 gate (knowledge work by the
+// The block shape, authored once at the 2.6 gate (knowledge work by the
 // LLM, behind a human approval gate):
 //
 //   ```yaml

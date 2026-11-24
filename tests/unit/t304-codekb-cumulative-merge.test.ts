@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/reverse-engineering.md, file:knowledge/aidlc-developer-agent/re-artifacts.md, function:codekbSourceFingerprint, function:codekbStoreGeneration, subcommand:aidlc-utility:codekb-snapshot, subcommand:aidlc-utility:codekb-publish
+// covers: file:aidlc-common/stages/discover/reverse-engineering.md, file:knowledge/aidlc-developer-agent/re-artifacts.md, function:codekbSourceFingerprint, function:codekbStoreGeneration, subcommand:aidlc-utility:codekb-snapshot, subcommand:aidlc-utility:codekb-publish
 //
 // t304 - Focused Reverse Engineering rescans merge into the shared CodeKB
 // without stale-source publication or concurrent lost updates.
@@ -8,6 +8,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -226,7 +227,7 @@ const STAGE = readFileSync(
     "core",
     "aidlc-common",
     "stages",
-    "inception",
+    phaseFor("reverse-engineering"),
     "reverse-engineering.md",
   ),
   "utf-8",

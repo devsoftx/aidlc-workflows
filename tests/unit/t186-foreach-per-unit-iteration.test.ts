@@ -9,7 +9,7 @@
 // that lands on an in-flight per-unit Construction stage (off the swarm path),
 // the engine reads the ordered unit list (the compiled Bolt DAG, flattened),
 // finds the FIRST unsettled unit (required `produces[]` artifacts on disk under
-// `<recordPrefix>/construction/<unit>/<slug>/` plus, when the receipt ledger is
+// `<recordPrefix>/<stage phase>/<unit>/<slug>/` plus, when the receipt ledger is
 // in use, the unit's review and completion receipts), and emits a run-stage for
 // THAT concrete unit with `directive.unit` set. The gate is suppressed (false)
 // on every unsettled unit; the real gate fires only once every unit has
@@ -31,10 +31,9 @@
 // FIXTURE DISCIPLINE (mirrors t135's seedCodegenProject + t116's fresh-temp-per-
 // emit): each case uses a FRESH temp project (createTestProject seeds the
 // per-intent workspace shell + default record). We write a CLEAN single-row-per-
-// slug Construction state (NOT the synthetic duplicate-row state-construction.md
-// fixture, that models a representation the engine never writes), pivot Current
-// Stage to the per-unit stage and flip its checkbox in-flight, write a bolt_dag
-// runtime-graph.json with units [alpha, beta], and seed per-unit artifact dirs to
+// slug Construction state of our own, pivot Current Stage to the per-unit stage
+// and flip its checkbox in-flight, write a bolt_dag runtime-graph.json with
+// units [alpha, beta], and seed per-unit artifact dirs to
 // control coverage. The `Skeleton Stance` field is recorded so functional-design
 // (the feature-scope skeleton-gate stage) resolves its gate to a boolean rather
 // than emitting the unresolved sentinel, isolating the per-unit behaviour. All
@@ -69,6 +68,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { artifactFilename } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
@@ -115,7 +115,7 @@ function logReviewReady(proj: string, stage: string, unit: string): void {
   }
   const artifact = join(
     seededRecordDir(proj),
-    "construction",
+    phaseFor(stage),
     unit,
     stage,
     artifactFilename(reviewArtifact),
@@ -205,12 +205,11 @@ interface Directive {
 }
 
 /**
- * A CLEAN Construction-phase state file: one checkbox row per slug (the shape
- * the engine actually writes, NOT the synthetic duplicate-row fixture), Current
- * Stage pivoted to `current` and marked in-flight ([-]). `skeletonStance`, when
- * set, records the resolved walking-skeleton stance so the feature-scope
- * skeleton-gate stage (functional-design) emits a boolean gate rather than the
- * unresolved sentinel.
+ * A CLEAN Construction state file: one checkbox row per slug (the shape the
+ * engine actually writes), Current Stage pivoted to `current` and marked
+ * in-flight ([-]). `skeletonStance`, when set, records the resolved
+ * walking-skeleton stance so the feature-scope skeleton-gate stage
+ * (functional-design) emits a boolean gate rather than the unresolved sentinel.
  */
 function constructionState(current: string, skeletonStance?: string): string {
   const stanceLine = skeletonStance
@@ -222,7 +221,7 @@ function constructionState(current: string, skeletonStance?: string): string {
 - **Project**: per-unit iteration test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Unit Ownership**: solo
 ${stanceLine}
 ## Scope Configuration
@@ -270,7 +269,7 @@ function coverUnit(
   slug: string,
   producesNames: string[],
 ): void {
-  const dir = join(seededRecordDir(proj), "construction", unit, slug);
+  const dir = join(seededRecordDir(proj), phaseFor(slug), unit, slug);
   mkdirSync(dir, { recursive: true });
   for (const name of producesNames) {
     writeFileSync(join(dir, artifactFilename(name)), name === "unit-test-instructions" ? "" : `# ${name} for ${unit}\n`);
@@ -332,7 +331,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.stage).toBe("functional-design");
     expect(d.unit).toBe("alpha");
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/functional-design/functional-spec.md`,
+      `${RP}/design/alpha/functional-design/functional-spec.md`,
     );
     expect(d.produces?.some((p) => p.includes("{unit-name}"))).toBe(false);
     expect(d.wave?.entries.map((entry) => entry.unit)).toEqual([
@@ -401,7 +400,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.stage).toBe("functional-design");
     expect(d.unit).toBeUndefined();
     expect(d.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -421,7 +420,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.stage).toBe("functional-design");
     expect(d.unit).toBeUndefined();
     expect(d.produces).toContain(
-      `${RP}/construction/functional-design/functional-spec.md`,
+      `${RP}/design/functional-design/functional-spec.md`,
     );
     expect(d.produces?.some((path) => path.includes("{unit-name}"))).toBe(false);
 
@@ -492,7 +491,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.kind).toBe("run-stage");
     expect(d.stage).toBe("domain-design");
     expect(d.unit).toBeUndefined();
-    expect(d.produces?.some((p) => p.includes("/construction/"))).toBe(false);
+    expect(d.produces?.some((p) => /\/(alpha|beta|\{unit-name\})\//.test(p))).toBe(false);
     expect(d.reviewer).toBeDefined();
     expect(d.protocol_modules).not.toContain("reviewer-unit");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -545,7 +544,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(
       executable.some((action) =>
         action.startsWith("Ask the person the stage's questions through its question flow") &&
-        action.includes("/construction/alpha/functional-design/functional-design-questions.md")
+        action.includes("/design/alpha/functional-design/functional-design-questions.md")
       ),
     ).toBe(true);
     expect(
@@ -579,7 +578,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.unit).toBe("alpha");
     expect((d.remedies ?? []).map((remedy) => remedy.op)).toEqual(["ask-stage-questions"]);
     expect(d.remedies?.[0].action).toContain(
-      "/construction/alpha/functional-design/functional-design-questions.md",
+      "/design/alpha/functional-design/functional-design-questions.md",
     );
     expect(JSON.stringify(d)).not.toContain("Confirm the summary again");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -663,7 +662,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.gate).toBe("unresolved");
     expect(d.unit).toBeUndefined();
     expect(d.produces).toContain(
-      `${RP}/construction/{unit-name}/functional-design/functional-spec.md`,
+      `${RP}/design/{unit-name}/functional-design/functional-spec.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -681,7 +680,7 @@ describe("t186 engine-driven per-unit for_each iteration (issue #368)", () => {
     expect(d.unit).toBe("alpha");
     expect(d.gate).toBe(false);
     expect(d.produces).toContain(
-      `${RP}/construction/alpha/code-generation/code-generation-plan.md`,
+      `${RP}/build/alpha/code-generation/code-generation-plan.md`,
     );
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 

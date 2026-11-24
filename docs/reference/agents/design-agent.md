@@ -17,7 +17,7 @@
 
 | Stage | Name | What This Agent Does |
 |-------|------|----------------------|
-| rough-mockups | Rough Mockups and Concept Visualization | Creates low-fidelity wireframes, concept sketches, and initial information architecture during Ideation |
+| rough-mockups | Rough Mockups and Concept Visualization | Creates low-fidelity wireframes, concept sketches, and initial information architecture during Discover |
 | refined-mockups | Refined Mockups and UX Design | Evolves wireframes into mid-to-high fidelity mockups with interaction specs, responsive design, and accessibility annotations |
 
 ### Support Stages

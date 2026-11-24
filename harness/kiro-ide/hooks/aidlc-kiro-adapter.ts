@@ -564,7 +564,7 @@ function isGuardAdmittedRecordWrite(projectDir: string, normalizedPath: string):
   try {
     const path = normalizeDriveLetter(normalizedPath);
     const same = (candidate: string) => path === normalizeDriveLetter(resolve(candidate));
-    if (same(memoryFilePath(projectDir, "construction", "code-generation")) || same(composerProposalPath(projectDir))) {
+    if (same(memoryFilePath(projectDir, "build", "code-generation")) || same(composerProposalPath(projectDir))) {
       return true;
     }
     if (dirname(path) === normalizeDriveLetter(resolve(join(projectDir, REQUEST_TEXT_DIR)))) return true;

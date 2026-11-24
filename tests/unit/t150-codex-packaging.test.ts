@@ -38,6 +38,7 @@ import { delimiter, join } from "node:path";
 import { parse } from "smol-toml";
 import { TRUSTED_ROUTE_NAMESPACE } from "../../core/tools/aidlc-command.ts";
 import { REPO_ROOT } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -276,7 +277,7 @@ describe("t150 dist/codex packaging determinism + trust", () => {
     expect(memoryTop).toContain("org.md");
     expect(memoryTop).toContain("team.md");
     expect(memoryTop).toContain("project.md");
-    expect(readdirSync(join(memoryDir, "phases"))).toContain("construction.md");
+    expect(readdirSync(join(memoryDir, "phases"))).toContain(`${phaseFor("code-generation")}.md`);
     expect(() => readdirSync(join(CODEX_DST, "aidlc-rules"))).toThrow();
     // .codex/rules/ remains Codex's native Starlark permission-rules dir.
     const nativeRules = readdirSync(join(CODEX_DST, "rules"));
@@ -598,12 +599,12 @@ describe("t150 dist/codex packaging determinism + trust", () => {
     const dirs = readdirSync(skillsDir).filter((d) =>
       statSync(join(skillsDir, d)).isDirectory(),
     );
-    // 43 skills: orchestrator + 30 stage runners + init + compose + 5 scope runners
+    // 46 skills: orchestrator + 33 stage runners + init + compose + 5 scope runners
     // + 3 session + aidlc-knowledge + aidlc-issue-report. The last two only ship
     // here because harness/codex/emit.ts names them explicitly: codex does not
     // enumerate core/skills/, so this count is what catches a skill missing from
     // that array.
-    expect(dirs.length).toBe(43);
+    expect(dirs.length).toBe(46);
     for (const d of dirs) {
       const guard = join(skillsDir, d, "agents", "openai.yaml");
       if (d === "aidlc") {

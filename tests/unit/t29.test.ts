@@ -34,10 +34,10 @@
 //        (same observable). STRONGER: also asserts the state file stays absent
 //        (the hook never recreates it).
 //   .sh T6 assert_grep 'Lifecycle Phase.*CONSTRUCTION'        -> T6: STRONGER —
-//        exact `getField(state,"Lifecycle Phase") === "CONSTRUCTION"`. The phase
-//        comes from the stage graph: code-generation -> construction, uppercased
-//        by set-status (aidlc-utility.ts) - verified live via
-//        findStageBySlug("code-generation").phase === "construction".
+//        exact `getField(state,"Lifecycle Phase") === phaseFor("code-generation")`
+//        uppercased. The phase comes from the stage graph (code-generation is in
+//        the build phase since the seven-phase migration), uppercased by
+//        set-status (aidlc-utility.ts).
 //   .sh T7 assert_file_exists sync-statusline.last           -> T7: existsSync
 //        of the heartbeat file (same observable) + its content is a non-empty
 //        ISO timestamp (STRONGER; the .sh only checked existence).
@@ -79,6 +79,7 @@ import {
 } from "../harness/fixtures.ts";
 import { readAllAuditShards, resolveGuardPolicy } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { loadGraph } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -203,13 +204,13 @@ describe("t29 aidlc-sync-workflow-state hook (migrated from t29-hook-sync-status
 
   test("6: updates Lifecycle Phase from stage graph", () => {
     const p = hookProject();
-    seedStateFile(p, MID_IDEATION); // Lifecycle Phase starts as IDEATION
+    seedStateFile(p, MID_IDEATION); // Lifecycle Phase starts as DISCOVER
     runHook(
       p,
       '{"tool_name":"TaskUpdate","tool_input":{"taskId":"t1","status":"in_progress","activeForm":"Running Code Generation [code-generation]"}}',
     );
-    // set-status uppercases findStageBySlug("code-generation").phase ("construction").
-    expect(stateField(p, "Lifecycle Phase")).toBe("CONSTRUCTION");
+    // set-status uppercases findStageBySlug("code-generation").phase (phaseFor("code-generation")).
+    expect(stateField(p, "Lifecycle Phase")).toBe(phaseFor("code-generation").toUpperCase());
     // And it advances Current Stage in the same write (same set-status call).
     expect(stateField(p, "Current Stage")).toBe("code-generation");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);

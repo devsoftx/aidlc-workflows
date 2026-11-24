@@ -5,15 +5,15 @@
 - **Project Type**: Greenfield
 - **Scope**: feature
 - **Start Date**: 2025-06-15T10:30:00Z
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: aidlc-architect-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**:
 
 ## Scope Configuration
-- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7
-- **Stages to Skip**: none
+- **Stages to Execute**: 0.1, 0.2, 0.3, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 3.1, 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3
+- **Stages to Skip**: 5.3
 - **Depth**: Standard
 - **Test Strategy**: Standard
 - **Change Control**: strict (from scope feature)
@@ -25,7 +25,7 @@
 - **Build System**: npm, poetry
 
 ## Execution Plan Summary
-- **Total Stages**: 32
+- **Total Stages**: 35
 - **Completed**: 5
 - **In Progress**: feasibility
 
@@ -33,13 +33,17 @@
 - **Revision Count**: 0
 
 ## Phase Progress
+
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
 - **Initialization**: Verified
-- **Ideation**: Active
-- **Inception**: Pending
-- **Construction**: Pending
-- **Operation**: Pending
+- **Discover**: Active
+- **Design**: Pending
+- **Build**: Pending
+- **Test**: Pending
+- **Secure**: Pending
+- **Deploy**: Pending
+- **Operate**: Pending
 
 ## Stage Progress
 
@@ -48,17 +52,17 @@
 - [x] workspace-detection — EXECUTE
 - [x] state-init — EXECUTE
 
-### IDEATION PHASE
+### DISCOVER PHASE
 - [x] intent-capture — EXECUTE
 - [x] market-research — EXECUTE
 - [-] feasibility — EXECUTE
+- [ ] reverse-engineering — EXECUTE
 - [ ] scope-definition — EXECUTE
 - [ ] team-formation — EXECUTE
 - [ ] rough-mockups — EXECUTE
 - [ ] approval-handoff — EXECUTE
 
-### INCEPTION PHASE
-- [ ] reverse-engineering — EXECUTE
+### DESIGN PHASE
 - [ ] practices-discovery — EXECUTE
 - [ ] requirements-analysis — EXECUTE
 - [ ] user-stories — EXECUTE
@@ -67,28 +71,38 @@
 - [ ] units-generation — EXECUTE
 - [ ] contract-design — EXECUTE
 - [ ] delivery-planning — EXECUTE
-
-### CONSTRUCTION PHASE
 Per unit: todo-core
+
 - [ ] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
-- [ ] code-generation — EXECUTE
-- [ ] build-and-test — EXECUTE
-- [ ] ci-pipeline — EXECUTE
 
-### OPERATION PHASE
+### BUILD PHASE
+- [ ] code-generation — EXECUTE
+
+### TEST PHASE
+- [ ] build-and-test — EXECUTE
+- [ ] performance-validation — EXECUTE
+
+### SECURE PHASE
+- [ ] code-review — EXECUTE
+- [ ] security-review — EXECUTE
+- [S] conformance-review — SKIP (feature scope)
+
+### DEPLOY PHASE
+- [ ] ci-pipeline — EXECUTE
 - [ ] deployment-pipeline — EXECUTE
 - [ ] environment-provisioning — EXECUTE
 - [ ] deployment-execution — EXECUTE
+
+### OPERATE PHASE
 - [ ] observability-setup — EXECUTE
 - [ ] incident-response — EXECUTE
-- [ ] performance-validation — EXECUTE
 - [ ] feedback-optimization — EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: IDEATION
+- **Lifecycle Phase**: DISCOVER
 - **Current Stage**: feasibility
 - **Next Stage**: scope-definition
 - **Status**: Running

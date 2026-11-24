@@ -6,6 +6,7 @@ import {
   filterProducesByKind,
   getField,
   loadStageGraph,
+  loadStageGraphAll,
   parseCheckboxes,
   parseStateStageSuffixes,
   printUsageAndExit,
@@ -13,6 +14,7 @@ import {
   recordDir,
   resolveBoltDag,
   resolveProjectDir,
+  UNIT_RECORD_PHASES,
   usesStageLevelPerUnitArtifacts,
 } from "./aidlc-lib.ts";
 import { aidlcDispatcherInvocation, sensorFireUsage } from "./aidlc-runtime-paths.ts";
@@ -236,7 +238,7 @@ function withoutTracedParents(ids: Set<string>, recorded: Map<string, RecordedRe
 // NFR patterns find in requirements.md, as every check read them before the
 // record.
 function recordedRequirements(docsDir: string): Map<string, RecordedRequirement> | null {
-  const read = readText(join(docsDir, "inception", "requirements-analysis", "traceability.json"));
+  const read = readText(join(docsDir, "design", "requirements-analysis", "traceability.json"));
   const value = read.content === null ? undefined : parseJson(read.content);
   if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
   const ids = (value as { ids?: unknown }).ids;
@@ -296,23 +298,31 @@ function idsFromFile(path: string, patterns: RegExp[], label: string): { ids: Se
 
 function extractUnitName(outputPath: string): string | null {
   const normalized = normalizePath(outputPath);
-  const match = normalized.match(/\/construction\/([^/]+)\/[^/]+\/traceability\.json$/);
+  const match = normalized.match(new RegExp(`/(?:${UNIT_RECORD_PHASES.join("|")})/([^/]+)/[^/]+/traceability\\.json$`));
   return match?.[1] ?? null;
 }
 
+// The record phase a stage's folder sits in, from the stage graph (disabled
+// stages included), or undefined for a slug the graph does not hold.
+function stageRecordPhase(slug: string): string | undefined {
+  return loadStageGraphAll().find((stage) => stage.slug === slug)?.phase;
+}
+
 // When the plan has no Units, the engine writes every per-Unit stage's
-// artifacts directly under construction/<stage>/, with no Unit segment. A path
+// artifacts directly under <phase>/<stage>/, with no Unit segment. A path
 // that names the stage's own folder is that location, so any per-Unit stage
 // with a resolver below is covered without a second stage list.
 function isZeroUnitOutput(stage: string, outputPath: string): boolean {
-  return stage !== "" &&
-    normalizePath(outputPath).endsWith(`/construction/${stage}/traceability.json`);
+  const phase = stageRecordPhase(stage);
+  return phase !== undefined && normalizePath(outputPath).endsWith(`/${phase}/${stage}/traceability.json`);
 }
 
-// Per-Unit artifacts live under construction/<unit>/<stage>/; a zero-Unit run
-// keeps the stage-level construction/<stage>/ location.
+// Per-Unit artifacts live under <phase>/<unit>/<stage>/, the phase being the
+// stage's own; a zero-Unit run keeps the stage-level <phase>/<stage>/ location.
 function constructionDir(docsDir: string, unit: string, stage: string): string {
-  return unit ? join(docsDir, "construction", unit, stage) : join(docsDir, "construction", stage);
+  const phase = stageRecordPhase(stage);
+  if (phase === undefined) throw new Error(`stage ${JSON.stringify(stage)} is not in the stage graph`);
+  return unit ? join(docsDir, phase, unit, stage) : join(docsDir, phase, stage);
 }
 
 function unitLabel(unit: string): string {
@@ -373,7 +383,7 @@ function markdownCells(line: string): string[] {
 
 // The stage guidance names a Unit's directory `u{n}-{description}` while the
 // edge block may name the Unit without that prefix (the engine names
-// construction/<unit>/ after the edge block), so a cell names a Unit when it is
+// <phase>/<unit>/ after the edge block), so a cell names a Unit when it is
 // the name, the backticked name, or the name behind a `u{n}-` prefix.
 function namesUnit(cell: string, unit: string): boolean {
   const bare = cell.trim().replace(/^`(.*)`$/, "$1");
@@ -496,7 +506,7 @@ function resolveUnitContext(
     context: {
       unitName,
       units,
-      unitIds: unitIdMap(join(docsDir, "inception", "units-generation", "unit-of-work.md"), units),
+      unitIds: unitIdMap(join(docsDir, "design", "units-generation", "unit-of-work.md"), units),
       ...(kind ? { kind } : {}),
     },
   };
@@ -584,9 +594,9 @@ function resolveUpstream(stage: string, projectDir: string, outputPath: string, 
     return result;
   }
   result.recorded = recordedRequirements(docsDir);
-  result.requirementsFile = join(docsDir, "inception", "requirements-analysis", "requirements.md");
-  const stories = join(docsDir, "inception", "user-stories", "stories.md");
-  const storyMap = join(docsDir, "inception", "units-generation", "unit-of-work-story-map.md");
+  result.requirementsFile = join(docsDir, "design", "requirements-analysis", "requirements.md");
+  const stories = join(docsDir, "design", "user-stories", "stories.md");
+  const storyMap = join(docsDir, "design", "units-generation", "unit-of-work-story-map.md");
 
   if (stage === "user-stories") {
     addRequirements(result, ["functional", "non-functional"], declared);
@@ -614,7 +624,7 @@ function resolveUpstream(stage: string, projectDir: string, outputPath: string, 
     const context: UnitContext = {
       unitName: "",
       units: dag.units,
-      unitIds: unitIdMap(join(docsDir, "inception", "units-generation", "unit-of-work.md"), dag.units),
+      unitIds: unitIdMap(join(docsDir, "design", "units-generation", "unit-of-work.md"), dag.units),
     };
     result.unitContext = context;
     // Without stories the required set is FR-only ("otherwise enumerate every
@@ -745,7 +755,7 @@ function verifyTargets(
   const okEntries = data.coverage.filter((entry) => entry.status === "OK");
 
   if (stage === "user-stories" && docsDir) {
-    const storiesPath = join(docsDir, "inception", "user-stories", "stories.md");
+    const storiesPath = join(docsDir, "design", "user-stories", "stories.md");
     const stories = idsFromFile(storiesPath, [ID_PATTERNS.US], "stories.md");
     if (stories.reason) reasons.push(stories.reason);
     for (const entry of okEntries) {
@@ -828,7 +838,7 @@ function verifyTargets(
       units,
       unitIds,
       assignments: upstream.storyAssignments,
-      hasStories: existsSync(join(docsDir, "inception", "user-stories", "stories.md")),
+      hasStories: existsSync(join(docsDir, "design", "user-stories", "stories.md")),
     };
     for (const entry of data.coverage) {
       const named = handedTo(entry, unitName, plan);
@@ -943,13 +953,13 @@ function finalCoverage(projectDir: string): FinalCoverage {
 
   const storyTargets = new Map<string, Set<string>>();
   let storyContent: string | null = null;
-  const storiesPath = join(docsDir, "inception", "user-stories", "stories.md");
+  const storiesPath = join(docsDir, "design", "user-stories", "stories.md");
   if (existsSync(storiesPath)) {
     const read = readText(storiesPath);
     if (read.reason) reasons.push(read.reason);
     storyContent = read.content;
     if (storyContent !== null) criteria.push(...extractIds(storyContent, [ID_PATTERNS.AC]));
-    const table = readTable(join(docsDir, "inception", "user-stories", "traceability.json"), "User Stories traceability.json");
+    const table = readTable(join(docsDir, "design", "user-stories", "traceability.json"), "User Stories traceability.json");
     if (table.reason) reasons.push(table.reason);
     tracedByStories.push(...(table.data?.upstream_ids ?? []));
     for (const entry of table.data?.coverage ?? []) {
@@ -971,7 +981,7 @@ function finalCoverage(projectDir: string): FinalCoverage {
   // requirement itself in work without stories) ahead of NFR Requirements and
   // Code Generation, so a Unit whose table lists one still decides it. A table
   // that cannot be read settles nothing.
-  const unitsTable = join(docsDir, "inception", "units-generation", "traceability.json");
+  const unitsTable = join(docsDir, "design", "units-generation", "traceability.json");
   const planned = existsSync(unitsTable) ? readTable(unitsTable, "Units Generation traceability.json").data : undefined;
   if (planned) {
     const unassigned = resolveUpstream("units-generation", projectDir, unitsTable, planned.upstream_ids).extraGaps;
@@ -980,14 +990,19 @@ function finalCoverage(projectDir: string): FinalCoverage {
     }
   }
 
-  // The stage-level table (no Units) and every Unit's, named by their folder.
-  const construction = join(docsDir, "construction");
-  const folders = existsSync(construction)
-    ? readdirSync(construction, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()
-    : [];
+  // The stage-level table (no Units) and every Unit's, named by their folder. Each
+  // per-Unit phase holds Unit folders beside its stage folders, so stage slugs are
+  // skipped rather than read as Units.
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const folders = new Set(UNIT_RECORD_PHASES.flatMap((phase) => {
+    const dir = join(docsDir, phase);
+    return existsSync(dir)
+      ? readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory() && !stageSlugs.has(entry.name)).map((entry) => entry.name)
+      : [];
+  }));
   const owners = [
-    { owner: "code-generation", dir: construction },
-    ...folders.filter((folder) => folder !== "code-generation").map((owner) => ({ owner, dir: join(construction, owner) })),
+    { owner: "code-generation", unit: "" },
+    ...[...folders].sort().map((unit) => ({ owner: unit, unit })),
   ];
 
   const projectRoot = resolve(projectDir);
@@ -997,10 +1012,10 @@ function finalCoverage(projectDir: string): FinalCoverage {
   let plan: HandoffPlan | null = null;
   const dag = resolveBoltDag(projectDir);
   if (dag.state === "ok") {
-    const unitIds = unitIdMap(join(docsDir, "inception", "units-generation", "unit-of-work.md"), dag.units);
+    const unitIds = unitIdMap(join(docsDir, "design", "units-generation", "unit-of-work.md"), dag.units);
     const hasStories = existsSync(storiesPath);
     const assignments = storyAssignments(
-      join(docsDir, "inception", "units-generation", "unit-of-work-story-map.md"),
+      join(docsDir, "design", "units-generation", "unit-of-work-story-map.md"),
       dag.units,
       unitIds,
       hasStories ? [ID_PATTERNS.US] : [ID_PATTERNS.FR],
@@ -1017,20 +1032,20 @@ function finalCoverage(projectDir: string): FinalCoverage {
   const builtBy = new Map<string, Set<string>>();
   const owed = new Map<string, Set<string>>();
   let tables = 0;
-  for (const { owner, dir } of owners) {
-    const children = new Set(detailedNfrIds(join(dir, "nfr-requirements"), NFR_REQUIREMENT_FILES) ?? []);
+  for (const { owner, unit } of owners) {
+    const children = new Set(detailedNfrIds(constructionDir(docsDir, unit, "nfr-requirements"), NFR_REQUIREMENT_FILES) ?? []);
     const built = new Set<string>();
     owed.set(owner, children);
     builtBy.set(owner, built);
     const where = (stage: string) => (owner === "code-generation" ? stage : `${owner}/${stage}`);
     // Read only for its `N/A` rows: an unreadable one settles nothing.
-    const nfrTable = join(dir, "nfr-requirements", "traceability.json");
+    const nfrTable = join(constructionDir(docsDir, unit, "nfr-requirements"), "traceability.json");
     if (existsSync(nfrTable)) {
       for (const entry of readTable(nfrTable, `${owner} NFR Requirements traceability.json`).data?.coverage ?? []) {
         traced(1, where("nfr-requirements"), entry);
       }
     }
-    const path = join(dir, "code-generation", "traceability.json");
+    const path = join(constructionDir(docsDir, unit, "code-generation"), "traceability.json");
     if (!existsSync(path)) continue;
     tables++;
     const read = readTable(path, `${owner} Code Generation traceability.json`);
@@ -1059,10 +1074,10 @@ function finalCoverage(projectDir: string): FinalCoverage {
       }
     }
   }
-  if (tables === 0) reasons.push(`no Code Generation traceability.json under ${construction}`);
+  if (tables === 0) reasons.push(`no Code Generation traceability.json under ${docsDir}`);
   // Without a record requirements.md's reasons are not said, as in addRequirements.
   const requirementIds = recorded !== null ? [...recorded.keys()] : [
-    ...idsFromFile(join(docsDir, "inception", "requirements-analysis", "requirements.md"), [ID_PATTERNS.FR, ID_PATTERNS.NFR], "requirements.md").ids,
+    ...idsFromFile(join(docsDir, "design", "requirements-analysis", "requirements.md"), [ID_PATTERNS.FR, ID_PATTERNS.NFR], "requirements.md").ids,
     ...(storyContent !== null ? tracedByStories : tracedByCode),
   ];
   const reported = [...new Set([...withoutTracedParents(new Set(requirementIds), recorded), ...criteria])];

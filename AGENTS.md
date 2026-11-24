@@ -16,11 +16,11 @@ is the same factory in every building and on every platform (Linux, macOS,
 Windows, native or WSL), so a normal run means any of them; judge a finding and
 design a fix with all of them in mind.
 
-Ideation transforms the person's intent into a more clearly defined idea;
-Inception turns the idea into a spec and a plan; Construction builds the code
-that implements the idea and the spec; Operation deploys it and verifies it;
-Initialization is the setup before them
-([Phases and Stages](docs/guide/04-phases-and-stages.md)).
+Discover transforms the person's intent into a more clearly defined idea;
+Design turns the idea into a spec and a plan; Build writes the code that
+implements the idea and the spec; Test and Secure verify it and review it;
+Deploy ships it and Operate watches it run; Initialization is the setup before
+them ([Phases and Stages](docs/guide/04-phases-and-stages.md)).
 
 Scopes are the production lines, stages are the stations on a line, and agents
 are the workers at each station. Each station takes what the one before it
@@ -229,10 +229,10 @@ The hand-authored source lives in `core/` (harness-neutral) + `harness/<name>/`
 (per-CLI surfaces); `bun scripts/package.ts` regenerates the `dist/<harness>/`
 trees. The core uses the same building blocks in every harness:
 
-- **Stages** (`aidlc-common/`): the stage protocol (`protocols/`) and 33 stage files across 5 phases (`stages/<phase>/`: initialization, ideation, inception, construction, operation); the orchestrator skill is per harness (`harness/<name>/skills/aidlc/SKILL.md`)
+- **Stages** (`aidlc-common/`): the stage protocol (`protocols/`) and 36 stage files: 3 initialization setup stages and 33 stages across 7 phases (`stages/<phase>/`: initialization, then discover, design, build, test, secure, deploy, operate); the orchestrator skill is per harness (`harness/<name>/skills/aidlc/SKILL.md`)
 - **Skills** (`skills/`): the 3 read-only session skills, `aidlc-knowledge` and `aidlc-issue-report`
 - **Agents** (`agents/`): 14 `aidlc-<role>-agent.md` files: 11 domain-expert personas (product, design, delivery, architect, aws-platform, compliance, devsecops, developer, quality, pipeline-deploy, operations), 2 review-only agents (product-lead, architecture-reviewer), and the adaptive-workflows composer (aidlc-composer-agent)
-- **Method/rules** (`memory/`): Layered config in the space memory layer: `org.md` (framework defaults), `team.md` (affirmed practices), `project.md` (project overrides), and `phases/<phase>.md` for ideation/inception/construction/operation
+- **Method/rules** (`memory/`): Layered config in the space memory layer: `org.md` (framework defaults), `team.md` (affirmed practices), `project.md` (project overrides), and `phases/<phase>.md` for discover/design/build/test/secure/deploy/operate
 - **Sensors** (`sensors/`): Deterministic verification manifests (advisory): `aidlc-claim-sources.md`, `aidlc-required-sections.md`, `aidlc-upstream-coverage.md`, `aidlc-traceability.md`, `aidlc-linter.md`, `aidlc-type-check.md`
 - **Knowledge** (`knowledge/`): Methodology reference. Per-agent under `aidlc-<agent>-agent/`; cross-agent material in `aidlc-shared/`
 - **Tools** (`tools/`): TypeScript CLI tools, all prefixed `aidlc-*.ts` and run via bun

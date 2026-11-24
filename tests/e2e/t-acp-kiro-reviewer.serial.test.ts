@@ -64,6 +64,7 @@ import {
 } from "../../dist/kiro/.kiro/tools/aidlc-lib.ts";
 import { seededRecordDir } from "../harness/fixtures.ts";
 import { AcpSession, driveKiroAcp } from "../harness/kiro-acp-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { cleanupTuiProject, KIRO_SRC, setupTuiProject } from "../harness/tui-fixtures.ts";
 
 function completedStartupProbe<T extends { error?: Error }>(result: T): T {
@@ -112,7 +113,7 @@ const SKIP_REASON = skipReason();
 
 /** The primary artifact is reviewed, never used as the reviewer's write target. */
 function requirementsPath(proj: string): string {
-  return join(seededRecordDir(proj), "inception", STAGE, "requirements.md");
+  return join(seededRecordDir(proj), phaseFor(STAGE), STAGE, "requirements.md");
 }
 
 /** Stop only after the logger has committed a review paired to its request.
@@ -187,7 +188,7 @@ describe("t-acp-kiro-reviewer (live §12a reviewer fires on the shipped dist/kir
       // intent record only resolves when it holds an aidlc-state.md
       // (activeIntent's cursor check + listIntentDirs both require it), and
       // with no record the engine's recordPrefix falls back to the BARE
-      // intents root — the stage then writes `intents/inception/...` while
+      // intents root — the stage then writes `intents/design/...` while
       // this test polls the record shard, and the poll never fires (the same
       // wrong-shard trap the Kiro IDE checkpoint test hit). The state content
       // itself is inert here: a `--single` run never reads or touches the

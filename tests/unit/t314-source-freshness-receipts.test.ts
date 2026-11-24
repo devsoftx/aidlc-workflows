@@ -46,6 +46,7 @@ import {
   remainingCleanupTimeoutMs,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, beforeEach, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -199,8 +200,8 @@ function recordReview(
   const artifactDir =
     definition.for_each === "unit-of-work"
       ? reviewUnit
-        ? join(seededRecordDir(proj), "construction", reviewUnit, stage)
-        : join(seededRecordDir(proj), "construction", stage)
+        ? join(seededRecordDir(proj), definition.phase, reviewUnit, stage)
+        : join(seededRecordDir(proj), definition.phase, stage)
       : join(seededRecordDir(proj), definition.phase, stage);
   mkdirSync(artifactDir, { recursive: true });
   const reviewArtifactPath = join(
@@ -347,7 +348,7 @@ function recordReview(
 // record, so code-generation's for_each: unit-of-work branch resolves real
 // units instead of falling back to the stage-level `none` path.
 function seedTwoUnitDag(proj: string): void {
-  const dir = join(seededRecordDir(proj), "inception", "units-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "unit-of-work-dependency.md"),
@@ -415,7 +416,7 @@ function stripFingerprintFields(proj: string): void {
           "",
         );
         return `${stripped.trimEnd()}\n` +
-          "**Review Appendix Artifact**: construction/code-generation/code-generation-plan.md\n" +
+          "**Review Appendix Artifact**: build/code-generation/code-generation-plan.md\n" +
           "**Review Appendix Offset**: 0\n";
       });
       writeFileSync(p, blocks.join("\n---\n"), "utf-8");
@@ -2408,7 +2409,7 @@ describe("t314 receipt stamping + completion guard (cli)", () => {
     }
     const artifactDir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("code-generation"),
       "unit-alpha",
       "code-generation",
     );
@@ -2495,7 +2496,7 @@ describe("t314 receipt stamping + completion guard (cli)", () => {
     }
     const artifactDir = join(
       seededRecordDir(proj),
-      "construction",
+      phaseFor("code-generation"),
       "unit-alpha",
       "code-generation",
     );
@@ -2750,7 +2751,7 @@ describe("t314 receipt stamping + completion guard (cli)", () => {
       // [x] stage, but the valid recorded source binding must still be checked.
       const artifactDir = join(
         seededRecordDir(proj),
-        "construction",
+        phaseFor("code-generation"),
         "late-unit",
         "code-generation",
       );
@@ -3181,7 +3182,7 @@ describe("t314 multi-unit source attribution", () => {
     writeFileSync(join(proj, "alpha-extra.ts"), "export const extra = 1;\n", "utf-8");
     git(proj, ["add", "-A"]);
     git(proj, ["commit", "-qm", "alpha claims another file"]);
-    const manifest = join(seededRecordDir(proj), "construction", "alpha", "code-generation", "source-manifest.json");
+    const manifest = join(seededRecordDir(proj), phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json");
     writeFileSync(
       manifest,
       `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "alpha.ts" }, { path: "alpha-extra.ts" }] }, null, 2)}\n`,
@@ -3213,7 +3214,7 @@ describe("t314 multi-unit source attribution", () => {
     git(proj, ["commit", "-qm", "beta code"]);
     recordReview(proj, "code-generation", REVIEWER, "beta", "READY", [{ path: "beta.ts" }]);
 
-    const manifest = join(seededRecordDir(proj), "construction", "alpha", "code-generation", "source-manifest.json");
+    const manifest = join(seededRecordDir(proj), phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json");
     writeFileSync(manifest, `${readFileSync(manifest, "utf-8")}\n`, "utf-8");
 
     const r = guarded(proj, ["approve", "code-generation", "--user-input", "ship it"]);
@@ -3787,8 +3788,11 @@ describe("t314 swarm finalize source-fingerprint check (#646 review P1#3)", () =
     // The fixture ships with a pre-populated `Bolt Refs: [foo]` for its own
     // (unrelated) worktree-lifecycle purpose - clear it so a fresh `prepare` for
     // any unit name here doesn't collide with a stale ref.
+    // units-generation is completed here as in t305's swarmFixture: while it is
+    // pending the engine takes the stage-level artifact path, not the settled-swarm one.
     const seeded = readFileSync(join(FIXTURES_DIR, "state-construction-with-worktree.md"), "utf-8")
-      .replace(/^(- \*\*Bolt Refs\*\*: ).*$/m, "$1");
+      .replace(/^(- \*\*Bolt Refs\*\*: ).*$/m, "$1")
+      .replace("- [ ] units-generation — EXECUTE", "- [x] units-generation — EXECUTE");
     writeFileSync(seededStateFile(proj), seeded);
     mkdirSync(seededAuditDir(proj), { recursive: true });
     writeFileSync(join(seededAuditDir(proj), "fixture.md"), "# AI-DLC Audit Log\n");
@@ -6694,7 +6698,7 @@ process.stdin.on("end", () => server.stop(true));
       const wt = wtPath(proj, "listed");
       writeFileSync(join(wt, "reviewed.ts"), "export const reviewed = true;\n");
       recordReview(wt, "code-generation", REVIEWER, "listed", "READY", [{ path: "reviewed.ts" }]);
-      const manifest = join(wt, relative(proj, seededRecordDir(proj)), "construction", "listed", "code-generation", "source-manifest.json");
+      const manifest = join(wt, relative(proj, seededRecordDir(proj)), phaseFor("code-generation"), "listed", "code-generation", "source-manifest.json");
       writeFileSync(manifest, `${readFileSync(manifest, "utf-8")}\n`);
       const finalized = runSwarm(proj, [
         "finalize", "--batch", "1", "--units", "listed", "--claimed", "listed",
@@ -6847,7 +6851,7 @@ describe("t314 a repo added during the work joins the stage-entry baseline", () 
   // repo that joins after that review joins as it was at the add: nothing in it
   // changed after the review, so the review stands and nothing is named.
   function reviewTheStageThenAddPayments(): void {
-    rmSync(join(seededRecordDir(proj), "inception", "units-generation", "unit-of-work-dependency.md"));
+    rmSync(join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation", "unit-of-work-dependency.md"));
     commitIn("app-a", "app.ts", "export const a = 2;\n");
     recordReview(proj);
     intent("add-repo", "payments");
@@ -6890,7 +6894,7 @@ describe("t314 a repo added during the work joins the stage-entry baseline", () 
     const statePath = seededStateFile(proj);
     writeFileSync(statePath, readFileSync(statePath, "utf-8").replace(
       /^- \*\*Change Control\*\*: .*$/m, "- **Guard Policy**: off (set by you)"));
-    rmSync(join(seededRecordDir(proj), "inception", "units-generation", "unit-of-work-dependency.md"));
+    rmSync(join(seededRecordDir(proj), phaseFor("units-generation"), "units-generation", "unit-of-work-dependency.md"));
     commitIn("app-a", "app.ts", "export const a = 2;\n");
     recordReview(proj);
     intent("set-repos", "app-a");

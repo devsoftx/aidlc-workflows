@@ -15,8 +15,7 @@ collaborators: on
 # enterprise scope
 
 Comprehensive depth for regulated work that needs the full audit trail.
-Every stage in the graph executes — no shortcuts. Ideation, inception,
-construction, and operation all run end to end, so the artifact chain
+Every stage in the graph executes — no shortcuts. Discover, design, build, test, secure, deploy, and operate all run end to end, so the artifact chain
 (intent through deployment and feedback) is complete and traceable.
 
 Guard Policy defaults to strict: changed inputs reopen approval and no fences are lowered, because the audit trail is the point of this scope.
@@ -28,7 +27,7 @@ obligations that the skipped-stage scopes (`mvp`, `poc`, `bugfix`) are
 willing to trade away for speed. Here the cost of an undocumented decision
 is higher than the cost of running the stage, so the scope keeps the whole
 spine: market-research and team-formation up front, the full design pass,
-and the operation stages (observability, incident-response,
+and the deploy, test, and operate stages (observability, incident-response,
 performance-validation) on the back end.
 
 ## Membership

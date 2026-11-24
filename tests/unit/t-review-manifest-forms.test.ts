@@ -24,6 +24,7 @@ import {
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { reviewManifestForms } from "../../dist/claude/.claude/tools/aidlc-review-manifest.ts";
 import { cleanupTestProject, createTestProject, resetAidlcEnv, seededRecordDir, seedStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 resetAidlcEnv();
 const projects: string[] = [];
@@ -77,13 +78,13 @@ describe("a review recorded before the stage declared an optional output", () =>
     const proj = createTestProject();
     projects.push(proj);
     seedStateFile(proj, "state-mid-inception.md");
-    const dir = join(seededRecordDir(proj), "inception", "requirements-analysis");
+    const dir = join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "requirements.md"), ["# Requirements", "", "- FR1 Sign up", ""].join(eol));
     writeFileSync(join(dir, "requirements-analysis-questions.md"), ["# Questions", ""].join(eol));
     return proj;
   }
-  const record = (proj: string) => join(seededRecordDir(proj), "inception", "requirements-analysis", "traceability.json");
+  const record = (proj: string) => join(seededRecordDir(proj), phaseFor("requirements-analysis"), "requirements-analysis", "traceability.json");
 
   test("covers the same documents, and the form every receipt records is unchanged", () => {
     expect(CURRENT.optional_produces).toContain("traceability");

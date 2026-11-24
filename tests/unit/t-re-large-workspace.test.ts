@@ -18,6 +18,7 @@ import { appendFileSync, cpSync, mkdirSync, readFileSync, rmSync, statSync, utim
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { cleanupTestProject, createTestProject, FIXTURES_DIR, REPO_ROOT, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
@@ -120,7 +121,7 @@ function workspace(tree: Tree, shape: Shape): { proj: string; repos: string[] } 
 function recordEveryLink(proj: string, repos: string[], links: string[]): void {
   appendAuditEntry("STAGE_STARTED", { Stage: RE, Agent: LEAD }, proj);
   const record = join(seededStateFile(proj), "..");
-  const handoffs = join(record, "inception", RE);
+  const handoffs = join(record, phaseFor(RE), RE);
   mkdirSync(handoffs, { recursive: true });
   for (const repo of repos) {
     const handoff = join(handoffs, `developer-scan-${repo}.md`);
@@ -468,7 +469,7 @@ describe("the running count of a long analysis", () => {
   function link(proj: string, repo: string, agent: string): Printed {
     const args = [join(proj, tree.dir, "tools", "aidlc-log.ts"), "link", "--stage", RE, "--link", agent, "--repo", repo];
     if (agent === LEAD) {
-      const handoff = join(seededStateFile(proj), "..", "inception", RE, `developer-scan-${repo}.md`);
+      const handoff = join(seededStateFile(proj), "..", phaseFor(RE), RE, `developer-scan-${repo}.md`);
       mkdirSync(join(handoff, ".."), { recursive: true });
       writeFileSync(handoff, "## Developer Code Scan Results\n\n### Scan Coverage\n\n- src/\n\n## Handoff Summary\n\nCurrent attempt.\n");
       const later = new Date(Date.now() + 1_000);

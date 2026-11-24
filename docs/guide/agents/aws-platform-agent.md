@@ -10,18 +10,18 @@ The aidlc-aws-platform-agent leads two stages and supports five others. It is ex
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 3.4 Infrastructure Design | Construction | AWS service selection, IaC templates, cost estimation (per unit) |
-| 4.2 Environment Provisioning | Operation | Provision and validate environments from IaC definitions |
+| 2.12 Infrastructure Design | Design | AWS service selection, IaC templates, cost estimation (per unit) |
+| 6.3 Environment Provisioning | Deploy | Provision and validate environments from IaC definitions |
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 1.3 Feasibility & Constraints | Ideation | AWS service availability and constraint assessment |
-| 2.6 Domain Design | Inception | Cloud-native patterns and service integration advice |
-| 2.8 Contract Design | Inception | Support agent on the stage |
-| 3.3 NFR Design | Construction | Translates NFRs into infrastructure specs and scaling policies |
-| 4.7 Feedback & Optimization | Operation | Cost optimization and infrastructure tuning |
+| 1.3 Feasibility & Constraints | Discover | AWS service availability and constraint assessment |
+| 2.5 Domain Design | Design | Cloud-native patterns and service integration advice |
+| 2.7 Contract Design | Design | Support agent on the stage |
+| 2.11 NFR Design | Design | Translates NFRs into infrastructure specs and scaling policies |
+| 7.3 Feedback & Optimization | Operate | Cost optimization and infrastructure tuning |
 
 ## What to Expect
 

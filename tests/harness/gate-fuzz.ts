@@ -51,6 +51,7 @@ import {
   ScopeRunRefused, shellQuote, sourceStages, stopVerdict,
 } from "./scope-run.ts";
 import { createHostProject, type HostName, hostFor, NativeScopeHost, OpencodeScopeHost } from "./scope-hosts.ts";
+import { phaseFor } from "./stage-phase.ts";
 
 export type HostId = "claude" | HostName;
 export type Policy = "default" | "off" | "relaxed" | "strict";
@@ -406,7 +407,7 @@ const corpus = (): Corpus => require("./aidlc-answers-corpus.ts") as Corpus;
 const inputs = (): Inputs => require("./aidlc-input-corpus.ts") as Inputs;
 
 const RA = "requirements-analysis";
-const QFILE = `inception/${RA}/${RA}-questions.md`;
+const QFILE = `${phaseFor(RA)}/${RA}/${RA}-questions.md`;
 /** The corpus's questions, with the open step's kind, stage and options as the fixture leaves them. */
 export const FIXTURES: Record<string, { kind: Kind; stage: string; options: string[]; prompt: string; unit?: string; args?: string[]; revision?: number }> = {
   "stage-gate": { kind: "gate", stage: RA, options: ["Approve", "Request Changes"], prompt: "Requirements Analysis is ready for your review." },

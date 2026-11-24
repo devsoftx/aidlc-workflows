@@ -11,11 +11,27 @@
 // Read from the generated dist/ trees: the letters are a projection, so the
 // bytes that ship are the subject.
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import type { HarnessManifest } from "../../scripts/manifest-types.ts";
 import { REPO_ROOT } from "../harness/fixtures.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const HARNESS_NAMES = readdirSync(join(REPO_ROOT, "harness"), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && existsSync(join(REPO_ROOT, "harness", entry.name, "manifest.ts")))
@@ -30,8 +46,8 @@ for (const name of HARNESS_NAMES) {
 // Where the agent reads that a question's options are lettered, in each tree.
 const LETTER_SITES: Array<{ file: string; line: RegExp }> = [
   { file: "aidlc-common/protocols/stage-protocol.md", line: /^- Include options (A-[A-Z]) as appropriate for each question$/m },
-  { file: "aidlc-common/stages/inception/requirements-analysis.md", line: /Include context-appropriate questions with (A-[A-Z]) options\./ },
-  { file: "aidlc-common/stages/ideation/intent-capture.md", line: /Include (A-[A-Z]) options with X \(Other\) as final option\./ },
+  { file: "aidlc-common/stages/design/requirements-analysis.md", line: /Include context-appropriate questions with (A-[A-Z]) options\./ },
+  { file: "aidlc-common/stages/discover/intent-capture.md", line: /Include (A-[A-Z]) options with X \(Other\) as final option\./ },
 ];
 
 function engineRoot(name: string): string {

@@ -49,7 +49,7 @@ You are a senior product manager and business analyst specializing in requiremen
 
 ## Collaboration
 
-- **Receives from**: User/stakeholder input, existing documentation, Ideation artifacts
+- **Receives from**: User/stakeholder input, existing documentation, discover artifacts
 - **Works with**: architect-agent (feasibility, dependencies), design-agent (UX alignment), delivery-agent (capacity reality-check, scope validation)
 - **Hands off to**: architect-agent (requirements for design), developer-agent (story specifications), quality-agent (acceptance criteria for test design), delivery-agent (prioritized backlog)
 

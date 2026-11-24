@@ -1,18 +1,32 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isPerUnitStage, relativeSpaceRecordPrefix } from "./aidlc-lib.ts";
+import {
+  findStageBySlug,
+  isPerUnitStage,
+  loadStageGraphAll,
+  relativeSpaceRecordPrefix,
+  UNIT_RECORD_PHASES,
+} from "./aidlc-lib.ts";
 
-// `<prefix>/construction/<unit>/<stage>/memory.md`: one Unit's own diary for a
+// The record phase folder a stage writes its record in. A slug the graph does
+// not know keeps the build folder, where the per-Unit code stage writes.
+function stageRecordPhase(stageSlug: string): string {
+  return findStageBySlug(stageSlug)?.phase ?? "build";
+}
+
+// `<prefix>/<phase>/<unit>/<stage>/memory.md`: one Unit's own diary for a
 // per-Unit stage, the path a per-Unit wave entry and the run-stage directive
 // name.
 export function unitMemoryPath(stageSlug: string, unit: string, recordPrefix: string | null): string {
-  return `${recordPrefix ?? relativeSpaceRecordPrefix()}/construction/${unit}/${stageSlug}/memory.md`;
+  const prefix = recordPrefix ?? relativeSpaceRecordPrefix();
+  return `${prefix}/${stageRecordPhase(stageSlug)}/${unit}/${stageSlug}/memory.md`;
 }
 
 // A per-Unit stage's step for a named Unit keeps its notes in the Unit's own
-// folder, whoever owns the Unit, so `construction/` holds Unit folders and only
-// the stage-level stages' folders. Null when the stage-level diary
-// applies. The run-stage directive and the learnings step both read it here.
+// folder, whoever owns the Unit, so each unit-record phase folder holds Unit
+// folders beside its stage-level stages' folders. Null when the stage-level
+// diary applies. The run-stage directive and the learnings step both read it
+// here.
 export function unitStageMemoryPath(
   stage: { slug: string; for_each?: string },
   unit: string | null,
@@ -26,19 +40,30 @@ export function unitStageMemoryPath(
 // the named Unit's, or every Unit's in name order. Work started before the
 // notes moved keeps the stage-level diary too; the reader reads it as well.
 export function unitStageDiaryTexts(record: string, slug: string, unit: string | null): string[] {
-  const construction = join(record, "construction");
-  let units = unit ? [unit] : [];
-  if (!unit) {
-    try {
-      units = readdirSync(construction).sort();
-    } catch {
-      units = [];
-    }
-  }
+  const phase = stageRecordPhase(slug);
+  const units = unit ? [unit] : unitFolderNames(record);
   return units
-    .map((name) => join(construction, name, slug, "memory.md"))
+    .map((name) => join(record, phase, name, slug, "memory.md"))
     .filter((path) => existsSync(path))
     .map((path) => readFileSync(path, "utf-8"));
+}
+
+// The Unit folders of a record: the names in each unit-record phase folder,
+// less the stage folders that sit beside them, so a stage folder is never read
+// as a Unit.
+function unitFolderNames(record: string): string[] {
+  const stageSlugs = new Set(loadStageGraphAll().map((stage) => stage.slug));
+  const names = new Set<string>();
+  for (const unitPhase of UNIT_RECORD_PHASES) {
+    let entries: string[];
+    try {
+      entries = readdirSync(join(record, unitPhase));
+    } catch {
+      continue;
+    }
+    for (const name of entries) if (!stageSlugs.has(name)) names.add(name);
+  }
+  return [...names].sort();
 }
 
 // An older stage-level diary without the copies a wave Unit's completion made

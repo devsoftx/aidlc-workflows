@@ -104,12 +104,14 @@ import {
   turnEndIsOpen,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   cleanupTestProject,
   createTestProject,
   DEFAULT_RECORD_DIR,
   DEFAULT_SPACE,
   FIXTURES_DIR,
+  markGreenfieldReverseEngineeringSkipped,
   runOrchestrateNext,
   seedAidlcMemory,
   seedBoltDagBatches,
@@ -138,6 +140,8 @@ function projWithState(fixture: string): string {
   tempDirs.push(p);
   seedAidlcMemory(p);
   seedStateFile(p, join(FIXTURES_DIR, fixture));
+  // The mid-ideation fixture is Greenfield, so the engine skips Reverse Engineering there; the fixture still runs it.
+  if (fixture === "state-mid-ideation.md") markGreenfieldReverseEngineeringSkipped(seededStateFile(p));
   return p;
 }
 
@@ -1237,7 +1241,7 @@ function completeReview(args: string[], p: string): CliResult {
     definition.for_each === "unit-of-work"
       ? join(
           seededRecordDir(p),
-          "construction",
+          definition.phase,
           unit ?? "unit-alpha",
           stage,
         )
@@ -1299,7 +1303,7 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     const p = projWithState("state-mid-inception.md");
     const artifact = join(
       seededRecordDir(p),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "requirements.md",
     );
@@ -1354,7 +1358,7 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     const p = projWithState("state-mid-inception.md");
     const artifact = join(
       seededRecordDir(p),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "requirements.md",
     );
@@ -1487,10 +1491,10 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     const done = JSON.parse(r.stdout.trim().split("\n").at(-1) ?? "{}") as Record<string, unknown>;
     expect(done.kind, r.out).toBe("done");
     // bugfix past Initialization: reverse-engineering and requirements-analysis (done), then code-generation,
-    // build-and-test, deployment-pipeline and deployment-execution.
-    expect(done.narration).toBe("Progress: 2 of 6 stages done. Next: Code Generation.");
-    // The same count the work started with: "6 stages, 6 approval gates".
-    expect(scopeCostSummary("bugfix")?.shown).toBe(6);
+    // build-and-test, code-review, security-review, deployment-pipeline and deployment-execution.
+    expect(done.narration).toBe("Progress: 2 of 8 stages done. Next: Code Generation.");
+    // The same count the work started with: "8 stages, 8 approval gates".
+    expect(scopeCostSummary("bugfix")?.shown).toBe(8);
   }, NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
   test("R2q: the stage protocol has the agent say the engine's progress line, never count it", () => {
@@ -1574,7 +1578,7 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     );
     const artifact = join(
       seededRecordDir(p),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "requirements.md",
     );
@@ -1604,7 +1608,7 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     const p = projWithState("state-mid-inception.md");
     const artifact = join(
       seededRecordDir(p),
-      "inception",
+      phaseFor("requirements-analysis"),
       "requirements-analysis",
       "requirements.md",
     );
@@ -1898,11 +1902,11 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
         Tool: event === "ARTIFACT_CREATED" ? "Write" : "Edit",
         File: join(
           seededRecordDir(p),
-          "inception",
+          phaseFor("requirements-analysis"),
           "requirements-analysis",
           "requirements.md",
         ),
-        Context: "inception > requirements-analysis > requirements.md",
+        Context: `${phaseFor("requirements-analysis")} > requirements-analysis > requirements.md`,
       }, p).status).toBe(0);
 
       const refused = state(["approve", "requirements-analysis"], p);
@@ -1945,8 +1949,8 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     expect(state(["gate-start", "requirements-analysis"], p).status).toBe(0);
     expect(appendAudit("ARTIFACT_UPDATED", {
       Tool: "Edit",
-      File: join(seededRecordDir(p), "inception", "user-stories", "stories.md"),
-      Context: "inception > user-stories > stories.md",
+      File: join(seededRecordDir(p), phaseFor("user-stories"), "user-stories", "stories.md"),
+      Context: `${phaseFor("user-stories")} > user-stories > stories.md`,
     }, p).status).toBe(0);
 
     expect(state(["approve", "requirements-analysis"], p).status).toBe(0);
@@ -1982,7 +1986,7 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
       const p = projWithState("state-mid-inception.md");
       const artifact = join(
         seededRecordDir(p),
-        "inception",
+        phaseFor("requirements-analysis"),
         "requirements-analysis",
         "requirements.md",
       );
@@ -2073,6 +2077,9 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
       "- **Construction Autonomy Mode**: gated",
       "- **Construction Autonomy Mode**: autonomous",
     );
+    // Units Generation has run: the fixture's Phase Progress says Design is Verified, but its row was
+    // regenerated pending, which makes the Units read as stage-level and lifts the swarm's receipt.
+    replaceStateText(p, "- [ ] units-generation — EXECUTE", "- [x] units-generation — EXECUTE");
     seedBoltDagBatches(p, [["foo"]]);
     const result = state(["finalize", "code-generation"], p);
     expect(result.status).not.toBe(0);
@@ -2116,13 +2123,13 @@ describe("t115 reviewer precondition (report refuses approve without a recorded 
     const p = projWithState("state-construction-with-worktree.md");
     replaceStateText(
       p,
-      "### CONSTRUCTION PHASE",
-      "### INCEPTION PHASE\n- [S] units-generation — SKIP\n\n### CONSTRUCTION PHASE",
+      "- [ ] units-generation — EXECUTE",
+      "- [S] units-generation — SKIP",
     );
     seedBoltDagBatches(p, [["stale-unit"]]);
     const outputDir = join(
       seededRecordDir(p),
-      "construction",
+      phaseFor("code-generation"),
       "code-generation",
     );
     mkdirSync(outputDir, { recursive: true });
@@ -2190,7 +2197,7 @@ describe("t115 the gate and a skip say what the plan does next", () => {
         "- **Change Control**: strict (from scope feature)\n- **Summary Confirmation**: off\n",
       ),
     );
-    const dir = join(seededRecordDir(p), "ideation", "feasibility");
+    const dir = join(seededRecordDir(p), phaseFor("feasibility"), "feasibility");
     mkdirSync(dir, { recursive: true });
     for (const name of ["feasibility-assessment", "constraint-register", "raid-log", "feasibility-questions"]) {
       writeFileSync(join(dir, `${name}.md`), `# ${name}\n\nDone.\n`);
@@ -2208,7 +2215,9 @@ describe("t115 the gate and a skip say what the plan does next", () => {
     // on one of its outputs follows on its own line, so the sentence stays whole.
     const [produced, ...checks] = String(lastDirective(opened.stdout).narration).split("\n");
     expect(produced).toMatch(
-      /^Feasibility[^.]* is ready for your review\. It produced .*feasibility-questions\.md.*, in aidlc\/spaces\/default\/intents\/[^/]+\/ideation\/feasibility\/\.$/,
+      new RegExp(
+        `^Feasibility[^.]* is ready for your review\\. It produced .*feasibility-questions\\.md.*, in aidlc/spaces/default/intents/[^/]+/${phaseFor("feasibility")}/feasibility/\\.$`,
+      ),
     );
     for (const line of checks) expect(line).toMatch(/^The [a-z-]+ check reports /);
 

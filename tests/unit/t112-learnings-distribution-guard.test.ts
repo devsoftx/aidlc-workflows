@@ -39,9 +39,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AIDLC_SRC, learningsSelectionsPath, toPortablePath, writeLearningsSelections } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The selections file is bound to this stage in the intent-less default space.
 const BINDING = { space: "default", intent: null, stage_slug: "user-stories" };
+const PHASE = phaseFor(BINDING.stage_slug);
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -59,7 +61,7 @@ afterEach(() => {
 
 /**
  * Build a minimal active-stage project rooted at <root>: an active user-stories
- * stage with a seeded stage .md under .claude/aidlc-common/stages/inception/, a
+ * stage with a seeded stage .md under .claude/aidlc-common/stages/design/, a
  * runtime-graph, and a sensor-binding selections.json. Parameterised on the
  * absolute project root so callers can place the tail at .../dist/claude
  * (framework-tree shape) vs a plain project - the only difference that drives
@@ -70,9 +72,9 @@ function seedProject(root: string): void {
   // space exists (#1592): writing the picks' file makes its folder.
   mkdirSync(join(root, "aidlc", "spaces", "default", "intents"), { recursive: true });
   writeFileSync(join(root, "aidlc", "spaces", "default", "intents", "aidlc-state.md"), "# AI-DLC State Tracking\n- **Current Stage**: user-stories\n- **Scope**: feature\n", "utf-8");
-  mkdirSync(join(root, "aidlc-docs", "inception", "user-stories"), { recursive: true });
+  mkdirSync(join(root, "aidlc-docs", PHASE, "user-stories"), { recursive: true });
   mkdirSync(join(root, ".claude", "rules"), { recursive: true });
-  mkdirSync(join(root, ".claude", "aidlc-common", "stages", "inception"), { recursive: true });
+  mkdirSync(join(root, ".claude", "aidlc-common", "stages", PHASE), { recursive: true });
   mkdirSync(join(root, ".claude", "sensors"), { recursive: true });
 
   writeFileSync(
@@ -89,18 +91,18 @@ function seedProject(root: string): void {
       stages: [
         {
           stage_slug: "user-stories",
-          memory_path: "aidlc-docs/inception/user-stories/memory.md",
+          memory_path: `aidlc-docs/${PHASE}/user-stories/memory.md`,
         },
       ],
     }),
     "utf-8",
   );
   writeFileSync(
-    join(root, ".claude", "aidlc-common", "stages", "inception", "user-stories.md"),
+    join(root, ".claude", "aidlc-common", "stages", PHASE, "user-stories.md"),
     [
       "---",
       "slug: user-stories",
-      "phase: inception",
+      `phase: ${PHASE}`,
       "execution: ALWAYS",
       "lead_agent: aidlc-product-agent",
       "support_agents: []",
@@ -237,7 +239,7 @@ describe("t112 aidlc-learnings persist — framework-distribution guard (migrate
         ".claude",
         "aidlc-common",
         "stages",
-        "inception",
+        PHASE,
         "user-stories.md",
       ),
       "utf-8",

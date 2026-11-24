@@ -4,6 +4,7 @@
 // about 20 minutes on a Windows runner, and with two the longer one still set
 // the Windows integration leg's length.
 
+import { phaseFor } from "./stage-phase.ts";
 import { expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -224,7 +225,7 @@ export function stateBody(): string {
 - **Project**: inc3 merge
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0
@@ -237,13 +238,19 @@ export function stateBody(): string {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation — EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test — EXECUTE
+
+### DEPLOY PHASE
 - [ ] ci-pipeline — EXECUTE
 
 ## Unit Progress
@@ -254,7 +261,7 @@ export function stateBody(): string {
 | beta | - | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -298,7 +305,7 @@ export function makeSeed(
   tempDirs.push(seed);
   seedAidlcMemory(seed);
   writeFileSync(seededStateFile(seed), stateBody());
-  const depDir = join(seededRecordDir(seed), "inception", "units-generation");
+  const depDir = join(seededRecordDir(seed), "design", "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(join(depDir, "unit-of-work-dependency.md"), dependencies);
   mkdirSync(seededAuditDir(seed), { recursive: true });
@@ -678,14 +685,14 @@ export function prepareCandidate(
     const stage = graph.find((entry) => entry.slug === stageSlug)!;
     // The stage's shared diary, as bootstrapDirectiveMemory writes it at the
     // stage's start, outside the Unit's folder.
-    const diary = join(seededRecordDir(checkout), "construction", stageSlug, "memory.md");
+    const diary = join(seededRecordDir(checkout), phaseFor(stageSlug), stageSlug, "memory.md");
     if (!existsSync(diary)) {
       mkdirSync(dirname(diary), { recursive: true });
       copyFileSync(join(AIDLC_SRC, "knowledge", "aidlc-shared", "memory-template.md"), diary);
     }
     const dir = join(
       seededRecordDir(checkout),
-      "construction",
+      phaseFor(stageSlug),
       unit,
       stageSlug,
     );
@@ -700,7 +707,7 @@ export function prepareCandidate(
   }
   const codeDir = join(
     seededRecordDir(checkout),
-    "construction",
+    "build",
     unit,
     "code-generation",
   );
@@ -884,7 +891,7 @@ export function completeUnitOnMain(projectDir: string, unit: string): void {
     const stage = graph.find((entry) => entry.slug === stageSlug)!;
     const dir = join(
       seededRecordDir(projectDir),
-      "construction",
+      phaseFor(stageSlug),
       unit,
       stageSlug,
     );
@@ -898,7 +905,7 @@ export function completeUnitOnMain(projectDir: string, unit: string): void {
   }
   const codeDir = join(
     seededRecordDir(projectDir),
-    "construction",
+    "build",
     unit,
     "code-generation",
   );

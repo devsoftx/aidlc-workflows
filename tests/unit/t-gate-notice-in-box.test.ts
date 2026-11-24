@@ -239,7 +239,9 @@ describe("t-gate-notice-in-box: the gate's own lines are said in Claude Code's q
     expect(heard((await next(late, [], { env: CLI })).directive as Step)).not.toContain("no git");
     expect(beforeBox(late, gateBox())?.question ?? "").not.toContain(NO_GIT);
     // The box's answer could not record it: shown once more at the gate shown again, never lost.
-    if (process.platform !== "win32") {
+    // Root ignores directory mode bits, so the refused write cannot be made there.
+    const rootIgnoresModes = typeof process.getuid === "function" && process.getuid() === 0;
+    if (process.platform !== "win32" && !rootIgnoresModes) {
       const failed = await atGate();
       await report(failed, "awaiting-approval", CLI);
       const shown = beforeBox(failed, gateBox())!;

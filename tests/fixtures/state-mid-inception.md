@@ -5,15 +5,15 @@
 - **Project Type**: Brownfield
 - **Scope**: bugfix
 - **Start Date**: 2025-07-15T10:00:00Z
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: aidlc-product-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**:
 
 ## Scope Configuration
-- **Stages to Execute**: 0.1, 0.2, 0.3, 2.1, 2.3, 3.5, 3.6, 4.1, 4.3
-- **Stages to Skip**: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.2, 2.4, 2.5, 2.6, 2.7, 2.8, 3.1, 3.2, 3.3, 3.4, 3.7, 4.2, 4.4, 4.5, 4.6, 4.7
+- **Stages to Execute**: 0.1, 0.2, 0.3, 1.4, 2.2, 3.1, 4.1, 5.1, 5.2, 6.2, 6.4
+- **Stages to Skip**: 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8, 2.1, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 4.2, 5.3, 6.1, 6.3, 7.1, 7.2, 7.3
 - **Depth**: Minimal
 - **Test Strategy**: Minimal
 - **Change Control**: strict (from scope bugfix)
@@ -27,7 +27,7 @@
 - **Build System**: npm
 
 ## Execution Plan Summary
-- **Total Stages**: 9
+- **Total Stages**: 11
 - **Completed**: 4
 - **In Progress**: requirements-analysis
 
@@ -35,13 +35,17 @@
 - **Revision Count**: 0
 
 ## Phase Progress
+
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
 - **Initialization**: Verified
-- **Ideation**: Verified
-- **Inception**: Active
-- **Construction**: Pending
-- **Operation**: Pending
+- **Discover**: Verified
+- **Design**: Active
+- **Build**: Pending
+- **Test**: Pending
+- **Secure**: Pending
+- **Deploy**: Pending
+- **Operate**: Pending
 
 ## Stage Progress
 
@@ -50,17 +54,17 @@
 - [x] workspace-detection — EXECUTE
 - [x] state-init — EXECUTE
 
-### IDEATION PHASE
+### DISCOVER PHASE
 - [ ] intent-capture — SKIP (bugfix scope)
 - [ ] market-research — SKIP (bugfix scope)
 - [ ] feasibility — SKIP (bugfix scope)
+- [x] reverse-engineering — EXECUTE
 - [ ] scope-definition — SKIP (bugfix scope)
 - [ ] team-formation — SKIP (bugfix scope)
 - [ ] rough-mockups — SKIP (bugfix scope)
 - [ ] approval-handoff — SKIP (bugfix scope)
 
-### INCEPTION PHASE
-- [x] reverse-engineering — EXECUTE
+### DESIGN PHASE
 - [ ] practices-discovery — SKIP (bugfix scope)
 - [-] requirements-analysis — EXECUTE
 - [ ] user-stories — SKIP (bugfix scope)
@@ -69,28 +73,38 @@
 - [ ] units-generation — SKIP (bugfix scope)
 - [ ] contract-design — SKIP (bugfix scope)
 - [ ] delivery-planning — SKIP (bugfix scope)
-
-### CONSTRUCTION PHASE
 Per unit: [unit-name]
+
 - [ ] functional-design — SKIP (bugfix scope)
 - [ ] nfr-requirements — SKIP (bugfix scope)
 - [ ] nfr-design — SKIP (bugfix scope)
 - [ ] infrastructure-design — SKIP (bugfix scope)
-- [ ] code-generation — EXECUTE
-- [ ] build-and-test — EXECUTE
-- [ ] ci-pipeline — SKIP (bugfix scope)
 
-### OPERATION PHASE
+### BUILD PHASE
+- [ ] code-generation — EXECUTE
+
+### TEST PHASE
+- [ ] build-and-test — EXECUTE
+- [ ] performance-validation — SKIP (bugfix scope)
+
+### SECURE PHASE
+- [ ] code-review — EXECUTE
+- [ ] security-review — EXECUTE
+- [ ] conformance-review — SKIP (bugfix scope)
+
+### DEPLOY PHASE
+- [ ] ci-pipeline — SKIP (bugfix scope)
 - [ ] deployment-pipeline — EXECUTE
 - [ ] environment-provisioning — SKIP (bugfix scope)
 - [ ] deployment-execution — EXECUTE
+
+### OPERATE PHASE
 - [ ] observability-setup — SKIP (bugfix scope)
 - [ ] incident-response — SKIP (bugfix scope)
-- [ ] performance-validation — SKIP (bugfix scope)
 - [ ] feedback-optimization — SKIP (bugfix scope)
 
 ## Current Status
-- **Lifecycle Phase**: INCEPTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: requirements-analysis
 - **Next Stage**: code-generation
 - **Status**: Running

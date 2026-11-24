@@ -19,7 +19,7 @@
 //         answer-gate terminator (--until-state-field "Completed=([5-9]|[1-9][0-9])"),
 //       * the created intent's aidlc-state.md records the `bugfix` scope + a brownfield
 //         classification,
-//       * State Version is 8,
+//       * State Version is CURRENT_STATE_VERSION,
 //       * MORE than 4 stages are marked complete `- [x]`,
 //       * the Completed counter EQUALS the `- [x]` grid count — the invariant the
 //         framework maintains (aidlc-state.ts syncs Completed to
@@ -90,7 +90,7 @@ import {
   setupTuiProject,
 } from "../harness/tui-fixtures.ts";
 import { resolveTuiRuntime, tuiUnavailableReason } from "../harness/tui-runtime.ts";
-import { activeSpace } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { activeSpace, CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 function completedStartupProbe<T extends { error?: Error }>(result: T): T {
   if ((result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT") throw result.error;
@@ -301,7 +301,7 @@ describe("t-tui-t50-bugfix-scope (answering gates advances bugfix lifecycle on d
 
         expect(stateMd).toMatch(/bugfix/i);
         expect(stateMd).toMatch(/brownfield/i);
-        expect(stateMd).toMatch(/State Version\*\*:[ \t]*8\b/);
+        expect(stateMd).toMatch(new RegExp(`State Version\\*\\*:[ \\t]*${CURRENT_STATE_VERSION}\\b`));
 
         for (const stage of ["workspace-scaffold", "workspace-detection", "state-init"]) {
           expect(

@@ -17,6 +17,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -192,7 +193,7 @@ describe("t326 pinned team Unit merge", () => {
     prepareCandidate(remote, "alpha", "stale-contract");
     const dependency = join(
       seededRecordDir(seed),
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
     );
@@ -254,7 +255,7 @@ describe("t326 pinned team Unit merge", () => {
 
     const dependency = join(
       seededRecordDir(seed),
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work-dependency.md",
     );

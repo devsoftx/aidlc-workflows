@@ -38,6 +38,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -92,7 +93,7 @@ function project(policy: Policy, source = "from scope feature"): { project: stri
     .replace("- [ ] units-generation \u2014 EXECUTE", "- [x] units-generation \u2014 EXECUTE")
     .replace("- [ ] code-generation — EXECUTE", "- [?] code-generation — EXECUTE");
   writeFileSync(join(record, "aidlc-state.md"), state, "utf-8");
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(
     join(dag, "unit-of-work-dependency.md"),
@@ -127,7 +128,7 @@ function cli(tool: string, args: string[], dir: string): { rc: number; out: stri
 }
 
 function unitDir(record: string, unit: string): string {
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md", "traceability.json"]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), name.endsWith(".json") ? "{}\n" : `# ${name}\n`);
@@ -376,7 +377,7 @@ describe("a Unit's manifest claims a path after its review", () => {
     // The person (or the agent following the old remedy) claims the file in
     // alpha's manifest without a new review.
     writeFileSync(
-      join(record, "construction", "alpha", "code-generation", "source-manifest.json"),
+      join(record, phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json"),
       `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "app.ts" }, { path: "extra.ts" }] }, null, 2)}\n`,
     );
     const done = approve(dir);
@@ -390,7 +391,7 @@ describe("a Unit's manifest claims a path after its review", () => {
     review(dir, record, "alpha", ["app.ts"]);
     review(dir, record, "beta", []);
     writeFileSync(
-      join(record, "construction", "alpha", "code-generation", "source-manifest.json"),
+      join(record, phaseFor("code-generation"), "alpha", "code-generation", "source-manifest.json"),
       `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: [{ path: "app.ts" }, { path: "other.ts" }] }, null, 2)}\n`,
     );
     const refused = approve(dir);
@@ -526,11 +527,11 @@ describe("the questions file changes after the person said Looks correct", () =>
       `- **Guard Policy**: ${policy} (from scope bugfix)`,
     ));
     const stage: Parameters<typeof checkSummaryConfirmationEvidence>[1] = {
-      slug: "requirements-analysis", name: "Requirements Analysis", phase: "inception",
+      slug: "requirements-analysis", name: "Requirements Analysis", phase: "design",
       outputs: "record", produces: ["requirements", "requirements-analysis-questions"],
       optional_produces: [], produces_kinds: {}, summary_confirmation: "required",
     };
-    const dir = join(seededRecordDir(proj), "inception", stage.slug);
+    const dir = join(seededRecordDir(proj), phaseFor(stage.slug), stage.slug);
     mkdirSync(dir, { recursive: true });
     const questions = join(dir, `${stage.slug}-questions.md`);
     writeFileSync(questions, confirmed);

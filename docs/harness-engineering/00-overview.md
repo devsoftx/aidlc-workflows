@@ -64,7 +64,7 @@ inputs that steer it.
 Everything else a harness engineer configures hangs off these two:
 
 - **Scopes** decide *which* stages run for a given kind of work (a bugfix runs
-  6 of the 30 stages after setup; an enterprise feature runs all of them).
+  8 of the 33 stages after setup; an enterprise feature runs all of them).
 - **Rules** are standing decisions that travel into every workflow — your
   team's "always do it this way."
 - **Sensors** are deterministic checks bound to stages — they run on matching
@@ -125,7 +125,7 @@ outputs, never committed or hand-edited. The loop is always:
 
 ```bash
 # 1. edit the source in core/ (never dist/)
-$EDITOR core/aidlc-common/stages/inception/my-stage.md
+$EDITOR core/aidlc-common/stages/design/my-stage.md
 
 # 2. regenerate both channels for every harness from core/ + harness/
 bun scripts/package.ts

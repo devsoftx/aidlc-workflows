@@ -1,4 +1,4 @@
-// covers: stage:inception/reverse-engineering
+// covers: stage:discover/reverse-engineering
 //
 // t349 - every shipped gate-sensor binding can reach its stage's output (#771).
 //

@@ -12,7 +12,7 @@
 // answers which question.
 
 import { NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS, NATIVE_STARTUP_TIMEOUT_MS, remainingOperationTimeoutMs } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, test, setDefaultTimeout } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -20,6 +20,8 @@ import {
   AIDLC_SRC,
   cleanupTestProject,
   createOrchestrationTestProject,
+  DEFAULT_RECORD_DIR,
+  DEFAULT_SPACE,
   FIXTURES_DIR,
   resetAidlcEnv,
   runOrchestrateNext,
@@ -27,7 +29,23 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
-import { auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { auditBlockField, findStageBySlug, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_MULTI_WORKTREE_CASE_TIMEOUT_MS);
 
@@ -39,9 +57,19 @@ const SESSION = "01995000-7a11-7000-8000-00000000c0de";
 const LATER = "01995000-7a11-7000-8000-00000000beef";
 const STAGE = "feasibility";
 
+// The host's own session markers (Claude Code exports its chat id) would name
+// another chat than the fixture's, so they are left out.
+function hostEnvironment(): Record<string, string | undefined> {
+  const inherited: Record<string, string | undefined> = { ...process.env };
+  for (const key of Object.keys(inherited)) {
+    if (/^(CLAUDE|CODEX|KIRO|COPILOT|AIDLC_SESSION)/.test(key)) delete inherited[key];
+  }
+  return inherited;
+}
+
 function env(session: string): Record<string, string | undefined> {
   const e: Record<string, string | undefined> = {
-    ...process.env,
+    ...hostEnvironment(),
     AIDLC_SKIP_ARTIFACT_GUARD: "1",
     AIDLC_UNATTENDED: "0",
     AIDLC_SESSION_OVERRIDE: session,
@@ -141,7 +169,7 @@ describe("a stage resumed with blank answers hands back what the person already 
     proj = createOrchestrationTestProject();
     seedStateFile(proj, join(FIXTURES_DIR, "state-mid-ideation.md"));
     appendAuditEntry("STAGE_STARTED", { Stage: STAGE, Agent: "aidlc-architect-agent" }, proj);
-    const dir = join(seededRecordDir(proj), "ideation", STAGE);
+    const dir = join(seededRecordDir(proj), findStageBySlug(STAGE)!.phase, STAGE);
     mkdirSync(dir, { recursive: true });
     questionsFile = join(dir, `${STAGE}-questions.md`);
     writeFileSync(questionsFile, QUESTIONS);
@@ -206,7 +234,7 @@ describe("a stage resumed with blank answers hands back what the person already 
   test("an answer recorded in the later chat for a reply kept in the earlier one keeps no words of it", () => {
     says(proj, "1");
     log(proj, ["answer", "--stage", STAGE, "--details", "Q1: A"], LATER);
-    const answer = readAuditShardEvents(proj).filter((row) => row.event === "QUESTION_ANSWERED").at(-1)!;
+    const answer = readAuditShardEvents(proj, DEFAULT_RECORD_DIR, DEFAULT_SPACE).filter((row) => row.event === "QUESTION_ANSWERED").at(-1)!;
     expect(auditBlockField(answer.block, "Details")).toBe("Q1: A");
     expect(auditBlockField(answer.block, "Person Reply")).toBeNull();
     expect(auditBlockField(answer.block, "Message Id")).toBeNull();
@@ -277,7 +305,7 @@ describe("a chat that only picked in the question box, with nothing typed, hands
     proj = createOrchestrationTestProject();
     seedStateFile(proj, join(FIXTURES_DIR, "state-mid-ideation.md"));
     appendAuditEntry("STAGE_STARTED", { Stage: STAGE, Agent: "aidlc-architect-agent" }, proj);
-    const dir = join(seededRecordDir(proj), "ideation", STAGE);
+    const dir = join(seededRecordDir(proj), findStageBySlug(STAGE)!.phase, STAGE);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, `${STAGE}-questions.md`), QUESTIONS);
     log(proj, ["decision", "--stage", STAGE, "--decision", "How would you like to answer the questions?",

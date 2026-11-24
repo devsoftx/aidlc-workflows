@@ -1,6 +1,6 @@
 # Component Specification Template
 
-Use this template for component-level specifications in `interaction-spec.md` (Stage 1.5 Refined Mockups) and any stage requiring detailed UI component definitions.
+Use this template for component-level specifications in `interaction-spec.md` (Stage 2.4 Refined Mockups) and any stage requiring detailed UI component definitions.
 
 ---
 

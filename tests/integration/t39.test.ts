@@ -18,7 +18,7 @@
 // phase at the init->first-phase handoff. It writes the `## Phase Progress`
 // block with each phase tagged Verified/Active/Pending/Skipped
 // (handleIntentCreateStateBuild). The audit row shape is `**Event**: <TYPE>` at
-// line start (aidlc-audit.ts), exactly what the .sh greps.
+// line start (aidlc-audit.ts), which the readers below match.
 //
 // 11 scopes × 3 assertions = 33 expect()-bearing test() cases here
 // (one describe per scope, 3 test()s each).
@@ -27,9 +27,8 @@
 // (createTestProject, which toPortablePath-converts on Windows so the
 // state.md / audit.md the tool writes via forward-slash path helpers
 // round-trip when read back). No seed is needed — init bootstraps audit.md +
-// aidlc-state.md from scratch (aidlc-utility.ts), matching the .sh,
-// which created bare projects and let init populate both. All temp dirs
-// cleaned in afterAll. Nothing is written under tests/fixtures/**.
+// aidlc-state.md from scratch (aidlc-utility.ts), so each project starts bare.
+// All temp dirs cleaned in afterAll. Nothing is written under tests/fixtures/**.
 
 import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -145,7 +144,7 @@ function skippedPhases(content: string): string[] {
 /**
  * Read the status of a phase from the state file, where the tool
  * (handleIntentCreateStateBuild in aidlc-utility.ts) writes `## Phase Progress`
- * lines like `- **Ideation**: Skipped`. Returns the actual status string so we
+ * lines like `- **Discover**: Skipped`. Returns the actual status string so we
  * can assert the full enum (Verified / Active / Pending / Skipped), not just the
  * Skipped predicate.
  */
@@ -167,15 +166,15 @@ const cap = (phase: string): string =>
 const EXPECTED_SKIPPED: Record<string, string[]> = {
   enterprise: [],
   feature: [],
-  mvp: ["operation"],
-  poc: ["operation"],
-  bugfix: ["ideation"],
-  refactor: ["ideation"],
-  infra: ["ideation"],
-  "security-patch": ["ideation"],
-  classic: ["ideation", "operation"],
-  workshop: ["ideation"],
-  express: ["ideation"],
+  mvp: ["operate"],
+  poc: ["deploy", "operate"],
+  bugfix: ["operate"],
+  refactor: ["operate"],
+  infra: ["discover"],
+  "security-patch": ["operate"],
+  classic: ["deploy", "operate"],
+  workshop: [],
+  express: [],
 };
 
 const SCOPES = [
@@ -215,7 +214,7 @@ describe("t39 aidlc-utility init — per-scope phase sequence (migrated from t39
       });
 
       // --- Assertion 2: PHASE_SKIPPED emitted once per excluded phase ---
-      test(`2: ${excluded.length} PHASE_SKIPPED events (matches scope-mapping.json)`, () => {
+      test(`2: ${excluded.length} PHASE_SKIPPED events (matches scope-grid.json)`, () => {
         const audit = readAudit(proj);
         expect(auditEventCount(audit, "PHASE_SKIPPED")).toBe(excluded.length);
         const skipped = skippedPhases(audit).sort();
@@ -234,9 +233,10 @@ describe("t39 aidlc-utility init — per-scope phase sequence (migrated from t39
         // deliberately do NOT assert the non-excluded post-init phases are non-Skipped:
         // the PHASE_SKIPPED audit count (driven by stagesInScope) and the Phase Progress
         // status (driven by the adjustedMapping) legitimately DIVERGE for Minimal-depth
-        // scopes - e.g. security-patch emits one PHASE_SKIPPED (ideation) yet Phase
-        // Progress also marks Inception Skipped after depth adjustment drops its lone
-        // EXECUTE stage. That divergence is outside this test's contract (it only
+        // scopes - e.g. security-patch emits one PHASE_SKIPPED (operate) yet Phase
+        // Progress also marks Discover Skipped after the greenfield adjustment drops
+        // reverse-engineering, the lone EXECUTE stage in discover. That divergence is
+        // outside this test's contract (it only
         // asserts the excluded set appears as Skipped), so asserting the complement
         // would over-reach past the observable.
         expect(phaseProgressStatus(s, "Initialization")).toBe("Verified");

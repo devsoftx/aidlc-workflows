@@ -22,6 +22,7 @@ import {
   AgentStandIn, auditEvents, createScopeProject, type Directive, field, PersonScript,
   SCOPE_RUN_TIMEOUT_MS, ScopeRunRefused,
 } from "../harness/scope-run.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const projects: string[] = [];
 afterAll(() => {
@@ -56,7 +57,7 @@ function installCheck(proj: string, stage: string, file: string): void {
     "if (import.meta.main) main(process.argv.slice(2));",
     "",
   ].join("\n"));
-  const stageFile = join(proj, ".claude", "aidlc-common", "stages", "construction", `${stage}.md`);
+  const stageFile = join(proj, ".claude", "aidlc-common", "stages", phaseFor(stage), `${stage}.md`);
   const text = readFileSync(stageFile, "utf-8");
   const bound = text.replace(/^sensors:\n/m, "sensors:\n  - retention\n");
   expect(bound).not.toBe(text);

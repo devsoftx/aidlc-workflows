@@ -22,7 +22,7 @@
 // FIXTURE DISCIPLINE: each case builds a FRESH temp project via
 // createTestProject (toPortablePath-converts on Windows so the audit shards /
 // state file the tool writes via toPosix round-trip when read back), writes the
-// inline v7 state + bare audit header, and - for the cases that read audit row
+// inline state + bare audit header, and - for the cases that read audit row
 // COUNTS - starts from the bare "# AI-DLC Audit Log\n" header so post-fire
 // counts are unambiguous. Worktree dirs are created through the intent-scoped
 // worktreePath helper. All temp dirs are cleaned in afterAll, plus a
@@ -150,7 +150,7 @@ const V7_STATE = `# AI-DLC State Tracking
 - **Project Type**: Greenfield
 - **Scope**: feature
 - **Start Date**: 2026-05-18T00:00:00Z
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: aidlc-developer-agent
 - **Worktree Path**:
 - **Bolt Refs**:
@@ -461,7 +461,7 @@ describe("t76 aidlc-state merge (migrated from t76-state-fork-merge.sh, plan 16)
 - **Project Type**: Greenfield
 - **Scope**: feature
 - **Start Date**: 2026-05-18T00:00:00Z
-- **State Version**: 8
+- **State Version**: 10
 - **Active Agent**: aidlc-developer-agent
 - **Worktree Path**:
 - **Bolt Refs**: [empty list]

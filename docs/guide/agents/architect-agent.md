@@ -4,29 +4,29 @@
 
 The aidlc-architect-agent is your solutions architect. It translates requirements into robust system architectures, produces Architecture Decision Records (ADRs), designs domain models, and decomposes projects into implementable units of work. It thinks in patterns and trade-offs, producing designs that developers can implement directly.
 
-The aidlc-architect-agent leads the most stages of any single agent in the lifecycle — seven in total — spanning Ideation, Inception, and Construction. It is the primary design authority and carries the `judgment` tier along with the seven other high-judgment agents, so it inherits your session's own model and effort rather than pinning one. Only delivery, pipeline-deploy, and operations carry the `templated` tier; their shipped baseline also inherits the session model and effort because their output is dominantly templated.
+The aidlc-architect-agent leads the most stages of any single agent in the lifecycle — seven in total — spanning Discover and Design. It is the primary design authority and carries the `judgment` tier along with the seven other high-judgment agents, so it inherits your session's own model and effort rather than pinning one. Only delivery, pipeline-deploy, and operations carry the `templated` tier; their shipped baseline also inherits the session model and effort because their output is dominantly templated.
 
 ## Stages Led
 
 | Stage | Phase | Description |
 |-------|-------|-------------|
-| 1.3 Feasibility & Constraints | Ideation | Technical feasibility assessment and constraint analysis |
-| 2.6 Domain Design | Inception | Component catalogue, domain modelling, and ADRs |
-| 2.7 Units Generation | Inception | Decomposes design into implementable units of work |
-| 2.8 Contract Design | Inception | API contracts for inter-unit boundaries and public/external APIs |
-| 3.1 Functional Design | Construction | Detailed domain models and business logic (per unit) |
-| 3.2 NFR Requirements | Construction | Non-functional requirements with measurable targets (per unit) |
-| 3.3 NFR Design | Construction | Technical approaches for caching, resilience, security, observability (per unit) |
+| 1.3 Feasibility & Constraints | Discover | Technical feasibility assessment and constraint analysis |
+| 2.5 Domain Design | Design | Component catalogue, domain modelling, and ADRs |
+| 2.6 Units Generation | Design | Decomposes design into implementable units of work |
+| 2.7 Contract Design | Design | API contracts for inter-unit boundaries and public/external APIs |
+| 2.9 Functional Design | Design | Detailed domain models and business logic (per unit) |
+| 2.10 NFR Requirements | Design | Non-functional requirements with measurable targets (per unit) |
+| 2.11 NFR Design | Design | Technical approaches for caching, resilience, security, observability (per unit) |
 
-It also leads the synthesis step of stage 2.1 (Reverse Engineering), where it receives code scan results from the aidlc-developer-agent and produces the 9 architectural artifacts. With collaborators off, the developer writes them and the architect is not dispatched.
+It also leads the synthesis step of stage 1.4 (Reverse Engineering), where it receives code scan results from the aidlc-developer-agent and produces the 9 architectural artifacts. With collaborators off, the developer writes them and the architect is not dispatched.
 
 ## Stages Supported
 
 | Stage | Phase | Contribution |
 |-------|-------|-------------|
-| 1.1 Intent Capture | Ideation | Provides technical context |
-| 2.1 Reverse Engineering (dispatched final pipeline link) | Inception | Synthesizes code scan results into a coherent architectural model |
-| 2.9 Delivery Planning | Inception | Validates build order against architecture dependencies |
+| 1.1 Intent Capture | Discover | Provides technical context |
+| 1.4 Reverse Engineering (dispatched final pipeline link) | Discover | Synthesizes code scan results into a coherent architectural model |
+| 2.8 Delivery Planning | Design | Validates build order against architecture dependencies |
 
 ## What to Expect
 

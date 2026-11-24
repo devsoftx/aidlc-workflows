@@ -26,6 +26,7 @@ import {
   PersonScript,
   SCOPE_RUN_TIMEOUT_MS,
 } from "../harness/scope-run.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const projects: string[] = [];
 afterAll(() => {
@@ -59,7 +60,7 @@ function installBlockingCheck(proj: string): void {
     "if (import.meta.main) main(process.argv.slice(2));",
     "",
   ].join("\n"));
-  const stageFile = join(proj, ".claude", "aidlc-common", "stages", "construction", "code-generation.md");
+  const stageFile = join(proj, ".claude", "aidlc-common", "stages", phaseFor("code-generation"), "code-generation.md");
   const text = readFileSync(stageFile, "utf-8");
   const bound = text.replace("sensors:\n  - required-sections\n  - traceability\n",
     "sensors:\n  - required-sections\n  - traceability\n  - no-tbd\n");
@@ -101,7 +102,7 @@ describe("a Fix findings pick at the late Code Generation gate in solo work buil
     agent.askPerson("blocking check", "code-generation", "A check failed on core's code summary. What next?",
       options, "Fix findings");
     agent.must("log", "answer", "--stage", "code-generation", "--details", "Fix findings");
-    const summary = `${activeRecord(proj).dir.slice(proj.length + 1)}/construction/core/code-generation/code-summary.md`;
+    const summary = `${activeRecord(proj).dir.slice(proj.length + 1)}/build/core/code-generation/code-summary.md`;
     host.write(summary, `${readFileSync(join(proj, summary), "utf-8")}\n## Error handling\n\nErrors are retried twice, then reported.\n`);
 
     expect(agent.drive(agent.next())).toMatchObject({ kind: "done" });

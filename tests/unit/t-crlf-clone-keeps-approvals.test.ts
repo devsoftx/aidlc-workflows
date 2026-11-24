@@ -26,6 +26,7 @@ import {
   AIDLC_SRC, cleanupTestProject, createTestProject, resetAidlcEnv,
   seedAidlcMemory, seedBoltDag, seededRecordDir, seededStateFile, seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import { loadGraph } from "../../dist/claude/.claude/tools/aidlc-graph.ts";
 import {
@@ -68,7 +69,7 @@ function fixture(policy: string): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -84,11 +85,12 @@ function fixture(policy: string): string {
 - **Depth**: Standard
 - **Test Strategy**: Standard
 ## Stage Progress
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 ${stages.map((stage) => `- [${stage === "functional-design" ? "-" : " "}] ${stage} ${SEPARATOR} EXECUTE`).join("\n")}
+### TEST PHASE
 - [ ] build-and-test ${SEPARATOR} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 `);
@@ -184,7 +186,7 @@ function build(p: string, unit: string, afterWrite: (dir: string) => void = () =
   const reviews: string[] = [];
   for (const slug of stages) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) {
       writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
@@ -204,7 +206,7 @@ function build(p: string, unit: string, afterWrite: (dir: string) => void = () =
 }
 
 function writeManifest(p: string, unit: string, paths: string[]): void {
-  writeFileSync(join(seededRecordDir(p), "construction", unit, "code-generation", "source-manifest.json"), JSON.stringify({
+  writeFileSync(join(seededRecordDir(p), phaseFor("code-generation"), unit, "code-generation", "source-manifest.json"), JSON.stringify({
     stage: "code-generation", unit, version: 1, writes: paths.map((path) => ({ path })),
   }));
 }
@@ -317,7 +319,7 @@ describe("t-crlf-clone-keeps-approvals: committed text checked out with CRLF", (
       writeFileSync(statePath, readFileSync(statePath, "utf-8")
         .replace("- **Change Control**: strict (from scope bugfix)", `- **Guard Policy**: ${policy.replace("classic", "bugfix")}`)
         .replace(/^- \[.\] requirements-analysis/m, "- [x] requirements-analysis"));
-      const dir = join(seededRecordDir(p), "inception", "requirements-analysis");
+      const dir = join(seededRecordDir(p), phaseFor("requirements-analysis"), "requirements-analysis");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "requirements.md"), "# Requirements\n\n- FR-1: a blank title is refused.\n");
       const stage = loadGraph().find((node) => node.slug === "requirements-analysis")!;
@@ -375,7 +377,7 @@ describe("t-crlf-clone-keeps-approvals: committed text checked out with CRLF", (
   test("a document Git takes as binary, or with a lone CR, keeps its line endings", () => {
     const p = fixture("strict (set by you)");
     const stage = findStageBySlug("functional-design")!;
-    const dir = join(seededRecordDir(p), "construction", "alpha", "functional-design");
+    const dir = join(seededRecordDir(p), phaseFor("functional-design"), "alpha", "functional-design");
     mkdirSync(dir, { recursive: true });
     const files = (stage.produces ?? []).map((name) => join(dir, artifactFilename(name)));
     const fingerprint = (body: string) => {

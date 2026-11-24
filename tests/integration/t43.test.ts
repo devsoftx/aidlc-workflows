@@ -36,14 +36,17 @@ const STAGES_DIR = join(
   "stages",
 );
 
-// The 5 phase directories are the closed enum; iterate them to locate a
-// slug's .md file.
+// The 8 phase directories are the closed enum (initialization plus the seven
+// lifecycle phases); iterate them to locate a slug's .md file.
 const PHASES = [
   "initialization",
-  "ideation",
-  "inception",
-  "construction",
-  "operation",
+  "discover",
+  "design",
+  "build",
+  "test",
+  "secure",
+  "deploy",
+  "operate",
 ] as const;
 
 // --- Helpers ---
@@ -173,13 +176,13 @@ describe("reverse-engineering conditional execution", () => {
 });
 
 // ============================================================
-// Tests 5-8: Ideation outputs declare their per-intent record dir
+// Tests 5-8: Discover outputs declare their per-intent record dir
 // The `outputs:` frontmatter carries RELATIVE artifact names plus the
 // engine-resolution clause "(under this stage's record dir, engine-resolved)";
 // the path root does not live in `outputs:`. One assertion per slug: every
-// ideation stage declares its output location.
+// discover stage declares its output location.
 // ============================================================
-describe("ideation stages declare their per-intent record dir in outputs", () => {
+describe("discover stages declare their per-intent record dir in outputs", () => {
   for (const slug of ["intent-capture", "market-research", "feasibility", "scope-definition"]) {
     test(`${slug} outputs declare "under this stage's record dir, engine-resolved"`, () => {
       const v = out(slug);
@@ -190,14 +193,14 @@ describe("ideation stages declare their per-intent record dir in outputs", () =>
 });
 
 // ============================================================
-// Tests 9-11: Inception outputs declare their per-intent record dir
+// Tests 9-11: Design outputs declare their per-intent record dir
 // `outputs:` carries relative artifact names plus the "(under this stage's
 // record dir, engine-resolved)" clause.
 // ============================================================
-describe("inception stages declare their per-intent record dir in outputs", () => {
-  // reverse-engineering writes to the durable per-repo code knowledge base,
-  // which is SPACE-scoped (aidlc/spaces/<active-space>/codekb/<repo>/), so it is
-  // asserted separately below; the other inception stages declare their own
+describe("design stages declare their per-intent record dir in outputs", () => {
+  // reverse-engineering (discover) writes to the durable per-repo code knowledge
+  // base, which is SPACE-scoped (aidlc/spaces/<active-space>/codekb/<repo>/), so
+  // it is asserted separately below; the other design stages declare their own
   // artifacts under the engine-resolved record dir.
   for (const slug of ["requirements-analysis", "domain-design"]) {
     test(`${slug} outputs declare "under this stage's record dir, engine-resolved"`, () => {
@@ -207,30 +210,31 @@ describe("inception stages declare their per-intent record dir in outputs", () =
     });
   }
 
-  test("reverse-engineering outputs to the space-level per-repo codekb (aidlc/spaces/<active-space>/codekb/<repo>/), not the inception record dir", () => {
+  test("reverse-engineering outputs to the space-level per-repo codekb (aidlc/spaces/<active-space>/codekb/<repo>/), not the discover record dir", () => {
     const v = out("reverse-engineering");
     expect(v).not.toBeNull();
     // The per-repo codekb store is SPACE-scoped (a sibling of intents/); it is the
     // dir the `codekb-path` command resolves.
     expect(v!).toContain("aidlc/spaces/<active-space>/codekb/<repo>/");
-    // The inception artifact tree is the per-intent <record>/inception/;
-    // RE must NOT write there (it lives in the durable codekb instead).
-    expect(v!).not.toContain("<record>/inception/");
+    // RE is a discover stage; it must NOT write under the per-intent
+    // <record>/discover/ tree (it lives in the durable codekb instead).
+    expect(v!).not.toContain("<record>/discover/");
   });
 });
 
 // ============================================================
-// Test 12: Most per-unit Construction stages reference {unit-name}
+// Test 12: Most per-unit design and build stages reference {unit-name}
 //
 // `outputs:` carries relative artifact names plus "(under this stage's per-unit
 // record dir, engine-resolved)", not the `{unit-name}` key. The literal
-// `{unit-name}` segment lives in the BODY prose, where each stage writes to
-// `<record>/construction/{unit-name}/<stage>/`. The test's intent - per-unit
-// construction stages anchor their output location to {unit-name} - is checked
-// by counting stages whose BODY cites that per-unit path (threshold >3 of 5).
+// `{unit-name}` segment lives in the BODY prose: the four per-unit design stages
+// write to `<record>/design/{unit-name}/<stage>/`, and code-generation (build)
+// reads those design folders as its inputs. The test's intent - per-unit stages
+// anchor their paths to {unit-name} - is checked by counting stages whose BODY
+// cites the `<record>/design/{unit-name}/` path (threshold >3 of 5).
 // ============================================================
-describe("per-unit construction stages reference {unit-name}", () => {
-  test("more than 3 of the 5 per-unit stages key their output path to {unit-name}", () => {
+describe("per-unit design and build stages reference {unit-name}", () => {
+  test("more than 3 of the 5 per-unit stages key their path to {unit-name}", () => {
     const unitStages = [
       "functional-design",
       "nfr-requirements",
@@ -240,7 +244,7 @@ describe("per-unit construction stages reference {unit-name}", () => {
     ];
     const count = unitStages.filter((s) => {
       const f = findStageFile(s);
-      return f !== null && readFileSync(f, "utf8").includes("<record>/construction/{unit-name}/");
+      return f !== null && readFileSync(f, "utf8").includes("<record>/design/{unit-name}/");
     }).length;
     expect(count).toBeGreaterThan(3);
   });
@@ -308,7 +312,7 @@ describe("scope-definition -> team-formation edge", () => {
 // Domain-design's outputs name the design artifacts directly (components.md,
 // decisions.md, traceability.json ... engine-resolved). The downstream consumer
 // cites the producer by name: units-generation `inputs:` reads
-// `<record>/inception/domain-design/components.md`. So the edge-citation intent
+// `<record>/design/domain-design/components.md`. So the edge-citation intent
 // (producer emits the design artifacts, consumer reads domain-design's design
 // output) is checked: assert the producer names a design artifact
 // (components.md is the keystone, also pinned by t44 test 5) and the consumer
@@ -326,12 +330,12 @@ describe("domain-design -> units-generation edge", () => {
 });
 
 // ============================================================
-// Test 18: Operation phase outputs declare their per-intent record dir
+// Test 18: Deploy and operate stage outputs declare their per-intent record dir
 // `outputs:` carries the "(under this stage's record dir, engine-resolved)"
 // clause instead of the path root; all 4 checked stages must declare it.
 // ============================================================
-describe("operation stages declare their per-intent record dir in outputs", () => {
-  test("all 4 checked operation stages declare their engine-resolved record dir", () => {
+describe("deploy and operate stages declare their per-intent record dir in outputs", () => {
+  test("all 4 checked deploy and operate stages declare their engine-resolved record dir", () => {
     const opStages = [
       "deployment-pipeline",
       "environment-provisioning",

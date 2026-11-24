@@ -71,8 +71,8 @@ const GENERIC = new Set([
 // words here for an install that has none) and English words that are also first names, surnames or
 // folder names. The full value (a whole name, a path) is still replaced; only the bare word is left alone.
 const ORDINARY = new Set([
-  "initialization", "ideation", "inception", "construction", "operation", "operations",
-  "analysis", "approval", "build", "capture", "code", "contract", "definition", "delivery", "deployment", "design",
+  "initialization", "discover", "design", "build", "test", "secure", "deploy", "operate", "operations",
+  "analysis", "approval", "capture", "code", "contract", "definition", "delivery", "deployment",
   "detection", "discovery", "domain", "engineering", "environment", "execution", "feasibility", "feedback",
   "formation", "functional", "generation", "handoff", "incident", "infrastructure", "intent", "market", "mockups",
   "observability", "optimization", "performance", "pipeline", "planning", "practices", "provisioning", "refined",

@@ -35,6 +35,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -147,7 +148,7 @@ function pipelineProject(mode: Mode): string {
   const checkbox = run(STATE, ["checkbox", `${RE_STAGE}=in-progress`, "--project-dir", proj], direct);
   expect(checkbox.status, checkbox.out).toBe(0);
   appendAuditEntry("STAGE_STARTED", { Stage: RE_STAGE, Agent: LEAD }, proj);
-  const handoff = join(dirname(seededStateFile(proj)), "inception", RE_STAGE, "developer-scan.md");
+  const handoff = join(dirname(seededStateFile(proj)), phaseFor(RE_STAGE), RE_STAGE, "developer-scan.md");
   mkdirSync(dirname(handoff), { recursive: true });
   writeFileSync(
     handoff,
@@ -168,7 +169,7 @@ function codeGenerationProject(mode: Mode): string {
   const proj = project("state-construction-with-worktree.md");
   if (mode === "recorded") recordProjectBypass(proj, "AIDLC_SKIP_ARTIFACT_GUARD");
   seedBoltDag(proj, ["alpha"]);
-  const dir = join(seededRecordDir(proj), "construction", "alpha", "code-generation");
+  const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "alpha", "code-generation");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "code-generation-plan.md"), "# Plan\n");
   mkdirSync(join(proj, "src"), { recursive: true });

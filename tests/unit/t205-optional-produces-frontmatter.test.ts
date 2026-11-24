@@ -35,13 +35,14 @@ import {
   parseStageFrontmatter,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { validateStageFrontmatter } from "../../dist/claude/.claude/tools/aidlc-stage-schema.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // A complete, valid stage frontmatter that DECLARES optional_produces. Shaped
 // like the worked example in t64: every required field present so the only
 // axis under test is optional_produces.
 const WITH_OPTIONAL = `---
 slug: functional-design
-phase: construction
+phase: ${phaseFor("functional-design")}
 execution: CONDITIONAL
 condition: x
 lead_agent: aidlc-architect-agent
@@ -64,7 +65,7 @@ outputs: b
 
 const WITHOUT_OPTIONAL = `---
 slug: functional-design
-phase: construction
+phase: ${phaseFor("functional-design")}
 execution: CONDITIONAL
 condition: x
 lead_agent: aidlc-architect-agent
@@ -84,7 +85,7 @@ outputs: b
 // A non-kebab optional_produces entry (uppercase) - must be rejected.
 const BAD_OPTIONAL = `---
 slug: functional-design
-phase: construction
+phase: ${phaseFor("functional-design")}
 execution: CONDITIONAL
 condition: x
 lead_agent: aidlc-architect-agent

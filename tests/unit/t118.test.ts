@@ -266,17 +266,17 @@ interface GoldenRow {
 }
 
 const GOLDEN: GoldenRow[] = [
-  { scope: "enterprise", fingerprint: "intent-capture", phase: "ideation", skip: null },
-  { scope: "feature", fingerprint: "intent-capture", phase: "ideation", skip: null },
-  { scope: "mvp", fingerprint: "intent-capture", phase: "ideation", skip: "approval-handoff" },
-  { scope: "poc", fingerprint: "intent-capture", phase: "ideation", skip: "feasibility" },
-  { scope: "bugfix", fingerprint: "reverse-engineering", phase: "inception", skip: "intent-capture" },
-  { scope: "refactor", fingerprint: "reverse-engineering", phase: "inception", skip: "market-research" },
-  { scope: "infra", fingerprint: "practices-discovery", phase: "inception", skip: "reverse-engineering" },
-  { scope: "security-patch", fingerprint: "reverse-engineering", phase: "inception", skip: "user-stories" },
-  { scope: "classic", fingerprint: "reverse-engineering", phase: "inception", skip: "intent-capture" },
-  { scope: "workshop", fingerprint: "reverse-engineering", phase: "inception", skip: "intent-capture" },
-  { scope: "express", fingerprint: "reverse-engineering", phase: "inception", skip: "intent-capture" },
+  { scope: "enterprise", fingerprint: "intent-capture", phase: "discover", skip: null },
+  { scope: "feature", fingerprint: "intent-capture", phase: "discover", skip: null },
+  { scope: "mvp", fingerprint: "intent-capture", phase: "discover", skip: "approval-handoff" },
+  { scope: "poc", fingerprint: "intent-capture", phase: "discover", skip: "feasibility" },
+  { scope: "bugfix", fingerprint: "reverse-engineering", phase: "discover", skip: "intent-capture" },
+  { scope: "refactor", fingerprint: "reverse-engineering", phase: "discover", skip: "market-research" },
+  { scope: "infra", fingerprint: "practices-discovery", phase: "design", skip: "reverse-engineering" },
+  { scope: "security-patch", fingerprint: "reverse-engineering", phase: "discover", skip: "user-stories" },
+  { scope: "classic", fingerprint: "reverse-engineering", phase: "discover", skip: "intent-capture" },
+  { scope: "workshop", fingerprint: "reverse-engineering", phase: "discover", skip: "intent-capture" },
+  { scope: "express", fingerprint: "reverse-engineering", phase: "discover", skip: "intent-capture" },
 ];
 
 describe("t118 engine differential corpus — aidlc-orchestrate next (migrated from t118-engine-differential.sh, plan 24)", () => {
@@ -369,7 +369,7 @@ describe("t118 engine differential corpus — aidlc-orchestrate next (migrated f
       const r = emitNext("state-construction-bolt1.md");
       expect(r.directive.gate).toBe("unresolved");
       expect(r.directive.stage).toBe("functional-design");
-      expect(r.directive.phase).toBe("construction");
+      expect(r.directive.phase).toBe("design");
       expect(r.directive.kind).toBe("run-stage");
     });
   });

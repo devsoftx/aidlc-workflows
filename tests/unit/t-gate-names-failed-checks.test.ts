@@ -19,7 +19,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
-import { afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -37,6 +37,22 @@ import {
 } from "../harness/fixtures.ts";
 import { artifactFilename, auditBlockField, readAuditShardEvents } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -80,7 +96,7 @@ function reply(tool: string, args: string[], extra: Record<string, string> = {})
 }
 
 function writeArtifact(name: string): string {
-  const dir = join(seededRecordDir(proj), "ideation", STAGE);
+  const dir = join(seededRecordDir(proj), "discover", STAGE);
   mkdirSync(dir, { recursive: true });
   const path = join(dir, `${name}.md`);
   writeFileSync(path, `# ${name}\n\nContent.\n`);
@@ -320,7 +336,7 @@ describe("t-gate-names-failed-checks: a team's Unit gate names that Unit's outpu
 - **Project**: team unit gate test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Runtime State
@@ -338,16 +354,20 @@ describe("t-gate-names-failed-checks: a team's Unit gate names that Unit's outpu
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
 - [ ] nfr-requirements \u2014 EXECUTE
 - [ ] nfr-design \u2014 EXECUTE
 - [ ] infrastructure-design \u2014 EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation \u2014 EXECUTE
+
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
@@ -355,7 +375,7 @@ describe("t-gate-names-failed-checks: a team's Unit gate names that Unit's outpu
   const TEAM_ENV = { AIDLC_SKIP_HUMAN_PRESENCE_GUARD: "1" };
 
   function unitArtifact(unit: string, name: string): string {
-    const dir = join(seededRecordDir(proj), "construction", unit, UNIT_STAGE);
+    const dir = join(seededRecordDir(proj), "design", unit, UNIT_STAGE);
     mkdirSync(dir, { recursive: true });
     const path = join(dir, artifactFilename(name));
     writeFileSync(path, `# ${name} for ${unit}\n`);
@@ -496,15 +516,15 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 
   test("a Feasibility gate whose deliverables cite no required input says the finding once", () => {
     seedStateFile(proj, "state-mid-ideation.md");
-    put("ideation/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n\n## Why\n\nSales.\n");
+    put("discover/intent-capture/intent-statement.md", "# Intent\n\n## Goal\n\nA widget.\n\n## Why\n\nSales.\n");
     for (const name of ["feasibility-assessment", "constraint-register", "raid-log"]) {
-      put(`ideation/feasibility/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
+      put(`discover/feasibility/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
     }
     expect(run(STATE, ["checkbox", `${STAGE}=in-progress`]).rc).toBe(0);
     const opened = reply(ORCHESTRATE, ["report", "--stage", STAGE, "--result", "awaiting-approval"], SENSORS_ON);
     const fired = coverageRows("SENSOR_FIRED");
     expect(fired, JSON.stringify(opened)).toHaveLength(1);
-    expect(fired[0]).toEndWith("ideation/feasibility/feasibility-assessment.md");
+    expect(fired[0]).toEndWith("discover/feasibility/feasibility-assessment.md");
     expect(coverageRows("SENSOR_FAILED")).toHaveLength(1);
     const narration = String(opened.narration ?? "");
     expect(narration.match(/The upstream-coverage check reports/g) ?? []).toHaveLength(1);
@@ -519,7 +539,7 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 - **Project**: one evaluation per folder
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 
 ## Runtime State
 - **Revision Count**: 0
@@ -533,21 +553,23 @@ describe("t-gate-names-failed-checks: a stage-wide check is evaluated once per o
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [-] functional-design \u2014 EXECUTE
+
+### BUILD PHASE
 - [ ] code-generation \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: DESIGN
 - **Current Stage**: functional-design
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
 `);
     seedBoltDag(proj, ["alpha", "beta"]);
-    put("inception/requirements-analysis/requirements.md", "# Requirements\n\n## Functional\n\n- FR1 Login\n\n## Other\n\nx\n");
+    put("design/requirements-analysis/requirements.md", "# Requirements\n\n## Functional\n\n- FR1 Login\n\n## Other\n\nx\n");
     for (const unit of ["alpha", "beta"]) {
       for (const name of ["entities", "rules", "functional-spec"]) {
-        put(`construction/${unit}/functional-design/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
+        put(`design/${unit}/functional-design/${name}.md`, `# ${name}\n\n## One\n\nx\n\n## Two\n\ny\n`);
       }
     }
     const gate = run(STATE, ["gate-start", "functional-design"], { ...SENSORS_ON, AIDLC_DISABLE_ENSEMBLE_EVIDENCE: "1", AIDLC_SKIP_REVIEWER_GATE_GUARD: "1" });

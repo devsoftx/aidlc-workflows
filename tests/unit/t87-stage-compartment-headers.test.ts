@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/construction/build-and-test.md, file:aidlc-common/stages/construction/ci-pipeline.md, file:aidlc-common/stages/construction/code-generation.md, file:aidlc-common/stages/construction/functional-design.md, file:aidlc-common/stages/construction/infrastructure-design.md, file:aidlc-common/stages/construction/nfr-design.md, file:aidlc-common/stages/construction/nfr-requirements.md, file:aidlc-common/stages/ideation/approval-handoff.md, file:aidlc-common/stages/ideation/feasibility.md, file:aidlc-common/stages/ideation/intent-capture.md, file:aidlc-common/stages/ideation/market-research.md, file:aidlc-common/stages/ideation/rough-mockups.md, file:aidlc-common/stages/ideation/scope-definition.md, file:aidlc-common/stages/ideation/team-formation.md, file:aidlc-common/stages/inception/application-design.md, file:aidlc-common/stages/inception/delivery-planning.md, file:aidlc-common/stages/inception/practices-discovery.md, file:aidlc-common/stages/inception/refined-mockups.md, file:aidlc-common/stages/inception/requirements-analysis.md, file:aidlc-common/stages/inception/reverse-engineering.md, file:aidlc-common/stages/inception/units-generation.md, file:aidlc-common/stages/inception/user-stories.md, file:aidlc-common/stages/initialization/state-init.md, file:aidlc-common/stages/initialization/workspace-detection.md, file:aidlc-common/stages/initialization/workspace-scaffold.md, file:aidlc-common/stages/operation/deployment-execution.md, file:aidlc-common/stages/operation/deployment-pipeline.md, file:aidlc-common/stages/operation/environment-provisioning.md, file:aidlc-common/stages/operation/feedback-optimization.md, file:aidlc-common/stages/operation/incident-response.md, file:aidlc-common/stages/operation/observability-setup.md, file:aidlc-common/stages/operation/performance-validation.md
+// covers: file:aidlc-common/stages/test/build-and-test.md, file:aidlc-common/stages/deploy/ci-pipeline.md, file:aidlc-common/stages/build/code-generation.md, file:aidlc-common/stages/design/functional-design.md, file:aidlc-common/stages/design/infrastructure-design.md, file:aidlc-common/stages/design/nfr-design.md, file:aidlc-common/stages/design/nfr-requirements.md, file:aidlc-common/stages/discover/approval-handoff.md, file:aidlc-common/stages/discover/feasibility.md, file:aidlc-common/stages/discover/intent-capture.md, file:aidlc-common/stages/discover/market-research.md, file:aidlc-common/stages/discover/rough-mockups.md, file:aidlc-common/stages/discover/scope-definition.md, file:aidlc-common/stages/discover/team-formation.md, file:aidlc-common/stages/design/application-design.md, file:aidlc-common/stages/design/delivery-planning.md, file:aidlc-common/stages/design/practices-discovery.md, file:aidlc-common/stages/design/refined-mockups.md, file:aidlc-common/stages/design/requirements-analysis.md, file:aidlc-common/stages/discover/reverse-engineering.md, file:aidlc-common/stages/design/units-generation.md, file:aidlc-common/stages/design/user-stories.md, file:aidlc-common/stages/initialization/state-init.md, file:aidlc-common/stages/initialization/workspace-detection.md, file:aidlc-common/stages/initialization/workspace-scaffold.md, file:aidlc-common/stages/deploy/deployment-execution.md, file:aidlc-common/stages/deploy/deployment-pipeline.md, file:aidlc-common/stages/deploy/environment-provisioning.md, file:aidlc-common/stages/operate/feedback-optimization.md, file:aidlc-common/stages/operate/incident-response.md, file:aidlc-common/stages/operate/observability-setup.md, file:aidlc-common/stages/test/performance-validation.md
 //
 // t87 — shipped stage-file COMPARTMENT-HEADER contract. Migrated from
 // tests/unit/t87-stage-compartment-headers.sh (TAP plan 64 — 2 distinct
@@ -149,17 +149,17 @@ describe("t87 stage-file compartment headers (migrated from t87-stage-compartmen
     expect(headingOutsideFence("## Sensors", "## Sensors and friends\n")).toBe(false);
   });
 
-  // .sh L10: plan 64. Re-count to pin the plan and guard against a stage being
-  // silently dropped from (or added to) the shipped tree without the suite
-  // noticing (2 compartments × 32 stages = 64 rows).
-  test("covers EXACTLY 33 stages × 2 compartments = 66 assertions (TAP plan parity)", () => {
+  // Re-count to pin the plan and guard against a stage being silently dropped
+  // from (or added to) the shipped tree without the suite noticing: 2
+  // compartments × 36 stages (3 initialization, 33 runnable) = 72 rows.
+  test("covers EXACTLY 36 stages × 2 compartments = 72 assertions (TAP plan parity)", () => {
     const COMPARTMENTS_PER_STAGE = 2;
-    expect(STAGE_FILES.length).toBe(33);
-    expect(STAGE_FILES.length * COMPARTMENTS_PER_STAGE).toBe(66);
-    // Five phases, each with at least one stage (no empty phase dir slipped in).
+    expect(STAGE_FILES.length).toBe(36);
+    expect(STAGE_FILES.length * COMPARTMENTS_PER_STAGE).toBe(72);
+    // Eight phase folders, each with at least one stage (no empty phase dir slipped in).
     const phases = new Set(STAGE_FILES.map((s) => s.phase));
     expect(phases).toEqual(
-      new Set(["construction", "ideation", "inception", "initialization", "operation"]),
+      new Set(["build", "deploy", "design", "discover", "initialization", "operate", "secure", "test"]),
     );
   });
 });

@@ -28,8 +28,8 @@ the richer `test-pro` reference plugin end to end.
   the framework everyone gets.
 - **A plugin** is _optional and owned_ — it ships in its own repo, activates
   only under an opt-in scope (and/or a `when:` predicate), and a consumer chooses
-  to compose it into their install. Use it for a domain pack (a full operation
-  phase, a compliance plugin, a testing plugin) that not every project wants.
+  to compose it into their install. Use it for a domain pack (a full set of
+  Operate stages, a compliance plugin, a testing plugin) that not every project wants.
 
 ## 1. The directory + manifest
 
@@ -39,12 +39,12 @@ core-shaped subtrees:
 ```text
 test-pro/
   .aidlc-plugin/plugin.json                          # the manifest
-  stages/construction/test-pro-integration.md        # NEW stages
-  stages/operation/test-pro-full-suite.md
-  contributions/construction/nfr-requirements.md      # MODIFY existing core stages (§3)
-  contributions/construction/nfr-design.md
-  contributions/construction/build-and-test.md
-  contributions/operation/performance-validation.md
+  stages/test/test-pro-integration.md                # NEW stages
+  stages/operate/test-pro-full-suite.md
+  contributions/design/nfr-requirements.md            # MODIFY existing core stages (§3)
+  contributions/design/nfr-design.md
+  contributions/test/build-and-test.md
+  contributions/test/performance-validation.md
   sensors/aidlc-coverage-threshold.md                 # NEW sensor manifests
   sensors/aidlc-requirement-coverage.md
   tools/aidlc-sensor-coverage-threshold.ts            # the sensor scripts
@@ -139,14 +139,14 @@ your plugin's new stages are ordered by their own `requires_stage` edges,
 using your authored `number:` values only to break ties among independent
 stages, and given the next free indices in their phase. So author numbers
 that read sensibly and agree with your edges (`test-pro-integration` is
-`3.85`, after `build-and-test` at `3.6`) — the RELATIVE order is what
+`4.85`, after `build-and-test` at `4.1`) — the RELATIVE order is what
 carries — but the absolute values never land in the graph, inserting a stage
 never renumbers core, and you claim no range (which is why two uncoordinated
 plugins can never collide on numbers).
 
 A stage that runs once per Unit (`for_each: unit-of-work`) runs with its Unit
-whatever number it gets. A Construction stage that `requires_stage:
-[code-generation]` is numbered after `ci-pipeline` (`3.8`), yet each Unit runs
+whatever number it gets. A Build stage that `requires_stage:
+[code-generation]` is numbered after it (`3.2`), and each Unit runs
 it right after its own Code Generation, its approvals come before Build and
 Test, and the team's last Unit moves the work on to Build and Test, as for the
 core per-Unit stages
@@ -254,7 +254,7 @@ marks what the compose hook merges today vs. designed-but-deferred (mirrors doc 
   ownership is read from the installed file's declared owner, not inferred
   from a name prefix. Use it to route existing core stages under your
   plugin's scope — e.g. a methodology plugin whose scope carries its own
-  discovery stages plus core Inception onward.
+  discovery stages plus core Design onward.
 - `adds.requires_stage` — ✅ set-unions ordering edges into the target's
   `requires_stage`. The dependency must already be installed and must
   compile before the target: a lower stage number (a pinned stage keeps its

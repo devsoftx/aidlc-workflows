@@ -1,4 +1,4 @@
-// covers: stage:inception/contract-design
+// covers: stage:design/contract-design
 //
 // Review wiring guards. The domain/contract restructure added a new
 // workflow-level `contract-design` stage that produces `contract-summary`, and

@@ -45,7 +45,15 @@ import {
   maskSecretShapes,
   saySecretMaskedOnce,
 } from "./aidlc-audit.ts";
-import { hasStateUpgrade, newerStateStep, stateUpgradeRecord, waitsToBeBroughtUp } from "./aidlc-state-upgrade.ts";
+import {
+  bringUpWaitsOn,
+  hasStateUpgrade,
+  newerStateStep,
+  pendingBringUp,
+  stateUpgradeRecord,
+} from "./aidlc-state-upgrade.ts";
+import { rebuildEffectivePlanFields, withStageProgress, withUnreachedPhasesRederived } from "./aidlc-state-progress.ts";
+import { fivePhaseFolderFindings } from "./aidlc-seven-phase-upgrade.ts";
 import {
   applyIntentSettings,
   applyReviewOverride,
@@ -334,6 +342,8 @@ import {
   scopeGridOnProject,
   stageReopenedByScopeChange,
   PHASES,
+  PHASE_LABELS,
+  isUnitLoopStage,
   parseArgs,
   parseBoltName,
   parseCheckboxes,
@@ -348,7 +358,7 @@ import {
   type PlanChanges,
   plannedStages,
   cursorPastStage,
-  addedStagesPassedOver,
+  stagesOwedBehindCursor,
   addReachesPassedOver,
   stageAddedBack,
   stageSkippedWhereItStood,
@@ -911,8 +921,8 @@ Utilities:
   knowledge rebind <id> --to <path>  Repair a row whose original moved AND changed
   --doctor          Run health check on hooks, settings, and directory structure
   --doctor --export Write a redacted diagnostic report (timeline + findings, no work product); --output <dir> to relocate
-  --stage <id>      Jump to a specific stage (by slug or number, e.g., code-generation or 3.5)
-  --phase <name>    Jump to the first in-scope stage of a phase (e.g., construction or 3)
+  --stage <id>      Jump to a specific stage (by slug or number, e.g., code-generation or 3.1)
+  --phase <name>    Jump to the first in-scope stage of a phase (e.g., build or 3)
   --scope <scope>   Set or change scope (standalone or with --stage/--phase)
   --depth <level>   Override depth (minimal, standard, comprehensive)
   --test-strategy <level>  Override test strategy (minimal, standard, comprehensive)
@@ -941,7 +951,7 @@ Examples:
   ${entrySkillInvocation()} plugin build claude                 Build its Claude projection
   ${entrySkillInvocation()}                                        Resume or begin
   ${entrySkillInvocation()} --stage code-generation                Jump to code-generation stage
-  ${entrySkillInvocation()} --phase construction --scope bugfix    Jump to construction with bugfix scope
+  ${entrySkillInvocation()} --phase build --scope bugfix           Jump to build with bugfix scope
   ${entrySkillInvocation()} --scope bugfix --depth comprehensive  Bugfix with comprehensive depth
   ${entrySkillInvocation()} --depth minimal                       Change depth of active workflow
   ${entrySkillInvocation()} --depth standard --test-strategy minimal  Full artifacts, minimal tests
@@ -2036,19 +2046,20 @@ function workHereStatus(projectDir: string, space: string): string | null {
 // orchestrator is loaded only here, with an awaited import as aidlc-jump.ts
 // loads it (the compiled build takes no require() of it), and only for the
 // work's own record in Construction, which is the record the walk reads, and
-// not while an older AI-DLC's record waits for the next step to bring it up:
-// reading the walk would bring it up in place, and status writes nothing. Null
-// otherwise, or when it cannot be read: status then gives the light count
-// (unitProgress) and the Next Stage field.
+// not while an older AI-DLC's record waits for the next step to bring it up
+// (`waiting`): reading the walk would bring it up in place, and status writes
+// nothing. Null otherwise, or when it cannot be read: status then gives the
+// light count (unitProgress) and the Next Stage field.
 async function soloUnitWalk(
   projectDir: string,
   flags: Record<string, string>,
   scope: string,
   content: string,
-): Promise<{ clause: string; current: number | null; total: number; next: string | null } | null> {
-  if (flags.intent || flags.space || isTeamUnitOwnership(content) || waitsToBeBroughtUp(content)) return null;
+  waiting: boolean,
+): Promise<{ clause: string; current: number | null; total: number; next: string | null; phase: string | null } | null> {
+  if (flags.intent || flags.space || isTeamUnitOwnership(content) || waiting) return null;
   if ((getField(content, "Construction Iteration") ?? "").trim() !== "unit-major") return null;
-  if (findStageBySlug((getField(content, "Current Stage") ?? "").trim())?.phase !== "construction") return null;
+  if (!isUnitLoopStage(findStageBySlug((getField(content, "Current Stage") ?? "").trim()))) return null;
   try {
     const { unitWalkStanding } = await import("./aidlc-orchestrate.ts");
     return unitWalkStanding(projectDir, scope, content);
@@ -2082,7 +2093,13 @@ To get started:
     return;
   }
 
-  const content = readFileSync(sp, "utf-8");
+  const recorded = readFileSync(sp, "utf-8");
+  // Work an earlier AI-DLC set up reads as AI-DLC's next step brings it up, the
+  // step the engine takes on its first read; until then its documents stay
+  // where that release kept them, so nothing here reads them in the new layout.
+  const bringUp = pendingBringUp(recorded, dirname(sp));
+  const waiting = bringUp !== null;
+  const content = bringUp?.text ?? recorded;
   const graph = loadStageGraph();
 
   // Extract key fields
@@ -2091,7 +2108,11 @@ To get started:
   const phase = getField(content, "Lifecycle Phase") || "Unknown";
   const currentStage = getField(content, "Current Stage") || "Unknown";
   const status = getField(content, "Status") || "Unknown";
-  const walk = await soloUnitWalk(projectDir, flags, scope, content);
+  const walk = await soloUnitWalk(projectDir, flags, scope, content, waiting);
+  // The Unit walk of a record that waits cannot be read yet, and its Next Stage
+  // field names the stage after the block's first, not the walk's next step.
+  const walkWaits = waiting && (getField(content, "Construction Iteration") ?? "").trim() === "unit-major" &&
+    isUnitLoopStage(findStageBySlug(currentStage.trim()));
   // Who is on it and what was done or comes next, in the names the person
   // sees elsewhere; a setup step or an empty value says nothing.
   const agentSlug = (getField(content, "Active Agent") ?? "").trim();
@@ -2119,8 +2140,9 @@ To get started:
   }
   const lastLine = lastName === null ? "" : `Last Completed: ${lastName}${approvedBy}\n`;
   // On a Unit walk the Next Stage field stays on the stage after the block's
-  // first one, so the walk's own next step is said instead.
-  const shownNext = walk === null ? nextName : walk.next;
+  // first one, so the walk's own next step is said instead, or nothing while
+  // the walk cannot be read yet.
+  const shownNext = walk !== null ? walk.next : walkWaits ? null : nextName;
   const nextLine = shownNext === null ? "" : `Next Stage:     ${shownNext}\n`;
   const plan = getField(content, PLAN_FIELD);
   // A plan composed for this work runs on a stock scope the person never
@@ -2277,9 +2299,12 @@ To get started:
   // the one list they read. A stage the person skipped is not work left to do:
   // it is counted out and named, the way a stage a plan change dropped already
   // is. Initialization's setup, done when the work was created, keeps its row
-  // below and stays out of the count.
+  // below and stays out of the count. Work still waiting to be brought up
+  // counts the stages that step's first move goes back to, as it will after it.
   const checkboxes = parseCheckboxes(content);
-  const work = selection.intent === null ? null : { projectDir, intent: selection.intent, space: selection.space };
+  const work = selection.intent === null
+    ? null
+    : { projectDir, intent: selection.intent, space: selection.space, pending: bringUp?.pending };
   const planned = new Set(plannedStages(content, scope, work).map((s) => s.slug));
   const setup = new Set(graph.filter((s) => s.phase === "initialization").map((s) => s.slug));
   const scopedCheckboxes = checkboxes.filter((c) =>
@@ -2293,15 +2318,14 @@ To get started:
   const skippedNote = skippedSlugs.length > 0 ? `, skipped: ${stageNames(skippedSlugs)}` : "";
 
   // Build phase progress bars
-  const phaseLabels: Record<string, string> = {
-    initialization: "INITIALIZATION",
-    ideation: "IDEATION",
-    inception: "INCEPTION",
-    construction: "CONSTRUCTION",
-    operation: "OPERATION",
-  };
-
   let phaseProgress = "";
+  let lightUnits: ReturnType<typeof unitProgress> | undefined;
+  const lightUnitCount = (): ReturnType<typeof unitProgress> => {
+    if (lightUnits === undefined) {
+      lightUnits = unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "", undefined, waiting);
+    }
+    return lightUnits;
+  };
   for (const p of PHASES) {
     const phaseStages = graph.filter((s) => s.phase === p);
     const phaseSlugs = new Set(phaseStages.map((s) => s.slug));
@@ -2331,62 +2355,75 @@ To get started:
       (c) => c.state === "completed"
     ).length;
     // Working one Unit at a time, the stage boxes tick only when the last Unit
-    // finishes a stage, so while a Unit is open the count is of Units: the one
-    // the person is on, of those planned, and where each Unit stands. Without
-    // the walk (another record named, or it cannot be read), the light count,
-    // while Current Stage is on the Units' stages.
-    const units = p === "construction" && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
-      ? unitProgress(dirname(sp), getField(content, "Construction Iteration") ?? "")
+    // finishes a stage, so while a Unit is open a row holding the Units' stages
+    // counts Units: the one the person is on, of those planned, and where each
+    // Unit stands. The Units' stages span Design and Build, so each of those
+    // rows counts Units, or one would read 0/N with every Unit through it.
+    // Without the walk (another record named, or it cannot be read), the light
+    // count, while Current Stage is on the Units' stages.
+    const unitRow = phaseCheckboxes.some((c) => phaseStages.some((s) => s.slug === c.slug && isPerUnitStage(s)));
+    const units = unitRow && walk === null && currentEntry !== undefined && isPerUnitStage(currentEntry)
+      ? lightUnitCount()
       : null;
     const phaseSkipped = phaseCheckboxes.filter((c) => c.state === "skipped").length;
-    const count = p === "construction" && walk !== null
+    // The walk's clause goes on the row of the phase its step is in: Current
+    // Stage stays on a Unit block's first stage for the whole walk, so its own
+    // phase would put a Code Generation step on the Design row.
+    const walkRow = walk?.phase ?? currentEntry?.phase;
+    const count = p === walkRow && walk !== null
       ? walk.current === null ? walk.clause : `Unit ${walk.current} of ${walk.total}: ${walk.clause}`
+      : unitRow && walk !== null && walk.current !== null
+      ? `Unit ${walk.current} of ${walk.total}`
       : units
       ? `Unit ${units.current} of ${units.total}`
       : phaseSkipped === phaseCheckboxes.length
       ? "skipped"
       : `${done}/${phaseCheckboxes.length - phaseSkipped}`;
-    phaseProgress += `  ${(phaseLabels[p] || p).padEnd(16)} ${bar} ${count}\n`;
+    phaseProgress += `  ${PHASE_LABELS[p].padEnd(16)} ${bar} ${count}\n`;
   }
 
   // Only a change the person can act on: a stage whose inputs moved since it
-  // was approved, with the redo that refreshes it. The rest is advisory.
+  // was approved, with the redo that refreshes it. The rest is advisory. Work
+  // waiting to be brought up has its documents where the earlier release kept
+  // them, so they are checked once the step has moved them.
   let validityOutput = "";
   try {
-    const validity = inspectStageValidity(projectDir, content, {
-      stages: graph,
-      audit: readAllAuditShards(projectDir, flags.intent, flags.space),
-      currentBasis: (stage, stages) =>
-        captureStageValidationBasis(projectDir, stage, content, stages, {
-          resolution: { recordPath: dirname(sp), stateContent: content },
-        }),
-    });
-    const directlyStale = validity.issues
-      .filter((issue) => issue.direct)
-      .map((issue) => issue.stage);
-    const needsRevalidation = validity.issues
-      .filter((issue) => !issue.direct)
-      .map((issue) => issue.stage);
-    const earliest = directlyStale[0] ?? validity.issues[0]?.stage ?? null;
-    const earliestIssue = validity.issues.find((issue) => issue.stage === earliest);
-    const earliestName = earliest === null ? null : stageLabel(findStageBySlug(earliest), earliest);
-    if (earliestName !== null && earliestIssue) {
-      // The same line the next step says, and the same way to act on it.
-      const others = [...directlyStale, ...needsRevalidation].filter((slug) => slug !== earliest);
-      const otherNames = stageNames(others);
-      validityOutput = staleStageNote(earliestName, earliestIssue, content) +
-        `${otherNames ? ` Also affected: ${otherNames}.` : ""}\n`;
-    }
-    // Finished stages AI-DLC itself now does differently, told or not on the
-    // way: the work stands, and the way back is named.
-    const pending = new Set(validity.redefined.map((entry) => entry.stage));
-    const redefined = graph.map((stage) => stage.slug)
-      .filter((slug) => pending.has(slug) || validity.renewed.includes(slug));
-    if (redefined.length > 0) {
-      validityOutput += `${stageDefinitionChangedLine(
-        redefined.map((slug) => stageLabel(findStageBySlug(slug), slug) ?? slug),
-        redefined[0],
-      )}\n`;
+    if (!waiting) {
+      const validity = inspectStageValidity(projectDir, content, {
+        stages: graph,
+        audit: readAllAuditShards(projectDir, flags.intent, flags.space),
+        currentBasis: (stage, stages) =>
+          captureStageValidationBasis(projectDir, stage, content, stages, {
+            resolution: { recordPath: dirname(sp), stateContent: content },
+          }),
+      });
+      const directlyStale = validity.issues
+        .filter((issue) => issue.direct)
+        .map((issue) => issue.stage);
+      const needsRevalidation = validity.issues
+        .filter((issue) => !issue.direct)
+        .map((issue) => issue.stage);
+      const earliest = directlyStale[0] ?? validity.issues[0]?.stage ?? null;
+      const earliestIssue = validity.issues.find((issue) => issue.stage === earliest);
+      const earliestName = earliest === null ? null : stageLabel(findStageBySlug(earliest), earliest);
+      if (earliestName !== null && earliestIssue) {
+        // The same line the next step says, and the same way to act on it.
+        const others = [...directlyStale, ...needsRevalidation].filter((slug) => slug !== earliest);
+        const otherNames = stageNames(others);
+        validityOutput = staleStageNote(earliestName, earliestIssue, content) +
+          `${otherNames ? ` Also affected: ${otherNames}.` : ""}\n`;
+      }
+      // Finished stages AI-DLC itself now does differently, told or not on the
+      // way: the work stands, and the way back is named.
+      const pending = new Set(validity.redefined.map((entry) => entry.stage));
+      const redefined = graph.map((stage) => stage.slug)
+        .filter((slug) => pending.has(slug) || validity.renewed.includes(slug));
+      if (redefined.length > 0) {
+        validityOutput += `${stageDefinitionChangedLine(
+          redefined.map((slug) => stageLabel(findStageBySlug(slug), slug) ?? slug),
+          redefined[0],
+        )}\n`;
+      }
     }
   } catch {
     // Unreadable receipts change nothing the person can act on here.
@@ -2446,10 +2483,21 @@ To get started:
   const alsoOpen = others.length === 0
     ? ""
     : `Also open:      ${others.join(", ")} (ask to switch to ${others.length === 1 ? "it" : "one"})\n`;
-  // Work an older AI-DLC recorded, brought up to this one in place: said here
-  // on purpose, never in chat.
+  // Work an older AI-DLC recorded, brought up to this one in place, or shown
+  // here as the next step brings it up: said here on purpose, never in chat.
+  // A folder this user cannot change keeps that step from making the move, so
+  // the line names it and the step that frees it instead. A folder a program
+  // holds open (or a Windows folder this user cannot change) shows only when
+  // the step tries the move, so the line never promises the step makes it.
   const upgrade = stateUpgradeRecord(projectDir, selection.intent ?? undefined, selection.space);
-  const upgradedLine = upgrade === null
+  const waitsOn = waiting ? bringUpWaitsOn(projectDir, sp, recorded) : null;
+  const upgradedLine = waitsOn !== null
+    ? `Brought up:     waiting: AI-DLC cannot change ${waitsOn.folders} (${waitsOn.why}); give your user write ` +
+      `access to ${waitsOn.it}, then ask AI-DLC to carry on\n`
+    : waiting
+    ? "Brought up:     at AI-DLC's next step, from the five phases an earlier AI-DLC set this work up in to the " +
+      "seven shown here (or that step names a folder in the way and what frees it)\n"
+    : upgrade === null
     ? ""
     : `Brought up:     from an older AI-DLC on ${upgrade.date} (the record as it was: ${upgrade.original})\n`;
   const output = `AI-DLC Workflow Status
@@ -3586,7 +3634,7 @@ function hiddenReadRows(
       ? reads
       : [
         "aidlc-common/protocols/stage-protocol.md",
-        "aidlc-common/stages/ideation/intent-capture.md",
+        "aidlc-common/stages/discover/intent-capture.md",
         "agents/aidlc-product-agent.md",
         "knowledge/aidlc-shared/ai-dlc-principles.md",
         "skills/aidlc/question-rendering.md",
@@ -4936,10 +4984,13 @@ export async function collectDoctorReport(
       ["hooks.json", "hook wiring"],
       ["cli.json", "AI-DLC command permission pre-approval"],
       ["rules/aidlc.mdc", "standing method rule (alwaysApply read instruction)"],
-      ["rules/aidlc-phase-ideation.mdc", "Ideation phase rule (agent-decided read instruction)"],
-      ["rules/aidlc-phase-inception.mdc", "Inception phase rule (agent-decided read instruction)"],
-      ["rules/aidlc-phase-construction.mdc", "Construction phase rule (agent-decided read instruction)"],
-      ["rules/aidlc-phase-operation.mdc", "Operation phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-discover.mdc", "Discover phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-design.mdc", "Design phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-build.mdc", "Build phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-test.mdc", "Test phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-secure.mdc", "Secure phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-deploy.mdc", "Deploy phase rule (agent-decided read instruction)"],
+      ["rules/aidlc-phase-operate.mdc", "Operate phase rule (agent-decided read instruction)"],
     ] as const) {
       results.push({
         pass: existsSync(join(projectDir, harness, file)),
@@ -5822,15 +5873,15 @@ export async function collectDoctorReport(
     // Lock-probe failure is non-fatal for the doctor report.
   }
 
-  // State version check — v8 reshapes the Inception design graph:
-  // `application-design` is renamed to `domain-design` and a new
-  // `contract-design` stage is inserted, so a pre-v8 state file carries
-  // stage-progress rows keyed by slugs that no longer exist in the graph.
-  // Advancing such a state hits `emitRunStageForSlug()` on a missing slug
-  // (or silently no-ops a checkbox while `Current Stage` moves on, then
-  // fails in `report`). A version aidlc-state-upgrade.ts has a step for is
-  // brought up at the engine's next read, so it passes here and says so; one
-  // with no step fails loud rather than look healthy.
+  // State version check. An older state file carries stage rows, phases and
+  // record folders the current graph no longer has (7 named Application
+  // Design; 8 kept five phases), and advancing it as it is would route on
+  // rows that are not there. A version aidlc-state-upgrade.ts has a step for
+  // is brought up at the engine's next read, so it passes here and says so;
+  // one with no step, and one a newer AI-DLC wrote (9 is upstream 2.12's team
+  // work), fails loud rather than look healthy. A current record that still
+  // holds five-phase folders (a move the step could not make, or a file an
+  // older chat wrote there afterwards) has each one named with its move.
   if (existsSync(stateMdPath)) {
     try {
       const stateContent = readFileSync(stateMdPath, "utf-8");
@@ -5847,10 +5898,23 @@ export async function collectDoctorReport(
           fix: verdict.message,
         });
       } else if (verdict.kind === "past" && hasStateUpgrade(verdict.version)) {
-        results.push({
-          pass: true,
-          label: `State Version: ${verdict.version} (AI-DLC brings this record up to ${CURRENT_STATE_VERSION} at its next step)`,
-        });
+        // A folder this user cannot change holds that step back every time.
+        // One a program holds open (or, on Windows, one this user cannot
+        // change) shows only when the step tries the move, and its own line
+        // names it, so the row never promises the step makes it.
+        const waitsOn = bringUpWaitsOn(projectDir, stateMdPath, stateContent);
+        results.push(waitsOn === null
+          ? {
+            pass: true,
+            label: `State Version: ${verdict.version} (AI-DLC's next step brings this record up to ` +
+              `${CURRENT_STATE_VERSION}, or names a folder in the way and what frees it)`,
+          }
+          : {
+            pass: false,
+            label: `State Version: ${verdict.version} (AI-DLC cannot bring this record up to ${CURRENT_STATE_VERSION} ` +
+              `while it cannot change ${waitsOn.folders})`,
+            fix: `give your user write access to ${waitsOn.folders} (${waitsOn.why}), then ask AI-DLC to carry on`,
+          });
       } else if (verdict.kind === "past") {
         results.push({
           pass: false,
@@ -5871,6 +5935,10 @@ export async function collectDoctorReport(
             ? ` (brought up from ${upgrade.from} on ${upgrade.date}; the record as it was is ${upgrade.original})`
             : ""}`,
         });
+        const recordDir = dirname(stateMdPath);
+        const shownAs = relativeRecordDir(projectDir, doctorIntent, doctorSelection.space) ??
+          toPosix(relative(projectDir, recordDir));
+        for (const left of fivePhaseFolderFindings(recordDir, shownAs)) results.push({ pass: false, ...left });
       }
     } catch {
       // State-version check failure is non-fatal for doctor report
@@ -6621,7 +6689,7 @@ export async function collectDoctorReport(
           results.push({
             pass: false,
             label: "Practices staleness: timestamp unreadable",
-            fix: `Practices Affirmed Timestamp value "${value}" is not a valid ISO 8601 datetime. Re-run practices-discovery (stage 2.2) to re-affirm.`,
+            fix: `Practices Affirmed Timestamp value "${value}" is not a valid ISO 8601 datetime. Re-run practices-discovery (stage 2.1) to re-affirm.`,
           });
         } else {
           const ageDays = Math.floor((Date.now() - affirmed) / (1000 * 60 * 60 * 24));
@@ -7991,7 +8059,7 @@ function phasesWithExecuteStages(plan: Record<string, "EXECUTE" | "SKIP">): Set<
 // parent and domain knowledge dir; all skipped if already present. The active
 // intent cursor must be set before this runs.
 //
-// Scope-excluded phases get NO folder: an empty `operation/` in a bugfix record
+// Scope-excluded phases get NO folder: an empty `operate/` in a bugfix record
 // reads as work that was planned and skipped, when that phase was never in the
 // plan. Nothing depends on the folder pre-existing: `next` makes each stage's
 // folder when it hands out the step that writes there (prepareRecordFolders in
@@ -8895,17 +8963,9 @@ function handleIntentCreateStateBuild(
     phaseMap[stage.phase].push(stage);
   }
 
-  const phaseHeaders: Record<string, string> = {
-    initialization: "INITIALIZATION PHASE",
-    ideation: "IDEATION PHASE",
-    inception: "INCEPTION PHASE",
-    construction: "CONSTRUCTION PHASE",
-    operation: "OPERATION PHASE",
-  };
-
   for (const phase of PHASES) {
     const stages = phaseMap[phase] || [];
-    stageProgress += `\n### ${phaseHeaders[phase]}\n`;
+    stageProgress += `\n### ${PHASE_LABELS[phase]} PHASE\n`;
     for (const stage of stages) {
       const action =
         adjustedMapping[stage.slug] || scopeDef.stages[stage.slug] || "SKIP";
@@ -8931,7 +8991,7 @@ function handleIntentCreateStateBuild(
   const firstPostInitEntry = graph.find((s) => s.slug === firstPostInit);
   const firstPostInitPhase = firstPostInitEntry
     ? firstPostInitEntry.phase.toUpperCase()
-    : "IDEATION";
+    : PHASE_LABELS.discover;
   const firstPostInitAgent = firstPostInitEntry
     ? firstPostInitEntry.lead_agent
     : "aidlc-product-agent";
@@ -8983,18 +9043,12 @@ function handleIntentCreateStateBuild(
     );
     return hasExecute ? "Pending" : "Skipped";
   };
-  const phaseProgressLines = [
-    `- **Initialization**: ${phaseStatus("initialization")}`,
-    `- **Ideation**: ${phaseStatus("ideation")}`,
-    `- **Inception**: ${phaseStatus("inception")}`,
-    `- **Construction**: ${phaseStatus("construction")}`,
-    `- **Operation**: ${phaseStatus("operation")}`,
-  ].join("\n");
+  const phaseProgressLines = PHASES.map((phase) => `- **${displayPhase(phase)}**: ${phaseStatus(phase)}`).join("\n");
 
   const constructionCheckpointDefaults =
     (adjustedMapping["units-generation"] ?? scopeDef.stages["units-generation"]) === "EXECUTE" &&
     graph.some((stage) =>
-      stage.phase === "construction" && stage.for_each === "unit-of-work" &&
+      isUnitLoopStage(stage) &&
       stage.workspace_requires === true &&
       (adjustedMapping[stage.slug] ?? scopeDef.stages[stage.slug]) === "EXECUTE"
     )
@@ -11858,7 +11912,7 @@ function handleCodekbPublish(
 // Always exits 0 with the verdict in the output (read-only query - mirrors
 // codekb-path; refusals are for lifecycle verbs). No mkdir, no state write,
 // no audit. The one write: the compared repo's own `scope-draft-<repo>.md` in
-// the active record's `inception/reverse-engineering/` is the stage's
+// the active record's `discover/reverse-engineering/` is the stage's
 // temporary input, written only for this compare, so the compare removes it
 // whatever the verdict (no shell delete). `record` is the record the handler
 // selected, so the draft is checked against the same record the compare ran for.
@@ -11871,7 +11925,7 @@ function comparedScopeDraft(
   if (basename(incomingPath) !== name) return null;
   if (record === null || !existsSync(record)) return null;
   const rel = toPosix(relative(realpathSync(record), realpathSync(resolve(incomingPath))));
-  return rel === `inception/reverse-engineering/${name}` ? { record, rel } : null;
+  return rel === `discover/reverse-engineering/${name}` ? { record, rel } : null;
 }
 
 // The store is the stage's own work in hand: the attempt in progress (the
@@ -12586,7 +12640,7 @@ function droppedUnitWorkLine(
   const oldScope = getField(before, "Scope");
   const newScope = getField(after, "Scope");
   const dropped = loadStageGraph().filter((stage) =>
-    stage.phase === "construction" && isPerUnitStage(stage) &&
+    isPerUnitStage(stage) &&
     effectivePlanAction(stage.slug, oldScope, before) === "EXECUTE" &&
     effectivePlanAction(stage.slug, newScope, after) !== "EXECUTE");
   if (dropped.length === 0) return null;
@@ -12792,46 +12846,18 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
       }
       const skippedNowSlugs = new Set(skippedNow.map((s) => s.slug));
       const existingMap = new Map(existingCheckboxes.map(c => [c.slug, c]));
-      const phaseMap: Record<string, typeof graph> = {};
-      for (const stage of graph) {
-        if (!phaseMap[stage.phase]) phaseMap[stage.phase] = [];
-        phaseMap[stage.phase].push(stage);
-      }
-      const phaseHeaders: Record<string, string> = {
-        initialization: "INITIALIZATION PHASE",
-        ideation: "IDEATION PHASE",
-        inception: "INCEPTION PHASE",
-        construction: "CONSTRUCTION PHASE",
-        operation: "OPERATION PHASE",
-      };
-      let newStageProgress = "";
-      for (const phase of PHASES) {
-        const stages = phaseMap[phase] || [];
-        newStageProgress += `\n### ${phaseHeaders[phase]}\n`;
-        if (phase === "construction") {
-          const perUnitMatch = content.match(/^Per unit:.*$/m);
-          if (perUnitMatch) newStageProgress += `${perUnitMatch[0]}\n`;
-        }
-        for (const stage of stages) {
-          const action = adjustedMapping[stage.slug] || "SKIP";
-          const existing = existingMap.get(stage.slug);
-          // Every checkbox state round-trips, including an open gate's [?]
-          // and a revision's [R]: collapsing those to [ ] would leave a gate
-          // the audit shows open reading as a stage that never started. A
-          // stage skipped with this change reads [S].
-          const marker = skippedNowSlugs.has(stage.slug)
-            ? CHECKBOX_MAP.skipped
-            : existing ? CHECKBOX_MAP[existing.state] : "[ ]";
-          const suffix = action === "EXECUTE" ? "EXECUTE" : "SKIP";
-          newStageProgress += `- ${marker} ${stage.slug} \u2014 ${suffix}\n`;
-        }
-      }
-      // A Windows clone checks the state file out with CRLF line endings, so
-      // the list is found with either ending and written back in its own.
-      const stageProgressRegex = /## Stage Progress\r?\n<!-- [^\r\n]* -->\r?\n([\s\S]*?)(?=\r?\n## (?!Stage Progress))/;
-      const stageProgressHeader = "## Stage Progress\n<!-- Checkbox states: [ ] not started, [-] in progress, [?] awaiting approval (gate open), [R] revising (user rejected gate), [x] completed, [S] skipped via --stage/--phase jump -->\n";
-      const stageProgressEol = stageProgressRegex.exec(content)?.[0].includes("\r\n") ? "\r\n" : "\n";
-      content = content.replace(stageProgressRegex, (stageProgressHeader + newStageProgress).replaceAll("\n", stageProgressEol));
+      content = withStageProgress(content, graph, (stage) => {
+        const action = adjustedMapping[stage.slug] || "SKIP";
+        const existing = existingMap.get(stage.slug);
+        // Every checkbox state round-trips, including an open gate's [?]
+        // and a revision's [R]: collapsing those to [ ] would leave a gate
+        // the audit shows open reading as a stage that never started. A
+        // stage skipped with this change reads [S].
+        const marker = skippedNowSlugs.has(stage.slug)
+          ? CHECKBOX_MAP.skipped
+          : existing ? CHECKBOX_MAP[existing.state] : "[ ]";
+        return [`- ${marker} ${stage.slug} \u2014 ${action === "EXECUTE" ? "EXECUTE" : "SKIP"}`];
+      });
       content = setField(content, "Scope", newScope);
       // The new scope's grid replaces any plan composed for this piece of work.
       content = removeField(content, PLAN_FIELD);
@@ -12863,16 +12889,7 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
       ).length;
       content = setField(content, "Completed", String(completedCount));
 
-      // Re-derive only not-yet-reached phases; Active/Verified rows are history.
-      for (const phase of PHASES) {
-        const label = phase.charAt(0).toUpperCase() + phase.slice(1);
-        const row = getField(content, label);
-        if (row !== "Pending" && row !== "Skipped") continue;
-        const hasExecute = graph.some(
-          (s) => s.phase === phase && (adjustedMapping[s.slug] || "SKIP") === "EXECUTE"
-        );
-        content = setPhaseProgress(content, phase, hasExecute ? "Pending" : "Skipped");
-      }
+      content = withUnreachedPhasesRederived(content, graph, (slug) => (adjustedMapping[slug] || "SKIP") === "EXECUTE");
 
       const oldScopeDef = scopeMapping[oldScope];
       // Switching back writes the old scope's own stages, so it is the way back
@@ -12995,84 +13012,6 @@ function handleScopeChange(projectDir: string, flags: Record<string, string>): v
 // flip lists. A run that never calls recompose is byte-identical to before -
 // the verb is inert when unused.
 // ---------------------------------------------------------------------------
-
-// Rebuild the plan's derived fields after stage suffix flips, against the
-// EFFECTIVE plan (suffix over scope grid): Stages to Execute / to Skip / Total
-// / Completed, the not-yet-reached Phase Progress rows, and Next Stage. Shared
-// by recompose and reclassify so both describe a plan the same way.
-// `skipLabel` renders a newly skipped stage's Stages to Skip entry.
-function rebuildEffectivePlanFields(
-  content: string,
-  scope: string,
-  scopeDef: { stages: Record<string, string> },
-  currentSlug: string,
-  skipLabel: (stage: StageEntry) => string = (stage) => `${stage.number} (${stage.slug})`,
-): { content: string; executeStages: string[]; completedCount: number } {
-  const graph = loadStageGraph();
-  const knownSlugs = new Set(graph.map((s) => s.slug));
-  const postSuffixes = parseStateStageSuffixes(content);
-  const eff = (slug: string): "EXECUTE" | "SKIP" => {
-    const v = postSuffixes.get(slug) ?? scopeDef.stages[slug];
-    return v === "EXECUTE" ? "EXECUTE" : "SKIP";
-  };
-  // The Stages to Skip row carries creation/scope-change annotations (entry
-  // shape "<number> (<slug>)", or the greenfield note GREENFIELD_RE_SKIP_LABEL
-  // puts on reverse-engineering) that a bare-slug rebuild would destroy. Preserve each existing entry
-  // VERBATIM, in its existing position, when its stage is still skipped;
-  // drop entries whose stage was promoted; append newly-skipped stages in
-  // graph order, rendered the way scope-change renders them. A skip+add
-  // round trip therefore leaves the row byte-identical.
-  const priorSkipRow = getField(content, "Stages to Skip") || "";
-  const priorTokens =
-    priorSkipRow.trim() === "" || priorSkipRow.trim() === "none"
-      ? []
-      : priorSkipRow.split(", ");
-  const slugOfSkipToken = (token: string): string => {
-    const m = /^\S+ \((.+)\)$/.exec(token);
-    const inner = m ? m[1] : token;
-    return inner.split(" \u2014 ")[0];
-  };
-  const executeStages: string[] = [];
-  const skipStages: string[] = [];
-  const preservedSlugs = new Set<string>();
-  for (const token of priorTokens) {
-    const slug = slugOfSkipToken(token);
-    if (knownSlugs.has(slug) && eff(slug) === "SKIP") {
-      skipStages.push(token);
-      preservedSlugs.add(slug);
-    }
-  }
-  for (const s of graph) {
-    if (eff(s.slug) === "EXECUTE") executeStages.push(`${s.number} (${s.slug})`);
-    else if (!preservedSlugs.has(s.slug)) skipStages.push(skipLabel(s));
-  }
-  let next = setField(content, "Stages to Execute", executeStages.join(", "));
-  next = setField(next, "Stages to Skip", skipStages.length > 0 ? skipStages.join(", ") : "none");
-  next = setField(next, "Total Stages", String(executeStages.length));
-  const completedCount = parseCheckboxes(next).filter(
-    (c) => c.state === "completed" && eff(c.slug) === "EXECUTE",
-  ).length;
-  next = setField(next, "Completed", String(completedCount));
-  // Re-derive not-yet-reached Phase Progress rows against the effective
-  // plan (scope-change's twin): a flip can empty a phase of EXECUTE stages
-  // (-> Skipped) or give a Skipped phase its first (-> Pending).
-  // Verified/Active rows are history and stay untouched.
-  for (const phase of PHASES) {
-    const phaseLabel = phase.charAt(0).toUpperCase() + phase.slice(1);
-    const row = getField(next, phaseLabel);
-    if (row !== "Pending" && row !== "Skipped") continue;
-    const hasExecute = graph.some(
-      (s) => s.phase === phase && eff(s.slug) === "EXECUTE",
-    );
-    next = setPhaseProgress(next, phase, hasExecute ? "Pending" : "Skipped");
-  }
-  // The Next Stage projection over the new plan (override-aware).
-  if (currentSlug) {
-    const after = nextInScopeStage(currentSlug, scope, next);
-    next = setField(next, "Next Stage", after ? after.slug : "none");
-  }
-  return { content: next, executeStages, completedCount };
-}
 
 // The stages this work's plan has skipped, as its own record holds them: the
 // plan picked at creation (WORKFLOW_STARTED) and every plan change since
@@ -13319,10 +13258,13 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
       // A stage the work has just passed over, while nothing after it has
       // started, is one `next` goes back to (addedStagesPassedOver): the add
       // lands as it would have before the approval that moved past it, and
-      // its undo takes it off again before `next` gets there.
+      // its undo takes it off again before `next` gets there. A skip takes off
+      // any stage `next` goes back to, one an update's new order put behind
+      // the cursor too (stagesOwedBehindCursor), and the add that undoes it
+      // puts it back (addReachesPassedOver).
       const passedOver = skipping
-        ? addedStagesPassedOver(content, projectDir, flags.intent, flags.space).includes(slug)
-        : addReachesPassedOver(content, slug, recordDir(projectDir, flags.intent, flags.space), addList);
+        ? stagesOwedBehindCursor(content, projectDir, flags.intent, flags.space).includes(slug)
+        : addReachesPassedOver(content, slug, { projectDir, intent: flags.intent, space: flags.space }, addList);
       if (!owedRe && !passedOver && currentIdx !== -1 && idx !== -1 && idx <= currentIdx) {
         if (putBack) reject(slug, `${frozen} ${runAlone(slug)}`);
         const instead = idx === currentIdx
@@ -13332,7 +13274,7 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
       }
     }
 
-    // The walking-skeleton gate derivation keys off the FIRST construction
+    // The walking-skeleton gate derivation keys off the FIRST unit-loop
     // EXECUTE stage (static). A flip that MOVES that anchor - skipping the
     // current anchor, or adding a construction stage AHEAD of it - would
     // silently relocate Bolt 1 and the skeleton stance round-trip. Compare
@@ -13340,7 +13282,7 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
     // (the cheapest sound answer; a suffix-aware gate derivation is a larger
     // change this verb must not smuggle in).
     const anchorOf = (plan: (slug: string) => "EXECUTE" | "SKIP"): string | undefined =>
-      graph.find((s) => s.phase === "construction" && plan(s.slug) === "EXECUTE")?.slug;
+      graph.find((s) => isUnitLoopStage(s) && plan(s.slug) === "EXECUTE")?.slug;
     const anchorBefore = anchorOf(effective);
     const anchorAfter = anchorOf((slug) => {
       if (skipList.includes(slug)) return "SKIP";
@@ -13350,7 +13292,7 @@ function handleRecompose(projectDir: string, flags: Record<string, string>, rawA
     if (anchorBefore !== anchorAfter) {
       const skippingAnchor = anchorBefore !== undefined && skipList.includes(anchorBefore);
       const mover =
-        skippingAnchor ? anchorBefore : (anchorAfter ?? anchorBefore ?? "construction");
+        skippingAnchor ? anchorBefore : (anchorAfter ?? anchorBefore ?? "build");
       // The scopes whose own plan already makes the change, without moving it.
       const scopesThat = Object.entries(loadScopeMapping())
         .filter(([name, def]) => name !== scope && (def.stages[mover] === "EXECUTE") !== skippingAnchor)

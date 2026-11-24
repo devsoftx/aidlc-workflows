@@ -8,7 +8,7 @@ page: [Kiro CLI (V2)](#kiro-cli-v2).
 One of the framework's harnesses: this Kiro runtime runs the same AI-DLC
 methodology inside [Kiro](https://kiro.dev/) — Kiro IDE 1.x and Kiro CLI v3
 run one agent harness and read the same `.kiro/` tree. One deterministic core —
-the tools, 33 stage files, protocols, knowledge, sensors, scopes, and rules —
+the tools, 36 stage files, protocols, knowledge, sensors, scopes, and rules —
 is byte-shared across every harness; only the shell (skills, agent surfaces,
 hook wiring, activation) differs.
 
@@ -584,7 +584,7 @@ ways to enable it, either works:
 | Hook registration | `settings.json` `hooks` block | `.kiro/hooks/aidlc-*.json` v2 hook files (Kiro IDE 1.x, Kiro CLI v3 engine) |
 | Gates & questions | `AskUserQuestion` widget | Numbered prose options (reply with a number); the questions FILE with `[Answer]:` tags stays the source of truth |
 | Statusline | Current stage + model + context % | Not available: use `/aidlc --status` and the progress line at each gate; for a chat that is filling up, see [When the chat fills up](#when-the-chat-fills-up) |
-| Dispatched stages (2.1 pipeline, 2.2 subagent, 2.4 mob, 3.5 subagent) | `Task` tool | `invoke_sub_agent` (Kiro IDE) or `orchestrate_subagent` (Kiro CLI) → all 14 Markdown personas, each running under the `tools:` and deny rules in its own frontmatter and the conductor's command allow |
+| Dispatched stages (1.4 pipeline, 2.1 subagent, 2.3 mob, 3.1 subagent) | `Task` tool | `invoke_sub_agent` (Kiro IDE) or `orchestrate_subagent` (Kiro CLI) → all 14 Markdown personas, each running under the `tools:` and deny rules in its own frontmatter and the conductor's command allow |
 | Construction swarm | Parallel `Task` floor, optional ultracode Workflow | Subagent fan-out only; `AIDLC_USE_SWARM=1` is announced as a no-op |
 | Session audit events | `SESSION_STARTED/RESUMED/ENDED`, `SESSION_COMPACTED` | `SESSION_STARTED` when a new session takes its first prompt, and on Kiro IDE `SESSION_RESUMED` when a prompt returns to an earlier chat (no genuine session-end trigger, so no `SESSION_ENDED`; no pre-compaction event) |
 | MCP servers | Ships 5 (`.mcp.json`: `context7` + four AWS servers) | None shipped; AI-DLC's own chat, its 14 delegated personas and the agents your plugins add get every server in your workspace and user `.kiro/settings/mcp.json`, and each call asks you first (on Kiro CLI from a persona's second step). |
@@ -609,7 +609,7 @@ and the shared contracts it is given. On Claude Code and the other harnesses a
 hook holds it to that; on Kiro no hook can tell the reviewer's reads apart, so
 Kiro holds the reviewer to it instead. For each Unit review, AI-DLC writes a
 copy of the reviewer, `.kiro/agents/aidlc-scoped-review-<id>.md`, whose
-permissions deny reads in every other Unit's `construction/` folder (a Unit of
+permissions deny reads in every other Unit's `design/` and `build/` folders (a Unit of
 the same name in another piece of work included), and dispatches that copy.
 Kiro refuses such a read and leaves those files out of search results; a shell
 read such as `cat` is not covered and asks you first. The
@@ -933,7 +933,7 @@ See [Porting to a New Harness](../../harness-engineering/09-porting-to-a-new-har
 
 One of the framework's harnesses: the Kiro CLI (V2) runtime runs the same AI-DLC
 methodology on [Kiro CLI](https://kiro.dev/docs/cli/). One deterministic core
-— the tools, 33 stage files, protocols, knowledge, sensors, scopes, and rules
+— the tools, 36 stage files, protocols, knowledge, sensors, scopes, and rules
 — is byte-shared across every harness; only the shell (skills, agent
 configs, hook wiring, activation) differs.
 
@@ -1353,7 +1353,7 @@ over, which is why the end of a stage is the best moment (see
 |------|-------------|----------|
 | Gates & questions | `AskUserQuestion` widget | Numbered prose options (reply with a number); the questions FILE with `[Answer]:` tags stays the source of truth |
 | Statusline | Current stage + model + context % | Not available: use `/aidlc --status` and the progress line at each gate; for a chat that is filling up, see [When a Kiro CLI (V2) chat fills up](#when-a-kiro-cli-v2-chat-fills-up) |
-| Dispatched stages (2.1 pipeline, 2.2 subagent, 2.4 mob, 3.5 subagent) | `Task` tool | Kiro `subagent` tool → the agent configs (all 14 personas ship configs) |
+| Dispatched stages (1.4 pipeline, 2.1 subagent, 2.3 mob, 3.1 subagent) | `Task` tool | Kiro `subagent` tool → the agent configs (all 14 personas ship configs) |
 | Construction swarm | Parallel `Task` floor, optional ultracode Workflow | Subagent fan-out only; `AIDLC_USE_SWARM=1` is announced as a no-op |
 | Session audit events | `SESSION_STARTED/RESUMED/ENDED`, `SESSION_COMPACTED` | `SESSION_STARTED` only (Kiro has no session-end / pre-compaction hooks) |
 | Forwarding-loop enforcement (Stop hook) | Interactive + headless | Interactive sessions only — `--no-interactive` runs do not honor the stop-hook block |
@@ -1401,7 +1401,7 @@ Installed and activated? The methodology is the same on every harness — keep
 going with the neutral chapters:
 
 - [Your First Workflow](../02-your-first-workflow.md) — an annotated end-to-end run.
-- [Phases and Stages](../04-phases-and-stages.md) — the 5 phases and 33 stages.
+- [Phases and Stages](../04-phases-and-stages.md) — the 7 phases and 33 stages.
 - [Scopes, Depth, and Test Strategy](../05-scopes-and-depth.md) — right-sizing a run.
 - [Glossary](../glossary.md) — every term defined.
 

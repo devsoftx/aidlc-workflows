@@ -20,6 +20,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -77,7 +78,7 @@ function fixture(): string {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: classic
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Revision Count**: 0
 - **Skeleton Stance**: off
@@ -169,7 +170,7 @@ function next(p: string, args: string[] = []): Directive {
   return result.directive as Directive;
 }
 
-const stageDir = (p: string): string => join(seededRecordDir(p), "construction", UNIT, CG);
+const stageDir = (p: string): string => join(seededRecordDir(p), phaseFor(CG), UNIT, CG);
 
 // The plan and test instructions, the same bytes every time it is written.
 function writePlan(p: string, extra = ""): void {

@@ -22,6 +22,7 @@ import {
   unitOpenCheckpoints,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_SRC, createTestProject, seedAidlcMemory, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   AUTOMATIC_GIT_MAINTENANCE_OFF,
   ORCH,
@@ -61,7 +62,7 @@ function leadsCheckout(ownership: "team" | "solo" = "team", fdOnly = false): { l
 - **Project**: two checkouts
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 
 ## Runtime State
@@ -89,7 +90,7 @@ function leadsCheckout(ownership: "team" | "solo" = "team", fdOnly = false): { l
 - **Status**: Running
 - **Last Updated**: 2026-08-20T00:00:00Z
 `);
-  const depDir = join(seededRecordDir(lead), "inception", "units-generation");
+  const depDir = join(seededRecordDir(lead), phaseFor("units-generation"), "units-generation");
   mkdirSync(depDir, { recursive: true });
   writeFileSync(
     join(depDir, "unit-of-work-dependency.md"),
@@ -171,7 +172,7 @@ function teammateClaimsBeta(remote: string): string {
 // A Unit's Functional Design written and reviewed, as the stage's own steps do it.
 function writeAndReview(checkout: string, unit: string): void {
   const stage = loadStageGraphAll().find((entry) => entry.slug === FD)!;
-  const dir = join(seededRecordDir(checkout), "construction", unit, FD);
+  const dir = join(seededRecordDir(checkout), phaseFor(FD), unit, FD);
   mkdirSync(dir, { recursive: true });
   for (const name of stage.produces ?? []) writeFileSync(join(dir, artifactFilename(name)), `# ${name}\n\n${unit}\n`);
   for (const args of [

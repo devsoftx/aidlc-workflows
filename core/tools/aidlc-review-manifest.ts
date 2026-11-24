@@ -22,20 +22,51 @@ function manifestFingerprint(manifest: ManifestEntry[]): string {
  * stage declared that output holds it. An optional output that appears, changes
  * or goes away after the review changes every form. `outputs` lines up with both
  * manifests, entry for entry.
+ *
+ * `relocate` names, for each earlier record layout the entries could have
+ * been kept in, the logical path it gave each entry (null for one it kept
+ * where it is). Each form over a layout's paths, sorted as that layout's
+ * reader sorted them, is an older form too, and `earlier` holds that layout's
+ * fingerprint and raw-bytes fingerprint, for evidence that embeds a review
+ * fingerprint: null when no entry moved, or when more than one layout could
+ * have held them (a plugin stage's), since no one of them is the recorded
+ * one. With AIDLC_TEST_FIVE_PHASE_LOGICAL_PATHS a test records the documents
+ * as the first layout's release did: its forms are the only ones.
  */
 export function reviewManifestForms(
   manifest: ManifestEntry[],
   rawManifest: ManifestEntry[],
   outputs: ReadonlyArray<{ required: boolean; state: string }>,
-): { fingerprint: string; raw: string | null; older: string[] } {
-  const declared = (list: ManifestEntry[]) =>
-    list.filter((_, at) => outputs[at].required || outputs[at].state !== "missing");
-  const fingerprint = manifestFingerprint(manifest);
-  const raw = manifestFingerprint(rawManifest);
-  const older = new Set([declared(manifest), declared(rawManifest)].map(manifestFingerprint));
+  relocate?: (logicalPaths: string[]) => ReadonlyArray<ReadonlyArray<string | null>>,
+): { fingerprint: string; raw: string | null; older: string[]; earlier?: { fingerprint: string; raw: string } | null } {
+  const declared = (list: ManifestEntry[], kinds = outputs) =>
+    list.filter((_, at) => kinds[at].required || kinds[at].state !== "missing");
+  let forms = [manifest, rawManifest, declared(manifest), declared(rawManifest)];
+  let earlier: { fingerprint: string; raw: string } | null = null;
+  const layouts: ManifestEntry[][][] = [];
+  const earliest: { fingerprint: string; raw: string }[] = [];
+  for (const spelled of relocate ? relocate(manifest.map(([path]) => path)) : []) {
+    const paths = manifest.map(([path], at) => spelled[at] ?? path);
+    if (paths.every((path, at) => path === manifest[at][0])) continue;
+    const order = paths.map((_, at) => at).sort((a, b) => paths[a].localeCompare(paths[b]));
+    const placed = (list: ManifestEntry[]): ManifestEntry[] => order.map((at) => [paths[at], list[at][1]]);
+    const kinds = order.map((at) => outputs[at]);
+    const [text, bytes] = [placed(manifest), placed(rawManifest)];
+    layouts.push([text, bytes, declared(text, kinds), declared(bytes, kinds)]);
+    earliest.push({ fingerprint: manifestFingerprint(text), raw: manifestFingerprint(bytes) });
+  }
+  if (layouts.length > 0) {
+    if (process.env.AIDLC_TEST_FIVE_PHASE_LOGICAL_PATHS === "1") forms = layouts[0];
+    else {
+      if (earliest.length === 1) earlier = earliest[0];
+      forms.push(...layouts.flat());
+    }
+  }
+  const [fingerprint, raw, ...rest] = forms.map(manifestFingerprint);
+  const older = new Set(rest);
   older.delete(fingerprint);
   older.delete(raw);
-  return { fingerprint, raw: raw === fingerprint ? null : raw, older: [...older] };
+  return { fingerprint, raw: raw === fingerprint ? null : raw, older: [...older], ...(relocate ? { earlier } : {}) };
 }
 
 // A committed text file's bytes as its identity: CRLF reads as LF, so a

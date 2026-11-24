@@ -36,8 +36,8 @@
 //   5 [x] count >= 3 (all init stages)    -> on-disk `- [x]` line count >= 3 (and === completedInit === 3).
 //   6 Project Root is populated           -> assertStateField "Project Root"=<projectDir> (utility.ts <- projectDir).
 //                                            Stronger: exact path equality, not merely "not the em-dash placeholder".
-//   7 State Version is 7                  -> assertStateField "State Version"="7" (utility.ts hard literal `7`).
-//                                            Stronger: exact, not the `State Version.*: 7` regex.
+//   7 State Version is current            -> assertStateField "State Version"=CURRENT_STATE_VERSION (utility.ts template).
+//                                            Stronger: exact, not a `State Version.*: N` regex.
 //   8 Project Type is NOT brownfield      -> Project-Type field does NOT match /brownfield/i (the negative; complements 3).
 //   + init actually RAN (was run_claude   -> assertToolResultContains "Bash" "Project type: Greenfield" — the init tool's
 //     exit semantics)                        verbatim stdout (utility.ts). Proves the deterministic tool fired
@@ -50,7 +50,7 @@
 //   - state Project Type line:             aidlc-utility.ts
 //   - state Completed = init stage count:  aidlc-utility.ts (graph init-phase count === 3); init stages get [x]
 //   - state Project Root = projectDir:     aidlc-utility.ts
-//   - state State Version literal `7`:     aidlc-utility.ts
+//   - state State Version value:           aidlc-utility.ts (CURRENT_STATE_VERSION)
 //   - WORKSPACE_SCANNED audit emit:        aidlc-utility.ts (VALID_EVENT_TYPES member, aidlc-audit.ts)
 //   - init stdout "Project type: ...":     aidlc-utility.ts
 //   - greenfield-todo stub = bare README:  tests/fixtures/greenfield-todo/README.md (no source/manifest/framework)
@@ -81,6 +81,7 @@ import {
   readStateField,
   readStateFile,
 } from "../harness/sdk-drive.ts";
+import { CURRENT_STATE_VERSION } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 // ---------------------------------------------------------------------------
 // The case and file own the work budget; each SDK call uses what remains.
@@ -93,7 +94,7 @@ const TEST_TIMEOUT_MS = liveCaseTimeoutMs(LIVE_WORK_TIMEOUT_MS);
 // Known-answer literals from the SHIPPED handler / fixture (see header).
 const SCANNED_EVENT = "WORKSPACE_SCANNED"; // aidlc-utility.ts handleIntentCreateStateBuild
 const PROJECT_TYPE = "Greenfield"; // detectWorkspace for the bare-README stub
-const STATE_VERSION = "8"; // aidlc-utility.ts state template (CURRENT_STATE_VERSION)
+const STATE_VERSION = CURRENT_STATE_VERSION; // aidlc-utility.ts state template
 const COMPLETED_INIT = "3"; // init-phase stage count (handleIntentCreateStateBuild)
 const INIT_STDOUT_TYPE_LINE = "Project type: Greenfield"; // verbatim creation stdout (handleIntentCreateStateBuild)
 const STOP_AFTER_INIT = { toolName: "Bash", resultIncludes: INIT_STDOUT_TYPE_LINE } as const;

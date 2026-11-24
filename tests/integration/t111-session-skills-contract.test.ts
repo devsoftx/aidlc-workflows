@@ -58,7 +58,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { AIDLC_SRC, toPortablePath } from "../harness/fixtures.ts";
-import { auditFilePath } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { auditFilePath, PHASES } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // With no intent cursor seeded, compile/summary resolve the BARE space
 // record root (docsRoot -> spaceRecordRoot) at aidlc/spaces/default/intents/.
@@ -91,7 +92,7 @@ afterAll(() => {
 function buildSyntheticProject(): string {
   const proj = toPortablePath(mkdtempSync(join(tmpdir(), "aidlc-t111-")));
   tempDirs.push(proj);
-  mkdirSync(join(recordRoot(proj), "ideation", "intent-capture"), {
+  mkdirSync(join(recordRoot(proj), phaseFor("intent-capture"), "intent-capture"), {
     recursive: true,
   });
   // Seed the DETERMINISTIC audit shard the compile tool resolves (auditFilePath).
@@ -132,7 +133,7 @@ function buildSyntheticProject(): string {
     "utf-8",
   );
   writeFileSync(
-    join(recordRoot(proj), "ideation", "intent-capture", "memory.md"),
+    join(recordRoot(proj), phaseFor("intent-capture"), "intent-capture", "memory.md"),
     "## Interpretations\n- one\n## Tradeoffs\n- a tradeoff\n",
     "utf-8",
   );
@@ -161,7 +162,7 @@ function summaryJson(proj: string): unknown {
   return JSON.parse(res.stdout ?? "");
 }
 
-const PHASES = /\.(initialization|ideation|inception|construction|operation)\./;
+const PHASE_SEGMENT = new RegExp(`\\.(${PHASES.join("|")})\\.`);
 
 /**
  * EMITTED set: every scalar leaf path of the JSON, dot-joined, with concrete
@@ -186,7 +187,7 @@ function emittedLeafSet(json: unknown): Set<string> {
     leaves.push(path.join("."));
   };
   walk(json, []);
-  const normalised = leaves.map((p) => p.replace(PHASES, ".<phase>."));
+  const normalised = leaves.map((p) => p.replace(PHASE_SEGMENT, ".<phase>."));
   return new Set(normalised);
 }
 

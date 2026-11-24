@@ -5,8 +5,9 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appendAuditEntry } from "./aidlc-audit.ts";
 import { personGitNameField } from "./aidlc-git-name.ts";
-import { beforePerUnitBlock, withStageProgressRow } from "./aidlc-graph.ts";
+import { beforePerUnitBlock, inUnitWalk, withStageProgressRow } from "./aidlc-graph.ts";
 import { keptSinceFinished } from "./aidlc-message-store.ts";
+import type { BringUpAhead } from "./aidlc-record-core.ts";
 import { isNonAnswer } from "./aidlc-reply-reader.ts";
 import { readReviewArtifactContexts } from "./aidlc-review-brief.ts";
 import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "./aidlc-runtime-budget.ts";
@@ -47,6 +48,7 @@ import {
   setField,
   setPhaseProgress,
   stageIndex,
+  stagesOwedBehindCursor,
   sourceBaselineAuditFields,
   workspaceBaselineStageSlugs,
   toPosix,
@@ -260,14 +262,42 @@ export function backwardJumpNotice(
     `You can return to ${stageLabel(from, from.slug) ?? "where you were"} any time.`;
 }
 
-// The redo `next` names for Reverse Engineering owed behind the stage the
-// person is on (they said this is existing code) says what comes next. Kept
-// here, where it starts, so a skip asked for before it never hears it. It is
-// said before the person next replies, which is at that stage's gate while it
-// still waits on their approval, so it reads true before the documenting, at
-// the gate, and after a revise.
-export function reverseEngineeringRedoNotice(from: { slug: string; name: string; plugin?: string }): string {
-  return `Once you approve the code's documentation, we're back at ${stageLabel(from, from.slug) ?? "where we were"}.`;
+// The redo `next` names for a stage owed behind the stage the person is on
+// (Reverse Engineering, once they said this is existing code; a stage an
+// update's new order put behind it) says what comes next: `then`, the stage
+// the walk reaches once they approve it. That is the stage they were on,
+// unless the redo left one before it for the walk (a Secure review an update
+// added that the work had only just passed). Kept here, where it starts, so a
+// skip asked for before it never hears it. It is said before the person next
+// replies, which is at that stage's gate while it still waits on their
+// approval, so it reads true before the work, at the gate, and after a revise.
+export function owedRedoNotice(
+  target: { slug: string; name: string; plugin?: string },
+  from: { slug: string; name: string; plugin?: string },
+  then: { slug: string; name: string; plugin?: string } = from,
+): string {
+  const what = target.slug === "reverse-engineering" ? "the code's documentation" : stageLabel(target, target.slug) ?? "it";
+  if (then.slug !== from.slug) return `Once you approve ${what}, the work goes on to ${stageLabel(then, then.slug) ?? "the next stage"}.`;
+  return `Once you approve ${what}, we're back at ${stageLabel(from, from.slug) ?? "where we were"}.`;
+}
+
+// Where the walk goes once the redo of `targetSlug`, a stage owed behind the
+// cursor, is approved: the Next Stage the redo writes (movedState), worked out
+// on the state as it stands, so the step that names the redo says the stage
+// the redo's notice then names. `pending`: as stagesOwedBehindCursor reads it.
+export function redoLeadsTo(
+  content: string,
+  targetSlug: string,
+  projectDir: string,
+  pending?: BringUpAhead | null,
+): StageEntry | null {
+  const scope = getField(content, "Scope") || "feature";
+  const scopeMapping = loadScopeMapping()[scope];
+  const targetStage = findStageBySlug(targetSlug);
+  if (!scopeMapping || !targetStage) return null;
+  const owed = stagesOwedBehindCursor(content, projectDir, undefined, undefined, pending);
+  return movedState(content, targetSlug, targetStage, "redo", scope, parseStateStageSuffixes(content), scopeMapping, false, owed)
+    .nextAfterTarget;
 }
 
 if (import.meta.main) {
@@ -375,9 +405,9 @@ function handleReopen(args: string[]): void {
   // with the messages they came in, as a gate's Request Changes row names them.
   const gateStage = getField(content, "Current Stage")?.trim() ?? targetSlug;
   const change = flags.via === "change" ? changeAsked(pd, content, gateStage) : null;
-  // From a later stage of the same phase (Build and Test, say) the work moves
-  // back to the target as a backward jump moves it, but with no STAGE_JUMPED or
-  // STAGE_STARTED: only these Units start the step again. Each Unit's row names
+  // From a later stage of the Unit's walk (Build and Test after Code Generation,
+  // say) the work moves back to the target as a backward jump moves it, but with
+  // no STAGE_JUMPED or STAGE_STARTED: only these Units start the step again. Each Unit's row names
   // the stage the work moved back from, the one record of that move (the Kiro
   // IDE audit-sync hook reads it).
   const current = getField(content, "Current Stage")?.trim() ?? "";
@@ -385,16 +415,17 @@ function handleReopen(args: string[]): void {
   // While Construction runs on its own, the loop-back from Build and Test
   // reopens Units with nobody at the keyboard: those rows name nobody. A
   // change stands on the person's own reply at the gate.
-  const theirs = flags.via === "change" || !isAutonomousConstructionDecision(content, targetStage.phase);
+  const theirs = flags.via === "change" || !isAutonomousConstructionDecision(content, targetStage);
   let stagesReset: string[] = [];
   let movedFrom: string | undefined;
-  // Work whose walk ended on the target or a later stage of its phase (Units
-  // built one at a time, the stages after Code Generation skipped) is put back
-  // to Running on the target, as a redo or backward jump puts it, so `next`
-  // takes these Units' step again; still only they start it over.
+  // Work whose walk ended on the target or a later stage of the Unit's walk
+  // (Units built one at a time, the later walk stages skipped) is put back to
+  // Running on the target, as a redo or backward jump puts it, so `next` takes
+  // these Units' step again; still only they start it over.
+  const inWalk = inUnitWalk(current);
   const finishedHere = getField(content, "Status")?.trim() === "Completed" && !!from &&
-    from.phase === targetStage.phase && stageIndex(current) >= stageIndex(targetSlug);
-  const fromLater = from && !isPerUnitStage(from) && from.phase === targetStage.phase &&
+    inWalk && stageIndex(current) >= stageIndex(targetSlug);
+  const fromLater = from && !isPerUnitStage(from) && inWalk &&
     stageIndex(current) > stageIndex(targetSlug);
   if (fromLater || finishedHere) {
     const scope = flags.scope || getField(content, "Scope") || "feature";
@@ -436,7 +467,7 @@ function handleReopen(args: string[]): void {
       emitAudit(pd, "ARTIFACT_REUSED", {
         Stage: targetSlug,
         Decision: "redo",
-        Artifacts: `construction/${unit}/${targetSlug}/`,
+        Artifacts: `${targetStage.phase}/${unit}/${targetSlug}/`,
         Unit: unit,
         Source: REDO_REUSE_SOURCE,
       });
@@ -571,11 +602,14 @@ function handleResolve(args: string[]): void {
   );
 }
 
-// The state a jump to `targetSlug` leaves: the stages it skips (forward) or
-// resets (backward: the target and every later stage on the effective plan),
-// the target in progress, and Current Stage with its projections on the
-// target. `execute` writes it with its STAGE_JUMPED; a reopen from a later
-// stage writes it with the Units' own rejections instead.
+// The state a jump to `targetSlug` leaves: the stages it skips (forward, or a
+// redo of a stage behind the cursor: the passed-over ones between, less those
+// `owed` names) or resets (backward: the target and every later stage on the
+// effective plan), the target in progress, and Current Stage with its
+// projections on the target (`nextAfterTarget` is the stage Next Stage names,
+// where the walk goes once the target is approved). `execute` writes it with
+// its STAGE_JUMPED; a reopen from a later stage writes it with the Units' own
+// rejections instead.
 function movedState(
   content: string,
   targetSlug: string,
@@ -585,6 +619,7 @@ function movedState(
   suffixes: Map<string, "EXECUTE" | "SKIP">,
   scopeMapping: { stages: Record<string, string> },
   keepsUnitStages = false,
+  owed: readonly string[] = [],
 ): {
   content: string;
   stagesSkipped: string[];
@@ -595,6 +630,7 @@ function movedState(
   phasesJumpedOver: string[];
   completedCount: number;
   timestamp: string;
+  nextAfterTarget: StageEntry | null;
 } {
   const graph = loadStageGraph();
   const targetIdx = stageIndex(targetSlug);
@@ -676,6 +712,18 @@ function movedState(
       }
     }
   } else {
+    // A redo of a stage owed behind the cursor runs it and returns to the stage
+    // the work stood on: the stages between that the work had passed over stay
+    // passed over, now marked so, or approving the target would walk into them.
+    // One `next` goes back to as well (`owed`) is left for the walk to reach,
+    // and a Unit stage keeps to its Units' own walk.
+    for (let i = targetIdx + 1; i < stageIndex(currentSlug); i++) {
+      const slug = graph[i].slug;
+      if (effectiveAction(suffixes, scopeMapping, slug) !== "EXECUTE" || owed.includes(slug) || isPerUnitStage(graph[i])) continue;
+      if ((checkboxMap.get(slug) ?? "pending") !== "pending") continue;
+      content = setCheckbox(withStageProgressRow(content, slug), slug, "skipped");
+      stagesSkipped.push(slug);
+    }
     content = setCheckbox(content, targetSlug, "pending");
     stagesReset.push(targetSlug);
   }
@@ -720,11 +768,12 @@ function movedState(
   // PHASE_VERIFIED is emitted, so its row reads Verified; any phase jumped
   // over entirely reads Skipped, and each such phase the plan runs is the
   // jump's to record as skipped (phasesJumpedOver; one the plan leaves out
-  // already has its row from intent creation). Backward (or a
-  // caller-mis-specified redo that crosses a boundary): every phase after the
+  // already has its row from intent creation). Backward: every phase after the
   // target just had its EXECUTE stages reset to pending above, so those rows
   // return to Pending, leaving zero-EXECUTE phases in their initial Skipped
-  // state. Either way the target's phase is now the active one.
+  // state. A redo of a stage owed behind the cursor resets nothing after it,
+  // so those rows stay as they are for the walk's return. Either way the
+  // target's phase is now the active one.
   const phasesJumpedOver: string[] = [];
   if (crossesPhaseBoundary && currentStageForPhase) {
     const phaseIdx = (p: string): number =>
@@ -745,7 +794,7 @@ function movedState(
         content = setPhaseProgress(content, PHASES[i], "Skipped");
         if (runsOnPlan(PHASES[i])) phasesJumpedOver.push(PHASES[i]);
       }
-    } else {
+    } else if (direction === "backward") {
       for (let i = phaseIdx(targetStage.phase) + 1; i < PHASES.length; i++) {
         const p = PHASES[i];
         if (runsOnPlan(p)) content = setPhaseProgress(content, p, "Pending");
@@ -766,7 +815,7 @@ function movedState(
   content = setField(content, "Last Completed Stage", lastCompleted);
   return {
     content, stagesSkipped, stagesReset, currentSlug, currentStageForPhase,
-    crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp,
+    crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp, nextAfterTarget,
   };
 }
 
@@ -824,7 +873,7 @@ async function handleExecute(args: string[]): Promise<void> {
   const currentSlug = getField(content, "Current Stage") || "state-init";
   // While Construction runs on its own, its loop-back jump lands back inside
   // Construction with nobody at the keyboard, so its row names nobody.
-  const theirs = !isAutonomousConstructionDecision(content, targetStage.phase);
+  const theirs = !isAutonomousConstructionDecision(content, targetStage);
   // Where the person was: the active Unit's own step in a unit-at-a-time walk,
   // which Current Stage does not name, or else the step the engine last put to
   // them (a Unit's code plan, say) while it still matches this state.
@@ -868,9 +917,16 @@ async function handleExecute(args: string[]): Promise<void> {
       // The line names the stages instead; the jump never fails for it.
     }
   }
-  const moved = movedState(content, targetSlug, targetStage, direction, scope, suffixes, scopeMapping, keepsUnitStages);
+  // A redo of a stage owed behind the cursor leaves the other stages `next`
+  // goes back to for the walk to reach.
+  const owed = direction === "redo" && stageIndex(targetSlug) < stageIndex(currentSlug)
+    ? stagesOwedBehindCursor(content, pd)
+    : [];
+  const moved = movedState(content, targetSlug, targetStage, direction, scope, suffixes, scopeMapping, keepsUnitStages, owed);
   content = moved.content;
-  const { stagesSkipped, stagesReset, currentStageForPhase, crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp } = moved;
+  const {
+    stagesSkipped, stagesReset, currentStageForPhase, crossesPhaseBoundary, phasesJumpedOver, completedCount, timestamp, nextAfterTarget,
+  } = moved;
 
   // One content-addressed snapshot is shared by both rows in the jump
   // transition. The companion STAGE_STARTED repeats the SAME authority rather
@@ -985,7 +1041,7 @@ async function handleExecute(args: string[]): Promise<void> {
   backInFlight(pd, stateBefore, content);
 
   // The jump is done, so its line (what it skipped and the way back, or what
-  // comes after an owed Reverse Engineering) can never fail it. The line is
+  // comes after a stage owed behind the cursor) can never fail it. The line is
   // kept for the next step the agent speaks from; when no chat can hold it, it
   // rides the tool's output instead.
   const from = graph.find((node) => node.slug === cameFrom);
@@ -996,8 +1052,8 @@ async function handleExecute(args: string[]): Promise<void> {
     // this checkout builds (teamRedoNarrowed), so the line names no way back.
     notice = forwardJumpNotice(targetStage, skipped, cameFrom, unitSteps, !keepsUnitStages) +
       (stillOpen ? ` ${stillOpen}` : "");
-  } else if (direction === "redo" && targetSlug === "reverse-engineering" && from && from.slug !== targetSlug) {
-    notice = reverseEngineeringRedoNotice(from);
+  } else if (direction === "redo" && stageIndex(targetSlug) < stageIndex(currentSlug) && from && from.slug !== targetSlug) {
+    notice = owedRedoNotice(targetStage, from, nextAfterTarget ?? from);
   } else if (direction === "backward" && from && !addedBack) {
     notice = backwardJumpNotice(targetStage, from);
   }

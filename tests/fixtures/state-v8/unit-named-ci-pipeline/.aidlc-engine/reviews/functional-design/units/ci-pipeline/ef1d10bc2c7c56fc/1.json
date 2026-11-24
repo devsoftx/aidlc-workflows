@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "stage": "functional-design",
+  "unit": "ci-pipeline",
+  "workflow": null,
+  "attempt": "ef1d10bc2c7c56fc",
+  "iteration": 1,
+  "reviewer": "aidlc-architecture-reviewer-agent",
+  "verdict": "READY",
+  "request_id": "review:93a8c43fe6341b50315f97880a7baa0a",
+  "request_challenge": null,
+  "artifact_fingerprint": "sha256:ed9492d53dfc2cd368383045514c1967055c62b1faf46e45fbd75d21b6a32285",
+  "source_fingerprint": null,
+  "unit_source_fingerprint": null,
+  "findings": [],
+  "derived_findings": [],
+  "body": "## Review\n\n**Verdict:** READY\n**Reviewer:** aidlc-architecture-reviewer-agent\n**Date:** 2026-11-22T10:00:00Z\n**Iteration:** 1\n\n### Findings\n\n**Prior findings**\n\n| ID | Now | Severity | Note |\n|---|---|---|---|\n\n**New findings**\n\n| Severity | Location | Finding | Required action |\n|---|---|---|---|\n\n### Summary\n\nReady.\n",
+  "recorded_at": "2026-11-23T09:07:02Z"
+}

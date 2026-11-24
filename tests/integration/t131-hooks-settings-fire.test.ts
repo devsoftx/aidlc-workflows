@@ -107,6 +107,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -282,6 +283,8 @@ function makeProject(withState: boolean): string {
     "aidlc-runtime.ts",
     "aidlc-stage-diary.ts",
     "aidlc-lib.ts",
+    // aidlc-lib.ts imports this at load time; a missing copy exits the hook 1.
+    "aidlc-phases.ts",
     "aidlc-settings.ts",
     "aidlc-markdown.ts",
     "aidlc-locks.ts",
@@ -306,6 +309,7 @@ function makeProject(withState: boolean): string {
     "aidlc-runtime-budget.ts",
     "aidlc-lock-line.ts",
     "aidlc-review-manifest.ts",
+    "aidlc-five-phase-record.ts",
     "aidlc-command.ts",
     // aidlc-lib.ts reads a plugin command leading a line with this.
     "aidlc-plugin-commands.ts",
@@ -393,7 +397,7 @@ describe("t131 spine fires inside a workflow (mechanism cli — spawnSync)", () 
         // Under the per-intent record so the audit-logger's docsRoot() gate fires.
         file_path: join(
           seededRecordDir(proj),
-          "inception",
+          phaseFor("requirements-analysis"),
           "requirements-analysis",
           "requirements.md",
         ),

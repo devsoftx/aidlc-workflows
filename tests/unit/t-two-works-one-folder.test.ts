@@ -27,6 +27,7 @@ import {
   writeBaselineSourceSnapshot,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { AIDLC_MEMORY_SRC, AIDLC_SRC, FIXTURES_DIR } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage's checks run once before its review or gate, and again at the gate
 // (completionChecksStep, t-checks-before-review); this file's fixture documents
@@ -99,7 +100,7 @@ function project(policy: string, other: { status?: string; space?: string; atGat
   git(project, ["commit", "-qm", "seed"]);
   writeFileSync(join(record, "aidlc-state.md"), stateAt(policy, other.atGate), "utf-8");
   writeFileSync(join(otherRecord, "aidlc-state.md"), stateAt(policy), "utf-8");
-  const dag = join(record, "inception", "units-generation");
+  const dag = join(record, phaseFor("units-generation"), "units-generation");
   mkdirSync(dag, { recursive: true });
   writeFileSync(
     join(dag, "unit-of-work-dependency.md"),
@@ -134,7 +135,7 @@ function cli(tool: string, args: string[], dir: string): { rc: number; out: stri
 }
 
 function unitDir(record: string, unit: string): string {
-  const dir = join(record, "construction", unit, "code-generation");
+  const dir = join(record, phaseFor("code-generation"), unit, "code-generation");
   mkdirSync(dir, { recursive: true });
   for (const name of ["code-generation-plan.md", "unit-test-instructions.md", "code-summary.md", "traceability.json"]) {
     if (!existsSync(join(dir, name))) writeFileSync(join(dir, name), name.endsWith(".json") ? "{}\n" : `# ${name}\n`);
@@ -442,8 +443,8 @@ describe("the note's words", () => {
   const runStage = (fields: Record<string, unknown>): Record<string, unknown> => ({
     kind: "run-stage",
     stage: "code-generation",
-    phase: "construction",
-    stage_file: ".claude/aidlc-common/stages/construction/code-generation.md",
+    phase: phaseFor("code-generation"),
+    stage_file: ".claude/aidlc-common/stages/build/code-generation.md",
     ceremony: { summary_confirmation: "off" },
     ...fields,
   });
@@ -466,7 +467,8 @@ describe("the note's words", () => {
 
   test("names no field, and caps a long list with where the rest are", () => {
     const note = otherWorkNote([{ ...works[0], paths: Array.from({ length: 25 }, (_, i) => `f${i}.ts`) }]);
-    expect(note).toContain("`f19.ts`, and 5 more, listed in its Units' source manifests under `aidlc/spaces/default/intents/other-work/construction/`");
+    const folder = `aidlc/spaces/default/intents/other-work/${phaseFor("code-generation")}/`;
+    expect(note).toContain("`f19.ts`, and 5 more, listed in its Units' source manifests under `" + folder + "`");
     expect(note).not.toContain("`f20.ts`");
     expect(note.replace(/`[^`]*`/g, " ")).not.toMatch(/[a-z]+_[a-z_]+/);
   });

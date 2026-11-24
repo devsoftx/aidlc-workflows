@@ -47,7 +47,7 @@ const CONSTRUCTION_STATE = `# AI-DLC State Tracking
 - **Project**: engine child keeps the parent's chat
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Construction Iteration**: unit-major
 

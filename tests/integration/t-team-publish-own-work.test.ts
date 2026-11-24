@@ -12,6 +12,7 @@ import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   UNIT,
   cleanupTempDirs,
@@ -40,7 +41,7 @@ function claimedDone(claims?: string[]): string {
   const { checkout } = prepareCandidate(remote, "alpha", "team-a", { publish: false });
   if (claims !== undefined) {
     write(
-      join(seededRecordDir(checkout), "construction", "alpha", "code-generation"),
+      join(seededRecordDir(checkout), phaseFor("code-generation"), "alpha", "code-generation"),
       "source-manifest.json",
       `${JSON.stringify({ stage: "code-generation", unit: "alpha", version: 1, writes: claims.map((path) => ({ path })) })}\n`,
     );
@@ -88,7 +89,7 @@ describe("a team's publish commits its own work", () => {
     expect(result).toMatchObject({ published: true, unit: "alpha", left_out: 54 });
     const files = committed(checkout);
     expect(files).toContain("src/alpha-extra.ts");
-    expect(files.some((path) => path.endsWith("/construction/alpha/code-generation/source-manifest.json"))).toBe(true);
+    expect(files.some((path) => path.endsWith("/build/alpha/code-generation/source-manifest.json"))).toBe(true);
     expect(files.filter((path) => /^(\.codex|\.agents|node_modules|coverage)\//.test(path))).toEqual([]);
     expect(stillNew(checkout)).toHaveLength(54);
     expect(existsSync(join(checkout, "node_modules", "pkg-0", "index.js"))).toBe(true);

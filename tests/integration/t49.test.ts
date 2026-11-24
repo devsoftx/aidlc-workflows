@@ -45,6 +45,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { cleanupTestProject, createTestProject } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
@@ -131,7 +132,7 @@ function run(tool: string, args: string[], p: string): CliResult {
 function recordRequirementsReview(p: string): void {
   const artifact = join(
     recordDirOf(p),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
     "requirements.md",
   );

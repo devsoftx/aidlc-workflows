@@ -51,21 +51,25 @@ Here is part of one, from a Claude Code run on the `mvp` plan just after Intent 
 
 ## Phase Progress
 - **Initialization**: Verified
-- **Ideation**: Active
-- **Inception**: Pending
-- **Construction**: Pending
-- **Operation**: Skipped
+- **Discover**: Active
+- **Design**: Pending
+- **Build**: Pending
+- **Test**: Pending
+- **Secure**: Pending
+- **Deploy**: Pending
+- **Operate**: Skipped
 
 ## Stage Progress
-### IDEATION PHASE
+### DISCOVER PHASE
 - [x] intent-capture - EXECUTE
 - [ ] market-research - SKIP
 - [-] feasibility - EXECUTE
+- [ ] reverse-engineering - SKIP
 - [ ] scope-definition - EXECUTE
 ...
 
 ## Current Status
-- **Lifecycle Phase**: IDEATION
+- **Lifecycle Phase**: DISCOVER
 - **Current Stage**: feasibility
 - **Next Stage**: scope-definition
 - **Status**: Running

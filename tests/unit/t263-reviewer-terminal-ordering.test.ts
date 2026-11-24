@@ -35,6 +35,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -128,7 +129,7 @@ function recordReview(
   const iteration = 1;
   const dir = join(
     seededRecordDir(p),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -224,12 +225,12 @@ describe("t263 reviewer terminal-receipt ordering (receipt-invalidation loop fix
     appendAuditEntry("ARTIFACT_UPDATED", {
       File: join(
         seededRecordDir(p),
-        "inception",
+        phaseFor("requirements-analysis"),
         "requirements-analysis",
         "requirements.md",
       ),
       Tool: "Edit",
-      Context: "inception > requirements-analysis > requirements.md",
+      Context: `${phaseFor("requirements-analysis")} > requirements-analysis > requirements.md`,
     }, p);
 
     const refused = run(
@@ -402,9 +403,9 @@ describe("t263 reviewer terminal-receipt ordering (receipt-invalidation loop fix
       ).status,
     ).toBe(0);
     appendAuditEntry("ARTIFACT_UPDATED", {
-      File: join(seededRecordDir(p), "inception", "requirements-analysis", "requirements.md"),
+      File: join(seededRecordDir(p), phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md"),
       Tool: "Edit",
-      Context: "inception > requirements-analysis > requirements.md",
+      Context: `${phaseFor("requirements-analysis")} > requirements-analysis > requirements.md`,
     }, p);
 
     const refused = run(

@@ -24,6 +24,7 @@ import {
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   readUnitSourceManifest,
   stateDigest,
@@ -221,7 +222,7 @@ describe("intent add-repo / remove-repo", () => {
   });
 
   test("the Construction manifest that named the repo is accepted once the repo is recorded", () => {
-    const dir = join(seededRecordDir(proj), "construction", "alpha", "code-generation");
+    const dir = join(seededRecordDir(proj), phaseFor("code-generation"), "alpha", "code-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "source-manifest.json"),

@@ -21,6 +21,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node
 import { join, relative } from "node:path";
 import { NATIVE_FIXTURE_SETUP_TIMEOUT_MS } from "../harness/test-budget.ts";
 import { AIDLC_SRC, cleanupTestProject, removeWorkspaceRecord, seededRecordDir, seededStateFile } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   artifactFilename,
@@ -273,7 +274,7 @@ describe("t-approve-then-add-next: the approval recorded first, the add of the s
     const proj = await gateAt();
     await approve(proj, "requirements-analysis");
     expect(current(proj)).toBe("code-generation");
-    const plan = join(seededRecordDir(proj), "construction", "code-generation", "code-generation-plan.md");
+    const plan = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
     mkdirSync(join(plan, ".."), { recursive: true });
     writeFileSync(plan, "# Code Generation Plan\n\n- [ ] Step 1: refuse a blank title.\n", "utf-8");
     const before = state(proj);
@@ -285,7 +286,7 @@ describe("t-approve-then-add-next: the approval recorded first, the add of the s
     // The same for a Unit's own Code Generation folder.
     const unit = await gateAt();
     await approve(unit, "requirements-analysis");
-    const unitPlan = join(seededRecordDir(unit), "construction", "todo-core", "code-generation", "code-generation-plan.md");
+    const unitPlan = join(seededRecordDir(unit), phaseFor("code-generation"), "todo-core", "code-generation", "code-generation-plan.md");
     mkdirSync(join(unitPlan, ".."), { recursive: true });
     writeFileSync(unitPlan, "# Code Generation Plan\n", "utf-8");
     const perUnit = await tool(unit, UTILITY, ["recompose", "--add", "user-stories"]);
@@ -296,7 +297,7 @@ describe("t-approve-then-add-next: the approval recorded first, the add of the s
     const dd = await gateAt();
     expect((await tool(dd, UTILITY, ["recompose", "--add", "domain-design"])).status).toBe(0);
     await approve(dd, "requirements-analysis");
-    const questions = join(seededRecordDir(dd), "inception", "domain-design", "domain-design-questions.md");
+    const questions = join(seededRecordDir(dd), phaseFor("domain-design"), "domain-design", "domain-design-questions.md");
     mkdirSync(join(questions, ".."), { recursive: true });
     writeFileSync(questions, "# Questions\n\n## Q1\n\nOne service or two?\n\n[Answer]: \n", "utf-8");
     const inside = await tool(dd, UTILITY, ["recompose", "--add", "user-stories"]);
@@ -346,7 +347,7 @@ describe("t-approve-then-add-next: the approval recorded first, the add of the s
     const code = guardAllows(proj, "export const refuseBlankTitle = true;\n", "src/todo.ts");
     expect(code.allowed, code.said).toBe(false);
     // Once Code Generation has something written, the move back waits too.
-    const plan = join(seededRecordDir(proj), "construction", "code-generation", "code-generation-plan.md");
+    const plan = join(seededRecordDir(proj), phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
     mkdirSync(join(plan, ".."), { recursive: true });
     writeFileSync(plan, "# Code Generation Plan\n", "utf-8");
     const late = guardAllows(proj, `${jump} --target user-stories --direction backward --scope bugfix`);
@@ -401,7 +402,7 @@ describe("t-approve-then-add-next: the approval recorded first, the add of the s
       prompt: "Scan the code for Reverse Engineering and write developer-scan.md.",
     } });
     expect(scan.allowed, scan.said).toBe(true);
-    const scanFile = join(recordDir(proj) as string, "inception", "reverse-engineering", "developer-scan.md");
+    const scanFile = join(recordDir(proj) as string, phaseFor("reverse-engineering"), "reverse-engineering", "developer-scan.md");
     mkdirSync(join(scanFile, ".."), { recursive: true });
     writeFileSync(scanFile, "# Developer scan\n\n- One module, one entry point.\n", "utf-8");
     const link = await tool(proj, LOG, ["link", "--stage", "reverse-engineering", "--link", "aidlc-developer-agent",

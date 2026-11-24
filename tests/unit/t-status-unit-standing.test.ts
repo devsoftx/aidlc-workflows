@@ -3,7 +3,7 @@
 // Status over work built one Unit at a time (#3628). The dependency file Units
 // Generation writes has no heading over its edge block, and the status view and
 // the status line read Units from it with a pattern that needed one, so with
-// the first Unit done both said "CONSTRUCTION 0/6", and Next Stage named the
+// the first Unit done both said "0/6" on the Units' row, and Next Stage named the
 // stage after the block's first one whatever Unit the work was on. Status now
 // says where each Unit stands, from the walk that hands out the next step, and
 // names the next stage of the Unit in progress; the status line counts the Unit
@@ -26,6 +26,8 @@ import {
 import { parseBoltDag, validateUnitName } from "../../dist/claude/.claude/tools/aidlc-unit-dag.ts";
 import { validateUnitName as recordsValidateUnitName } from "../../dist/claude/.claude/tools/aidlc-review-records.ts";
 import { unitProgress } from "../../dist/claude/.claude/tools/aidlc-unit-walk-view.ts";
+import { PHASE_LABELS } from "../../dist/claude/.claude/tools/aidlc-phases.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 // The stage checks are not this file's subject and its documents are not
 // written for them.
@@ -41,6 +43,13 @@ const STAGES = ["functional-design", "nfr-requirements", "nfr-design", "infrastr
 const ORCH = join(AIDLC_SRC, "tools/aidlc-orchestrate.ts");
 const SIX = ["u1", "u2", "u3", "u4", "u5", "u6"];
 const THREE = ["u1", "u2", "u3"];
+// The status table's row for the phase a stage sits in.
+const rowFor = (stage: string): string => PHASE_LABELS[phaseFor(stage) as keyof typeof PHASE_LABELS];
+// The status view counts the Unit walk on the row of the phase the walk is on (the step's
+// own phase; the Unit checkpoint sits in the block's last stage's phase). Construction run
+// one Unit at a time keeps Current Stage on the block's first per-unit stage, so Current
+// Stage's phase is not the walk's row once the walk reaches Code Generation.
+const WALK_ROW = rowFor("functional-design");
 
 type DagFile = "stage" | "heading" | "crlf" | "malformed" | "none";
 type Options = {
@@ -78,7 +87,7 @@ function fixture(units: string[], options: Options = {}) {
 - **Project Type**: Greenfield
 - **Project Type Source**: you
 - **Scope**: feature
-- **State Version**: ${options.version ?? "8"}
+- **State Version**: ${options.version ?? "10"}
 - **Unit Ownership**: solo
 ## Runtime State
 - **Revision Count**: 0
@@ -99,7 +108,7 @@ function fixture(units: string[], options: Options = {}) {
 ${STAGES.map((stage) => `- [${box(stage)}] ${stage} ${sep} EXECUTE`).join("\n")}
 - [${current === "build-and-test" ? "-" : " "}] build-and-test ${sep} EXECUTE
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${rowFor(current)}
 - **Current Stage**: ${current}
 - **Status**: Running
 - **Last Completed Stage**: ${at === -1 ? "code-generation" : "delivery-planning"}
@@ -107,7 +116,7 @@ ${at === -1 ? "" : "- **Next Stage**: nfr-requirements\n"}`);
   seedBoltDag(p, units);
   const dag = options.dag ?? "stage";
   if (dag !== "none") {
-    const dir = join(seededRecordDir(p), "inception", "units-generation");
+    const dir = join(seededRecordDir(p), phaseFor("units-generation"), "units-generation");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "unit-of-work-dependency.md"), dependencyFile(units, dag));
   }
@@ -121,7 +130,7 @@ ${at === -1 ? "" : "- **Next Stage**: nfr-requirements\n"}`);
 function cover(p: string, unit: string, selected = STAGES) {
   for (const slug of selected) {
     const stage = findStageBySlug(slug)!;
-    const output = join(seededRecordDir(p), "construction", unit, slug);
+    const output = join(seededRecordDir(p), phaseFor(slug), unit, slug);
     mkdirSync(output, { recursive: true });
     for (const name of stage.produces ?? []) writeFileSync(join(output, artifactFilename(name)), `# ${unit} ${name}\n`);
     if (stage.workspace_requires) {
@@ -243,12 +252,12 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     approve(p, "u1", SIX);
     expect(next(p)).toMatchObject({ kind: "run-stage", stage: "functional-design", unit: "u2" });
     const out = status(p);
-    const row = line(out, "CONSTRUCTION");
+    const row = line(out, WALK_ROW);
     expect(row).not.toMatch(/\b0\/6\b/);
     expect(row).toEndWith("Unit 2 of 6: u1 done, u2, u3, u4, u5 and u6 not started");
     expect(line(out, "Next Stage:")).toBe("Next Stage:     Functional Design for u2");
     expect(line(out, "Last Completed:")).toBe("Last Completed: Delivery Planning");
-    expect(statusline(p)).toContain("CONSTRUCTION Unit 2 of 6");
+    expect(statusline(p)).toContain("DESIGN Unit 2 of 6");
   });
 
   test("once u2 starts its first step it is at it, and Next Stage is its next one", () => {
@@ -258,7 +267,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     next(p);
     startStep(p, "u2", "functional-design");
     const out = status(p);
-    expect(line(out, "CONSTRUCTION")).toEndWith("Unit 2 of 6: u1 done, u2 at Functional Design, u3, u4, u5 and u6 not started");
+    expect(line(out, WALK_ROW)).toEndWith("Unit 2 of 6: u1 done, u2 at Functional Design, u3, u4, u5 and u6 not started");
     expect(line(out, "Next Stage:")).toBe("Next Stage:     NFR Requirements for u2");
   });
 
@@ -267,7 +276,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "u1", STAGES.slice(0, 4));
     expect(next(p)).toMatchObject({ stage: "code-generation", unit: "u1" });
     const before = status(p);
-    expect(line(before, "CONSTRUCTION")).toEndWith("Unit 1 of 1: u1 at Code Generation");
+    expect(line(before, rowFor("code-generation"))).toEndWith("Unit 1 of 1: u1 at Code Generation");
     expect(line(before, "Next Stage:")).toBe("Next Stage:     Code Generation for u1");
     startStep(p, "u1", "code-generation");
     expect(line(status(p), "Next Stage:")).toBe("Next Stage:     the Unit checkpoint for u1");
@@ -280,7 +289,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "beta");
     expect(next(p).construction_checkpoint?.unit).toBe("beta");
     const out = status(p);
-    expect(line(out, "CONSTRUCTION")).toEndWith("Unit 2 of 2: alpha done, beta at the Unit checkpoint");
+    expect(line(out, rowFor("code-generation"))).toEndWith("Unit 2 of 2: alpha done, beta at the Unit checkpoint");
     expect(line(out, "Next Stage:")).toBe("Next Stage:     Build and Test");
   });
 
@@ -291,7 +300,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     skipUnit(p, "u2");
     expect(next(p)).toMatchObject({ stage: "functional-design", unit: "u3" });
     const out = status(p);
-    expect(line(out, "CONSTRUCTION")).toEndWith("Unit 3 of 3: u1 done, u2 skipped, u3 not started");
+    expect(line(out, WALK_ROW)).toEndWith("Unit 3 of 3: u1 done, u2 skipped, u3 not started");
     expect(line(out, "Next Stage:")).toBe("Next Stage:     Functional Design for u3");
   });
 
@@ -301,7 +310,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     approve(p, "u1", THREE);
     next(p);
     tool(p, "jump", ["reopen", "--target", "code-generation", "--units", "u1"]);
-    expect(line(status(p), "CONSTRUCTION")).toEndWith("Unit 1 of 3: u1 at Code Generation, u2 and u3 not started");
+    expect(line(status(p), rowFor("code-generation"))).toEndWith("Unit 1 of 3: u1 at Code Generation, u2 and u3 not started");
   });
 
   test("with the walking skeleton on, the skeleton's approval counts", () => {
@@ -309,23 +318,23 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "u1");
     approve(p, "u1", THREE, "skeleton");
     expect(next(p)).toMatchObject({ stage: "functional-design", unit: "u2" });
-    expect(line(status(p), "CONSTRUCTION")).toEndWith("Unit 2 of 3: u1 done, u2 and u3 not started");
-    expect(statusline(p)).toContain("CONSTRUCTION Unit 2 of 3 > Functional Design for u2");
+    expect(line(status(p), WALK_ROW)).toEndWith("Unit 2 of 3: u1 done, u2 and u3 not started");
+    expect(statusline(p)).toContain("DESIGN Unit 2 of 3 > Functional Design for u2");
   });
 
   test("with Construction checkpoints off, a Unit whose steps are done counts", () => {
     const p = fixture(THREE, { checkpoints: "disabled" });
     cover(p, "u1");
     expect(next(p)).toMatchObject({ stage: "functional-design", unit: "u2" });
-    expect(line(status(p), "CONSTRUCTION")).toEndWith("Unit 2 of 3: u1 done, u2 and u3 not started");
-    expect(statusline(p)).toContain("CONSTRUCTION Unit 2 of 3 > Functional Design for u2");
+    expect(line(status(p), WALK_ROW)).toEndWith("Unit 2 of 3: u1 done, u2 and u3 not started");
+    expect(statusline(p)).toContain("DESIGN Unit 2 of 3 > Functional Design for u2");
   });
 
   test("the status line names and counts the Unit its Unit Stage field names, with no step on record", () => {
     const p = fixture(THREE);
     writeFileSync(seededStateFile(p), readFileSync(seededStateFile(p), "utf-8")
       .replace("- **Status**: Running\n", "- **Status**: Running\n- **Active Unit**: u2\n- **Unit Stage**: nfr-requirements\n"));
-    expect(statusline(p)).toContain("CONSTRUCTION Unit 2 of 3 > NFR Requirements for u2");
+    expect(statusline(p)).toContain("DESIGN Unit 2 of 3 > NFR Requirements for u2");
   });
 
   test("the dependency file with CRLF line ends, or with the old heading, reads its Units", () => {
@@ -334,7 +343,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
       cover(p, "u1");
       approve(p, "u1", SIX);
       next(p);
-      expect(line(status(p), "CONSTRUCTION"), dag).toEndWith("Unit 2 of 6: u1 done, u2, u3, u4, u5 and u6 not started");
+      expect(line(status(p), WALK_ROW), dag).toEndWith("Unit 2 of 6: u1 done, u2, u3, u4, u5 and u6 not started");
       expect(unitProgress(seededRecordDir(p), "unit-major"), dag).toEqual({ current: 2, total: 6 });
     }
   });
@@ -342,8 +351,8 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
   test("a dependency file the engine cannot read gives no Unit count, as the engine reads no Units", () => {
     const p = fixture(SIX, { dag: "malformed" });
     expect(unitProgress(seededRecordDir(p), "unit-major")).toBeNull();
-    const row = line(status(p), "CONSTRUCTION");
-    expect(row).toMatch(/ 0\/6$/);
+    const row = line(status(p), WALK_ROW);
+    expect(row).toMatch(/ 0\/4$/);
     expect(row).not.toContain("Unit");
   });
 
@@ -353,13 +362,13 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     approve(p, "u1", SIX);
     next(p);
     expect(unitProgress(seededRecordDir(p), "unit-major")).toEqual({ current: 2, total: 6 });
-    expect(line(status(p), "CONSTRUCTION")).toEndWith("Unit 2 of 6: u1 done, u2, u3, u4, u5 and u6 not started");
+    expect(line(status(p), WALK_ROW)).toEndWith("Unit 2 of 6: u1 done, u2, u3, u4, u5 and u6 not started");
   });
 
   test("work built stage by stage reads as before: the stage count and the Next Stage field", () => {
     const p = fixture(SIX, { iteration: "stage-major" });
     const out = status(p);
-    expect(line(out, "CONSTRUCTION")).toMatch(/ 0\/6$/);
+    expect(line(out, WALK_ROW)).toMatch(/ 0\/4$/);
     expect(out).not.toContain("not started");
     expect(line(out, "Next Stage:")).toBe("Next Stage:     NFR Requirements");
   });
@@ -368,7 +377,9 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     const p = fixture(THREE, { current: "build-and-test" });
     for (const unit of THREE) cover(p, unit);
     const out = status(p);
-    expect(line(out, "CONSTRUCTION")).toMatch(/ 5\/6$/);
+    expect(line(out, rowFor("functional-design"))).toMatch(/ 4\/4$/);
+    expect(line(out, rowFor("code-generation"))).toMatch(/ 1\/1$/);
+    expect(line(out, rowFor("build-and-test"))).toMatch(/ 0\/1$/);
     expect(out).not.toContain("not started");
     expect(out).not.toContain("Next Stage:");
   });
@@ -378,7 +389,7 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "u1");
     approve(p, "u1", SIX);
     next(p);
-    expect(line(status(p, ["--intent", basename(seededRecordDir(p))]), "CONSTRUCTION")).toEndWith("Unit 2 of 6");
+    expect(line(status(p, ["--intent", basename(seededRecordDir(p))]), WALK_ROW)).toEndWith("Unit 2 of 6");
   });
 
   test("status writes nothing", () => {
@@ -399,7 +410,17 @@ describe("t-status-unit-standing: status says where each Unit stands", () => {
     cover(p, "u1");
     approve(p, "u1", SIX);
     const before = snapshot(p);
-    const row = line(status(p), "CONSTRUCTION");
+    const row = line(status(p), WALK_ROW);
+    expect(snapshot(p)).toEqual(before);
+    expect(row).toEndWith("Unit 2 of 6");
+  });
+
+  test("status on a five-phase record (State Version 8) writes nothing and keeps the light count", () => {
+    const p = fixture(SIX, { version: "8" });
+    cover(p, "u1");
+    approve(p, "u1", SIX);
+    const before = snapshot(p);
+    const row = line(status(p), WALK_ROW);
     expect(snapshot(p)).toEqual(before);
     expect(row).toEndWith("Unit 2 of 6");
   });

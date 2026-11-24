@@ -32,6 +32,7 @@ import {
   seededRecordDir,
   seededStateFile,
 } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { appendAuditEntry } from "../../dist/claude/.claude/tools/aidlc-audit.ts";
 import {
   readAuditShardEvents, rejectionIsFreshAttempt, stateDigest, writeActiveDirectiveMarker,
@@ -86,7 +87,7 @@ function unitProject(policy: "strict" | "relaxed" | "off", unit: string): string
 - **Project**: Per-Unit build
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: off
 - **Guard Policy**: ${policy} (set by you)
 - **Plan Approval**: on (from scope feature)
@@ -99,16 +100,18 @@ function unitProject(policy: "strict" | "relaxed" | "off", unit: string): string
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### DESIGN PHASE
 - [x] functional-design \u2014 EXECUTE
 - [x] nfr-requirements \u2014 EXECUTE
 - [x] nfr-design \u2014 EXECUTE
 - [x] infrastructure-design \u2014 EXECUTE
+### BUILD PHASE
 - [-] code-generation \u2014 EXECUTE
+### TEST PHASE
 - [ ] build-and-test \u2014 EXECUTE
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 `, "utf-8");
@@ -119,7 +122,7 @@ function unitProject(policy: "strict" | "relaxed" | "off", unit: string): string
 }
 
 function stageDir(proj: string, unit: string | null = null): string {
-  return join(seededRecordDir(proj), "construction", ...(unit ? [unit] : []), "code-generation");
+  return join(seededRecordDir(proj), phaseFor("code-generation"), ...(unit ? [unit] : []), "code-generation");
 }
 
 function planPath(proj: string, unit: string | null = null): string {

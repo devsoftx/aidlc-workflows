@@ -21,6 +21,7 @@ import {
   NATIVE_STARTUP_TIMEOUT_MS,
   remainingOperationTimeoutMs,
 } from "../harness/test-budget.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { afterAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
@@ -101,7 +102,7 @@ function plugin(spec: PluginSpec): string {
   manifest.version = spec.version ?? "0.1.0";
   manifest.dependencies = spec.dependencies ?? ["core"];
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-  const stagePath = join(root, "stages", "construction", `${spec.name}-example-stage.md`);
+  const stagePath = join(root, "stages", "build", `${spec.name}-example-stage.md`);
   let stage = readFileSync(stagePath, "utf-8");
   if (spec.requires) {
     stage = stage.replace("requires_stage: []", `requires_stage:\n${spec.requires.map((slug) => `  - ${slug}`).join("\n")}`);
@@ -114,7 +115,7 @@ function plugin(spec: PluginSpec): string {
   }
   for (const slug of spec.stages ?? []) {
     writeFileSync(
-      join(root, "stages", "construction", `${slug}.md`),
+      join(root, "stages", "build", `${slug}.md`),
       stage.replaceAll(`${spec.name}-example-stage`, slug).replaceAll(`${spec.name}-example-output`, `${slug}-output`),
     );
   }
@@ -547,7 +548,7 @@ describe("t354 a team scope runs the base stages it includes", () => {
     expect(ran.stdout.trim()).toBe("plugin sync complete: 2 plugin(s)");
     expect(column(target, "alpha-example")).toEqual([...INIT, "zeta-intake", "alpha-example-stage"]);
     expect(column(target, "zeta-example")).toEqual([...INIT, "zeta-example-stage", "zeta-intake", "zeta-research"]);
-    const intake = join(target.dir, ".claude", "aidlc-common", "stages", "construction", "zeta-intake.md");
+    const intake = join(target.dir, ".claude", "aidlc-common", "stages", "build", "zeta-intake.md");
     expect(readFileSync(intake, "utf-8")).not.toContain("alpha-example");
   });
 
@@ -641,8 +642,8 @@ describe("t354 turning a base off pauses the plugin built on it", () => {
   // runs" can be read in that stage's source.
   function contributingAlpha(): string {
     const out = alpha();
-    mkdirSync(join(out, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(out, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(out, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(out, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     return out;
   }
 
@@ -664,7 +665,7 @@ describe("t354 turning a base off pauses the plugin built on it", () => {
 
   const select = (target: Project, names: string): Ran => engine(target, ["engine", "plugin", "select", names]);
   const buildAndTest = (target: Project): string =>
-    readFileSync(join(target.dir, ".claude", "aidlc-common", "stages", "construction", "build-and-test.md"), "utf-8");
+    readFileSync(join(target.dir, ".claude", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"), "utf-8");
   const selection = (target: Project): unknown =>
     (JSON.parse(readFileSync(join(target.dir, ".claude", "tools", "data", "harness.json"), "utf-8")) as { plugins?: unknown }).plugins;
   const stageEnabled = (target: Project, slug: string): boolean => {
@@ -757,8 +758,8 @@ describe("t354 turning a base off pauses the plugin built on it", () => {
       mkdirSync(dir, { recursive: true });
       cpSync(join(REPO_ROOT, "dist", harness, leaf), join(dir, leaf), { recursive: true });
       const built = plugin({ name: "alpha", harness });
-      mkdirSync(join(built, "contributions", "construction"), { recursive: true });
-      writeFileSync(join(built, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+      mkdirSync(join(built, "contributions", phaseFor("build-and-test")), { recursive: true });
+      writeFileSync(join(built, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
       const run = (tool: string, args: string[], extra: Record<string, string> = {}): Ran => {
         const result = spawnSync(process.execPath, [join(dir, leaf, "tools", tool), ...args], {
           cwd: dir,
@@ -863,8 +864,8 @@ describe("t354 every line that sends the person to sync names a command that wor
     mkdirSync(dir, { recursive: true });
     cpSync(join(REPO_ROOT, tree, harness, leaf), join(dir, leaf), { recursive: true });
     const built = plugin({ name: "alpha", harness });
-    mkdirSync(join(built, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(built, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(built, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(built, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     const run = (tool: string, args: string[]): Ran => {
       const result = spawnSync(process.execPath, [join(dir, leaf, "tools", tool), ...args], {
         cwd: dir,
@@ -900,8 +901,8 @@ describe("t354 every line that sends the person to sync names a command that wor
       "Nothing synced: this tool keeps no list of your plugins, so name each one's folder: " +
         "`bun .kiro/tools/aidlc.ts engine plugin sync --plugin-root <alpha's folder>`.",
     );
-    const stage = join(dir, ".kiro", "aidlc-common", "stages", "construction", "build-and-test.md");
-    writeFileSync(stage, readFileSync(join(REPO_ROOT, "dist", "kiro", ".kiro", "aidlc-common", "stages", "construction", "build-and-test.md")));
+    const stage = join(dir, ".kiro", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md");
+    writeFileSync(stage, readFileSync(join(REPO_ROOT, "dist", "kiro", ".kiro", "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md")));
     rmSync(join(dir, ".kiro", "tools", "data", "plugin-contrib-alpha.json"), { force: true });
     const withFolder = run("aidlc-utility.ts", ["plugin-sync", "--plugin-root", built]);
     expect(withFolder.status, withFolder.stdout + withFolder.stderr).toBe(0);
@@ -911,7 +912,7 @@ describe("t354 every line that sends the person to sync names a command that wor
 
   test("on Kiro CLI, a sync refused over a changed file names the folder it ran with", () => {
     const { dir, built, run } = composedAlpha("kiro", ".kiro");
-    const owned = join(dir, ".kiro", "aidlc-common", "stages", "construction", "alpha-example-stage.md");
+    const owned = join(dir, ".kiro", "aidlc-common", "stages", "build", "alpha-example-stage.md");
     writeFileSync(owned, `${readFileSync(owned, "utf-8")}\nlocal edit\n`);
     const refused = run("aidlc.ts", ["engine", "plugin", "sync", "--plugin-root", built]);
     expect(refused.status).toBe(1);
@@ -925,8 +926,8 @@ describe("t354 every line that sends the person to sync names a command that wor
     mkdirSync(dir, { recursive: true });
     cpSync(join(REPO_ROOT, "dist", "kiro", ".kiro"), join(dir, ".kiro"), { recursive: true });
     const built = plugin({ name: "alpha", harness: "kiro" });
-    mkdirSync(join(built, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(built, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(built, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(built, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     // A compose hook that merges nothing stands in for a composition lost
     // after the sync committed: alpha's record of what it added never lands.
     writeFileSync(join(built, "hooks", "compose.ts"), "export async function compose(): Promise<void> {}\n");
@@ -945,7 +946,7 @@ describe("t354 every line that sends the person to sync names a command that wor
   test("on Kiro CLI, doctor's fix for what a refresh took out names the folder command", () => {
     const { dir, run } = composedAlpha("kiro", ".kiro");
     const stock = join(REPO_ROOT, "dist", "kiro", ".kiro");
-    for (const rel of [join("tools", "data", "stage-graph.json"), join("aidlc-common", "stages", "construction", "build-and-test.md")]) {
+    for (const rel of [join("tools", "data", "stage-graph.json"), join("aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md")]) {
       writeFileSync(join(dir, ".kiro", rel), readFileSync(join(stock, rel)));
     }
     const doctor = run("aidlc.ts", ["doctor", "--json"]);
@@ -999,7 +1000,7 @@ describe("t354 every line that sends the person to sync names a command that wor
     };
     const composed = sync();
     expect(composed.status, composed.stdout + composed.stderr).toBe(0);
-    const owned = join(dir, ".claude", "aidlc-common", "stages", "construction", "alpha-example-stage.md");
+    const owned = join(dir, ".claude", "aidlc-common", "stages", "build", "alpha-example-stage.md");
     writeFileSync(owned, `${readFileSync(owned, "utf-8")}\nlocal edit\n`);
     const refused = sync();
     expect(refused.status).toBe(1);
@@ -1024,8 +1025,8 @@ describe("t354 turning a paused plugin's base back on says how the plugin comes 
     cpSync(join(REPO_ROOT, "dist", harness), dir, { recursive: true });
     const zeta = plugin({ name: "zeta", harness });
     const team = alpha({ harness });
-    mkdirSync(join(team, "contributions", "construction"), { recursive: true });
-    writeFileSync(join(team, "contributions", "construction", "build-and-test.md"), CONTRIBUTION);
+    mkdirSync(join(team, "contributions", phaseFor("build-and-test")), { recursive: true });
+    writeFileSync(join(team, "contributions", phaseFor("build-and-test"), "build-and-test.md"), CONTRIBUTION);
     const run = (args: string[], via = leaf): Ran => {
       const result = spawnSync(process.execPath, [join(dir, via, "tools", "aidlc.ts"), ...args], {
         cwd: dir,

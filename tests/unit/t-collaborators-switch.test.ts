@@ -147,7 +147,7 @@ function stateWithScope(scope: string): string {
 - **Project**: collaborators switch test
 - **Project Type**: Brownfield
 - **Scope**: ${scope}
-- **State Version**: 8
+- **State Version**: 10
 
 ## Current Status
 - **Current Stage**: reverse-engineering

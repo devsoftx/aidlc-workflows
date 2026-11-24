@@ -118,7 +118,7 @@ the framework deliberately removed it. A stage decides what fires on its
 outputs by naming the sensor in its own frontmatter:
 
 ```yaml
-# core/aidlc-common/stages/construction/ci-pipeline.md (frontmatter, other keys left out)
+# core/aidlc-common/stages/deploy/ci-pipeline.md (frontmatter, other keys left out)
 ---
 ...
 sensors:
@@ -278,8 +278,8 @@ path: .claude/sensors/aidlc-no-tbd.md
 and fires it by hand against a file with a TBD line (`fire` prints one line):
 
 ```text
-$ aidlc engine sensor fire no-tbd --stage glossary-capture --output-path aidlc/spaces/default/intents/261013-lab/inception/glossary-capture/glossary.md
-{"fire_id":"cd665332","sensor_id":"no-tbd","stage":"glossary-capture","output_path":"aidlc/spaces/default/intents/261013-lab/inception/glossary-capture/glossary.md","result":"failed","detail_path":"aidlc/spaces/default/intents/.aidlc-engine/sensors/glossary-capture/no-tbd-cd665332.md"}
+$ aidlc engine sensor fire no-tbd --stage glossary-capture --output-path aidlc/spaces/default/intents/261013-lab/design/glossary-capture/glossary.md
+{"fire_id":"cd665332","sensor_id":"no-tbd","stage":"glossary-capture","output_path":"aidlc/spaces/default/intents/261013-lab/design/glossary-capture/glossary.md","result":"failed","detail_path":"aidlc/spaces/default/intents/.aidlc-engine/sensors/glossary-capture/no-tbd-cd665332.md"}
 ```
 
 The detail file lists the finding the worker printed (its JSON block shown
@@ -306,7 +306,7 @@ and the audit shard gets the failed row:
 **Fire id**: cd665332
 **Sensor ID**: no-tbd
 **Stage slug**: glossary-capture
-**Output path**: aidlc/spaces/default/intents/261013-lab/inception/glossary-capture/glossary.md
+**Output path**: aidlc/spaces/default/intents/261013-lab/design/glossary-capture/glossary.md
 **Detail path**: aidlc/spaces/default/intents/.aidlc-engine/sensors/glossary-capture/no-tbd-cd665332.md
 **Findings count**: 1
 ```

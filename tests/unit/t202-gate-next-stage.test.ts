@@ -44,6 +44,7 @@ import { afterEach, describe, expect, test, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   AIDLC_SRC,
   cleanupTestProject,
@@ -66,43 +67,14 @@ const ORCH = join(AIDLC_SRC, "tools", "aidlc-orchestrate.ts");
 // point so this source carries no literal non-keyboard character.
 const SEP = String.fromCharCode(0x2014);
 
-// Every stage slug in compiled graph order. A row per slug keeps the state
-// checkboxes and nextInScopeStage's graph walk fully consistent.
-const ALL_SLUGS = [
-  "workspace-scaffold",
-  "workspace-detection",
-  "state-init",
-  "intent-capture",
-  "market-research",
-  "feasibility",
-  "scope-definition",
-  "team-formation",
-  "rough-mockups",
-  "approval-handoff",
-  "reverse-engineering",
-  "practices-discovery",
-  "requirements-analysis",
-  "user-stories",
-  "refined-mockups",
-  "domain-design",
-  "units-generation",
-  "contract-design",
-  "delivery-planning",
-  "functional-design",
-  "nfr-requirements",
-  "nfr-design",
-  "infrastructure-design",
-  "code-generation",
-  "build-and-test",
-  "ci-pipeline",
-  "deployment-pipeline",
-  "environment-provisioning",
-  "deployment-execution",
-  "observability-setup",
-  "incident-response",
-  "performance-validation",
-  "feedback-optimization",
-];
+// Every stage slug in compiled graph order, read from the stage graph the shipped
+// build carries. A row per slug keeps the state checkboxes and nextInScopeStage's
+// graph walk fully consistent.
+const ALL_SLUGS: string[] = (
+  JSON.parse(readFileSync(join(AIDLC_SRC, "tools", "data", "stage-graph.json"), "utf-8")) as Array<{
+    slug: string;
+  }>
+).map((stage) => stage.slug);
 
 const tempDirs: string[] = [];
 afterEach(() => {
@@ -157,7 +129,7 @@ function stateFile(
 - **Project**: gate next-stage test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 
 ## Scope Configuration
@@ -172,7 +144,7 @@ function stateFile(
 ${rows}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: ${phaseFor(current).toUpperCase()}
 - **Current Stage**: ${current}
 - **Status**: Running
 `;
@@ -296,11 +268,11 @@ describe("t202 gate next-stage name (issue: approval option always said Code Gen
     const state = readFileSync(seededStateFile(proj), "utf-8");
     expect(state).toContain(`- [S] code-generation ${SEP} SKIP`);
     expect(state).toContain(`- [ ] build-and-test ${SEP} SKIP`);
-    expect(state).toContain("- **Current Stage**: ci-pipeline");
+    expect(state).toContain("- **Current Stage**: performance-validation");
 
     const resumed = runNext(proj);
     expect(resumed.kind).toBe("run-stage");
-    expect(resumed.stage).toBe("ci-pipeline");
+    expect(resumed.stage).toBe("performance-validation");
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 
   test("6: a malformed pending plan-SKIP cursor fails closed instead of emitting run-stage", () => {

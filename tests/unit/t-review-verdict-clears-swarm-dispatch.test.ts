@@ -80,7 +80,7 @@ function swarm(): { pd: string; child: string } {
 - **Project**: Swarm verdict clears the main dispatch record
 - **Scope**: feature
 - **Project Type**: Greenfield
-- **State Version**: 8
+- **State Version**: 10
 ## Runtime State
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: stage-major

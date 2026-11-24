@@ -71,6 +71,7 @@ import {
   withPlanApprovalTags,
 } from "../../core/tools/aidlc-testing-posture.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   DEFAULT_INTENT_UUID,
   DEFAULT_RECORD_DIR,
@@ -613,7 +614,7 @@ describe("t218 Kiro IDE hook adapter (USER_PROMPT env context)", () => {
   test("1: audit-and-sensors resolves a RELATIVE toolResult path (real IDE shape) and logs CREATE", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       // Kiro IDE reports the path RELATIVE to the workspace root (the bug that
@@ -634,7 +635,7 @@ describe("t218 Kiro IDE hook adapter (USER_PROMPT env context)", () => {
   test("2: audit-and-sensors extracts the path from a str_replace toolResult (UPDATE)", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent edited\n");
       const r = runIde(dir, "audit-and-sensors", ctx("str_replace", `Replaced text in ${file}`));
@@ -648,7 +649,7 @@ describe("t218 Kiro IDE hook adapter (USER_PROMPT env context)", () => {
   test("3: audit-and-sensors extracts the path from a fs_append toolResult", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent appended\n");
       const r = runIde(dir, "audit-and-sensors", ctx("fs_append", `Appended the text to the ${file} file.`));
@@ -2409,7 +2410,7 @@ describe("t218 Kiro IDE hook adapter (USER_PROMPT env context)", () => {
     // contract this test pins.
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const r = runIde(dir, "audit-and-sensors", ctx("fs_write", `Created the ${file} file.`));
@@ -2425,7 +2426,7 @@ describe("t218 Kiro IDE hook adapter (USER_PROMPT env context)", () => {
     const debugLogPath = (dir: string) =>
       join(seededRecordDir(dir), ".aidlc-engine/hooks-health", "hook-debug.log");
     const fire = (dir: string, withFlag: boolean) => {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const env: Record<string, string> = { ...process.env, CLAUDE_PROJECT_DIR: dir };
@@ -2468,7 +2469,7 @@ describe("t218 Kiro IDE hook adapter (USER_PROMPT env context)", () => {
     try {
       // touch the marker; do NOT set AIDLC_HOOK_DEBUG.
       writeFileSync(join(dir, "aidlc", ".aidlc-hook-debug"), "", "utf-8");
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const env: Record<string, string> = { ...process.env, CLAUDE_PROJECT_DIR: dir };
@@ -3606,7 +3607,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
   // from the result prose alone. None of them is a planning authority file: the
   // write poisons nothing, and the person's approval builds.
   test.each([
-    ["the stage learnings diary", (dir: string) => memoryFilePath(dir, "construction", "code-generation")],
+    ["the stage learnings diary", (dir: string) => memoryFilePath(dir, phaseFor("code-generation"), "code-generation")],
     ["the composer's proposal", (dir: string) => composerProposalPath(dir)],
     ["a person's answer text", (dir: string) => join(docsRoot(dir), ANSWER_TEXT_DIR, "answer.md")],
     ["a person's request", (dir: string) => join(dir, REQUEST_TEXT_DIR, "request.txt")],
@@ -3653,7 +3654,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
       const choices = seedLegacyDirectiveChoices(dir);
       expect(runIde(dir, "session-start", null).code).toBe(0);
       const questions = seedStageLevelPlanApproval(dir);
-      const plan = join(seededRecordDir(dir), "construction", "code-generation", "code-generation-plan.md");
+      const plan = join(seededRecordDir(dir), phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
       writeFileSync(plan, "# Plan\n\n## Steps\n\n- [ ] Implement\n", "utf-8");
       expect(runIde(dir, "audit-and-sensors", ctx("fs_write", `Created the ${relative(dir, plan)} file.`)).code).toBe(0);
       expect(runIde(dir, "audit-and-sensors", ctx("fs_write", `Created the ${relative(dir, questions)} file.`)).code).toBe(0);
@@ -3699,7 +3700,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
         writeFileSync(join(memory, "project.md"), "# Project\n\n## Guard Policy\n\nMode: off\n", "utf-8");
       }
       const questions = seedStageLevelPlanApproval(dir);
-      const plan = join(seededRecordDir(dir), "construction", "code-generation", "code-generation-plan.md");
+      const plan = join(seededRecordDir(dir), phaseFor("code-generation"), "code-generation", "code-generation-plan.md");
       writeFileSync(plan, "# Plan\n\n## Steps\n\n- [ ] Implement\n", "utf-8");
       expect(runIde(dir, "audit-and-sensors", ctx("fs_write", `Created the ${relative(dir, plan)} file.`)).code).toBe(0);
       expect(runIde(dir, "audit-and-sensors", ctx("fs_write", `Created the ${relative(dir, questions)} file.`)).code).toBe(0);
@@ -3790,7 +3791,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
       const questions = seedStageLevelPlanApproval(dir);
       const plan = join(
         seededRecordDir(dir),
-        "construction",
+        phaseFor("code-generation"),
         "code-generation",
         "code-generation-plan.md",
       );
@@ -3979,7 +3980,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
       const questions = seedStageLevelPlanApproval(dir);
       const plan = join(
         seededRecordDir(dir),
-        "construction",
+        phaseFor("code-generation"),
         "code-generation",
         "code-generation-plan.md",
       );
@@ -4317,7 +4318,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
       const questions = seedStageLevelPlanApproval(dir);
       const plan = join(
         seededRecordDir(dir),
-        "construction",
+        phaseFor("code-generation"),
         "code-generation",
         "code-generation-plan.md",
       );
@@ -4427,7 +4428,7 @@ describe("t218 Kiro IDE plan-approval enforcement", () => {
         ).toBe(0);
         const path =
           target === "record"
-            ? join(seededRecordDir(dir), "construction", "unexpected.md")
+            ? join(seededRecordDir(dir), phaseFor("code-generation"), "unexpected.md")
             : target === "harness"
               ? join(dir, ".kiro", "hooks", "unexpected.ts")
               : `${dir}-external-write.txt`;
@@ -5354,7 +5355,7 @@ describe("t218 IDE 1.x stdin channel (snake_case payload, USER_PROMPT empty)", (
   test("N1: audit-and-sensors resolves a RELATIVE tool_response path from stdin and logs CREATE", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const relPath = relative(dir, file);
@@ -5372,7 +5373,7 @@ describe("t218 IDE 1.x stdin channel (snake_case payload, USER_PROMPT empty)", (
   test("N2: a str_replace tool_response with NO success flag is audited as UPDATE (#417 guard only drops explicit false)", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent edited\n");
       const r = runIdeStdin(dir, "audit-and-sensors", ctx1x("str_replace", `Replaced text in ${file}`));
@@ -5386,7 +5387,7 @@ describe("t218 IDE 1.x stdin channel (snake_case payload, USER_PROMPT empty)", (
   test("N3: a camelCase (0.12-shaped) payload arriving on stdin parses too", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const r = runIdeStdin(dir, "audit-and-sensors", ctx("fs_write", `Created the ${file} file.`));
@@ -5402,7 +5403,7 @@ describe("t218 IDE 1.x stdin channel (snake_case payload, USER_PROMPT empty)", (
   test("N4: a non-empty USER_PROMPT identifies 0.12 and wins without probing stdin", () => {
     const dir = scratchProject(true);
     try {
-      const stageDir = join(seededRecordDir(dir), "ideation", "intent-capture");
+      const stageDir = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture");
       mkdirSync(stageDir, { recursive: true });
       const fromStdin = join(stageDir, "from-stdin.md");
       const fromEnv = join(stageDir, "from-env.md");
@@ -5743,7 +5744,7 @@ describe("t218 IDE 1.x stdin channel (snake_case payload, USER_PROMPT empty)", (
     // and never closed. The child records whether it acquires stdin at all.
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const r = await runIdeOpenStdin(
@@ -5765,7 +5766,7 @@ describe("t218 IDE 1.x stdin channel (snake_case payload, USER_PROMPT empty)", (
   test("N7b: the dispatcher route also consumes USER_PROMPT without probing held-open stdin", async () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const r = await runIdeDispatcherOpenStdin(
@@ -6130,7 +6131,7 @@ describe("t218 sync-workflow-state leaves a claimed Unit's cursor on its own sta
         .replace("- [-] requirements-analysis — EXECUTE", "- [x] requirements-analysis — EXECUTE")
         .replace("- [ ] functional-design — EXECUTE", "- [-] functional-design — EXECUTE")
         .replace("- [ ] code-generation — EXECUTE", "- [-] code-generation — EXECUTE"), "utf-8");
-      setStateField(dir, "Lifecycle Phase", "CONSTRUCTION");
+      setStateField(dir, "Lifecycle Phase", phaseFor("code-generation").toUpperCase());
       setStateField(dir, "Current Stage", "code-generation");
       setStateField(dir, "In Progress", "code-generation");
       appendStageStarted(dir, "functional-design", "2026-10-31T16:14:00Z");
@@ -6312,7 +6313,7 @@ describe("t218 extractWrittenPath robustness (finding 4)", () => {
   test("F4a: trailing newline in a Created result still extracts the path", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const rel = relative(dir, file);
@@ -6328,7 +6329,7 @@ describe("t218 extractWrittenPath robustness (finding 4)", () => {
   test("F4b: a str_replace suffix ' (N occurrences)' does not pollute the path", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# edited\n");
       const rel = relative(dir, file);
@@ -6649,7 +6650,7 @@ describe("t218 failed tool calls are not audited as writes (#417)", () => {
   test("T1: toolSuccess=false on a write is dropped (no ARTIFACT_ row)", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const rel = relative(dir, file);
@@ -6728,7 +6729,7 @@ describe("t218 failed tool calls are not audited as writes (#417)", () => {
   test("T2: toolSuccess=true on the same write IS audited (guard is not over-broad)", () => {
     const dir = scratchProject(true);
     try {
-      const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+      const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "# intent\n");
       const rel = relative(dir, file);
@@ -6775,7 +6776,7 @@ describe("t218 failed tool calls are not audited as writes (#417)", () => {
     for (const scenario of scenarios) {
       const dir = scratchProject(true);
       try {
-        const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+        const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
         mkdirSync(dirname(file), { recursive: true });
         writeFileSync(file, "# intent\n");
         const r = scenario.invoke(dir, file);
@@ -6829,7 +6830,7 @@ describe("t218 failed tool calls are not audited as writes (#417)", () => {
     for (const scenario of scenarios) {
       const dir = scratchProject(true);
       try {
-        const file = join(seededRecordDir(dir), "ideation", "intent-capture", "intent.md");
+        const file = join(seededRecordDir(dir), phaseFor("intent-capture"), "intent-capture", "intent.md");
         mkdirSync(dirname(file), { recursive: true });
         writeFileSync(file, "# intent\n");
         const r = scenario.invoke(dir, file);

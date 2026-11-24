@@ -1,4 +1,4 @@
-// covers: doc:aidlc-common/protocols/stage-protocol.md, doc:aidlc-common/protocols/stage-protocol-construction.md, doc:aidlc-common/protocols/stage-protocol-loopback.md, doc:aidlc-common/protocols/stage-protocol-recovery.md, file:aidlc-common/stages/construction/build-and-test.md, file:aidlc-common/stages/construction/code-generation.md
+// covers: doc:aidlc-common/protocols/stage-protocol.md, doc:aidlc-common/protocols/stage-protocol-construction.md, doc:aidlc-common/protocols/stage-protocol-loopback.md, doc:aidlc-common/protocols/stage-protocol-recovery.md, file:aidlc-common/stages/test/build-and-test.md, file:aidlc-common/stages/build/code-generation.md
 //
 // t305 — Build-and-Test failure loop-back PROSE-PIN (issue #611). t34-style:
 // mechanism = none. Every assertion is readFileSync + a string / regex check
@@ -6,9 +6,9 @@
 // tokens, no process boundary. The bytes on disk ARE the contract.
 //
 // SUBJECT: the bounded Build & Test → Code Generation failure loop-back in the
-// conditional Construction protocol module.
+// conditional loop-back protocol module.
 // Four surfaces carry the contract:
-//   1. dist/claude/.claude/aidlc-common/stages/construction/build-and-test.md
+//   1. dist/claude/.claude/aidlc-common/stages/test/build-and-test.md
 //      — Step 9's 4-rung failure-escalation ladder, the `## Loop-Back Log`
 //      artifact shape, and the single-stage (--single) carve-out.
 //   2. dist/claude/.claude/aidlc-common/protocols/
@@ -33,6 +33,7 @@ import { join } from "node:path";
 import { keepOwnHarnessBindings } from "../../scripts/harness-bindings.ts";
 import { AIDLC_SRC, REPO_ROOT } from "../harness/fixtures.ts";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const MAIN_PROTOCOL = readFileSync(
   join(AIDLC_SRC, "aidlc-common", "protocols", "stage-protocol.md"),
@@ -66,11 +67,11 @@ const RECOVERY = readFileSync(
   "utf-8",
 );
 const STAGE = readFileSync(
-  join(AIDLC_SRC, "aidlc-common", "stages", "construction", "build-and-test.md"),
+  join(AIDLC_SRC, "aidlc-common", "stages", phaseFor("build-and-test"), "build-and-test.md"),
   "utf-8",
 );
 const CODE_GENERATION = readFileSync(
-  join(AIDLC_SRC, "aidlc-common", "stages", "construction", "code-generation.md"),
+  join(AIDLC_SRC, "aidlc-common", "stages", phaseFor("code-generation"), "code-generation.md"),
   "utf-8",
 );
 
@@ -176,13 +177,13 @@ describe("t305 construction protocol module — Build-and-Test failure loop-back
     expect(mismatched).toEqual([]);
   });
 
-  test('the "### Build-and-Test failure loop-back (3.6 → 3.5)" heading exists (anchored H3)', () => {
-    expect(/^### Build-and-Test failure loop-back \(3\.6 → 3\.5\)$/m.test(LOOPBACK_PROTOCOL)).toBe(true);
+  test('the "### Build-and-Test failure loop-back (4.1 → 3.1)" heading exists (anchored H3)', () => {
+    expect(/^### Build-and-Test failure loop-back \(4\.1 → 3\.1\)$/m.test(LOOPBACK_PROTOCOL)).toBe(true);
   });
 
   test("the loop-back is its own module; the Construction halt-and-ask stays in the construction module", () => {
     expect(CONSTRUCTION_PROTOCOL).toContain("**Halt-and-ask on failure**");
-    expect(CONSTRUCTION_PROTOCOL).not.toContain("### Build-and-Test failure loop-back (3.6 → 3.5)");
+    expect(CONSTRUCTION_PROTOCOL).not.toContain("### Build-and-Test failure loop-back (4.1 → 3.1)");
     expect(LOOPBACK_PROTOCOL.startsWith("# Loop-back Protocol Module\n")).toBe(true);
   });
 
@@ -261,7 +262,7 @@ describe("t305 construction protocol module — Build-and-Test failure loop-back
       "aidlc-common/protocols/stage-protocol-loopback.md";
     expect(MAIN_PROTOCOL).toContain(modulePath);
     expect(LOOPBACK_PROTOCOL).toContain(
-      "### Build-and-Test failure loop-back (3.6 → 3.5)",
+      "### Build-and-Test failure loop-back (4.1 → 3.1)",
     );
     expect(STAGE).toContain(modulePath);
     expect(CODE_GENERATION).toContain(modulePath);

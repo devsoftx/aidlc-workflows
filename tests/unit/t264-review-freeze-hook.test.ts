@@ -80,6 +80,7 @@ import {
   seedStateFile,
 } from "../harness/fixtures.ts";
 import { readConductorSurface } from "../harness/conductor-skill.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 const BUN = process.execPath;
 const DIST_CLAUDE = join(REPO_ROOT, "dist", "claude", ".claude");
@@ -302,7 +303,7 @@ const notReady = { stageVerdict: "NOT-READY", unitVerdicts: new Map<string, stri
 const noReceipt = { stageVerdict: null, unitVerdicts: new Map<string, string>() };
 
 describe("t264 (a) judgeFreeze decision table", () => {
-  const raFile = "/p/aidlc/spaces/default/intents/i1/inception/requirements-analysis/requirements.md";
+  const raFile = "/p/aidlc/spaces/default/intents/i1/design/requirements-analysis/requirements.md";
 
   test("blocks a produces[] write under a fresh READY stage receipt", () => {
     const v = judgeFreeze(RA, raFile, NONE, ready);
@@ -322,13 +323,13 @@ describe("t264 (a) judgeFreeze decision table", () => {
   });
 
   test("never blocks a non-produces path (diary, questions of another stage)", () => {
-    const diary = "/p/aidlc/spaces/default/intents/i1/inception/requirements-analysis/memory.md";
+    const diary = "/p/aidlc/spaces/default/intents/i1/design/requirements-analysis/memory.md";
     expect(judgeFreeze(RA, diary, NONE, ready).block).toBe(false);
   });
 
   test("per-unit: freezes only the reviewed unit", () => {
-    const u3 = "/p/aidlc/spaces/default/intents/i1/construction/U03/nfr-requirements/nfr-requirements.md";
-    const u4 = "/p/aidlc/spaces/default/intents/i1/construction/U04/nfr-requirements/nfr-requirements.md";
+    const u3 = "/p/aidlc/spaces/default/intents/i1/design/U03/nfr-requirements/nfr-requirements.md";
+    const u4 = "/p/aidlc/spaces/default/intents/i1/design/U04/nfr-requirements/nfr-requirements.md";
     const receipts = { stageVerdict: "READY", unitVerdicts: new Map([["U03", "READY"]]) };
     const v3 = judgeFreeze(NFR, u3, NONE, receipts);
     expect(v3.block).toBe(true);
@@ -338,7 +339,7 @@ describe("t264 (a) judgeFreeze decision table", () => {
   });
 
   test("per-unit: a terminal NOT-READY receipt freezes that unit", () => {
-    const u3 = "/p/aidlc/spaces/default/intents/i1/construction/U03/nfr-requirements/nfr-requirements.md";
+    const u3 = "/p/aidlc/spaces/default/intents/i1/design/U03/nfr-requirements/nfr-requirements.md";
     const receipts = { stageVerdict: "NOT-READY", unitVerdicts: new Map([["U03", "NOT-READY"]]) };
     expect(judgeFreeze(NFR, u3, NONE, receipts).block).toBe(true);
   });
@@ -348,7 +349,7 @@ describe("t264 (a) judgeFreeze decision table", () => {
     // a recovery request opens no write window: the frozen bytes stay frozen
     // until the recovery verdict or a human decision.
     const raFile =
-      "/p/aidlc/spaces/default/intents/i1/inception/requirements-analysis/requirements.md";
+      "/p/aidlc/spaces/default/intents/i1/design/requirements-analysis/requirements.md";
     expect(
       judgeFreeze(RA, raFile, NONE, {
         stageVerdict: null,
@@ -371,11 +372,11 @@ describe("t264 (a) judgeFreeze decision table", () => {
     ).toBe(false);
 
     const u3 =
-      "/p/aidlc/spaces/default/intents/i1/construction/U03/nfr-requirements/nfr-requirements.md";
+      "/p/aidlc/spaces/default/intents/i1/design/U03/nfr-requirements/nfr-requirements.md";
     const u4 =
-      "/p/aidlc/spaces/default/intents/i1/construction/U04/nfr-requirements/nfr-requirements.md";
+      "/p/aidlc/spaces/default/intents/i1/design/U04/nfr-requirements/nfr-requirements.md";
     const u5 =
-      "/p/aidlc/spaces/default/intents/i1/construction/U05/nfr-requirements/nfr-requirements.md";
+      "/p/aidlc/spaces/default/intents/i1/design/U05/nfr-requirements/nfr-requirements.md";
     const receipts = {
       stageVerdict: null,
       unitVerdicts: new Map([["U04", "READY"]]),
@@ -431,9 +432,9 @@ describe("t264 (a) judgeFreeze decision table", () => {
     ]);
     expect(
       writeTargets("Bash", {
-        command: "cp /tmp/requirements.md /not-present/inception/requirements-analysis",
+        command: "cp /tmp/requirements.md /not-present/design/requirements-analysis",
       }),
-    ).toEqual([hostPath("/not-present/inception/requirements-analysis")]);
+    ).toEqual([hostPath("/not-present/design/requirements-analysis")]);
     expect(writeTargets("Bash", { command: "mv /a/b.md /tmp/moved" })).toEqual(
       expect.arrayContaining([hostPath("/a/b.md"), hostPath("/tmp/moved")]),
     );
@@ -890,7 +891,7 @@ function projBeforeGate(): string {
   seedStateFile(p, join(FIXTURES_DIR, "state-mid-inception.md"));
   const dir = join(
     seededRecordDir(p),
-    "inception",
+    phaseFor("requirements-analysis"),
     "requirements-analysis",
   );
   mkdirSync(dir, { recursive: true });
@@ -1003,7 +1004,7 @@ function runHook(
 }
 
 function raArtifact(p: string): string {
-  return join(seededRecordDir(p), "inception", "requirements-analysis", "requirements.md");
+  return join(seededRecordDir(p), phaseFor("requirements-analysis"), "requirements-analysis", "requirements.md");
 }
 
 function writePayload(file: string): Record<string, unknown> {
@@ -1091,7 +1092,7 @@ describe("t264 (b) shipped-hook lifecycle over a real ledger", () => {
     const p = projBeforeGate();
     recordReview(p, "READY");
     openGate(p);
-    const diary = join(seededRecordDir(p), "inception", "requirements-analysis", "memory.md");
+    const diary = join(seededRecordDir(p), phaseFor("requirements-analysis"), "requirements-analysis", "memory.md");
     expect(runHook(p, writePayload(diary)).code).toBe(0);
   });
 
@@ -1178,7 +1179,7 @@ describe("t264 (b) shipped-hook lifecycle over a real ledger", () => {
       `cp ${JSON.stringify(file)} /tmp/review-freeze-copy 2>&1`,
       `cp --target-directory=/tmp ${JSON.stringify(file)}`,
       `cp /tmp/requirements.md ${JSON.stringify(
-        join(p, "unrelated", "inception", "requirements-analysis"),
+        join(p, "unrelated", phaseFor("requirements-analysis"), "requirements-analysis"),
       )}`,
       `truncate -r ${JSON.stringify(file)} /tmp/review-freeze-output`,
       `sed --version; cat ${JSON.stringify(file)}`,

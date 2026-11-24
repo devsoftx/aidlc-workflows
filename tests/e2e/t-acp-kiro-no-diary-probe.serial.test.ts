@@ -12,6 +12,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { seededRecordDir } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   type AcpToolCall,
   AcpSession,
@@ -113,7 +114,7 @@ function syntheticCall(
 describe("t-acp-kiro no pre-stage diary probe", () => {
   test("diary classifier rejects native and shell access while allowing direct edits", () => {
     const diary =
-      "aidlc/spaces/default/intents/work/ideation/intent-capture/memory.md";
+      "aidlc/spaces/default/intents/work/discover/intent-capture/memory.md";
     const forbidden = [
       syntheticCall("Reading memory.md:1", "read", {
         operations: [{ mode: "Line", path: diary }],
@@ -191,9 +192,9 @@ describe("t-acp-kiro no pre-stage diary probe", () => {
 
   test("questions checkpoint ignores probes and failed edits before the completed native write", () => {
     const questions =
-      "aidlc/spaces/default/intents/work/ideation/intent-capture/intent-capture-questions.md";
+      "aidlc/spaces/default/intents/work/discover/intent-capture/intent-capture-questions.md";
     const diary =
-      "aidlc/spaces/default/intents/work/ideation/intent-capture/memory.md";
+      "aidlc/spaces/default/intents/work/discover/intent-capture/memory.md";
     const calls = [
       syntheticCall("Reading intent-capture-questions.md:1", "read", {
         operations: [{ mode: "Line", path: questions }],
@@ -234,7 +235,7 @@ describe("t-acp-kiro no pre-stage diary probe", () => {
       });
       const stageDir = join(
         seededRecordDir(project),
-        "ideation",
+        phaseFor("intent-capture"),
         "intent-capture",
       );
       const diaryPath = join(stageDir, "memory.md");

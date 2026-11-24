@@ -1,8 +1,24 @@
 // Captured-output controls for the assertion also used by the live Kiro journey.
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { findIntentGroundingRegressions } from "../harness/intent-grounding-regressions.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 const fixture = join(import.meta.dir, "../fixtures/intent-grounding/kiro-overclaims");
 const read = (name: string) => readFileSync(join(fixture, name), "utf8");
@@ -279,7 +295,7 @@ describe("intent-capture known grounding regressions", () => {
 // concept ... Does that match what you have in mind?"). The boundary question
 // states the scope as chosen and asks only what this first version leaves out.
 describe("intent-capture boundary question", () => {
-  const stage = readFileSync(join(import.meta.dir, "../../core/aidlc-common/stages/ideation/intent-capture.md"), "utf8");
+  const stage = readFileSync(join(import.meta.dir, "../../core/aidlc-common/stages/discover/intent-capture.md"), "utf8");
 
   test("states the chosen scope and asks only what the first version leaves out", () => {
     expect(stage).toContain(

@@ -1,6 +1,6 @@
 # Branching Strategies
 
-A menu of common branching strategies, what they look like, when to use them, and how AIDLC's Construction worktrees map onto each. When the orchestrator dispatches aidlc-pipeline-deploy-agent at Bolt boundaries, this file is the menu the agent surveys to map a team's affirmed branching strategy onto the `aidlc-worktree` tool's flags.
+A menu of common branching strategies, what they look like, when to use them, and how AIDLC's unit-loop worktrees map onto each. When the orchestrator dispatches aidlc-pipeline-deploy-agent at Bolt boundaries, this file is the menu the agent surveys to map a team's affirmed branching strategy onto the `aidlc-worktree` tool's flags.
 
 > **Reading practices:** see `knowledge/aidlc-shared/rules-reading.md` for empty-template detection, semantic-topic matching, and the active-space `project.md → team.md → org.md → hardcoded defaults` fallback chain. In the runbooks below, those files live under `aidlc/spaces/<active-space>/memory/`.
 >
@@ -53,7 +53,7 @@ When dispatched for trunk-based:
 - **Dirty tree on merge.** Local uncommitted changes on `main` in files the landing changes: git does not start it, and the tool names those files and the step (commit them, then run the same merge again); any other git failure carries git's message verbatim. Orchestrator's halt-and-ask offers retry/abort. Worktree preserved on retry; an explicit discard on abort sets the work aside before removing the live checkout and branch.
 - **Conflict on squash.** Squash conflicts with concurrent `main` motion (e.g. another Bolt landed first). Tool exits non-zero with `{status: "conflict", conflict_files, detail, next}` and leaves the landing staged in the main checkout: combine those files there, `git add` them (`git rm` one that stays deleted) and run the same merge again, which finishes it; `git reset --merge` drops it.
 - **Branch already exists.** Pre-audit error; the tool refuses to clobber. Orchestrator should set the old attempt aside with `worktree discard` first only when authorized, or pick a different slug. Recover its files with the abort result's or doctor's `restore_operation`, invoking its engine route with the listed args exactly as argv, in the separate restored namespace. Rendered hints and commands are human display text only.
-- **Intent has no registry UUID.** Create refuses: `Intent record <relative record dir> has no registry identity (uuid); adopt or re-create the intent before Construction. Bolt worktrees are named by intent so parallel intents cannot collide.` Do not retry with a slug-only branch.
+- **Intent has no registry UUID.** Create refuses: `Intent record <relative record dir> has no registry identity (uuid); adopt or re-create the intent before the unit loop starts. Bolt worktrees are named by intent so parallel intents cannot collide.` Do not retry with a slug-only branch.
 - **Branch checked out elsewhere.** Before deleting a Bolt branch or its retained/parked refs, cleanup requires the branch to be checked out at its own Bolt directory or nowhere. A foreign-owner refusal names the owner path on stderr and records `(checked out in another worktree of this repository)` in the audit. Preserve that checkout and surface the refusal.
 
 ---
@@ -126,7 +126,7 @@ When dispatched for GitFlow:
 
 1. Read the active space's `## Way of Working`. Look for the integration-branch name (`develop` is the convention; teams sometimes use `integration` or `next`).
 2. For feature Bolts: `--base <integration> --target <integration> --strategy <merge|squash>`. Default to `merge`.
-3. For hotfix Bolts (rare in Construction; usually triggered by an out-of-band stage): `--base main --target main --strategy merge`. The operator separately merges the hotfix back to `<integration>` after `aidlc-worktree merge` succeeds. Out of scope for the tool.
+3. For hotfix Bolts (rare in the unit loop; usually triggered by an out-of-band stage): `--base main --target main --strategy merge`. The operator separately merges the hotfix back to `<integration>` after `aidlc-worktree merge` succeeds. Out of scope for the tool.
 4. **Create**: `{{INVOKE}} engine worktree create --slug <bolt-slug> --base <integration>`.
 5. **Merge**: caller must be on `<integration>` at the main checkout. `{{INVOKE}} engine worktree merge --slug <bolt-slug> --target <integration> --strategy <merge|squash>`.
 6. Return per § Response contract; if hotfix, include `notes: "manual merge to <integration> required"` so the orchestrator surfaces the follow-up.
@@ -530,4 +530,4 @@ If none of `project.md`, `team.md`, or `org.md` provides a branching practice, t
 | Versioned releases with stabilisation periods | Release Branches |
 | Multiple services in one repo | Monorepo (on top of one of the above) |
 
-If unsure, choose Trunk-Based. It's the lowest-overhead strategy with the strongest CI/CD ecosystem support, and AIDLC's Construction worktrees are designed for it as the default.
+If unsure, choose Trunk-Based. It's the lowest-overhead strategy with the strongest CI/CD ecosystem support, and AIDLC's unit-loop worktrees are designed for it as the default.

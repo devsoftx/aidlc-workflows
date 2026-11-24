@@ -1,9 +1,9 @@
 // covers: subcommand:aidlc-orchestrate:next, subcommand:aidlc-orchestrate:report, subcommand:aidlc-state:lookup, subcommand:aidlc-graph:compile, function:stageRouteOrder, function:nextInScopeStage
 //
-// A plugin's per-Unit Construction stage runs with its Unit, wherever the
-// compile numbers it. compileStageGraph numbers a new stage past its phase's
-// highest number, so a plugin stage that runs per Unit right after Code
-// Generation is 3.8, after Build and Test (3.6) and CI Pipeline (3.7). The
+// A plugin's per-Unit build stage runs with its Unit, wherever the compile
+// numbers it. compileStageGraph numbers a new stage past its phase's highest
+// number, so a plugin stage that runs per Unit right after Code Generation is
+// 3.2, and one that runs once after Build and Test (4.1) is 4.3. The
 // routing walked graph-number order: the team fold moved from the last per-Unit
 // stage to the plugin's once-per-intent stage and never ran Build and Test, solo
 // work approved Code Generation and then ran Build and Test before the plugin
@@ -13,10 +13,10 @@
 //
 // Mechanism: cli. Each case copies the built Claude install into a temp
 // project, adds the two plugin stages the way a plugin's compose does, compiles
-// the graph with that install's own compile (which seeds 3.8 and 3.9), and
+// the graph with that install's own compile (which seeds 3.2 and 4.3), and
 // drives that install's tools.
 
-import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -42,6 +42,22 @@ import {
   latestMainWorkflowStageRunFloorForProject,
 } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 import { renderTestingContract, resolveTestingPosture } from "../../dist/claude/.claude/tools/aidlc-testing-posture.ts";
+
+// No chat names itself to the tools: this process reads the audit in-process and spawns the engine with the inherited
+// environment, and a host chat's identity would point both at the wrong shard. Restored after this file.
+const HOST_CHAT_VARS = [
+  "CLAUDE_CODE_SESSION_ID", "CLAUDE_PID", "CODEX_THREAD_ID", "KIRO_SESSION_ID",
+  "AIDLC_SESSION_OVERRIDE", "AIDLC_SESSION_OVERRIDE_SOURCE",
+] as const;
+const hostChat = Object.fromEntries(HOST_CHAT_VARS.map((key) => [key, process.env[key]]));
+for (const key of HOST_CHAT_VARS) delete process.env[key];
+afterAll(() => {
+  for (const key of HOST_CHAT_VARS) {
+    const value = hostChat[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS * 2);
 resetAidlcEnv();
@@ -69,7 +85,7 @@ slug: probe-unit-check
 number: 3.55
 name: Probe Unit Check
 plugin: probe
-phase: construction
+phase: build
 execution: ALWAYS
 condition: Always executes for every unit, right after its Code Generation.
 lead_agent: aidlc-developer-agent
@@ -99,7 +115,7 @@ slug: probe-intent-check
 number: 3.65
 name: Probe Intent Check
 plugin: probe
-phase: construction
+phase: test
 execution: ALWAYS
 condition: Always executes once after Build and Test.
 lead_agent: aidlc-developer-agent
@@ -160,7 +176,8 @@ function probeProject(ownership: "team" | "solo", units: string[]): Install {
   const harness = join(proj, ".claude");
   cpSync(AIDLC_SRC, harness, { recursive: true });
   for (const [slug, body] of Object.entries(PLUGIN_STAGES)) {
-    writeFileSync(join(harness, "aidlc-common", "stages", "construction", `${slug}.md`), body);
+    const phase = body.match(/^phase: (\S+)$/m)?.[1] ?? "";
+    writeFileSync(join(harness, "aidlc-common", "stages", phase, `${slug}.md`), body);
   }
   const tool = (name: string) => join(harness, "tools", `${name}.ts`);
   const compiled = spawnSync(BUN, [tool("aidlc-graph"), "compile"], {
@@ -186,7 +203,7 @@ function probeProject(ownership: "team" | "solo", units: string[]): Install {
 - **Project**: plugin per-Unit stage route test
 - **Project Type**: Greenfield
 - **Scope**: feature
-- **State Version**: 8
+- **State Version**: 10
 - **Skeleton Stance**: on
 - **Unit Ownership**: ${ownership}
 
@@ -203,11 +220,11 @@ function probeProject(ownership: "team" | "solo", units: string[]): Install {
 
 ## Stage Progress
 
-### CONSTRUCTION PHASE
+### BUILD PHASE
 ${rows.join("\n")}
 
 ## Current Status
-- **Lifecycle Phase**: CONSTRUCTION
+- **Lifecycle Phase**: BUILD
 - **Current Stage**: code-generation
 - **Status**: Running
 - **Last Updated**: 2026-10-20T00:00:00Z
@@ -245,7 +262,7 @@ function state(install: Install): string {
 }
 
 function cover(install: Install, unit: string, stage: string): void {
-  const dir = join(seededRecordDir(install.proj), "construction", unit, stage);
+  const dir = join(seededRecordDir(install.proj), "build", unit, stage);
   mkdirSync(dir, { recursive: true });
   for (const artifact of PRODUCES[stage]) {
     writeFileSync(join(dir, artifactFilename(artifact)), `# ${artifact} for ${unit}\n`);
@@ -280,7 +297,7 @@ function reviewReady(install: Install, stage: string, unit: string, reviewer: st
   if (verdict.rc !== 0) throw new Error(`review verdict failed: ${verdict.out}`);
 }
 
-describe("a plugin's per-Unit stage numbered after Build and Test runs with its Unit", () => {
+describe("a plugin's per-Unit stage runs with its Unit, and its once-per-intent stage after Build and Test", () => {
   test("the compile keeps its number, and writes the graph with it in the per-Unit block", () => {
     const install = probeProject("solo", ["alpha"]);
     const graph = JSON.parse(
@@ -288,9 +305,9 @@ describe("a plugin's per-Unit stage numbered after Build and Test runs with its 
     ) as Array<{ slug: string; number: string; phase: string }>;
     const number = (slug: string) => graph.find((stage) => stage.slug === slug)?.number;
     expect([number("build-and-test"), number("ci-pipeline"), number("probe-unit-check"), number("probe-intent-check")])
-      .toEqual(["3.6", "3.7", "3.8", "3.9"]);
-    expect(graph.filter((stage) => stage.phase === "construction").map((stage) => stage.slug).slice(-5))
-      .toEqual(["code-generation", "probe-unit-check", "build-and-test", "ci-pipeline", "probe-intent-check"]);
+      .toEqual(["4.1", "6.1", "3.2", "4.3"]);
+    expect(graph.filter((stage) => ["build", "test"].includes(stage.phase)).map((stage) => stage.slug))
+      .toEqual(["code-generation", "probe-unit-check", "build-and-test", "performance-validation", "probe-intent-check"]);
 
     const lookup = (slug: string) => run(install, "aidlc-state", ["lookup", "next-stage", slug, "feature"]).out.trim();
     expect(lookup("code-generation")).toBe("probe-unit-check");
@@ -299,12 +316,14 @@ describe("a plugin's per-Unit stage numbered after Build and Test runs with its 
 
   test("the compile refuses a per-Unit stage that requires a stage run once after the Units", () => {
     const install = probeProject("solo", ["alpha"]);
-    const stage = join(install.proj, ".claude", "aidlc-common", "stages", "construction", "probe-unit-check.md");
+    const stage = join(install.proj, ".claude", "aidlc-common", "stages", "build", "probe-unit-check.md");
     writeFileSync(stage, PLUGIN_STAGES["probe-unit-check"].replace("  - code-generation\n", "  - build-and-test\n"));
     const compiled = spawnSync(BUN, [install.tool("aidlc-graph"), "compile"], { cwd: install.proj, encoding: "utf-8", env: ENV });
     expect(compiled.status).not.toBe(0);
+    // The number check runs before the run-order check, and Build and Test (4.1) is
+    // numbered after any build-phase per-Unit stage, so the number check refuses it.
     expect(`${compiled.stdout}${compiled.stderr}`).toContain(
-      'Stage "probe-unit-check" runs once per Unit of Work, but it requires "build-and-test", which runs once for the whole intent after the Units.',
+      'stage "probe-unit-check" (3.2) requires "build-and-test" (4.1) - dependency must be lower-numbered.',
     );
   });
 
@@ -348,7 +367,7 @@ describe("a plugin's per-Unit stage numbered after Build and Test runs with its 
       expect(state(install)).toContain("- **Current Stage**: build-and-test");
       expect(blockRows(install)).toEqual(finishedBlock);
       expect(state(install)).not.toMatch(/\[[x?-]\] probe-intent-check/);
-      expect(after).toMatchObject({ kind: "run-stage", stage: "build-and-test", next_stage: "CI Pipeline" });
+      expect(after).toMatchObject({ kind: "run-stage", stage: "build-and-test", next_stage: "Performance Validation" });
       expect(hints).toEqual(units.flatMap(() => ["Probe Unit Check", "Build and Test"]));
     });
   }

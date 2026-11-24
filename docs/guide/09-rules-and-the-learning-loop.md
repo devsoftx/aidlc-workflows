@@ -16,13 +16,16 @@ aidlc/spaces/<active-space>/memory/
 ├── team.md                # your team's affirmed practices
 ├── project.md             # this project's specialization
 └── phases/
-    ├── ideation.md
-    ├── inception.md
-    ├── construction.md
-    └── operation.md
+    ├── discover.md
+    ├── design.md
+    ├── build.md
+    ├── test.md
+    ├── secure.md
+    ├── deploy.md
+    └── operate.md
 ```
 
-There is no `scope:` field inside the files — scope comes from the filename. `org.md` carries framework defaults (trunk-based development, testing posture, walking-skeleton policy). `team.md` holds what your team has affirmed. `project.md` holds anything specific to this one project. The four `phases/<phase>.md` files carry rules that apply to every stage in a given phase — for example, the inception phase rule requires every architecture decision to document at least two alternatives.
+There is no `scope:` field inside the files — scope comes from the filename. `org.md` carries framework defaults (trunk-based development, testing posture, walking-skeleton policy). `team.md` holds what your team has affirmed. `project.md` holds anything specific to this one project. The seven `phases/<phase>.md` files carry rules that apply to every stage in a given phase — for example, the design phase rule requires every architecture decision to document at least two alternatives.
 
 Each file is plain prose under topical headings (`## Way of Working`, `## Testing Posture`, `## Deployment`, `## Code Style`, and so on). You read them, you can edit them by hand, and the framework writes to them through the learning loop.
 
@@ -54,7 +57,7 @@ When learnings are on, the loop has three moments you see: you correct the agent
 
 ### The memory.md diary
 
-When the learnings ritual is on, the framework keeps a running observation log at `<record>/<phase>/<stage>/memory.md` while a stage runs — under the intent's record dir, `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/`. A stage that runs once per Unit keeps one per Unit, at `<record>/construction/<unit>/<stage>/memory.md` beside that Unit's documents, so `construction/` holds the Unit folders and the folders of the stages that run once (Build and Test, CI Pipeline). Work started before an update that moved them keeps its notes where they are, and they are still read. The engine creates it from the shipped template when it emits the run-stage directive, and the orchestrator maintains it for you — never hand-edited. Entries land under four standard headings:
+When the learnings ritual is on, the framework keeps a running observation log at `<record>/<phase>/<stage>/memory.md` while a stage runs — under the intent's record dir, `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/`. A stage that runs once per Unit keeps one per Unit, at `<record>/<phase>/<unit>/<stage>/memory.md` beside that Unit's documents, so `design/` holds a folder for each Unit beside the folders of the design stages that run once, and `build/` holds each Unit's Code Generation folder. Work started before an update that moved them keeps its notes where they are, and they are still read. The engine creates it from the shipped template when it emits the run-stage directive, and the orchestrator maintains it for you — never hand-edited. Entries land under four standard headings:
 
 - **Interpretations** — choices the agent made where the stage prose was ambiguous
 - **Deviations** — places the agent intentionally departed from the stage prose, and why
@@ -181,7 +184,7 @@ Sensor activity shows up in the intent's `audit/` shards as `Sensor Fired`, `Sen
 **Fire id**: 0d3ee5cc
 **Sensor ID**: claim-sources
 **Stage slug**: intent-capture
-**Output path**: aidlc/spaces/default/intents/261013-inventory-api/ideation/intent-capture/intent-statement.md
+**Output path**: aidlc/spaces/default/intents/261013-inventory-api/discover/intent-capture/intent-statement.md
 **Duration ms**: 190
 ```
 

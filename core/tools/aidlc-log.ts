@@ -7,6 +7,7 @@
 // because they fire per-question / per-review, not per state transition.
 
 import { constructionPolicyRecovery } from "./aidlc-guard-operation.ts";
+import { sameRecordPath, sevenPhaseRecordPath } from "./aidlc-five-phase-record.ts";
 import { projectDirFlag, settleClaudeTurnsFirst } from "./aidlc-claude-turn-pending.ts";
 import { CHANGE_NOTICES_NOTE, otherWorkNote, reviewRequestNote, reviewVerdictNote } from "./aidlc-directive.ts";
 import { spawnSync } from "node:child_process";
@@ -286,6 +287,7 @@ import {
   planApprovalAskIsOpen,
   LEGACY_PLAN_APPROVAL_RECOVERY_CHOICE,
   resolveCeremony,
+  isUnitLoopStage,
 } from "./aidlc-lib.js";
 import type {
   StageEntry,
@@ -999,7 +1001,9 @@ function revisedSummaryNote(
         (auditBlockField(row.block, "Workflow") ?? undefined) !== workflow) continue;
       if (receipt === undefined || row.timestamp >= receipt.timestamp) receipt = row;
     }
-    questionsFile = receipt === undefined ? null : auditBlockField(receipt.block, "Questions File");
+    // The file where it is now: a five-phase release recorded the folder it moved from.
+    const recorded = receipt === undefined ? null : auditBlockField(receipt.block, "Questions File");
+    questionsFile = recorded === null ? null : sevenPhaseRecordPath(recorded);
     if (questionsFile !== null && !pendingSummaryDecision(pd, stage.slug, unit, workflow, questionsFile).changeRequested) {
       questionsFile = null;
     }
@@ -1042,7 +1046,7 @@ function summaryAnswerPutBack(content: string): string | null {
 function summaryConfirmedOnRecord(pd: string, stage: string, unit: string | null, questions: string): boolean {
   const authorization = unit === null ? summaryAuthorizationThisAttempt(pd, stage) : readSummaryAuthorization(pd, stage, unit);
   return authorization !== null && authorization.choice === "Looks correct" &&
-    authorization.questions_file.replaceAll("\\", "/") === questions;
+    sameRecordPath(authorization.questions_file.replaceAll("\\", "/"), questions);
 }
 
 // A stage's own question asked or answered while its gate waits (a chat that
@@ -1751,7 +1755,8 @@ function hasPendingDecisionAtGate(pd: string, stage: string): boolean {
 }
 
 // A row of this summary's question or its confirmation: the stage, Unit, workflow
-// and questions file it was asked for.
+// and questions file it was asked for (`questionsFile` is the current path; a
+// row's five-phase spelling names it too).
 function summaryRow(
   pd: string,
   entry: { block: string },
@@ -1760,11 +1765,12 @@ function summaryRow(
   workflow: string | undefined,
   questionsFile: string,
 ): boolean {
+  const recorded = auditBlockField(entry.block, "Questions File");
   return auditBlockField(entry.block, "Stage") === stage &&
     auditBlockField(entry.block, "Checkpoint") === SUMMARY_CONFIRMATION_CHECKPOINT &&
     (auditBlockField(entry.block, "Unit") ?? undefined) === unit &&
     (auditBlockField(entry.block, "Workflow") ?? undefined) === workflow &&
-    auditBlockField(entry.block, "Questions File") === questionsFile &&
+    recorded !== null && sameRecordPath(recorded, questionsFile) &&
     (unit === undefined || eventMatchesClaimAttempt(pd, entry.block, unit));
 }
 
@@ -2596,7 +2602,7 @@ function handleAnswer(args: string[]): void {
       ? readFileSync(stateFilePath(pd), "utf-8")
       : null;
     const stageNode = loadStageGraphAll().find((stage) => stage.slug === flags.stage);
-    const autonomousDecision = isAutonomousConstructionDecision(content, stageNode?.phase);
+    const autonomousDecision = isAutonomousConstructionDecision(content, stageNode);
     const workflow =
       flags.single === "true" ? `single-stage:${flags.stage}` : undefined;
 
@@ -3951,7 +3957,7 @@ export function reviewVerdictStep(
       ...(complete !== null ? { complete } : {}),
     });
   }
-  if (node.phase === "construction" && isAutonomousConstructionGate(state, node, pd)) return null;
+  if (isUnitLoopStage(node) && isAutonomousConstructionGate(state, node, pd)) return null;
   // A recovery pass re-checked an invalidated review, and a backward jump began
   // this attempt: either way the gate's brief is the stale one.
   const stale = request.recovery ||
@@ -4246,7 +4252,7 @@ function handleReview(args: string[]): void {
       flags.unit as string,
     );
     if (!manifest.ok) {
-      const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/construction/${flags.unit}/${flags.stage}/source-manifest.json`;
+      const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/${node.phase}/${flags.unit}/${flags.stage}/source-manifest.json`;
       refuseReview(
         `Cannot record REVIEW_REQUESTED for "${flags.stage}": ${unitManifestRefusal(
           flags.unit as string,
@@ -5180,7 +5186,7 @@ function handleReview(args: string[]): void {
         ? readUnitSourceManifest(pd, flags.stage, flags.unit as string)
         : null;
       if (manifest?.ok === false) {
-        const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/construction/${flags.unit}/${flags.stage}/source-manifest.json`;
+        const manifestPath = `${relativeRecordDir(pd, intent, space) ?? "aidlc"}/${node.phase}/${flags.unit}/${flags.stage}/source-manifest.json`;
         refuseReview(
           `Cannot record review for "${flags.stage}": ${unitManifestRefusal(
             flags.unit as string,

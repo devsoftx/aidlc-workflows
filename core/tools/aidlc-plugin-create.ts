@@ -75,7 +75,7 @@ function stage(name: string): string {
 slug: ${slug}
 name: ${titleCase(name)} Example
 plugin: ${name}
-phase: construction
+phase: build
 execution: CONDITIONAL
 condition: Execute when the ${name} plugin example is selected for the current workflow.
 lead_agent: ${agent}
@@ -204,7 +204,7 @@ export function scaffoldFiles(name: string): ScaffoldFile[] {
       content: manifest(name),
     },
     {
-      path: join("stages", "construction", `${stageName}.md`),
+      path: join("stages", "build", `${stageName}.md`),
       content: stage(name),
     },
     {

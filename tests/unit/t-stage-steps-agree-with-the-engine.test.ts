@@ -1,4 +1,4 @@
-// covers: file:aidlc-common/stages/inception/reverse-engineering.md, file:aidlc-common/stages/inception/requirements-analysis.md, file:aidlc-common/stages/construction/ci-pipeline.md, file:aidlc-common/stages/operation/deployment-execution.md, file:aidlc-common/stages/operation/environment-provisioning.md
+// covers: file:aidlc-common/stages/discover/reverse-engineering.md, file:aidlc-common/stages/design/requirements-analysis.md, file:aidlc-common/stages/deploy/ci-pipeline.md, file:aidlc-common/stages/deploy/deployment-execution.md, file:aidlc-common/stages/deploy/environment-provisioning.md
 //
 // A stage file's own step says what the engine and the stage protocol do, not
 // something else beside them:
@@ -19,6 +19,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { HARNESS_MATRIX } from "../harness/harness-matrix.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 
 type GraphStage = { slug: string; name: string; phase: string; mode: string };
 
@@ -52,7 +53,7 @@ describe("t-stage-steps-agree-with-the-engine", () => {
             if (pattern.test(stage.text)) found.push(`${stage.slug}: inline, dispatches an agent (${pattern.source})`);
           }
         }
-        if (stage.text.includes("/construction/*/code-generation/") && !stage.text.includes("/construction/code-generation/")) {
+        if (stage.text.includes("/build/*/code-generation/") && !stage.text.includes("/build/code-generation/")) {
           found.push(`${stage.slug}: reads only the per-Unit Code Generation folders`);
         }
       }
@@ -63,11 +64,12 @@ describe("t-stage-steps-agree-with-the-engine", () => {
   test.each(HARNESS_MATRIX.map((harness) => [harness.name, harness] as const))(
     "%s: Requirements Analysis takes its depth from the run, and Reverse Engineering publishes on every path",
     (_name, harness) => {
-      const inception = join(harness.engineRoot, "aidlc-common", "stages", "inception");
-      const requirements = read(join(inception, "requirements-analysis.md"));
+      const stageText = (slug: string): string =>
+        read(join(harness.engineRoot, "aidlc-common", "stages", phaseFor(slug), `${slug}.md`));
+      const requirements = stageText("requirements-analysis");
       expect(requirements).toContain("### Step 3: Determine Depth");
       expect(requirements).not.toContain("Based on complexity assessment");
-      const reverse = read(join(inception, "reverse-engineering.md"));
+      const reverse = stageText("reverse-engineering");
       expect(reverse).not.toContain("The rest of this step is the full-roster path");
       expect(reverse).not.toContain("Run this step only when");
       expect(reverse).toContain("codekb-publish");

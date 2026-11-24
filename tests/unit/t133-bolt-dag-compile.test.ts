@@ -54,6 +54,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { AIDLC_SRC, FIXTURES_DIR, toPortablePath } from "../harness/fixtures.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import { auditFilePath } from "../../dist/claude/.claude/tools/aidlc-lib.ts";
 
 setDefaultTimeout(NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
@@ -111,7 +112,7 @@ function makeProject(): string {
   let proj = mkdtempSync(join(tmpdir(), "aidlc-t133-"));
   proj = toPortablePath(proj);
   tempDirs.push(proj);
-  mkdirSync(join(recordRoot(proj), "inception", "units-generation"), {
+  mkdirSync(join(recordRoot(proj), phaseFor("units-generation"), "units-generation"), {
     recursive: true,
   });
   cpSync(STATE_FIXTURE, join(recordRoot(proj), "aidlc-state.md"));
@@ -127,7 +128,7 @@ function makeProject(): string {
 function uowdPath(proj: string): string {
   return join(
     recordRoot(proj),
-    "inception",
+    phaseFor("units-generation"),
     "units-generation",
     "unit-of-work-dependency.md",
   );
@@ -283,7 +284,7 @@ describe("t133 Bolt-DAG runtime compile (migrated from t133-bolt-dag-compile.sh,
   }, NATIVE_FIXTURE_SETUP_TIMEOUT_MS);
 });
 
-describe("t133 edge-block sensor (aidlc-sensor-required-sections, units-generation 2.7)", () => {
+describe("t133 edge-block sensor (aidlc-sensor-required-sections, units-generation 2.6)", () => {
   // ---- 7-9: sensor edge-block validation -----------------------------------
   test("sensor: valid block → pass:true, edge_block:ok [.sh test 7]", () => {
     const proj = makeProject();
@@ -322,7 +323,7 @@ describe("t133 edge-block sensor (aidlc-sensor-required-sections, units-generati
     const proj = makeProject();
     const other = join(
       recordRoot(proj),
-      "inception",
+      phaseFor("units-generation"),
       "units-generation",
       "unit-of-work.md",
     );

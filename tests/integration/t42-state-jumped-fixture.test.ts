@@ -17,8 +17,7 @@
 // Subject under test (the shipped, real bytes — no temp project, no tool):
 //   - tests/fixtures/state-jumped.md                 (FIXTURES_DIR-relative; a
 //        feature-scope state where a --phase/--stage jump skipped most of
-//        ideation/inception, parked in-progress at construction's
-//        code-generation)
+//        discover/design, parked in-progress at build's code-generation)
 //   - dist/claude/.claude/knowledge/aidlc-shared/state-template.md  (AIDLC_SRC-
 //        relative; the template the fixture is meant to mirror — used for the
 //        cross-checks below, mirroring t12's template pinning)
@@ -30,7 +29,7 @@
 // slugs are checked against the compiled graph, because the template is the
 // state contract rather than a stage enumeration.
 //
-// The test pins the EXACT [S] count (18), which guards against accidental
+// The test pins the EXACT [S] count (19), which guards against accidental
 // over/under-skip when the fixture is regenerated.
 
 import { describe, expect, test } from "bun:test";
@@ -96,13 +95,13 @@ describe("t42 state-jumped fixture structural meta-test (migrated from t42-state
     expect(inProgress[0]).toContain("code-generation");
   });
 
-  test("current phase is CONSTRUCTION [.sh 7]", () => {
-    expect(JUMPED.includes("CONSTRUCTION")).toBe(true);
+  test("current phase is BUILD [.sh 7]", () => {
+    expect(JUMPED.includes("BUILD")).toBe(true);
     // It is the declared Lifecycle Phase under ## Current Status (not merely
-    // present as a section header somewhere), and CONSTRUCTION is a
+    // present as a section header somewhere), and BUILD is a
     // template-enumerated Lifecycle Phase value.
-    expect(JUMPED.includes("**Lifecycle Phase**: CONSTRUCTION")).toBe(true);
-    expect(TEMPLATE.includes("CONSTRUCTION")).toBe(true);
+    expect(JUMPED.includes("**Lifecycle Phase**: BUILD")).toBe(true);
+    expect(TEMPLATE.includes("BUILD")).toBe(true);
   });
 
   test("current stage is code-generation [.sh 8]", () => {
@@ -111,13 +110,14 @@ describe("t42 state-jumped fixture structural meta-test (migrated from t42-state
     expect(GRAPH.some((stage) => stage.slug === "code-generation")).toBe(true);
   });
 
-  test("has > 0 [S] skipped stages (exact: 18) [.sh 9]", () => {
+  test("has > 0 [S] skipped stages (exact: 19) [.sh 9]", () => {
     const sCount = JUMPED.split("\n").filter((l) => /^- \[S\]/.test(l)).length;
     expect(sCount).toBeGreaterThan(0);
     // Pin the exact count so a fixture regeneration that changes the skip set is
-    // caught (the jumped fixture skips most of ideation/inception plus the early
-    // construction stages - 18 lines).
-    expect(sCount).toBe(18);
+    // caught. The jumped fixture skips six discover stages and twelve design
+    // stages, plus conformance-review, which the feature scope skips in the grid
+    // (19 lines).
+    expect(sCount).toBe(19);
   });
 
   // Every initialization stage must be [x] completed, NOT [S] skipped - a

@@ -1,4 +1,4 @@
-// covers: stage:inception/reverse-engineering
+// covers: stage:discover/reverse-engineering
 //
 // t72-stage-reverse-engineering.test.ts — SDK-harness port of
 // tests/integration/t72-stage-reverse-engineering.sh (plan 15). Drives the real
@@ -19,7 +19,7 @@
 // reporting completion and advancing before the driver's gate-render stop lands.
 //
 // THE JOURNEY (verified against the SHIPPED stage). Seed state-brownfield-init-done
-// (Lifecycle Phase=INCEPTION, Current Stage=reverse-engineering [-] in-progress,
+// (Lifecycle Phase=DISCOVER, Current Stage=reverse-engineering [-] in-progress,
 // Scope=bugfix, Completed=3) + the brownfield-todo stub (a React/Vite/TypeScript Todo
 // app). Plain `/aidlc` resumes that current stage directly; jump routing for
 // `--stage` is covered by t25/t26. The RE stage: step 2 delegates a developer
@@ -50,8 +50,10 @@
 //          be brittle, not stronger. The stub IS a React/Vite Todo app, so the
 //          domain is present in the scanned source; we assert the framework-
 //          guaranteed artifact SCAFFOLD.
-//   15 lifecycle phase is INCEPTION
-//       -> readStateField(state,"Lifecycle Phase") === "INCEPTION" (RE is inception).
+//   15 lifecycle phase is RE's (DISCOVER)
+//       -> readStateField(state,"Lifecycle Phase") === "DISCOVER" while the cursor
+//          is on RE; once it advanced, the later stage's phase (bugfix runs
+//          requirements-analysis, a design stage, next).
 //   + the approval gate RENDERED (the stage reached its gate, no vacuous pass):
 //       -> the matching current-attempt approval menu crossed the SDK boundary.
 //          A learnings or blockage question cannot satisfy this check.
@@ -59,7 +61,7 @@
 // Known-answer literals (read from the SHIPPED stage, not guessed):
 //   - RE outputs (9 artifacts):   reverse-engineering.md (`outputs:` frontmatter; written in Step 3, Architect Synthesis)
 //   - approval gate (step 5):     reverse-engineering.md (AskUserQuestion)
-//   - fixture init-done state:     state-brownfield-init-done.md (Phase=INCEPTION,
+//   - fixture init-done state:     state-brownfield-init-done.md (Phase=DISCOVER,
 //                                  Current Stage=reverse-engineering, Scope=bugfix)
 //   - brownfield-todo stub:        tests/fixtures/brownfield-todo (React/Vite/TS Todo)
 //
@@ -90,6 +92,7 @@ import {
   readStateField,
   stageApprovalQuestionBoundary,
 } from "../harness/sdk-drive.ts";
+import { phaseFor } from "../harness/stage-phase.ts";
 import {
   activeSpace,
   readAllAuditShards,
@@ -159,7 +162,7 @@ const LIVE_WORK_TIMEOUT_MS = Number.isFinite(TIMEOUT_S) && TIMEOUT_S > 0
 const TEST_TIMEOUT_MS = liveCaseTimeoutMs(LIVE_WORK_TIMEOUT_MS);
 
 const TARGET_SLUG = "reverse-engineering";
-const TARGET_PHASE = "INCEPTION";
+const TARGET_PHASE = phaseFor(TARGET_SLUG);
 
 describe("t72 /aidlc reverse-engineering brownfield (sdk)", () => {
   // -------------------------------------------------------------------------
@@ -169,7 +172,7 @@ describe("t72 /aidlc reverse-engineering brownfield (sdk)", () => {
   // and advanced, so assert the durable artifact + ordered state/audit outcome.
   // -------------------------------------------------------------------------
   test(
-    "reverse-engineering produces the artifact scaffold and lands at its approval gate (phase INCEPTION)",
+    "reverse-engineering produces the artifact scaffold and lands at its approval gate (phase follows the stage)",
     async () => {
       const deadlineMs = Date.now() + TEST_TIMEOUT_MS;
       const proj = setupIntegrationProject({
@@ -225,9 +228,9 @@ describe("t72 /aidlc reverse-engineering brownfield (sdk)", () => {
         // dir. We do NOT assert the dir is absent - the stage's by-design diary
         // memory.md lives there (see RE_STEMS comment); only a scattered ARTIFACT
         // is a regression. (Mirrors t183's stem-filtered placement check.)
-        const oldRecordReDir = join(seededRecordDir(proj), "inception", "reverse-engineering");
-        const scatteredArtifacts = existsSync(oldRecordReDir)
-          ? readdirSync(oldRecordReDir).filter((f) =>
+        const recordReDir = join(seededRecordDir(proj), TARGET_PHASE, TARGET_SLUG);
+        const scatteredArtifacts = existsSync(recordReDir)
+          ? readdirSync(recordReDir).filter((f) =>
               RE_STEMS.includes(f.replace(/\.md$/, "")),
             )
           : [];
@@ -246,7 +249,6 @@ describe("t72 /aidlc reverse-engineering brownfield (sdk)", () => {
 
         expect(r.stateFile).toBeDefined();
         const state = r.stateFile as string;
-        expect(readStateField(state, "Lifecycle Phase")).toBe(TARGET_PHASE);
 
         // Durable journey evidence. The live conductor may clear RE's gate and
         // advance before the driver's AskUserQuestion stop lands, so Current Stage is
@@ -258,6 +260,11 @@ describe("t72 /aidlc reverse-engineering brownfield (sdk)", () => {
         const currentIndex = rows.findIndex((row) => row.slug === currentStage);
         expect(targetIndex).toBeGreaterThanOrEqual(0);
         expect(currentIndex).toBeGreaterThanOrEqual(targetIndex);
+        // The phase follows the cursor: RE's own while it is on RE, the later
+        // stage's once it advanced (bugfix's next stage is in design).
+        expect(readStateField(state, "Lifecycle Phase")).toBe(
+          (currentIndex > targetIndex ? phaseFor(currentStage as string) : TARGET_PHASE).toUpperCase(),
+        );
 
         // A cursor still on RE may be in progress, awaiting approval, or
         // completed. A cursor beyond RE proves advancement and therefore
