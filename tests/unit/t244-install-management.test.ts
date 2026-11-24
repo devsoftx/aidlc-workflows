@@ -4165,6 +4165,12 @@ describe("t244 Windows and completion release surfaces", () => {
     expect(unix).toContain(
       'env PATH="/usr/bin:/bin" "$command" doctor',
     );
+    // The fake gh accepts only the repository whose workflow attests this
+    // release, so the installer's built-in default must name it.
+    expect(windows).toContain("$env:AIDLC_TEST_GH_REPOSITORY = $env:GITHUB_REPOSITORY");
+    expect(windows).toContain('$env:AIDLC_TEST_GH_WORKFLOW = "$env:GITHUB_REPOSITORY/.github/workflows/release.yml"');
+    expect(unix).toContain('AIDLC_TEST_GH_REPOSITORY="$GITHUB_REPOSITORY"');
+    expect(unix).toContain('AIDLC_TEST_GH_WORKFLOW="$GITHUB_REPOSITORY/.github/workflows/release.yml"');
     for (const lifecycle of [windows, unix]) {
       expect(lifecycle).not.toContain("attestation verify");
       expect(lifecycle).not.toContain("AIDLC_RELEASE_REPOSITORY");

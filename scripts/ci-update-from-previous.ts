@@ -27,12 +27,20 @@
 // Copy Channel says. The hooks, doctor and the person's work are checked as on
 // the native channel.
 //
+// The previous release is the newest stable one older than the candidate.
+// `--find-previous <candidate-tag>` names it, and the repository it came from,
+// for the workflow: a fork's first release has none of its own, so it is
+// updated from the release of the repository it was forked from, the one its
+// people are on.
+//
 // Usage: bun scripts/ci-update-from-previous.ts [--channel native|copy] --previous <version> --candidate <release-dir>
+//        bun scripts/ci-update-from-previous.ts --find-previous <candidate-tag>
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { compareVersions, STABLE_VERSION } from "../core/tools/aidlc-channel.ts";
 import { runtimePathsReadTypedNames, typedHarnessName } from "../core/tools/aidlc-runtime-paths.ts";
 import { KIRO_HOOK_GROUPS } from "../harness/kiro-ide/hooks/aidlc-kiro-tool-names.ts";
 import kiro from "../harness/kiro/manifest.ts";
@@ -70,7 +78,6 @@ function hookCommandOf(line: string): string {
   return KIRO_HOOK_SUFFIX !== "" && trimmed.endsWith(KIRO_HOOK_SUFFIX) ? trimmed.slice(0, -KIRO_HOOK_SUFFIX.length) : trimmed;
 }
 const WINDOWS = process.platform === "win32";
-const REPOSITORY = process.env.GITHUB_REPOSITORY || "devsoftx/aidlc-workflows";
 const STEP_TIMEOUT_MS = 10 * 60_000;
 const HOOK_TIMEOUT_MS = 2 * 60_000;
 // The whole check ends before the release job's 30-minute limit, so its own
@@ -177,6 +184,74 @@ export function copyRuntimeAsset(version: string): string {
   return `aidlc-copy-runtime-${version}.tar.gz`;
 }
 
+// Where this tree's releases are published, when the workflow does not name
+// the repository it runs in.
+const RELEASE_REPOSITORY = "devsoftx/aidlc-workflows";
+// The repository this fork was made from. Until the fork publishes a stable
+// release of its own, its people are on this one's releases.
+export const UPSTREAM_REPOSITORY = "awslabs/aidlc-workflows";
+
+/**
+ * The release a candidate is updated from: the newest stable release older
+ * than the candidate, from the first repository that has one. Only a vX.Y.Z
+ * tag is a release the installers can install, so any other tag (a release
+ * made by hand, such as "0.1") is passed over.
+ */
+export function previousRelease(
+  candidateTag: string,
+  repositories: string[],
+  stableTagsOf: (repository: string) => string[],
+): { tag: string; repository: string } | null {
+  const candidate = candidateTag.replace(/^v/, "");
+  for (const repository of repositories) {
+    const older = stableTagsOf(repository)
+      .filter((tag) => tag.startsWith("v") && STABLE_VERSION.test(tag.slice(1)) && compareVersions(tag.slice(1), candidate) < 0)
+      .sort((a, b) => compareVersions(a.slice(1), b.slice(1)));
+    if (older.length > 0) return { tag: older[older.length - 1], repository };
+  }
+  return null;
+}
+
+function stableReleaseTags(repository: string): string[] {
+  const listed = spawnSync("gh", [
+    "release", "list", "--repo", repository, "--exclude-drafts", "--exclude-pre-releases", "--limit", "20", "--json", "tagName",
+  ], { encoding: "utf-8", timeout: STEP_TIMEOUT_MS });
+  if (listed.status !== 0) {
+    throw new Error(`gh release list --repo ${repository} failed: ${`${listed.stderr ?? ""}${listed.error?.message ?? ""}`.trim()}`);
+  }
+  return (JSON.parse(listed.stdout) as Array<{ tagName: string }>).map((release) => release.tagName);
+}
+
+/**
+ * Names the release to update from, and its repository, as the step outputs
+ * `tag` and `repository`: this repository's own, else upstream's.
+ */
+export function findPrevious(candidateTag: string, env: NodeJS.ProcessEnv, stableTagsOf = stableReleaseTags): number {
+  const repositories = [...new Set([env.GITHUB_REPOSITORY || RELEASE_REPOSITORY, UPSTREAM_REPOSITORY])];
+  let found: ReturnType<typeof previousRelease>;
+  try {
+    found = previousRelease(candidateTag, repositories, stableTagsOf);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
+  if (!found) {
+    console.error(`No stable release older than ${candidateTag} in ${repositories.join(" or ")} to update from.`);
+    return 1;
+  }
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `tag=${found.tag}\nrepository=${found.repository}\n`);
+  console.log(`The check updates from ${found.tag}, published in ${found.repository}.`);
+  return 0;
+}
+
+/**
+ * The repository the previous release's installer and copy runtime are
+ * downloaded from: the one --find-previous found it in, else this one.
+ */
+export function previousReleaseRepository(env: NodeJS.ProcessEnv): string {
+  return env.AIDLC_PREVIOUS_RELEASE_REPOSITORY || env.GITHUB_REPOSITORY || RELEASE_REPOSITORY;
+}
+
 /** Whether a file is the one its .sha256 names: the digest, then the file name. */
 export function checksumMatches(file: string, sha256Text: string): boolean {
   const digest = new Bun.CryptoHasher("sha256").update(readFileSync(file)).digest("hex");
@@ -268,13 +343,15 @@ export function bareAidlcProblem(shell: string, env: NodeJS.ProcessEnv, target: 
 
 async function main(argv: string[]): Promise<number> {
   const option = (flag: string) => { const at = argv.indexOf(flag); return at >= 0 ? argv[at + 1] : undefined; };
+  if (argv[0] === "--find-previous" && argv[1]) return findPrevious(argv[1], process.env);
   const previous = option("--previous")?.replace(/^v/, "");
   const given = option("--candidate");
   const channel = option("--channel") ?? "native";
   // The update runs from a scratch folder, so a relative path must not reach it.
   const candidate = given ? resolve(given) : undefined;
   if (!previous || !candidate || !existsSync(join(candidate, "version.json")) || (channel !== "native" && channel !== "copy")) {
-    console.error("Usage: bun scripts/ci-update-from-previous.ts [--channel native|copy] --previous <version> --candidate <release-dir>");
+    console.error("Usage: bun scripts/ci-update-from-previous.ts [--channel native|copy] --previous <version> --candidate <release-dir>\n" +
+      "       bun scripts/ci-update-from-previous.ts --find-previous <candidate-tag>");
     return 2;
   }
   const target = (JSON.parse(readFileSync(join(candidate, "version.json"), "utf-8")) as { version?: string }).version ?? "";
@@ -369,7 +446,7 @@ async function check(previous: string, candidate: string, target: string, root: 
     // unpacks into, so no drive letter reaches Git for Windows' tar.
     const asset = copyRuntimeAsset(previous);
     for (const name of [asset, `${asset}.sha256`]) {
-      const got = spawnSync("curl", ["-fsSL", "-o", join(root, name), `https://github.com/${REPOSITORY}/releases/download/v${previous}/${name}`],
+      const got = spawnSync("curl", ["-fsSL", "-o", join(root, name), `https://github.com/${previousReleaseRepository(process.env)}/releases/download/v${previous}/${name}`],
         { encoding: "utf-8", timeout: STEP_TIMEOUT_MS });
       if (got.status !== 0) {
         console.error(`Could not download ${name}: ${got.stderr}`);
@@ -389,7 +466,7 @@ async function check(previous: string, candidate: string, target: string, root: 
     // 1. The previous release, installed the way its README says.
     const installer = join(root, WINDOWS ? "install.ps1" : "install.sh");
     const fetched = spawnSync("curl", ["-fsSL", "-o", installer,
-      `https://github.com/${REPOSITORY}/releases/download/v${previous}/${WINDOWS ? "install.ps1" : "install.sh"}`],
+      `https://github.com/${previousReleaseRepository(process.env)}/releases/download/v${previous}/${WINDOWS ? "install.ps1" : "install.sh"}`],
     { encoding: "utf-8", timeout: STEP_TIMEOUT_MS });
     if (fetched.status !== 0) {
       console.error(`Could not download the ${previous} installer: ${fetched.stderr}`);

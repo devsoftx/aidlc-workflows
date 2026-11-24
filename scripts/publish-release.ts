@@ -469,9 +469,10 @@ async function createAnnotatedTag(
         message,
         object: targetCommitish,
         type: "commit",
+        // The account the workflow runs as, the one the promotion's commits name.
         tagger: {
-          name: "AI-DLC Release",
-          email: "2102737+apackeer@users.noreply.github.com",
+          name: "github-actions[bot]",
+          email: "41898282+github-actions[bot]@users.noreply.github.com",
           date: new Date().toISOString(),
         },
       }),

@@ -1598,8 +1598,15 @@ describe("t332 preview publication pipeline", () => {
     expect(publish?.run).toContain("--channel preview");
     expect(publish?.run).toContain("--preview-plan \"$plan\"");
     expect(publish?.run).toContain("--expected-assets 15");
+    // The lifecycle checks hold the installer's built-in default to the
+    // repository whose workflow attests the preview, not to a name of their own.
+    expect(previewText).toContain("$env:AIDLC_TEST_GH_REPOSITORY = $env:GITHUB_REPOSITORY");
     expect(previewText).toContain(
-      "devsoftx/aidlc-workflows/.github/workflows/preview-release.yml",
+      '$env:AIDLC_TEST_GH_WORKFLOW = "$env:GITHUB_REPOSITORY/.github/workflows/preview-release.yml"',
+    );
+    expect(previewText).toContain('AIDLC_TEST_GH_REPOSITORY="$GITHUB_REPOSITORY"');
+    expect(previewText).toContain(
+      'AIDLC_TEST_GH_WORKFLOW="$GITHUB_REPOSITORY/.github/workflows/preview-release.yml"',
     );
     expect(preview.jobs["release-result"].needs).toEqual(["validate", "full_suite", "test", "release"]);
     const result = preview.jobs["release-result"].steps?.find(

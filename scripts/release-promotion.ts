@@ -46,7 +46,7 @@ export type Promotion =
 type PagePromotion = Extract<Promotion, { schemaVersion: 2 }>;
 // Left out of the page's thanks. A named list, not the promoting account, so
 // a retry by another maintainer computes the same contributors.
-const MAINTAINERS = ["apackeer"];
+const MAINTAINERS = ["devsoftx"];
 export type Command = (program: string, args: string[], input?: string, env?: NodeJS.ProcessEnv) => string;
 
 export const command: Command = (program, args, input, env) => {

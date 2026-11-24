@@ -503,7 +503,7 @@ describe("the stable page", () => {
     const [first, second] = f.merged;
     f.prs.push(
       pr(5, "early-hand", f.base), pr(6, "contributor-b", f.base), pr(7, "contributor-b", first),
-      pr(8, "contributor-a", first), pr(9, "contributor-a", second), pr(10, "apackeer", second),
+      pr(8, "contributor-a", first), pr(9, "contributor-a", second), pr(10, "devsoftx", second),
       pr(11, "app/dependabot", f.source, true), pr(12, "Contributor-C", f.source),
       pr(13, "flagged-handle", f.source), pr(14, "elsewhere", "0".repeat(40)),
     );

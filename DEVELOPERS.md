@@ -161,8 +161,10 @@ a release. Existing CI and Full Suite callers cannot pass this filter.
 
 ## 3. Let the nightly preview run
 
-[Preview Release](.github/workflows/preview-release.yml) runs daily at
-**22:00 Europe/Lisbon**. A maintainer can also start it from GitHub Actions
+[Preview Release](.github/workflows/preview-release.yml) is scheduled daily at
+**22:00 Europe/Lisbon**, but GitHub does not run a fork's schedules, so in this
+fork a maintainer starts it
+([Publishing from this fork](#publishing-from-this-fork)): from GitHub Actions
 using **Run workflow** on `main`, or:
 
 ```bash
@@ -280,14 +282,14 @@ renamed or reused.
 
    ```bash
    bun scripts/release-promotion.ts contributors --repository devsoftx/aidlc-workflows \
-     --preview v2.11.1-preview.20261016.1 --version 2.11.1 >contributors.txt
+     --preview v2.11.5-preview.20261201.1 --version 3.0.0 >contributors.txt
    ```
 
    Read the exact page the promotion will publish:
 
    ```bash
    bun scripts/release-promotion.ts page --repository devsoftx/aidlc-workflows \
-     --preview v2.11.1-preview.20261016.1 --version 2.11.1 \
+     --preview v2.11.5-preview.20261201.1 --version 3.0.0 \
      --notes-file release-notes.md --contributors-file contributors.txt
    ```
 
@@ -295,8 +297,8 @@ renamed or reused.
 
    ```bash
    gh workflow run promote-release.yml --ref main \
-     -f preview=v2.11.1-preview.20261016.1 \
-     -f version=2.11.1 -F notes=@release-notes.md -F contributors=@contributors.txt
+     -f preview=v2.11.5-preview.20261201.1 \
+     -f version=3.0.0 -F notes=@release-notes.md -F contributors=@contributors.txt
    ```
 
    The same fields are available in Actions. GitHub's input choices are static,
@@ -326,7 +328,7 @@ renamed or reused.
    rerun just this step or run:
 
    ```bash
-   bun scripts/release-promotion.ts sync --tag v2.11.1 \
+   bun scripts/release-promotion.ts sync --tag v3.0.0 \
      --repository devsoftx/aidlc-workflows
    ```
 
@@ -339,3 +341,38 @@ was dispatched, not that publication succeeded.
 See [Creating a release](docs/reference/19-supply-chain-security.md#creating-a-release)
 for the source and provenance contract. `release-pr.yml` remains a dispatcher
 for the `v1` line.
+
+## Publishing from this fork
+
+devsoftx/aidlc-workflows publishes its own releases; its first stable release
+is 3.0.0. Before the first preview:
+
+- **Turn Actions on** in the repository's Actions tab. Preview Release never
+  starts on its own here: dispatch it by hand, as in
+  [section 3](#3-let-the-nightly-preview-run).
+- **Create the `preview` and `release` environments** under Settings,
+  Environments, and give `release` the reviewers who approve publication. A
+  workflow creates a missing environment on first use, with no approval.
+  Full Suite's live model jobs need the `ai-pr-review` environment's
+  `AWS_AI_PR_REVIEW_ROLE_ARN`; without it they fail and each preview's notes
+  carry the warning.
+- **Keep the repository public.** People install without signing in, and
+  GitHub creates build attestations for a private repository only on GitHub
+  Enterprise Cloud.
+
+The README's install one-liner downloads from `releases/latest`, so it fails
+with 404 until 3.0.0 is published: the latest release today is `0.1`, made by
+hand, which holds no installer. Until then the release workflows' update check
+installs the newest stable release of
+[awslabs/aidlc-workflows](https://github.com/awslabs/aidlc-workflows), where
+this fork's people come from, and updates it to the candidate. Full Suite's
+release-contract test likewise checks upstream's latest release until `main`
+records 3.0.0. Neither counts the `0.1` release.
+
+Previews before 3.0.0 are numbered from the source version 2.11.4:
+`v2.11.5-preview.YYYYMMDD.N`. The first promotion is the one in
+[section 4](#4-promote-a-preview-to-production) with version `3.0.0`:
+**Promote preview** runs `bun scripts/release-promotion.ts prepare` with
+`--preview <tag> --version 3.0.0`. The stable version only has to be newer
+than the source version and every published stable release, so a 2.11.5
+preview can become 3.0.0.

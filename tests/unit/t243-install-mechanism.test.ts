@@ -6861,6 +6861,50 @@ describe("t243 release lifecycle", () => {
     }
   });
 
+  test("the live contract is checked on upstream's latest only while the fork has no AI-DLC release and main records upstream's version", async () => {
+    // The metadata a published release serves, in the shape the live check reads.
+    const published = (version: string, assets = [
+      "install.sh", "install.ps1", releaseRuntimeAsset(version), "aidlc-linux-x64", "aidlc-windows-x64.exe",
+    ]) => {
+      const root = temp("aidlc-t243-live-release-");
+      writeFileSync(join(root, "version.json"), JSON.stringify({
+        schemaVersion: 1, version, assets: assets.map((name) => ({ name })),
+      }));
+      for (const name of assets) writeFileSync(join(root, name), name);
+      const rows = ["version.json", ...assets].map((name) => `${digest(join(root, name))}  ${name}\n`);
+      writeFileSync(join(root, "checksums.txt"), rows.join(""));
+      const copyRuntime = releaseCopyRuntimeAsset(version);
+      writeFileSync(join(root, `${copyRuntime}.sha256`), `${"a".repeat(64)}  ${copyRuntime}\n`);
+      return serveReleaseFixture(root);
+    };
+    // A fork whose latest release was made by hand: it has no version.json.
+    const handMade = serveReleaseFixture(temp("aidlc-t243-live-hand-made-"));
+    const upstream = published(AIDLC_VERSION);
+    const olderUpstream = published("1.0.0");
+    const fork = published("99.0.0");
+    const broken = published("99.0.0", ["install.sh", "install.ps1", releaseRuntimeAsset("99.0.0"), "aidlc-linux-x64"]);
+    const servers = [handMade, upstream, olderUpstream, fork, broken];
+    try {
+      const fallback = await checkLiveReleaseContract(undefined, { live: handMade.baseUrl, upstream: upstream.baseUrl });
+      expect(fallback).toMatchObject({ version: AIDLC_VERSION, releases: upstream.baseUrl });
+      // Once main records a version newer than upstream's latest, the fork's own must pass.
+      await expect(checkLiveReleaseContract(undefined, { live: handMade.baseUrl, upstream: olderUpstream.baseUrl }))
+        .rejects.toThrow(`${handMade.baseUrl} has no latest release with a version.json (HTTP 404)`);
+      // A fork with an AI-DLC release is checked on its own; upstream is never asked.
+      const asked = upstream.requests.length;
+      expect(await checkLiveReleaseContract(undefined, { live: fork.baseUrl, upstream: upstream.baseUrl }))
+        .toMatchObject({ version: "99.0.0", releases: fork.baseUrl });
+      await expect(checkLiveReleaseContract(undefined, { live: broken.baseUrl, upstream: upstream.baseUrl }))
+        .rejects.toThrow("live release has no Windows binary asset");
+      expect(upstream.requests.length).toBe(asked);
+      // A page named outright is checked as it is.
+      await expect(checkLiveReleaseContract(handMade.baseUrl, { live: fork.baseUrl, upstream: upstream.baseUrl }))
+        .rejects.toThrow("has no latest release with a version.json");
+    } finally {
+      for (const server of servers) server.stop();
+    }
+  });
+
   test("opt-in live release endpoint matches the fixture contract", async () => {
     if (process.env.AIDLC_RELEASE_CONTRACT_LIVE !== "1") return;
     const checked = await checkLiveReleaseContract(process.env.AIDLC_RELEASE_BASE_URL);

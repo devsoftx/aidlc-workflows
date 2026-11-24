@@ -2,10 +2,11 @@
 // The update-from-the-last-release check finds each harness tree's hook
 // commands, installed or copied, and reads the hook phase trace to see that
 // the engine ran them. It passes each release's config the Kiro names that
-// release reads.
+// release reads, and updates from the newest stable release older than the
+// candidate: the fork's own, else upstream's before the fork has one.
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { REPO_ROOT } from "../harness/fixtures.ts";
@@ -17,14 +18,18 @@ import {
   childEnvironment,
   copyRuntimeAsset,
   dispatched,
+  findPrevious,
   harnessArgFor,
   hookCommands,
   hookInput,
   hookRuns,
   hooksTracedToCompletion,
   opencodeHookCommands,
+  previousRelease,
+  previousReleaseRepository,
   tracedToCompletion,
   uncheckedHarnesses,
+  UPSTREAM_REPOSITORY,
 } from "../../scripts/ci-update-from-previous.ts";
 import kiroManifest from "../../harness/kiro/manifest.ts";
 
@@ -262,4 +267,89 @@ describe("the Kiro name each release's config reads", () => {
     expect(["kiro", "kiro-ide", "claude"].map((harness) => harnessArgFor(typed, harness))).toEqual(["kiro-v2", "kiro", "claude"]);
     expect(["kiro", "kiro-ide", "claude"].map((harness) => harnessArgFor(older, harness))).toEqual(["kiro", "kiro-ide", "claude"]);
   });
+});
+
+describe("the release the candidate is updated from", () => {
+  const FORK = "devsoftx/aidlc-workflows";
+  const listing = (tags: Record<string, string[]>) => {
+    const asked: string[] = [];
+    return {
+      asked,
+      tagsOf: (repository: string) => {
+        asked.push(repository);
+        return tags[repository] ?? [];
+      },
+    };
+  };
+
+  test("a fork with no stable release of its own updates from upstream's newest one", () => {
+    // A release made by hand, tagged "0.1", has no installer to update from.
+    const fork = listing({ [FORK]: ["0.1"], [UPSTREAM_REPOSITORY]: ["v2.11.4", "v2.11.3", "v2.10.0"] });
+    expect(previousRelease("v3.0.0", [FORK, UPSTREAM_REPOSITORY], fork.tagsOf))
+      .toEqual({ tag: "v2.11.4", repository: UPSTREAM_REPOSITORY });
+    expect(fork.asked).toEqual([FORK, UPSTREAM_REPOSITORY]);
+  });
+
+  test("once the fork has published one, upstream is not asked", () => {
+    const fork = listing({ [FORK]: ["v3.0.0", "0.1"], [UPSTREAM_REPOSITORY]: ["v2.11.4"] });
+    expect(previousRelease("v3.0.1", [FORK, UPSTREAM_REPOSITORY], fork.tagsOf))
+      .toEqual({ tag: "v3.0.0", repository: FORK });
+    expect(previousRelease("v3.0.1-preview.20261201.1", [FORK, UPSTREAM_REPOSITORY], fork.tagsOf))
+      .toEqual({ tag: "v3.0.0", repository: FORK });
+    expect(fork.asked).toEqual([FORK, FORK]);
+  });
+
+  test("only a release older than the candidate is one to update from, the newest version first", () => {
+    const upstream = listing({ [UPSTREAM_REPOSITORY]: ["v3.1.0", "v3.0.0", "v2.10.5", "v2.11.4"] });
+    expect(previousRelease("v3.0.0", [FORK, UPSTREAM_REPOSITORY], upstream.tagsOf))
+      .toEqual({ tag: "v2.11.4", repository: UPSTREAM_REPOSITORY });
+    // A preview built while main still records 2.11.4 is newer than 2.11.4, not than 3.0.0.
+    const window = listing({ [FORK]: ["v3.0.0"], [UPSTREAM_REPOSITORY]: ["v2.11.4"] });
+    expect(previousRelease("v2.11.5-preview.20261124.1", [FORK, UPSTREAM_REPOSITORY], window.tagsOf))
+      .toEqual({ tag: "v2.11.4", repository: UPSTREAM_REPOSITORY });
+    expect(previousRelease("v2.10.0", [FORK, UPSTREAM_REPOSITORY], window.tagsOf)).toBeNull();
+  });
+
+  test("the workflow step gets the tag and the repository, or a reason and a failure", () => {
+    const output = join(scratch(), "github-output");
+    writeFileSync(output, "");
+    const fork = listing({ [FORK]: ["0.1"], [UPSTREAM_REPOSITORY]: ["v2.11.4"] });
+    expect(findPrevious("v3.0.0", { GITHUB_REPOSITORY: FORK, GITHUB_OUTPUT: output }, fork.tagsOf)).toBe(0);
+    expect(readFileSync(output, "utf-8")).toBe(`tag=v2.11.4\nrepository=${UPSTREAM_REPOSITORY}\n`);
+    const none = join(scratch(), "github-output");
+    writeFileSync(none, "");
+    expect(findPrevious("v3.0.0", { GITHUB_REPOSITORY: FORK, GITHUB_OUTPUT: none }, listing({}).tagsOf)).toBe(1);
+    expect(findPrevious("v3.0.0", { GITHUB_REPOSITORY: FORK, GITHUB_OUTPUT: none }, () => {
+      throw new Error("gh release list --repo devsoftx/aidlc-workflows failed: HTTP 502");
+    })).toBe(1);
+    expect(readFileSync(none, "utf-8")).toBe("");
+  });
+
+  test("the previous installer and copy runtime come from the repository the release was found in", () => {
+    expect(previousReleaseRepository({ GITHUB_REPOSITORY: FORK, AIDLC_PREVIOUS_RELEASE_REPOSITORY: UPSTREAM_REPOSITORY }))
+      .toBe(UPSTREAM_REPOSITORY);
+    expect(previousReleaseRepository({ GITHUB_REPOSITORY: FORK, AIDLC_PREVIOUS_RELEASE_REPOSITORY: "" })).toBe(FORK);
+    expect(previousReleaseRepository({})).toBe(FORK);
+  });
+
+  test.each([".github/workflows/release.yml", ".github/workflows/preview-release.yml"])(
+    "%s finds the release with the token and passes its repository to the update, not the token",
+    (path) => {
+      type Step = { name?: string; id?: string; uses?: string; run?: string; env?: Record<string, string> };
+      const workflow = Bun.YAML.parse(readFileSync(join(REPO_ROOT, path), "utf-8")) as { jobs: Record<string, { steps?: Step[] }> };
+      const steps = workflow.jobs["update-from-previous"].steps ?? [];
+      const find = steps.find((step) => step.name === "Find the last stable release");
+      const update = steps.find((step) => step.name === "Update from the last release");
+      expect(find?.id).toBe("previous");
+      expect(find?.run).toBe('bun scripts/ci-update-from-previous.ts --find-previous "$CANDIDATE_TAG"');
+      expect(find?.env?.GH_TOKEN).toBe(`\${{ github.token }}`);
+      expect(update?.env?.PREVIOUS_TAG).toBe(`\${{ steps.previous.outputs.tag }}`);
+      expect(update?.env?.AIDLC_PREVIOUS_RELEASE_REPOSITORY).toBe(`\${{ steps.previous.outputs.repository }}`);
+      expect(update?.env?.GH_TOKEN).toBeUndefined();
+      expect(Object.keys(update?.env ?? {})).not.toContain("AIDLC_RELEASE_REPOSITORY");
+      // Bun is set up before the lookup runs it.
+      expect(steps.findIndex((step) => step.uses?.startsWith("oven-sh/setup-bun"))).toBeGreaterThanOrEqual(0);
+      expect(steps.findIndex((step) => step.uses?.startsWith("oven-sh/setup-bun"))).toBeLessThan(steps.indexOf(find!));
+    },
+  );
 });

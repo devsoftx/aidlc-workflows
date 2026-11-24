@@ -258,7 +258,11 @@ verification is skipped while checksum verification remains mandatory.
 Fork releases need no GitHub App or additional repository. The tag workflow
 publishes to the same repository with its short-lived `GITHUB_TOKEN`. Its final
 job uses the `release` environment, which can require reviewer approval before
-publication.
+publication. Before that, it installs the newest earlier stable release and
+updates it to the new one. A fork with no `vX.Y.Z` stable release of its own
+yet takes that release from the repository it was forked from,
+`awslabs/aidlc-workflows`; reading a public repository's releases needs no
+extra access.
 
 `AIDLC_INSTALL_ROOT` and `AIDLC_BIN_DIR` override the machine and command
 locations. Those paths must be absolute on Unix. On Windows, the selected bin

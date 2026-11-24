@@ -29,6 +29,7 @@ import {
   walkFiles,
 } from "../../core/tools/aidlc-distribution.ts";
 import {
+  compareVersions,
   parseVersion,
   PREVIEW_CHANNEL,
   requireVersion,
@@ -517,14 +518,53 @@ function acceptedReleaseContentType(value: string | null): boolean {
   ].includes(type);
 }
 
+// A releases page whose latest release has no version.json: it has none, or
+// its latest is one made by hand, not an AI-DLC release.
+class NoLatestRelease extends Error {}
+
+const LIVE_RELEASE_PAGES = {
+  live: "https://github.com/devsoftx/aidlc-workflows/releases",
+  upstream: "https://github.com/awslabs/aidlc-workflows/releases",
+};
+
+/**
+ * Checks the live release a fresh install gets against the fixture contract.
+ * Before this fork publishes its first release, its latest is not an AI-DLC
+ * release and this source still records upstream's version, so the newest
+ * release this code has is upstream's latest, made by the same packaging: that
+ * one is checked in its place. Once the source records a newer version, the
+ * fork's own latest must pass.
+ */
 export async function checkLiveReleaseContract(
-  baseUrl = "https://github.com/devsoftx/aidlc-workflows/releases",
-): Promise<{ version: string; assets: string[] }> {
+  baseUrl?: string,
+  pages = LIVE_RELEASE_PAGES,
+): Promise<{ version: string; assets: string[]; releases: string }> {
+  if (baseUrl) return releaseContract(baseUrl);
+  try {
+    return await releaseContract(pages.live);
+  } catch (error) {
+    if (!(error instanceof NoLatestRelease)) throw error;
+    let upstream: Awaited<ReturnType<typeof releaseContract>>;
+    try {
+      upstream = await releaseContract(pages.upstream);
+    } catch (upstreamError) {
+      throw new Error(`${error.message}; upstream's latest, checked in its place, failed too: ${
+        upstreamError instanceof Error ? upstreamError.message : String(upstreamError)}`);
+    }
+    if (compareVersions(AIDLC_VERSION, upstream.version) > 0) throw error;
+    return upstream;
+  }
+}
+
+async function releaseContract(baseUrl: string): Promise<{ version: string; assets: string[]; releases: string }> {
   const clean = baseUrl.replace(/\/+$/, "");
   const fetchMetadata = async (name: string): Promise<string> => {
     const response = await fetch(`${clean}/latest/download/${name}`, {
       signal: AbortSignal.timeout(remainingOperationTimeoutMs(LIVE_COMMAND_TIMEOUT_MS, { phase: "release metadata" })!),
     });
+    if (name === "version.json" && response.status === 404) {
+      throw new NoLatestRelease(`${clean} has no latest release with a version.json (HTTP 404)`);
+    }
     if (!response.ok) throw new Error(`${name} returned HTTP ${response.status}`);
     if (!acceptedReleaseContentType(response.headers.get("content-type"))) {
       throw new Error(`${name} has unexpected content type ${response.headers.get("content-type")}`);
@@ -567,7 +607,7 @@ export async function checkLiveReleaseContract(
   for (const name of ["version.json", ...assetNames]) {
     if (!checksumNames.has(name)) throw new Error(`live checksums.txt is missing ${name}`);
   }
-  return { version: manifest.version, assets: assetNames };
+  return { version: manifest.version, assets: assetNames, releases: clean };
 }
 
 if (import.meta.main) {

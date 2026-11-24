@@ -219,7 +219,8 @@ missing-asset faults. Run
 `bun tests/harness/release-fixture.ts --output <dir>` to author a fixture.
 The normal suite stays offline; set `AIDLC_RELEASE_CONTRACT_LIVE=1` when
 running t243 to opt into the public release metadata and checksum contract
-check.
+check. While this fork's latest release is not an AI-DLC one and `main` still
+records upstream's version, the check reads upstream's latest release instead.
 
 The deterministic e2e slice (`bash tests/run-tests.sh --debug -P 8 --e2e --filter "^t[0-9]"`) runs in CI with `--no-llm`, while local development loops default to smoke + unit + integration. Branches that touch merge, worktree, or swarm paths should also run this slice locally before review rounds, because mode-boundary regressions between ordinary-Bolt and swarm execution are invisible to the default tier.
 
@@ -1726,7 +1727,10 @@ warning, gives way first, so a failing suite never stops a preview whose planned
 notes fit GitHub's 125,000-character release limit.
 The `update-from-previous` job (`scripts/ci-update-from-previous.ts`) updates an
 install of the last stable release to the candidate on Linux, macOS and Windows
-and runs every harness project's hooks, refresh and doctor. Each project holds
+and runs every harness project's hooks, refresh and doctor. Its
+`--find-previous` step names that release: the newest `vX.Y.Z` stable release
+older than the candidate, from this repository, or from `awslabs/aidlc-workflows`
+while this fork has none of its own. Each project holds
 the person's own committed app, `.gitignore` and `AGENTS.md`, and their work
 waits at a gate: before the update, on the last release's own engine and hooks,
 the scripted stand-in (`tests/harness/work-open.ts`, on that tool's scope host)

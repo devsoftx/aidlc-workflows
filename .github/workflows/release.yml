@@ -213,8 +213,9 @@ jobs:
             -Value 'aidlc-lifecycle-provenance-fixture'
           $ghFixture = Join-Path $env:RUNNER_TEMP 'aidlc-gh.ps1'
           $env:AIDLC_TEST_GH_MARKER = Join-Path $env:RUNNER_TEMP 'aidlc-gh-verified'
-          $env:AIDLC_TEST_GH_REPOSITORY = 'devsoftx/aidlc-workflows'
-          $env:AIDLC_TEST_GH_WORKFLOW = 'devsoftx/aidlc-workflows/.github/workflows/release.yml'
+          # The installer's built-in default must be the repository whose workflow attests this release.
+          $env:AIDLC_TEST_GH_REPOSITORY = $env:GITHUB_REPOSITORY
+          $env:AIDLC_TEST_GH_WORKFLOW = "$env:GITHUB_REPOSITORY/.github/workflows/release.yml"
           $manifest = Get-Content -Raw -LiteralPath (Join-Path $releaseRoot 'version.json') |
             ConvertFrom-Json
           $env:AIDLC_TEST_GH_SOURCE_REF = $manifest.sourceRef
@@ -467,8 +468,8 @@ jobs:
             AIDLC_BIN_DIR="$AIDLC_BIN_DIR" \
             AIDLC_GH_BIN="$gh_bin" \
             AIDLC_TEST_GH_MARKER="$gh_marker" \
-            AIDLC_TEST_GH_REPOSITORY="devsoftx/aidlc-workflows" \
-            AIDLC_TEST_GH_WORKFLOW="devsoftx/aidlc-workflows/.github/workflows/release.yml" \
+            AIDLC_TEST_GH_REPOSITORY="$GITHUB_REPOSITORY" \
+            AIDLC_TEST_GH_WORKFLOW="$GITHUB_REPOSITORY/.github/workflows/release.yml" \
             AIDLC_TEST_GH_SOURCE_REF="$manifest_source_ref" \
             AIDLC_TEST_GH_SOURCE_DIGEST="$(
               sed -n 's/.*"sourceDigest":[[:space:]]*"\([a-f0-9]*\)".*/\1/p' \
@@ -529,18 +530,16 @@ jobs:
           name: release-candidate
           path: build/release
       # The token stays in this step: the releases under test never see it.
+      # Before a fork's first stable release it has none of its own, so the
+      # check updates from the newest one of the repository it was forked
+      # from, the release its people are on; the step names that repository.
       - name: Find the last stable release
         id: previous
         shell: bash
         env:
           CANDIDATE_TAG: ${{ needs.validate.outputs.tag }}
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          previous="$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases \
-            --limit 20 --json tagName --jq '[.[].tagName | select(. != env.CANDIDATE_TAG)] | .[0] // empty')"
-          test -n "$previous"
-          echo "tag=$previous" >>"$GITHUB_OUTPUT"
+        run: bun scripts/ci-update-from-previous.ts --find-previous "$CANDIDATE_TAG"
       # The work each person leaves open is driven by the scripted stand-in, which reads the generated trees.
       - run: bun scripts/package.ts
       - name: Update from the last release
@@ -548,6 +547,7 @@ jobs:
         env:
           CHANNEL: ${{ matrix.channel }}
           PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
+          AIDLC_PREVIOUS_RELEASE_REPOSITORY: ${{ steps.previous.outputs.repository }}
         run: |
           set -euo pipefail
           printf 'aidlc-lifecycle-provenance-fixture\n' >build/release/aidlc-release.intoto.jsonl
