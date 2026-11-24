@@ -146,7 +146,8 @@ const GITHUB_API_HEADERS = {
 };
 
 // The one rule for which repository a release comes from, for its download and
-// its provenance alike: AIDLC_RELEASE_REPOSITORY for every version when set;
+// its provenance alike: AIDLC_RELEASE_REPOSITORY for every version when set
+// (an empty value counts as unset, as the installers read it);
 // otherwise upstream for a stable release before UPSTREAM_STABLE_BEFORE, and
 // the default repository for every preview, every later stable release, and
 // the newest release when no version is named. scripts/install.sh and
@@ -154,7 +155,11 @@ const GITHUB_API_HEADERS = {
 // release_repository_for / Get-ReleaseRepository), as does the test gh stub;
 // t-release-repository-rule fails when one of them drifts.
 export function releaseRepositoryFor(version?: string): string {
-  return process.env.AIDLC_RELEASE_REPOSITORY ?? publishedFrom(version);
+  return releaseRepositorySetting() || publishedFrom(version);
+}
+
+function releaseRepositorySetting(): string {
+  return process.env.AIDLC_RELEASE_REPOSITORY?.trim() ?? "";
 }
 
 // The repository that published a release, settings aside.
@@ -168,16 +173,26 @@ function publishedFrom(version?: string): string {
 
 // What a 404 says for an upstream release that a setting sent elsewhere: it is
 // published, just not there. Host labels only, so a mirror's credentials,
-// query or path never print. Undefined for every other version and base.
+// query or path never print. A preview of a version before
+// UPSTREAM_STABLE_BEFORE that this repository lacks may be one of upstream's
+// own, which only a setting reaches. Undefined for every other version and base.
 function upstreamReleaseNotHere(
   version: string | undefined,
   baseUrl: string,
   mirrorSet: boolean,
 ): string | undefined {
-  if (version === undefined || publishedFrom(version) !== UPSTREAM_RELEASE_REPOSITORY) return undefined;
+  if (version === undefined) return undefined;
+  if (publishedFrom(version) !== UPSTREAM_RELEASE_REPOSITORY) {
+    const parsed = parseVersion(version);
+    if (parsed.channel !== PREVIEW_CHANNEL || mirrorSet || releaseRepositorySetting() ||
+      compareVersions(parsed.base, UPSTREAM_STABLE_BEFORE) >= 0) return undefined;
+    return `AI-DLC ${version} is not published at ${releaseHostLabel(baseUrl)}. If it is a preview from ` +
+      `${UPSTREAM_RELEASE_REPOSITORY}, run this again with ` +
+      `AIDLC_RELEASE_REPOSITORY=${UPSTREAM_RELEASE_REPOSITORY}, or pass --from <release-directory>.`;
+  }
   if (baseUrl.replace(/\/+$/, "") === `https://github.com/${UPSTREAM_RELEASE_REPOSITORY}/releases`) return undefined;
   const settings = [
-    ...(process.env.AIDLC_RELEASE_REPOSITORY !== undefined ? ["AIDLC_RELEASE_REPOSITORY"] : []),
+    ...(releaseRepositorySetting() ? ["AIDLC_RELEASE_REPOSITORY"] : []),
     ...(mirrorSet ? ["the release mirror setting"] : []),
   ];
   return `AI-DLC ${version} is not published at ${releaseHostLabel(baseUrl)}. Releases before ` +
@@ -192,7 +207,7 @@ export function releaseTrust(version: string): { repository: string; workflow: s
     ? "preview-release.yml"
     : "release.yml";
   const workflow =
-    process.env.AIDLC_RELEASE_WORKFLOW ??
+    process.env.AIDLC_RELEASE_WORKFLOW?.trim() ||
     `${repository}/.github/workflows/${workflowName}`;
   return { repository, workflow };
 }
@@ -366,7 +381,7 @@ export function verifyReleaseProvenance(
     // The hint leads with the safe step, because a release that was changed
     // fails here too and must not be told only the setting that moves the
     // check. Someone who set AIDLC_RELEASE_REPOSITORY needs no reminder of it.
-    const hint = process.env.AIDLC_RELEASE_REPOSITORY === undefined
+    const hint = !releaseRepositorySetting()
       ? `. Get the release from ${trust.repository}. If you meant to use a ` +
         "release from another repository, set " +
         "AIDLC_RELEASE_REPOSITORY=<owner>/<name> where aidlc runs."

@@ -30,8 +30,7 @@
 // The previous release is the newest stable one older than the candidate.
 // `--find-previous <candidate-tag>` names it, and the repository it came from,
 // for the workflow: a fork's first release has none of its own, so it is
-// updated from the release of the repository it was forked from, the one its
-// people are on.
+// updated from the upstream project's release, the one its people are on.
 //
 // Usage: bun scripts/ci-update-from-previous.ts [--channel native|copy] --previous <version> --candidate <release-dir>
 //        bun scripts/ci-update-from-previous.ts --find-previous <candidate-tag>
@@ -41,6 +40,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { compareVersions, STABLE_VERSION } from "../core/tools/aidlc-channel.ts";
+import { DEFAULT_RELEASE_REPOSITORY, UPSTREAM_RELEASE_REPOSITORY } from "../core/tools/aidlc-release.ts";
 import { runtimePathsReadTypedNames, typedHarnessName } from "../core/tools/aidlc-runtime-paths.ts";
 import { KIRO_HOOK_GROUPS } from "../harness/kiro-ide/hooks/aidlc-kiro-tool-names.ts";
 import kiro from "../harness/kiro/manifest.ts";
@@ -186,10 +186,10 @@ export function copyRuntimeAsset(version: string): string {
 
 // Where this tree's releases are published, when the workflow does not name
 // the repository it runs in.
-const RELEASE_REPOSITORY = "devsoftx/aidlc-workflows";
-// The repository this fork was made from. Until the fork publishes a stable
-// release of its own, its people are on this one's releases.
-export const UPSTREAM_REPOSITORY = "awslabs/aidlc-workflows";
+const RELEASE_REPOSITORY = DEFAULT_RELEASE_REPOSITORY;
+// The upstream project. Until a fork publishes a stable release of its own,
+// its people are on this one's releases.
+export const UPSTREAM_REPOSITORY = UPSTREAM_RELEASE_REPOSITORY;
 
 /**
  * The release a candidate is updated from: the newest stable release older

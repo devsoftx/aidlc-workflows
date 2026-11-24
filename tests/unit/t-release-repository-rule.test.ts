@@ -282,7 +282,7 @@ describe("the release repository rule", () => {
   });
 
   test("install.sh, install.ps1 and the test gh stub follow the same rule", () => {
-    for (const repository of [undefined, OTHER]) {
+    for (const repository of [undefined, "", OTHER]) {
       const expected = VERSIONS.map((version) => withRepository(repository, () => releaseRepositoryFor(version)));
       const latest = withRepository(repository, () => releaseRepositoryFor());
       expect(VERSIONS.map((version) => shellRule(version, repository))).toEqual(expected);
@@ -471,6 +471,37 @@ describe("what a person is told", () => {
       expect(await failure("2.11.5-preview.20261124.1")).toContain("No published native release is available yet");
     } finally {
       server.stop(true);
+    }
+  });
+
+  // With no setting, a preview is looked up here; one of upstream's own from
+  // before 3.0.0 is reachable only with the setting that names upstream.
+  test("a preview before 3.0.0 missing here says where upstream's own previews are", async () => {
+    const realFetch = globalThis.fetch;
+    const asked: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      asked.push(String(input instanceof Request ? input.url : input));
+      return new Response("missing", { status: 404 });
+    }) as typeof fetch;
+    try {
+      const failure = (version: string) =>
+        fetchReleaseMetadata({ version, verifyProvenance: false })
+          .then(() => "", (error: unknown) => (error as Error).message);
+      expect(await failure("2.11.4-preview.20261105.1")).toBe(
+        "AI-DLC 2.11.4-preview.20261105.1 is not published at github.com/devsoftx/aidlc-workflows. If it is a " +
+          "preview from awslabs/aidlc-workflows, run this again with AIDLC_RELEASE_REPOSITORY=awslabs/aidlc-workflows, " +
+          "or pass --from <release-directory>.",
+      );
+      expect(asked[0]).toStartWith("https://github.com/devsoftx/aidlc-workflows/releases/download/v2.11.4-preview.20261105.1/");
+      // An empty setting is no setting, as the installers read it.
+      process.env.AIDLC_RELEASE_REPOSITORY = " ";
+      expect(await failure("2.11.4-preview.20261105.1")).toContain("If it is a preview from awslabs/aidlc-workflows");
+      delete process.env.AIDLC_RELEASE_REPOSITORY;
+      // This repository's own previews from 3.0.0 on are not upstream's.
+      expect(await failure("3.0.0-preview.20270101.2")).toContain("No published native release is available yet");
+    } finally {
+      globalThis.fetch = realFetch;
+      delete process.env.AIDLC_RELEASE_REPOSITORY;
     }
   });
 });

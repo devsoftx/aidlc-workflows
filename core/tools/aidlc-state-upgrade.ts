@@ -608,11 +608,12 @@ export function newerWorkLead(version: string, newWork = false): string {
   return `${newWork ? "The work selected here" : "This plan"} was set up with ${newerStateRelease(version)}`;
 }
 
-// The release host a copy's runtime comes from, as config names it; an
+// The release host a copy's runtime comes from, as config names it, for the
+// release line named (an upstream line such as 2.12 is published upstream); an
 // unreadable machine setting names the configured mirror.
-function releaseHost(): string {
+function releaseHost(release?: string): string {
   try {
-    return releaseHostLabel();
+    return releaseHostLabel(undefined, release ? `${release}.0` : undefined);
   } catch {
     return "the configured release mirror";
   }
@@ -663,7 +664,7 @@ function otherLineStep(projectDir: string, version: string, lead: string, instal
     : `AI-DLC ${AIDLC_VERSION} on this computer`;
   const step = install.kind === "copy"
     ? `To carry on, get the copy runtime of the AI-DLC ${release} release your teammate uses ` +
-      `(aidlc-copy-runtime-<version>.tar.gz and its .sha256, from the releases on ${releaseHost()}) into one folder, ` +
+      `(aidlc-copy-runtime-<version>.tar.gz and its .sha256, from the releases on ${releaseHost(release)}) into one folder, ` +
       `then run \`${refreshCommand(projectDir)} --from <that file>\` in this project.`
     : `To carry on, pin this project to the ${release} release your teammate uses with ` +
       `\`${aidlcInvocation()} config --pin <that version> --yes\`, then run \`${newerWorkRefresh(projectDir)}\`; ` +

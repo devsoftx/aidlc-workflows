@@ -36,10 +36,12 @@ import {
 } from "../../core/tools/aidlc-channel.ts";
 import { targetTriple } from "../../core/tools/aidlc-install-paths.ts";
 import {
+  DEFAULT_RELEASE_REPOSITORY,
   digest,
   releaseCopyRuntimeAsset,
   releaseRuntimeAsset,
   type ReleaseManifest,
+  UPSTREAM_RELEASE_REPOSITORY,
 } from "../../core/tools/aidlc-release.ts";
 import { AIDLC_VERSION } from "../../core/tools/aidlc-version.ts";
 import { LIVE_COMMAND_TIMEOUT_MS, NATIVE_COMPILE_TIMEOUT_MS, remainingOperationTimeoutMs } from "./test-budget.ts";
@@ -523,8 +525,8 @@ function acceptedReleaseContentType(value: string | null): boolean {
 class NoLatestRelease extends Error {}
 
 const LIVE_RELEASE_PAGES = {
-  live: "https://github.com/devsoftx/aidlc-workflows/releases",
-  upstream: "https://github.com/awslabs/aidlc-workflows/releases",
+  live: `https://github.com/${DEFAULT_RELEASE_REPOSITORY}/releases`,
+  upstream: `https://github.com/${UPSTREAM_RELEASE_REPOSITORY}/releases`,
 };
 
 /**

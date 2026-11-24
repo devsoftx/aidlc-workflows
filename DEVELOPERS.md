@@ -162,8 +162,9 @@ a release. Existing CI and Full Suite callers cannot pass this filter.
 ## 3. Let the nightly preview run
 
 [Preview Release](.github/workflows/preview-release.yml) is scheduled daily at
-**22:00 Europe/Lisbon**, but GitHub does not run a fork's schedules, so in this
-fork a maintainer starts it
+**22:00 Europe/Lisbon**, but GitHub turns a fork's schedules off until a
+maintainer turns the workflow on in the Actions tab (or runs
+`gh workflow enable preview-release.yml`); until then, start it by hand
 ([Publishing from this fork](#publishing-from-this-fork)): from GitHub Actions
 using **Run workflow** on `main`, or:
 
@@ -347,9 +348,9 @@ for the `v1` line.
 devsoftx/aidlc-workflows publishes its own releases; its first stable release
 is 3.0.0. Before the first preview:
 
-- **Turn Actions on** in the repository's Actions tab. Preview Release never
-  starts on its own here: dispatch it by hand, as in
-  [section 3](#3-let-the-nightly-preview-run).
+- **Turn Actions on** in the repository's Actions tab. Preview Release's
+  schedule starts off in a fork: turn the workflow on for the nightly run, or
+  dispatch it by hand, as in [section 3](#3-let-the-nightly-preview-run).
 - **Create the `preview` and `release` environments** under Settings,
   Environments, and give `release` the reviewers who approve publication. A
   workflow creates a missing environment on first use, with no approval.

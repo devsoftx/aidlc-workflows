@@ -264,7 +264,7 @@ publishes to the same repository with its short-lived `GITHUB_TOKEN`. Its final
 job uses the `release` environment, which can require reviewer approval before
 publication. Before that, it installs the newest earlier stable release and
 updates it to the new one. A fork with no `vX.Y.Z` stable release of its own
-yet takes that release from the repository it was forked from,
+yet takes that release from the upstream project,
 `awslabs/aidlc-workflows`; reading a public repository's releases needs no
 extra access.
 
@@ -1537,8 +1537,10 @@ AIDLC_RELEASE_REPOSITORY=devsoftx/aidlc-workflows aidlc update
 In PowerShell, set `$env:AIDLC_RELEASE_REPOSITORY = 'devsoftx/aidlc-workflows'`,
 run `aidlc update`, then `Remove-Item Env:AIDLC_RELEASE_REPOSITORY`. Either way,
 the release it installs updates from this repository from then on. Then run
-`aidlc config` in each project, as after any update. Releases before 3.0.0 still come from `awslabs/aidlc-workflows`, so
-going back to one, or a project pinned to one, needs no setting
+`aidlc config` in each project, as after any update. Releases before 3.0.0
+still come from `awslabs/aidlc-workflows`, so going back to one, or a project
+pinned to one, needs no setting; while the machine runs one, its own
+`aidlc update` follows upstream again
 ([Go Back to an Earlier Version](#go-back-to-an-earlier-version)).
 
 ### Projects on 2.8.0 to 2.11.0
@@ -1688,6 +1690,12 @@ or a release mirror set, that one is used for every version; a release before
 3.0.0 it does not have stops with a line that names `awslabs/aidlc-workflows`
 and the setting to leave out.
 
+A release before 3.0.0 is upstream's own build, so while this machine runs one,
+its `aidlc update` and its update notice follow `awslabs/aidlc-workflows` and
+can offer upstream's newer releases, not this repository's. To come forward
+again, run `aidlc use <the 3.x version>` (the machine keeps it), or
+`AIDLC_RELEASE_REPOSITORY=devsoftx/aidlc-workflows aidlc update` once.
+
 Releases before 2.8.0 have no native release, so `aidlc use` and
 `aidlc config --pin` cannot select them; they stop with `No published native
 release is available yet`. A copied project goes back with the earlier
@@ -1826,6 +1834,7 @@ recipe picks the repository from the version, as `aidlc` itself does:
 version=$(cat .aidlc-version)
 tag="v$version"
 case "$version" in
+  *-preview.*) repository=devsoftx/aidlc-workflows ;;
   [012].*) repository=awslabs/aidlc-workflows ;;
   *) repository=devsoftx/aidlc-workflows ;;
 esac
@@ -2160,6 +2169,7 @@ runtime_asset="aidlc-copy-runtime-${tag#v}.tar.gz"
 runtime_checksum="${runtime_asset}.sha256"
 # A stable release before 3.0.0 is published by awslabs/aidlc-workflows.
 case "${tag#v}" in
+  *-preview.*) published_by=devsoftx/aidlc-workflows ;;
   [012].*) published_by=awslabs/aidlc-workflows ;;
   *) published_by=devsoftx/aidlc-workflows ;;
 esac

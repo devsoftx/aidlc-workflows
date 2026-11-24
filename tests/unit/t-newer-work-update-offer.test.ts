@@ -358,6 +358,8 @@ describe("work AI-DLC 2.12 team work set up (State Version 9): its own line, nev
     const message = step.message ?? "";
     expect(message).toContain(`${TEAM_WORK}the AI-DLC ${VERSION} copied into this project by hand${NOT_CARRIED}`);
     expect(message).toContain("get the copy runtime of the AI-DLC 2.12 release your teammate uses");
+    // 2.12 is an upstream release line, published only there.
+    expect(message).toContain("from the releases on github.com/awslabs/aidlc-workflows)");
     expect(message).toContain("`bun .claude/tools/aidlc.ts config --harness claude --from <that file>`");
     expectNoUpdateFor9(message);
   });
