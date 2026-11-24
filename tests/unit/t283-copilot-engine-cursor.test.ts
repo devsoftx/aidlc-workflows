@@ -271,7 +271,7 @@ async function raceContinue(
   // A racer that exits first never reached its barrier, and one that hangs
   // before it never will: release the other either way and let the caller's
   // assertions report what each printed.
-  const deadline = Date.now() + remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS);
+  const deadline = Date.now() + (remainingOperationTimeoutMs(NATIVE_STARTUP_TIMEOUT_MS) ?? NATIVE_STARTUP_TIMEOUT_MS);
   try {
     while (exited === 0 && Date.now() < deadline && !barriers.every((barrier) => existsSync(`${barrier}.read`))) {
       await Bun.sleep(10);
