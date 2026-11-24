@@ -69,7 +69,7 @@ The installer includes every harness runtime together, for `--harness`
 ```bash
 tmp="$(mktemp -d)"
 curl -fsSL \
-  https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.sh \
+  https://github.com/devsoftx/aidlc-workflows/releases/latest/download/install.sh \
   -o "$tmp/install.sh"
 sh "$tmp/install.sh"
 rm -rf "$tmp"
@@ -80,7 +80,7 @@ rm -rf "$tmp"
 ```bash
 tmp="$(mktemp -d)"
 curl -fsSL \
-  https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.sh \
+  https://github.com/devsoftx/aidlc-workflows/releases/latest/download/install.sh \
   -o "$tmp/install.sh"
 sh "$tmp/install.sh"
 rm -rf "$tmp"
@@ -111,7 +111,7 @@ $download = Join-Path $env:TEMP "aidlc-install-$PID"
 New-Item -ItemType Directory -Force $download | Out-Null
 $installer = Join-Path $download install.ps1
 Invoke-WebRequest `
-  -Uri https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.ps1 `
+  -Uri https://github.com/devsoftx/aidlc-workflows/releases/latest/download/install.ps1 `
   -OutFile $installer
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 & $installer
@@ -243,7 +243,7 @@ installation uses `status: "failed"`, exit code 1, `data.installed: true`, and
 `AIDLC_RELEASE_BASE_URL` and `AIDLC_CA_BUNDLE` provide installer defaults;
 explicit options win. `AIDLC_RELEASE_REPOSITORY` selects both the GitHub
 repository used for default downloads and the repository trusted by provenance
-verification. It defaults to `awslabs/aidlc-workflows`.
+verification. It defaults to `devsoftx/aidlc-workflows`.
 `AIDLC_RELEASE_WORKFLOW` overrides the trusted signer workflow. By default,
 installers select `<AIDLC_RELEASE_REPOSITORY>/.github/workflows/release.yml`
 for stable versions and
@@ -293,13 +293,13 @@ Enterprise host:
 
 ```bash
 tmp="$(mktemp -d)"
-tag="$(gh release view --repo github.com/awslabs/aidlc-workflows --json tagName --jq .tagName)"
-gh release download "$tag" --repo github.com/awslabs/aidlc-workflows --dir "$tmp" \
+tag="$(gh release view --repo github.com/devsoftx/aidlc-workflows --json tagName --jq .tagName)"
+gh release download "$tag" --repo github.com/devsoftx/aidlc-workflows --dir "$tmp" \
   --pattern install.sh --pattern aidlc-release.intoto.jsonl
 gh attestation verify "$tmp/install.sh" \
   --bundle "$tmp/aidlc-release.intoto.jsonl" \
-  --repo awslabs/aidlc-workflows \
-  --signer-workflow awslabs/aidlc-workflows/.github/workflows/release.yml \
+  --repo devsoftx/aidlc-workflows \
+  --signer-workflow devsoftx/aidlc-workflows/.github/workflows/release.yml \
   --hostname github.com \
   --source-ref "refs/tags/$tag"
 sh "$tmp/install.sh" --version "${tag#v}"
@@ -1787,12 +1787,12 @@ A fresh clone or CI runner installs the committed version before config:
 version=$(cat .aidlc-version)
 tag="v$version"
 tmp="$(mktemp -d)"
-gh release download "$tag" --repo github.com/awslabs/aidlc-workflows --dir "$tmp" \
+gh release download "$tag" --repo github.com/devsoftx/aidlc-workflows --dir "$tmp" \
   --pattern install.sh --pattern aidlc-release.intoto.jsonl
 gh attestation verify "$tmp/install.sh" \
   --bundle "$tmp/aidlc-release.intoto.jsonl" \
-  --repo awslabs/aidlc-workflows \
-  --signer-workflow awslabs/aidlc-workflows/.github/workflows/release.yml \
+  --repo devsoftx/aidlc-workflows \
+  --signer-workflow devsoftx/aidlc-workflows/.github/workflows/release.yml \
   --hostname github.com \
   --source-ref "refs/tags/$tag"
 sh "$tmp/install.sh" --version "$version" --quiet --yes
@@ -1826,7 +1826,7 @@ fails closed if the bundle is missing or does not authenticate
 `checksums.txt`:
 
 ```bash
-gh release download v2.5.45 --repo github.com/awslabs/aidlc-workflows --dir ./aidlc-offline
+gh release download v3.0.0 --repo github.com/devsoftx/aidlc-workflows --dir ./aidlc-offline
 ```
 
 Install on the disconnected machine:
@@ -2115,7 +2115,7 @@ tag=vX.Y.Z
 tmp="$(mktemp -d)"
 runtime_asset="aidlc-copy-runtime-${tag#v}.tar.gz"
 runtime_checksum="${runtime_asset}.sha256"
-source_repo="${AIDLC_RELEASE_REPOSITORY:-awslabs/aidlc-workflows}"
+source_repo="${AIDLC_RELEASE_REPOSITORY:-devsoftx/aidlc-workflows}"
 release_workflow="${AIDLC_RELEASE_WORKFLOW:-$source_repo/.github/workflows/release.yml}"
 gh release download "$tag" --repo "github.com/$source_repo" --dir "$tmp" \
   --pattern "$runtime_asset" \

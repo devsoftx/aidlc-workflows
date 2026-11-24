@@ -131,7 +131,9 @@ const MAX_RELEASE_LIST_PAGE_BYTES = 4 * 1024 * 1024;
 const MAX_RELEASE_LIST_PAGES = 25;
 const PROGRESS_WIDTH = 72;
 const PROVENANCE_BUNDLE = "aidlc-release.intoto.jsonl";
-const DEFAULT_RELEASE_REPOSITORY = "awslabs/aidlc-workflows";
+const DEFAULT_RELEASE_REPOSITORY = "devsoftx/aidlc-workflows";
+// Where a person picks a preview id by hand when the release list cannot be read.
+export const DEFAULT_RELEASES_PAGE = `https://github.com/${DEFAULT_RELEASE_REPOSITORY}/releases`;
 const GITHUB_API_HEADERS = {
   Accept: "application/vnd.github+json",
   "User-Agent": "aidlc-native-lifecycle",
@@ -737,7 +739,7 @@ export async function resolvePreviewVersion(options: {
         throw new ReleaseUnavailableError(
           `could not list ${PREVIEW_CHANNEL} releases: the release list is too large ` +
             `to download. To update now, run \`aidlc update --version <id>\` with a ` +
-            `${PREVIEW_CHANNEL} id from https://github.com/awslabs/aidlc-workflows/releases`,
+            `${PREVIEW_CHANNEL} id from ${DEFAULT_RELEASES_PAGE}`,
           "preview-list-too-large",
         );
       }

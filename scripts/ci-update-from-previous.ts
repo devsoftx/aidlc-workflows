@@ -70,7 +70,7 @@ function hookCommandOf(line: string): string {
   return KIRO_HOOK_SUFFIX !== "" && trimmed.endsWith(KIRO_HOOK_SUFFIX) ? trimmed.slice(0, -KIRO_HOOK_SUFFIX.length) : trimmed;
 }
 const WINDOWS = process.platform === "win32";
-const REPOSITORY = process.env.GITHUB_REPOSITORY || "awslabs/aidlc-workflows";
+const REPOSITORY = process.env.GITHUB_REPOSITORY || "devsoftx/aidlc-workflows";
 const STEP_TIMEOUT_MS = 10 * 60_000;
 const HOOK_TIMEOUT_MS = 2 * 60_000;
 // The whole check ends before the release job's 30-minute limit, so its own

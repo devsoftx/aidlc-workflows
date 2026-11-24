@@ -32,13 +32,13 @@ plain text or left out. The other tools differ in a few steps, listed in
 macOS, Linux, or WSL:
 
 ```bash
-curl -fsSL https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/devsoftx/aidlc-workflows/releases/latest/download/install.sh | sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-irm https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.ps1 | iex
+irm https://github.com/devsoftx/aidlc-workflows/releases/latest/download/install.ps1 | iex
 ```
 
 The installer sets up everything AI-DLC needs: the native `aidlc` command and
@@ -93,7 +93,7 @@ it if you do not use them.
 Prefer to manage the project files yourself, or cannot install a native
 executable? The manual-copy path is the one place Bun is needed: install
 [Bun](https://bun.sh/), download `aidlc-copy-runtime-X.Y.Z.tar.gz` from the
-[release](https://github.com/awslabs/aidlc-workflows/releases/latest), copy
+[release](https://github.com/devsoftx/aidlc-workflows/releases/latest), copy
 the complete `runtime/<harness>/` directory into the project, and run its own
 setup once, as [Copy Channel](18-install-and-lifecycle.md#copy-channel) shows.
 A copy never replaces your `.gitignore` or `AGENTS.md`; AI-DLC adds its own

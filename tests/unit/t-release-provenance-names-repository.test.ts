@@ -81,9 +81,9 @@ describe.skipIf(process.platform === "win32")("a provenance failure names what i
     delete process.env.AIDLC_RELEASE_REPOSITORY;
     const message = failure(directory, manifest);
     expect(message).toContain(GH_FAILURE);
-    expect(message).toContain("awslabs/aidlc-workflows");
-    expect(message).toContain("awslabs/aidlc-workflows/.github/workflows/preview-release.yml");
-    expect(message).toContain("Get the release from awslabs/aidlc-workflows");
+    expect(message).toContain("devsoftx/aidlc-workflows");
+    expect(message).toContain("devsoftx/aidlc-workflows/.github/workflows/preview-release.yml");
+    expect(message).toContain("Get the release from devsoftx/aidlc-workflows");
     expect(message).toContain("AIDLC_RELEASE_REPOSITORY=<owner>/<name>");
   });
 

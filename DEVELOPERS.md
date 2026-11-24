@@ -254,7 +254,7 @@ renamed or reused.
    You can also list them locally:
 
    ```bash
-   bun scripts/release-promotion.ts list --repository awslabs/aidlc-workflows
+   bun scripts/release-promotion.ts list --repository devsoftx/aidlc-workflows
    ```
 
 2. **Choose the preview, version and notes.** Review the preview's existing test
@@ -279,14 +279,14 @@ renamed or reused.
    the scan flags, and with no scanner it prints nothing.
 
    ```bash
-   bun scripts/release-promotion.ts contributors --repository awslabs/aidlc-workflows \
+   bun scripts/release-promotion.ts contributors --repository devsoftx/aidlc-workflows \
      --preview v2.11.1-preview.20261016.1 --version 2.11.1 >contributors.txt
    ```
 
    Read the exact page the promotion will publish:
 
    ```bash
-   bun scripts/release-promotion.ts page --repository awslabs/aidlc-workflows \
+   bun scripts/release-promotion.ts page --repository devsoftx/aidlc-workflows \
      --preview v2.11.1-preview.20261016.1 --version 2.11.1 \
      --notes-file release-notes.md --contributors-file contributors.txt
    ```
@@ -327,7 +327,7 @@ renamed or reused.
 
    ```bash
    bun scripts/release-promotion.ts sync --tag v2.11.1 \
-     --repository awslabs/aidlc-workflows
+     --repository devsoftx/aidlc-workflows
    ```
 
 A retry before publication reuses a reserved tag only when its verified preview,

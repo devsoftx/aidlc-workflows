@@ -231,7 +231,7 @@ repository releases.
 When a compatible GitHub CLI is available, installers verify `checksums.txt`
 against that bundle and bind verification to:
 
-- `awslabs/aidlc-workflows`;
+- `devsoftx/aidlc-workflows`;
 - `.github/workflows/release.yml` for stable versions or
   `.github/workflows/preview-release.yml` for preview versions;
 - the version tag for stable releases or `refs/heads/main` for previews;
